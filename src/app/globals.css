@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: var(--font-dm-serif), Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+
+  --color-navy-950: #030d1a;
+  --color-navy-900: #0a1f3d;
+  --color-navy-800: #0f2a4e;
+  --color-navy-700: #163561;
+  --color-navy-600: #1e4278;
+  --color-navy-500: #2a5298;
+  --color-navy-400: #3b6ab5;
+  --color-teal-600: #0d7c6e;
+  --color-teal-500: #0e9d8c;
+  --color-teal-400: #14b8a6;
+  --color-teal-100: #ccfbf1;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
+  background: #f8fafc;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 2.5rem !important;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
