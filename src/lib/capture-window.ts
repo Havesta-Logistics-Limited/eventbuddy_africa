@@ -1,4 +1,4 @@
-import { EventRecord } from "./types";
+import { EventRecord, EventStatus } from "./types";
 
 /**
  * Converts a civil date+time to the real UTC instant it represents in `timezone`, via the
@@ -71,6 +71,40 @@ export function getCaptureGate(
   if (override === "open") return { open: true, opensAt, closesAt };
   if (override === "closed") return { open: false, reason: "manually_closed", opensAt, closesAt };
   if (now < opensAt) return { open: false, reason: "not_started", opensAt, closesAt };
+  if (now > closesAt) return { open: false, reason: "ended", opensAt, closesAt };
+  return { open: true, opensAt, closesAt };
+}
+
+/** Live status derived from the event's actual start/end date+time (in its own
+ *  timezone) — the same window getCaptureGate uses, so a dashboard "Active" badge
+ *  always agrees with whether lead capture/registration/check-in is actually open.
+ *  Deliberately ignores captureOverride: that's an admin's manual open/closed toggle
+ *  for capture, not a claim about whether the event itself is chronologically over. */
+export function getEventStatus(
+  event: Pick<EventRecord, "date" | "endDate" | "startTime" | "endTime" | "timezone">,
+  now = new Date()
+): EventStatus {
+  const opensAt = zonedTimeToUtc(event.date, event.startTime || "00:00", event.timezone);
+  const closesAt = zonedTimeToUtc(event.endDate || event.date, event.endTime || "23:59:59", event.timezone);
+  if (now > closesAt) return "completed";
+  if (now >= opensAt) return "active";
+  return "upcoming";
+}
+
+/** Attendee registration should be open in advance of the event, not just during it —
+ *  the opposite shape from lead capture (which only makes sense once staff are on-site).
+ *  Same window/override, but no "not_started" state: registration is open from anytime
+ *  up until the event ends, unless the admin has manually closed it. */
+export function getRegistrationGate(
+  window: CaptureWindow,
+  timezone: string | undefined,
+  override?: "open" | "closed" | null,
+  now = new Date()
+): CaptureGate {
+  const opensAt = zonedTimeToUtc(window.date, window.startTime || "00:00", timezone);
+  const closesAt = zonedTimeToUtc(window.endDate || window.date, window.endTime || "23:59:59", timezone);
+  if (override === "open") return { open: true, opensAt, closesAt };
+  if (override === "closed") return { open: false, reason: "manually_closed", opensAt, closesAt };
   if (now > closesAt) return { open: false, reason: "ended", opensAt, closesAt };
   return { open: true, opensAt, closesAt };
 }

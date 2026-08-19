@@ -27,6 +27,10 @@ const EMPTY_DATA: EventWizardData = {
   repAccessCode: "",
   templateId: "education-fair",
   customFields: [],
+  eventFormat: "physical",
+  virtualJoinUrl: "",
+  virtualPlatform: "",
+  virtualAccessNotes: "",
 };
 
 function toWizardData(event: EventRecord): EventWizardData {
@@ -46,6 +50,10 @@ function toWizardData(event: EventRecord): EventWizardData {
     templateId: event.templateId || "education-fair",
     customFields: event.customFields || [],
     timezone: event.timezone,
+    eventFormat: event.eventFormat || "physical",
+    virtualJoinUrl: event.virtualJoinUrl || "",
+    virtualPlatform: event.virtualPlatform || "",
+    virtualAccessNotes: event.virtualAccessNotes || "",
   };
 }
 
@@ -81,7 +89,11 @@ export function EventWizard(props: {
     patch({ templateId, customFields: t.defaultFields, destinationIds: t.usesDestinations ? data.destinationIds : [] });
   }
 
-  const isBasicsValid = !!(data.name.trim() && data.date && data.venue.trim() && data.location.trim());
+  const isBasicsValid = !!(
+    data.name.trim() &&
+    data.date &&
+    (data.eventFormat === "virtual" ? data.virtualJoinUrl?.trim() : data.venue.trim() && data.location.trim())
+  );
   const isStepValid = step === "basics" ? isBasicsValid : true;
 
   async function handleSubmit() {

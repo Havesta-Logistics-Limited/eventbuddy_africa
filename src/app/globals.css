@@ -56,3 +56,36 @@ select {
 .font-display {
   font-family: var(--font-display);
 }
+
+@keyframes badge-settle-front {
+  from {
+    opacity: 0;
+    transform: translateY(18px) rotate(-1deg) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(4deg) scale(1);
+  }
+}
+@keyframes badge-settle-back {
+  from {
+    opacity: 0;
+    transform: translateY(10px) rotate(-14deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(-8deg);
+  }
+}
+.animate-badge-settle-front {
+  animation: badge-settle-front 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+.animate-badge-settle-back {
+  animation: badge-settle-back 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-badge-settle-front,
+  .animate-badge-settle-back {
+    animation: none;
+  }
+}

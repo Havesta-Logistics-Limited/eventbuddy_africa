@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Calendar, MapPin, Users, Clock, CheckCircle2, AlertCircle, Search, SlidersHorizontal } from "lucide-react";
+import { Plus, Calendar, MapPin, Users, QrCode, Clock, CheckCircle2, AlertCircle, Search, SlidersHorizontal } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import { PersistError, addEvent, useDestinations, useEvents, useLeads } from "@/lib/store";
-import { EventRecord, EventStatus, Role, getEventStatus } from "@/lib/types";
+import { PersistError, addEvent, useDestinations, useEvents, useLeads, useRegistrations } from "@/lib/store";
+import { EventRecord, EventStatus, Role } from "@/lib/types";
+import { getEventStatus } from "@/lib/capture-window";
 import { formatTime, getEventCity, getEventMonthLabel, sortEventsByProximity } from "@/lib/utils";
 import { DestinationFlags } from "@/components/destination-flags";
 import { EventFilterModal } from "@/components/event-filter-modal";
@@ -22,6 +23,7 @@ const statusConfig: Record<EventStatus, { label: string; color: string; icon: ty
 
 function EventCard({ event }: { event: EventRecord }) {
   const leads = useLeads().filter((l) => l.eventId === event.id);
+  const registrations = useRegistrations().filter((r) => r.eventId === event.id);
   const destinations = useDestinations();
   const status = getEventStatus(event);
   const cfg = statusConfig[status];
@@ -69,9 +71,17 @@ function EventCard({ event }: { event: EventRecord }) {
         </div>
         <div className="flex items-center justify-between gap-3 mt-auto pt-4 border-t border-slate-100">
           <DestinationFlags destinations={eventDests} />
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 shrink-0">
-            <Users size={14} className="text-slate-400" />
-            {leads.length} leads
+          <div className="flex items-center gap-3 shrink-0">
+            {registrations.length > 0 && (
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                <QrCode size={14} className="text-slate-400" />
+                {registrations.length}
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+              <Users size={14} className="text-slate-400" />
+              {leads.length} leads
+            </div>
           </div>
         </div>
       </div>

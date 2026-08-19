@@ -1,4 +1,4 @@
-import { EventRecord, LeadRecord } from "./types";
+import { EventRecord, LeadRecord, RegistrationRecord } from "./types";
 import { getDestinationById, getEventById, getUniversityById } from "./store";
 import { formatCustomAnswers } from "./utils";
 import { getTemplate } from "./event-templates";
@@ -78,6 +78,29 @@ export function eventLeadsToCsv(leads: LeadRecord[], event: EventRecord): string
     }),
     l.comments,
     new Date(l.createdAt).toLocaleDateString("en-GB"),
+  ]);
+
+  return [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
+}
+
+/** Self-service registrations for one event — columns matching how that event's
+ *  registration form was built, same convention as eventLeadsToCsv. */
+export function registrationsToCsv(registrations: RegistrationRecord[], event: EventRecord): string {
+  const fields = event.customFields ?? [];
+  const headers = ["Reference ID", "Name", "Email", "Phone", ...fields.map((f) => f.label || "Untitled"), "Status", "Checked In", "Registered"];
+
+  const rows = registrations.map((r) => [
+    r.referenceId,
+    r.fullName,
+    r.email,
+    r.phone ?? "",
+    ...fields.map((f) => {
+      const v = r.customAnswers?.[f.id];
+      return Array.isArray(v) ? v.join(", ") : (v ?? "");
+    }),
+    r.status,
+    r.checkedInAt ? new Date(r.checkedInAt).toLocaleString("en-GB") : "",
+    new Date(r.createdAt).toLocaleDateString("en-GB"),
   ]);
 
   return [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");

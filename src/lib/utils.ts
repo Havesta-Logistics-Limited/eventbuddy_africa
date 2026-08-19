@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { EventRecord, FieldDef, getEventStatus } from "./types";
+import { EventRecord, FieldDef } from "./types";
+import { getEventStatus } from "./capture-window";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -11,7 +12,7 @@ export function cn(...inputs: ClassValue[]) {
  * right now comes first, then upcoming events nearest their start date,
  * then completed events with the most recently finished on top.
  */
-export function sortEventsByProximity<T extends Pick<EventRecord, "date" | "endDate">>(events: T[]): T[] {
+export function sortEventsByProximity<T extends Pick<EventRecord, "date" | "endDate" | "startTime" | "endTime" | "timezone">>(events: T[]): T[] {
   const priority: Record<ReturnType<typeof getEventStatus>, number> = { active: 0, upcoming: 1, completed: 2 };
   return [...events].sort((a, b) => {
     const statusA = getEventStatus(a);
@@ -29,6 +30,19 @@ export function newId(prefix: string) {
       ? crypto.randomUUID()
       : Math.random().toString(36).slice(2);
   return `${prefix}_${random}`;
+}
+
+// No 0/O or 1/I — easy to read back off a QR-adjacent printout or read aloud at a desk.
+const REFERENCE_ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+/** A short, human-friendly attendee registration code (e.g. "K7QX-4R2M"), shown to the
+ *  attendee as text and encoded into their QR code. Not cryptographically unguessable —
+ *  it doesn't need to be, since the registrations table's RLS keeps them from being
+ *  listed, only looked up one at a time server-side at check-in. */
+export function generateReferenceId(): string {
+  let code = "";
+  for (let i = 0; i < 8; i++) code += REFERENCE_ID_ALPHABET[Math.floor(Math.random() * REFERENCE_ID_ALPHABET.length)];
+  return `${code.slice(0, 4)}-${code.slice(4)}`;
 }
 
 export function formatTime(time?: string) {

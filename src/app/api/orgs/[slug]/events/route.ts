@@ -15,6 +15,12 @@ type EventRow = {
   description: string | null;
   cover_image: string | null;
   template_id: string | null;
+  event_format: string | null;
+  virtual_join_url: string | null;
+  virtual_platform: string | null;
+  virtual_access_notes: string | null;
+  timezone: string | null;
+  capture_override: "open" | "closed" | null;
   has_staff_code: boolean;
   has_rep_code: boolean;
 };
@@ -77,6 +83,12 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       description: e.description ?? "",
       coverImage: e.cover_image ?? undefined,
       templateId: e.template_id ?? "education-fair",
+      eventFormat: (e.event_format as "physical" | "virtual" | null) ?? "physical",
+      virtualJoinUrl: e.virtual_join_url ?? undefined,
+      virtualPlatform: e.virtual_platform ?? undefined,
+      virtualAccessNotes: e.virtual_access_notes ?? undefined,
+      timezone: e.timezone ?? undefined,
+      captureOverride: e.capture_override ?? null,
       hasStaffCode: e.has_staff_code,
       hasRepCode: e.has_rep_code,
     })),

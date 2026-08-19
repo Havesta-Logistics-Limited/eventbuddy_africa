@@ -16,6 +16,7 @@ type LeadBody = {
   takenIELTS: string;
   comments: string;
   customAnswers?: Record<string, string | string[]>;
+  registrationId?: string;
 };
 
 /**
@@ -69,6 +70,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 403 });
   }
 
+  // A lead pulled from a registration (see /api/registrations/lookup) can only be
+  // collected once per university — the same attendee visiting a different university's
+  // booth is a legitimate second lead, so this is scoped to (registration, university),
+  // not just (registration, event). Re-checked here rather than trusted from the lookup
+  // response, since time can pass between pulling the data and hitting Save.
+  if (body.registrationId && staffRow.university_id) {
+    const { data: existing } = await supabase
+      .from("leads")
+      .select("id")
+      .eq("registration_id", body.registrationId)
+      .eq("university_id", staffRow.university_id)
+      .maybeSingle();
+    if (existing) {
+      return NextResponse.json({ error: "This attendee's data has already been collected for this university." }, { status: 409 });
+    }
+  }
+
   const { data: lead, error } = await supabase
     .from("leads")
     .insert({
@@ -77,6 +95,7 @@ export async function POST(request: Request) {
       destination_id: staffRow.destination_id ?? null,
       university_id: staffRow.university_id ?? null,
       staff_id: staffRow.id,
+      registration_id: body.registrationId || null,
       first_name: firstName,
       middle_name: body.middleName || null,
       last_name: lastName,

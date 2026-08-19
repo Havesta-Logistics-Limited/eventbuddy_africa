@@ -3,16 +3,29 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, Calendar, Copy, MapPin, Users, Download, Edit2, Lock, LockOpen, Trash2, X, Search } from "lucide-react";
+import { AlertCircle, ArrowLeft, Calendar, Copy, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, Trash2, Video, X, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import { PersistError, deleteEvent, duplicateEvent, getEventById, updateEvent, useDataReady, useDestinations, useEvents, useLeads, useUniversities } from "@/lib/store";
-import { Role, getEventStatus } from "@/lib/types";
+import {
+  PersistError,
+  deleteEvent,
+  duplicateEvent,
+  getEventById,
+  updateEvent,
+  useDataReady,
+  useDestinations,
+  useEvents,
+  useLeads,
+  useRegistrations,
+  useUniversities,
+} from "@/lib/store";
+import { Role } from "@/lib/types";
 import { downloadCsv, eventLeadsToCsv, leadsToCsv } from "@/lib/csv";
 import { formatTime } from "@/lib/utils";
-import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
+import { getCaptureGate, getEventStatus, windowFromEvent } from "@/lib/capture-window";
 import { EventWizard, type EventWizardData } from "@/components/event-wizard";
 import { EventLeadsCard } from "@/components/event-leads-card";
+import { RegistrationsCard } from "@/components/registrations-card";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -25,6 +38,7 @@ export default function EventDetailPage() {
   const dataReady = useDataReady();
   const event = getEventById(params.id);
   const leads = useLeads().filter((l) => l.eventId === params.id);
+  const registrations = useRegistrations().filter((r) => r.eventId === params.id);
   const destinations = useDestinations();
   const universities = useUniversities();
 
@@ -38,6 +52,7 @@ export default function EventDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // A freshly duplicated event lands here with ?edit=1 so the admin can
   // adjust the copy (name, dates, venue) immediately instead of hunting
@@ -75,6 +90,14 @@ export default function EventDetailPage() {
       setDeleteError(err instanceof PersistError ? err.message : "Couldn't delete this event. Please try again.");
       setDeleting(false);
     }
+  }
+
+  async function handleCopyLink() {
+    if (!event || typeof window === "undefined") return;
+    const link = `${window.location.origin}/${session?.orgSlug ?? ""}/events/${event.id}/register`;
+    await navigator.clipboard.writeText(link);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   }
 
   if (!session) return null;
@@ -160,11 +183,24 @@ export default function EventDetailPage() {
                   {event.startTime && ` • ${formatTime(event.startTime)}`}
                   {event.endTime && ` - ${formatTime(event.endTime)}`}
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <MapPin size={14} />
-                  {event.venue}, {event.location}
-                </span>
+                {event.eventFormat === "virtual" ? (
+                  <span className="flex items-center gap-1.5">
+                    <Video size={14} />
+                    {event.virtualPlatform ? `${event.virtualPlatform} — ` : ""}
+                    <a href={event.virtualJoinUrl} target="_blank" rel="noreferrer" className="text-[#610064] hover:underline">
+                      Join link
+                    </a>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <MapPin size={14} />
+                    {event.venue}, {event.location}
+                  </span>
+                )}
               </div>
+              {event.eventFormat === "virtual" && event.virtualAccessNotes && (
+                <p className="text-xs text-slate-400 mt-1">{event.virtualAccessNotes}</p>
+              )}
               <p className="text-slate-600 text-sm mt-3">{event.description}</p>
             </div>
             <div className="flex flex-col items-end gap-3 shrink-0">
@@ -225,6 +261,26 @@ export default function EventDetailPage() {
             </p>
           </div>
 
+          <div className="mt-6 pt-5 border-t border-slate-100">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-semibold text-slate-800 text-sm mb-1">Attendee registration</h2>
+                <p className="text-xs text-slate-500">
+                  {registrations.length} registered
+                  {registrations.length > 0 && ` · ${registrations.filter((r) => r.status === "checked_in").length} checked in`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
+              >
+                <Link2 size={12} />
+                {linkCopied ? "Link copied!" : "Copy registration link"}
+              </button>
+            </div>
+          </div>
+
           {eventDests.length > 0 && (
             <div className="mt-6 pt-5 border-t border-slate-100">
               <h2 className="font-semibold text-slate-800 text-sm mb-1">Participating institutions</h2>
@@ -268,6 +324,8 @@ export default function EventDetailPage() {
             </button>
           </div>
         </div>
+
+        {registrations.length > 0 && <RegistrationsCard event={event} registrations={registrations} />}
 
         <div id="leads-filters" className="bg-white rounded-xl border border-slate-200 p-4 mb-5 scroll-mt-4">
           <div className="flex flex-wrap gap-3">

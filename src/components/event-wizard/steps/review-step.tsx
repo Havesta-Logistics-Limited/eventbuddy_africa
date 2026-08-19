@@ -12,7 +12,15 @@ export function ReviewStep({ data, template, destinations }: { data: EventWizard
         <Row label="Template" value={template.name} />
         <Row label="Name" value={data.name || "—"} />
         <Row label="Dates" value={data.endDate ? `${data.date} – ${data.endDate}` : data.date || "—"} />
-        <Row label="Venue" value={`${data.venue || "—"}, ${data.location || "—"}`} />
+        {data.eventFormat === "virtual" ? (
+          <>
+            <Row label="Format" value="Virtual" />
+            <Row label="Join link" value={data.virtualJoinUrl || "—"} />
+            {data.virtualPlatform && <Row label="Platform" value={data.virtualPlatform} />}
+          </>
+        ) : (
+          <Row label="Venue" value={`${data.venue || "—"}, ${data.location || "—"}`} />
+        )}
         {template.usesDestinations ? (
           <Row label="Destinations" value={eventDests.length ? eventDests.map((d) => `${d.flag} ${d.name}`).join(", ") : "None selected"} />
         ) : (

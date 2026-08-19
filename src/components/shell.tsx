@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Calendar, Users, BarChart3, Settings, LogOut, Menu, X, MapPinCheckInside, BookOpen, ShieldCheck } from "lucide-react";
+import { Calendar, Users, BarChart3, Settings, LogOut, Menu, X, MapPinCheckInside, BookOpen, ScanLine, ShieldCheck } from "lucide-react";
 import { getDestinationById, getEventById, getUniversityById, logout, useSession } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 
@@ -16,6 +16,7 @@ const adminNav = [
 
 const staffNav = [
   { to: "/collect", label: "Collect Leads", icon: BookOpen },
+  { to: "/checkin", label: "Check-In", icon: ScanLine },
   { to: "/my-leads", label: "My Leads", icon: Users },
 ];
 

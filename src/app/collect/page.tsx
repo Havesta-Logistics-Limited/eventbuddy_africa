@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle2, Lock } from "lucide-react";
+import { AlertCircle, CheckCircle2, Lock, ScanLine } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { PersistError, addLead, useDestinations, useEvents, useUniversities } from "@/lib/store";
@@ -10,6 +10,7 @@ import { getTemplate } from "@/lib/event-templates";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 import { formatDate, formatTime } from "@/lib/utils";
 import { DynamicLeadForm, type DynamicLeadFormValues } from "@/components/dynamic-lead-form";
+import { QrScannerPanel } from "@/components/qr-scanner-panel";
 
 const STAFF_ONLY: Role[] = ["staff"];
 
@@ -51,6 +52,13 @@ export default function LeadCollectPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [, forceTick] = useState(0); // re-render so the locked screen unlocks itself, no manual refresh
+
+  const [lookupRef, setLookupRef] = useState("");
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState("");
+  const [pulledName, setPulledName] = useState("");
+  const [pulledRegistrationId, setPulledRegistrationId] = useState<string | null>(null);
+  const [alreadyCollected, setAlreadyCollected] = useState(false);
 
   const destinations = useDestinations();
   const universities = useUniversities();
@@ -98,6 +106,52 @@ export default function LeadCollectPage() {
 
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
+  async function lookupRegistration(code: string) {
+    if (!session?.id || !code.trim()) return;
+    setLookupError("");
+    setPulledName("");
+    setPulledRegistrationId(null);
+    setAlreadyCollected(false);
+    setLookupLoading(true);
+    try {
+      const res = await fetch("/api/registrations/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffId: session.id, referenceId: code.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setLookupError(json.error || "Couldn't find that registration.");
+        return;
+      }
+      if (json.alreadyCollected) {
+        setAlreadyCollected(true);
+        setLookupRef("");
+        return;
+      }
+      const r = json.registration;
+      setForm((f) => ({
+        ...f,
+        firstName: r.firstName || f.firstName,
+        lastName: r.lastName || f.lastName,
+        email: r.email || f.email,
+        phone: r.phone || f.phone,
+      }));
+      setPulledName(`${r.firstName} ${r.lastName}`.trim());
+      setPulledRegistrationId(r.id);
+      setLookupRef("");
+    } catch {
+      setLookupError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setLookupLoading(false);
+    }
+  }
+
+  function handleLookupSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    lookupRegistration(lookupRef);
+  }
+
   const handleDynamicSubmit = async (values: DynamicLeadFormValues) => {
     if (!session.eventId) return;
     setSubmitError("");
@@ -140,6 +194,7 @@ export default function LeadCollectPage() {
         destinationId: session.destinationId,
         universityId: session.universityId,
         staffId: session.id,
+        registrationId: pulledRegistrationId ?? undefined,
         ...form,
         levelOfInterest: form.levelOfInterest as LevelOfInterest,
         highestEducation: form.highestEducation as HighestEducation,
@@ -150,6 +205,8 @@ export default function LeadCollectPage() {
       setTimeout(() => {
         setSubmitted(false);
         setForm(emptyForm);
+        setPulledName("");
+        setPulledRegistrationId(null);
       }, 3000);
     } catch (err) {
       setSubmitError(err instanceof PersistError ? err.message : "Couldn't save that lead. Please try again.");
@@ -238,6 +295,44 @@ export default function LeadCollectPage() {
           <div className="mb-5">
             <h1 className="font-display text-2xl text-slate-900">Attendee Registration</h1>
             <p className="text-slate-500 text-sm mt-1">Capture lead details for {uni?.name || "your university"}</p>
+          </div>
+
+          <div className="mb-5 space-y-3">
+            <QrScannerPanel
+              onScan={lookupRegistration}
+              label="Scan to pull attendee details"
+              helperText="Scan a registered attendee's QR code to fill in their name, email, and phone — or use manual entry below."
+            />
+            <form onSubmit={handleLookupSubmit} className="bg-white rounded-xl border border-slate-200 p-5">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                <ScanLine size={13} className="text-slate-400" />
+                Manual reference ID
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={lookupRef}
+                  onChange={(e) => setLookupRef(e.target.value)}
+                  placeholder="e.g. K7QX-4R2M"
+                  className="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#1098F7]"
+                />
+                <button
+                  type="submit"
+                  disabled={lookupLoading || !lookupRef.trim()}
+                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
+                  style={{ background: "#1098F7" }}
+                >
+                  {lookupLoading ? "Looking up…" : "Pull details"}
+                </button>
+              </div>
+              {pulledName && <p className="text-xs text-teal-600 mt-2">Pulled details for {pulledName} — review below before submitting.</p>}
+              {alreadyCollected && (
+                <p className="text-xs text-amber-600 mt-2">
+                  This attendee&apos;s data has already been collected for {uni?.name || "your university"}. Scan a different attendee, or ask them to visit another
+                  university&apos;s booth.
+                </p>
+              )}
+              {lookupError && <p className="text-xs text-rose-600 mt-2">{lookupError}</p>}
+            </form>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">

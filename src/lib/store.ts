@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { Destination, EventRecord, FieldDef, LeadRecord, Session, StaffRecord, University } from "./types";
+import { Destination, EventRecord, FieldDef, LeadRecord, RegistrationRecord, Session, StaffRecord, University } from "./types";
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { newId } from "./utils";
 
@@ -31,6 +31,7 @@ let universitiesCache: University[] = [];
 let eventsCache: EventRecord[] = [];
 let staffCache: StaffRecord[] = [];
 let leadsCache: LeadRecord[] = [];
+let registrationsCache: RegistrationRecord[] = [];
 let sessionCache: Session | null = null;
 let sessionHydrated = false;
 
@@ -89,6 +90,10 @@ function mapEventRow(e: {
   custom_fields: FieldDef[] | null;
   timezone: string | null;
   capture_override: "open" | "closed" | null;
+  event_format: string | null;
+  virtual_join_url: string | null;
+  virtual_platform: string | null;
+  virtual_access_notes: string | null;
   created_at: string;
 }): EventRecord {
   return {
@@ -109,6 +114,10 @@ function mapEventRow(e: {
     customFields: e.custom_fields ?? [],
     timezone: e.timezone ?? undefined,
     captureOverride: e.capture_override ?? null,
+    eventFormat: (e.event_format as EventRecord["eventFormat"]) ?? "physical",
+    virtualJoinUrl: e.virtual_join_url ?? undefined,
+    virtualPlatform: e.virtual_platform ?? undefined,
+    virtualAccessNotes: e.virtual_access_notes ?? undefined,
     createdAt: e.created_at,
   };
 }
@@ -130,6 +139,10 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.customFields !== undefined) row.custom_fields = input.customFields;
   if (input.timezone !== undefined) row.timezone = input.timezone;
   if (input.captureOverride !== undefined) row.capture_override = input.captureOverride;
+  if (input.eventFormat !== undefined) row.event_format = input.eventFormat;
+  if (input.virtualJoinUrl !== undefined) row.virtual_join_url = input.virtualJoinUrl || null;
+  if (input.virtualPlatform !== undefined) row.virtual_platform = input.virtualPlatform || null;
+  if (input.virtualAccessNotes !== undefined) row.virtual_access_notes = input.virtualAccessNotes || null;
   return row;
 }
 function mapStaffRow(s: {
@@ -159,6 +172,7 @@ function mapLeadRow(l: {
   destination_id: string | null;
   university_id: string | null;
   staff_id: string | null;
+  registration_id: string | null;
   first_name: string;
   middle_name: string | null;
   last_name: string;
@@ -179,6 +193,7 @@ function mapLeadRow(l: {
     destinationId: l.destination_id ?? undefined,
     universityId: l.university_id ?? undefined,
     staffId: l.staff_id ?? "",
+    registrationId: l.registration_id ?? undefined,
     firstName: l.first_name,
     middleName: l.middle_name ?? undefined,
     lastName: l.last_name,
@@ -194,6 +209,33 @@ function mapLeadRow(l: {
     createdAt: l.created_at,
   };
 }
+function mapRegistrationRow(r: {
+  id: string;
+  event_id: string;
+  reference_id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  custom_answers: Record<string, string | string[]> | null;
+  status: string;
+  checked_in_at: string | null;
+  checked_in_by: string | null;
+  created_at: string;
+}): RegistrationRecord {
+  return {
+    id: r.id,
+    eventId: r.event_id,
+    referenceId: r.reference_id,
+    fullName: r.full_name,
+    email: r.email,
+    phone: r.phone ?? undefined,
+    customAnswers: r.custom_answers ?? {},
+    status: r.status as RegistrationRecord["status"],
+    checkedInAt: r.checked_in_at ?? undefined,
+    checkedInBy: r.checked_in_by ?? undefined,
+    createdAt: r.created_at,
+  };
+}
 
 // ---- org-scoped data fetch (admin via RLS-protected browser client, staff/rep via API) ----
 
@@ -205,18 +247,20 @@ async function fetchAdminData() {
   orgDataFetching = true;
   try {
     const supabase = createSupabaseBrowserClient();
-    const [destRes, uniRes, eventRes, staffRes, leadRes] = await Promise.all([
+    const [destRes, uniRes, eventRes, staffRes, leadRes, registrationRes] = await Promise.all([
       supabase.from("destinations").select("*"),
       supabase.from("universities").select("*"),
       supabase.from("events").select("*"),
       supabase.from("staff").select("*"),
       supabase.from("leads").select("*"),
+      supabase.from("registrations").select("*"),
     ]);
     destinationsCache = (destRes.data ?? []).map(mapDestinationRow);
     universitiesCache = (uniRes.data ?? []).map(mapUniversityRow);
     eventsCache = (eventRes.data ?? []).map(mapEventRow);
     staffCache = (staffRes.data ?? []).map(mapStaffRow);
     leadsCache = (leadRes.data ?? []).map(mapLeadRow);
+    registrationsCache = (registrationRes.data ?? []).map(mapRegistrationRow);
     orgDataFetched = true;
   } finally {
     orgDataFetching = false;
@@ -297,6 +341,7 @@ const universitiesSnap = snap(() => universitiesCache, [] as University[]);
 const eventsSnap = snap(() => eventsCache, [] as EventRecord[]);
 const staffSnap = snap(() => staffCache, [] as StaffRecord[]);
 const leadsSnap = snap(() => leadsCache, [] as LeadRecord[]);
+const registrationsSnap = snap(() => registrationsCache, [] as RegistrationRecord[]);
 const sessionSnap = snap<Session | null>(() => sessionCache, null);
 
 export function useDestinations() {
@@ -319,6 +364,10 @@ export function useLeads() {
   useEnsureDataFetched();
   return useSyncExternalStore(subscribe, leadsSnap.client, leadsSnap.server);
 }
+export function useRegistrations() {
+  useEnsureDataFetched();
+  return useSyncExternalStore(subscribe, registrationsSnap.client, registrationsSnap.server);
+}
 export function useSession() {
   return useSyncExternalStore(subscribe, sessionSnap.client, sessionSnap.server);
 }
@@ -340,6 +389,9 @@ export function getEventById(id: string): EventRecord | undefined {
 }
 export function getLeadsForEvent(eventId: string): LeadRecord[] {
   return leadsCache.filter((l) => l.eventId === eventId);
+}
+export function getRegistrationsForEvent(eventId: string): RegistrationRecord[] {
+  return registrationsCache.filter((r) => r.eventId === eventId);
 }
 export function getLeadsFiltered(eventId?: string, destId?: string, uniId?: string): LeadRecord[] {
   return leadsCache.filter((l) => {
@@ -388,6 +440,7 @@ export async function deleteEvent(id: string): Promise<void> {
   if (error) throw new PersistError(error);
   eventsCache = eventsCache.filter((e) => e.id !== id);
   leadsCache = leadsCache.filter((l) => l.eventId !== id);
+  registrationsCache = registrationsCache.filter((r) => r.eventId !== id);
   emitChange();
 }
 
@@ -630,5 +683,6 @@ export async function logout(): Promise<void> {
   eventsCache = [];
   staffCache = [];
   leadsCache = [];
+  registrationsCache = [];
   persistSession();
 }

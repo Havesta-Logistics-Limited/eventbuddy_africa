@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Calendar, Clock, MapPinCheckInside, MapPin, Search, SlidersHorizontal } from "lucide-react";
-import { Destination, EventRecord, EventStatus, getEventStatus } from "@/lib/types";
+import { Destination, EventRecord, EventStatus } from "@/lib/types";
+import { getEventStatus } from "@/lib/capture-window";
 import { formatDate, formatTime, getEventCity, getEventMonthLabel, sortEventsByProximity } from "@/lib/utils";
 import { DestinationFlags } from "@/components/destination-flags";
 import { EventFilterModal } from "@/components/event-filter-modal";
