@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { AlertCircle, KeyRound, Plus, UserRound } from "lucide-react";
 import { loginAsStaff } from "@/lib/store";
 import { Destination, EventRecord, University } from "@/lib/types";
+import { getTemplate } from "@/lib/event-templates";
 import { EventPicker } from "@/components/event-picker";
 import { EventSignInHero } from "@/components/event-signin-hero";
 
@@ -53,11 +54,14 @@ export default function StaffSetupPage() {
   }, [orgSlug]);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId);
+  const template = selectedEvent ? getTemplate(selectedEvent.templateId) : undefined;
+  const usesDestinations = template?.usesDestinations ?? true;
   const availableUnis = selectedDestId ? universities.filter((u) => u.destinationId === selectedDestId) : [];
   const codeRequired = !!selectedEvent?.hasStaffCode;
 
   const handleStart = async () => {
-    if (!selectedEventId || !selectedDestId || !selectedUniId) return;
+    if (!selectedEventId) return;
+    if (usesDestinations && (!selectedDestId || !selectedUniId)) return;
     if (!isNewStaff && !selectedStaffId) return;
     if (isNewStaff && !newStaffName.trim()) return;
     setError("");
@@ -67,8 +71,8 @@ export default function StaffSetupPage() {
         id: isNewStaff ? undefined : selectedStaffId!,
         name: isNewStaff ? newStaffName.trim() : staffMembers.find((s) => s.id === selectedStaffId)?.name || "",
         eventId: selectedEventId,
-        destinationId: selectedDestId,
-        universityId: selectedUniId,
+        destinationId: usesDestinations ? selectedDestId! : undefined,
+        universityId: usesDestinations ? selectedUniId! : undefined,
         code: accessCode,
       });
       if (!result.success) {
@@ -111,8 +115,7 @@ export default function StaffSetupPage() {
 
   const isFormValid =
     selectedEventId &&
-    selectedDestId &&
-    selectedUniId &&
+    (!usesDestinations || (selectedDestId && selectedUniId)) &&
     (isNewStaff ? newStaffName.trim().length > 0 : selectedStaffId) &&
     (!codeRequired || accessCode.trim().length > 0);
 
@@ -198,51 +201,55 @@ export default function StaffSetupPage() {
             )}
           </section>
 
-          <section>
-            <h2 className="text-base font-bold text-slate-900 mb-3">2. Which destination?</h2>
-            <div className="flex flex-wrap gap-2.5">
-              {destinations
-                .filter((d) => selectedEvent.destinationIds.includes(d.id))
-                .map((d) => (
-                  <button
-                    key={d.id}
-                    onClick={() => {
-                      setSelectedDestId(d.id);
-                      setSelectedUniId(null);
-                    }}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-colors ${
-                      selectedDestId === d.id
-                        ? "border-[#1098F7] bg-[#1098F7] text-white"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                    }`}
-                  >
-                    <span className="text-base leading-none">{d.flag}</span>
-                    {d.name}
-                  </button>
-                ))}
-            </div>
-          </section>
+          {usesDestinations && (
+            <>
+              <section>
+                <h2 className="text-base font-bold text-slate-900 mb-3">2. Which destination?</h2>
+                <div className="flex flex-wrap gap-2.5">
+                  {destinations
+                    .filter((d) => selectedEvent.destinationIds.includes(d.id))
+                    .map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => {
+                          setSelectedDestId(d.id);
+                          setSelectedUniId(null);
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-colors ${
+                          selectedDestId === d.id
+                            ? "border-[#1098F7] bg-[#1098F7] text-white"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                        }`}
+                      >
+                        <span className="text-base leading-none">{d.flag}</span>
+                        {d.name}
+                      </button>
+                    ))}
+                </div>
+              </section>
 
-          <section>
-            <h2 className="text-base font-bold text-slate-900 mb-3">3. Which school?</h2>
-            <select
-              value={selectedUniId || ""}
-              onChange={(e) => setSelectedUniId(e.target.value)}
-              disabled={!selectedDestId}
-              className={`w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#1098F7] bg-white ${
-                !selectedDestId ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed border-dashed" : "border-slate-200 text-slate-800"
-              }`}
-            >
-              <option value="" disabled>
-                Select a destination first.
-              </option>
-              {availableUnis.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          </section>
+              <section>
+                <h2 className="text-base font-bold text-slate-900 mb-3">3. Which school?</h2>
+                <select
+                  value={selectedUniId || ""}
+                  onChange={(e) => setSelectedUniId(e.target.value)}
+                  disabled={!selectedDestId}
+                  className={`w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#1098F7] bg-white ${
+                    !selectedDestId ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed border-dashed" : "border-slate-200 text-slate-800"
+                  }`}
+                >
+                  <option value="" disabled>
+                    Select a destination first.
+                  </option>
+                  {availableUnis.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              </section>
+            </>
+          )}
         </div>
 
         <div className="mt-8 pt-4">

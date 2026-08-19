@@ -15,6 +15,29 @@ export interface University {
 
 export type EventStatus = "upcoming" | "active" | "completed";
 
+export type FieldType =
+  | "short_text"
+  | "paragraph"
+  | "email"
+  | "phone"
+  | "number"
+  | "date"
+  | "dropdown"
+  | "multiple_choice"
+  | "checkboxes";
+
+/** A single admin-defined question on a non-Education-Fair event's lead-capture form.
+ *  `id` is a stable slug used as the customAnswers key — never the label, so relabeling
+ *  a question later doesn't orphan previously-collected answers. */
+export interface FieldDef {
+  id: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  /** dropdown / multiple_choice / checkboxes only. */
+  options?: string[];
+}
+
 export interface EventRecord {
   id: string;
   name: string;
@@ -31,6 +54,19 @@ export interface EventRecord {
   staffAccessCode?: string;
   /** University reps must enter this at check-in on /rep-login for this event. Unset = no gate. */
   repAccessCode?: string;
+  /** Which event-templates.ts template this event was created from. Optional here even
+   *  though the DB column is NOT NULL DEFAULT 'education-fair' — the DB default covers
+   *  any call site that doesn't set it. */
+  templateId?: string;
+  /** Admin-defined lead-form questions for non-Education-Fair templates. */
+  customFields?: FieldDef[];
+  /** IANA zone (e.g. "Africa/Lagos"), captured automatically from the creating admin's
+   *  browser when the event is made. Unset for events created before this existed —
+   *  capture-window.ts falls back to naive runtime-local comparison in that case. */
+  timezone?: string;
+  /** Admin override of the automatic date/time-based lead-capture gate. null/undefined
+   *  = automatic (the default, based on the event's own dates/times). */
+  captureOverride?: "open" | "closed" | null;
   createdAt: string;
 }
 
@@ -70,8 +106,10 @@ export type IeltsStatus = "No" | "Yes" | "Registered";
 export interface LeadRecord {
   id: string;
   eventId: string;
-  destinationId: string;
-  universityId: string;
+  /** Unset for events whose template doesn't use destinations/universities
+   *  (anything other than Education Fair). */
+  destinationId?: string;
+  universityId?: string;
   staffId: string;
   firstName: string;
   middleName?: string;
@@ -84,6 +122,8 @@ export interface LeadRecord {
   highestEducation: HighestEducation | "";
   takenIELTS: IeltsStatus | "";
   comments: string;
+  /** Answers to the event's admin-defined customFields, keyed by FieldDef.id. */
+  customAnswers?: Record<string, string | string[]>;
   createdAt: string;
 }
 

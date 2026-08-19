@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
   try {
     const { error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || "UniLink <onboarding@resend.dev>",
+      from: process.env.RESEND_FROM_EMAIL || "EventPal <onboarding@resend.dev>",
       to,
       subject: subject || "Attendee leads",
       text: message || "",

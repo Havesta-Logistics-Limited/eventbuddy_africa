@@ -1,4 +1,4 @@
--- UniLink multi-tenant schema — Phase 1 (Supabase, multi-tenancy, real admin auth)
+-- EventPal multi-tenant schema — Phase 1 (Supabase, multi-tenancy, real admin auth)
 --
 -- Paste this into the Supabase SQL editor (Project → SQL Editor → New query) and run it once.
 -- Mirrors the shapes in src/lib/types.ts, each scoped by organization_id.

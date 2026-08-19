@@ -1,33 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { Globe2, Users2, KeyRound, BarChart3, ShieldCheck, Mail, ArrowRight } from "lucide-react";
+import { LayoutTemplate, MapPinCheckInside, Users2, KeyRound, BarChart3, ShieldCheck, Mail, ArrowRight } from "lucide-react";
 
 const STEPS = [
   {
     number: "01",
-    title: "Set up your fair",
-    body: "Create your event — dates, venue, participating destinations — and generate a unique staff and rep access code for it.",
+    title: "Set up your event",
+    body: "Pick a template — education fair, job fair, conference, or build your own form — set the dates and venue, and generate a unique staff access code for it.",
   },
   {
     number: "02",
     title: "Share the check-in link",
-    body: "Send your team the one link for your organization. Staff and university reps check in with the access code — no admin login needed.",
+    body: "Send your team the one link for your organization. Staff check in with the access code — no admin login needed. Running an education fair? University reps get their own check-in link too.",
   },
   {
     number: "03",
     title: "Collect, view, export",
-    body: "Staff capture leads on any device. You and university reps see them live, filter by destination or school, and export or email a CSV anytime.",
+    body: "Staff capture leads on any device, with exactly the fields your event needs. You see them live, filter by event, and export or email a CSV anytime.",
   },
 ];
 
 const FEATURES = [
-  { icon: Users2, title: "Role-based access", body: "Admins run the show, staff capture leads locked to their destination and school, reps see only their own university's leads." },
+  { icon: Users2, title: "Role-based access", body: "Admins run the show, staff capture leads for their event, and — for education fairs — reps see only their own university's leads." },
   { icon: KeyRound, title: "Access codes per event", body: "Gate staff and rep check-in behind a code you set — or leave it open for smaller, trusted teams." },
-  { icon: BarChart3, title: "Live analytics", body: "Destination breakdowns, course interest, IELTS readiness, and per-event lead counts, updated as your team collects." },
+  { icon: BarChart3, title: "Live analytics", body: "Destination and course breakdowns for education fairs, custom-question breakdowns for everything else, plus per-event lead counts — updated as your team collects." },
   { icon: Mail, title: "Export & email leads", body: "Download a CSV or email it straight from the app, filtered by event, destination, or university." },
   { icon: ShieldCheck, title: "Your data, isolated", body: "Every organization's events, leads, and staff are kept fully separate — nothing is ever shared across accounts." },
-  { icon: Globe2, title: "Built for education fairs", body: "Multi-destination fairs, multi-day events, and delegates from as many countries as you're hosting." },
+  { icon: LayoutTemplate, title: "Any kind of event", body: "Start from a template — education fair, job fair, conference, trade show — or build a custom lead-capture form from scratch, like Microsoft Forms." },
 ];
 
 export default function MarketingHomePage() {
@@ -37,10 +37,10 @@ export default function MarketingHomePage() {
       <header className="relative z-10">
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Globe2 size={24} className="text-[#610064]" />
+            <MapPinCheckInside size={24} className="text-[#610064]" />
             <div>
-              <p className="font-display text-lg leading-tight text-slate-900">UniLink</p>
-              <p className="text-[11px] text-slate-500 leading-tight">Education Fairs</p>
+              <p className="font-display text-lg leading-tight text-slate-900">EventPal</p>
+              <p className="text-[11px] text-slate-500 leading-tight">Desired Results On The Go</p>
             </div>
           </div>
           <nav className="flex items-center gap-6">
@@ -75,16 +75,16 @@ export default function MarketingHomePage() {
         />
         <div className="relative max-w-5xl mx-auto px-6 pt-16 pb-24 text-center">
           <p className="font-mono text-xs font-semibold uppercase tracking-widest text-fuchsia-300 mb-4">
-            For international education fair coordinators
+            For teams running any kind of event
           </p>
           <h1 className="font-display text-4xl sm:text-5xl leading-tight max-w-3xl mx-auto">
-            Run your education fairs.
+            Run any event.
             <br />
             <em>Capture every lead.</em>
           </h1>
           <p className="mt-5 text-white/70 text-base sm:text-lg max-w-xl mx-auto">
-            One platform for your whole team — set up an event, hand your staff and university reps a single
-            check-in link, and watch qualified leads roll in from every destination you host.
+            One platform for your whole team — set up an event, hand your staff a single check-in link, and watch
+            qualified leads roll in. An education fair, a job fair, a conference, or something entirely your own.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -101,7 +101,7 @@ export default function MarketingHomePage() {
               See pricing
             </Link>
           </div>
-          <p className="mt-4 text-white/50 text-xs">$49.99 per event · no subscription · pay only when you host a fair</p>
+          <p className="mt-4 text-white/50 text-xs">$49.99 per event · no subscription · pay only when you host an event</p>
         </div>
       </section>
 
@@ -109,7 +109,7 @@ export default function MarketingHomePage() {
       <section className="max-w-5xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
           <p className="font-mono text-xs font-semibold uppercase tracking-widest text-[#610064] mb-2">How it works</p>
-          <h2 className="font-display text-3xl text-slate-900">From setup to signed-up students</h2>
+          <h2 className="font-display text-3xl text-slate-900">From setup to captured leads</h2>
         </div>
         <div className="grid sm:grid-cols-3 gap-6">
           {STEPS.map((s) => (
@@ -127,7 +127,7 @@ export default function MarketingHomePage() {
         <div className="max-w-5xl mx-auto px-6 py-20">
           <div className="text-center mb-12">
             <p className="font-mono text-xs font-semibold uppercase tracking-widest text-[#610064] mb-2">Everything included</p>
-            <h2 className="font-display text-3xl text-slate-900">Built for the way fairs actually run</h2>
+            <h2 className="font-display text-3xl text-slate-900">Built for the way events actually run</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map(({ icon: Icon, title, body }) => (
@@ -161,10 +161,10 @@ export default function MarketingHomePage() {
       <footer className="border-t border-slate-200">
         <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
           <div className="flex items-center gap-2">
-            <Globe2 size={14} />
-            <span>UniLink — Education Fairs Management</span>
+            <MapPinCheckInside size={14} />
+            <span>EventPal — Desired Results On The Go</span>
           </div>
-          <p>© 2026 UniLink. All rights reserved.</p>
+          <p>© 2026 EventPal. All rights reserved.</p>
         </div>
       </footer>
     </div>

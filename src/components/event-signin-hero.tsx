@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Globe2, MapPin } from "lucide-react";
+import { Calendar, MapPinCheckInside, MapPin } from "lucide-react";
 import { EventRecord } from "@/lib/types";
 import { formatDate, formatTime } from "@/lib/utils";
 
@@ -41,10 +41,10 @@ export function EventSignInHero({
       <div className="relative max-w-xl mx-auto">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Globe2 size={22} className={theme.eyebrow} />
+            <MapPinCheckInside size={22} className={theme.eyebrow} />
             <div>
-              <p className="font-display text-base leading-tight">UniLink</p>
-              <p className="text-xs text-white/50 leading-tight">Education Fairs</p>
+              <p className="font-display text-base leading-tight">EventPal</p>
+              <p className="text-xs text-white/50 leading-tight">Desired Results On The Go</p>
             </div>
           </div>
           <button type="button" onClick={secondaryAction.onClick} className="text-sm font-medium text-white/80 hover:text-white transition-colors">

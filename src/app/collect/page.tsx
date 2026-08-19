@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, CheckCircle2, Lock } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import { PersistError, addLead, getDestinationById, getEventById, getUniversityById } from "@/lib/store";
+import { PersistError, addLead, useDestinations, useEvents, useUniversities } from "@/lib/store";
 import { HighestEducation, IeltsStatus, LevelOfInterest, Role } from "@/lib/types";
+import { getTemplate } from "@/lib/event-templates";
+import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
+import { formatDate, formatTime } from "@/lib/utils";
+import { DynamicLeadForm, type DynamicLeadFormValues } from "@/components/dynamic-lead-form";
 
 const STAFF_ONLY: Role[] = ["staff"];
 
@@ -46,14 +50,84 @@ export default function LeadCollectPage() {
   const [count, setCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [, forceTick] = useState(0); // re-render so the locked screen unlocks itself, no manual refresh
 
-  const dest = session?.destinationId ? getDestinationById(session.destinationId) : null;
-  const uni = session?.universityId ? getUniversityById(session.universityId) : null;
-  const event = session?.eventId ? getEventById(session.eventId) : null;
+  const destinations = useDestinations();
+  const universities = useUniversities();
+  const events = useEvents();
+  const dest = session?.destinationId ? destinations.find((d) => d.id === session.destinationId) : null;
+  const uni = session?.universityId ? universities.find((u) => u.id === session.universityId) : null;
+  const event = session?.eventId ? events.find((e) => e.id === session.eventId) : null;
+  const template = getTemplate(event?.templateId);
+
+  const captureWindow = event ? windowFromEvent(event) : null;
+  const gate = captureWindow ? getCaptureGate(captureWindow, event?.timezone, event?.captureOverride) : null;
+
+  useEffect(() => {
+    if (!gate || gate.open) return;
+    const id = setInterval(() => forceTick((t) => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, [gate?.open]);
 
   if (!session) return null;
 
+  if (event && gate && !gate.open) {
+    return (
+      <Shell>
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <div className="text-center max-w-sm">
+            <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-5">
+              <Lock size={32} className="text-amber-500" />
+            </div>
+            <h2 className="font-display text-2xl text-slate-900 mb-2">
+              {gate.reason === "not_started" ? "Not open yet" : gate.reason === "manually_closed" ? "Collection is closed" : "Collection has ended"}
+            </h2>
+            <p className="text-slate-500">
+              {gate.reason === "manually_closed"
+                ? `Lead capture for ${event.name} has been closed by the event organizer.`
+                : gate.reason === "not_started"
+                  ? `Lead capture for ${event.name} opens ${formatDate(captureWindow!.date)}${captureWindow!.startTime ? ` at ${formatTime(captureWindow!.startTime)}` : ""}.`
+                  : `Lead capture for ${event.name} closed ${formatDate(captureWindow!.endDate || captureWindow!.date)}${captureWindow!.endTime ? ` at ${formatTime(captureWindow!.endTime)}` : ""}.`}
+            </p>
+            <p className="text-slate-400 text-sm mt-4">This page will unlock automatically once collection opens.</p>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleDynamicSubmit = async (values: DynamicLeadFormValues) => {
+    if (!session.eventId) return;
+    setSubmitError("");
+    setSubmitting(true);
+    try {
+      await addLead({
+        eventId: session.eventId,
+        staffId: session.id,
+        firstName: values.firstName,
+        middleName: values.middleName,
+        lastName: values.lastName,
+        email: values.email,
+        phone: values.phone,
+        preferredCourse: "",
+        levelOfInterest: "",
+        startYear: "",
+        highestEducation: "",
+        takenIELTS: "",
+        comments: values.comments,
+        customAnswers: values.customAnswers,
+      });
+      setCount((c) => c + 1);
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch (err) {
+      setSubmitError(err instanceof PersistError ? err.message : "Couldn't save that lead. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +176,35 @@ export default function LeadCollectPage() {
               {count} lead{count !== 1 ? "s" : ""} collected today
             </p>
             <p className="text-slate-400 text-sm mt-3">Form resetting…</p>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (event && template.id !== "education-fair") {
+    return (
+      <Shell>
+        <div className="min-h-screen bg-slate-50">
+          <div className="sticky top-0 z-30 bg-[#04223d] text-white px-4 py-3">
+            <div className="max-w-xl mx-auto flex items-center justify-between">
+              <p className="font-semibold text-sm truncate max-w-[200px] sm:max-w-none">{event.name}</p>
+              <div className="flex items-center gap-1.5 bg-amber-500/20 px-2.5 py-1 rounded-full">
+                <Lock size={11} className="text-amber-300" />
+                <span className="text-amber-200 text-xs font-medium">Locked</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-xl mx-auto px-4 py-6">
+            <div className="mb-5">
+              <h1 className="font-display text-2xl text-slate-900">Attendee Registration</h1>
+              <p className="text-slate-500 text-sm mt-1">Capture lead details for {event.name}</p>
+            </div>
+
+            <DynamicLeadForm fields={event.customFields ?? []} onSubmit={handleDynamicSubmit} submitting={submitting} submitError={submitError} />
+
+            <p className="text-center text-xs text-slate-400 pt-4 pb-4">{count > 0 ? `${count} lead${count !== 1 ? "s" : ""} collected this session` : "No leads collected yet"}</p>
           </div>
         </div>
       </Shell>

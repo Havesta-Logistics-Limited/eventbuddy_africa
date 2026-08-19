@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { EventRecord, getEventStatus } from "./types";
+import { EventRecord, FieldDef, getEventStatus } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -50,6 +50,20 @@ export function getEventMonthLabel(event: Pick<EventRecord, "date">) {
 /** City portion of "City, Country" used for the Event location filter. */
 export function getEventCity(event: Pick<EventRecord, "location">) {
   return event.location.split(",")[0].trim();
+}
+
+/** Renders a lead's answers to an event's admin-defined customFields as a single
+ *  "Label: value; Label: value" string, for surfaces that don't have a bespoke
+ *  per-field layout (CSV export, generic leads tables). */
+export function formatCustomAnswers(answers: Record<string, string | string[]> | undefined, fields: FieldDef[] | undefined): string {
+  if (!answers || !fields || fields.length === 0) return "";
+  return fields
+    .filter((f) => {
+      const v = answers[f.id];
+      return v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0);
+    })
+    .map((f) => `${f.label}: ${Array.isArray(answers[f.id]) ? (answers[f.id] as string[]).join(", ") : answers[f.id]}`)
+    .join("; ");
 }
 
 /**

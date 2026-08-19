@@ -22,6 +22,7 @@ import {
   useUniversities,
 } from "@/lib/store";
 import { Role } from "@/lib/types";
+import { getTemplate } from "@/lib/event-templates";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -55,6 +56,8 @@ export default function AdminPage() {
   if (!session) return null;
 
   const staffUnis = staffForm.destinationId ? universities.filter((u) => u.destinationId === staffForm.destinationId) : [];
+  const selectedStaffEvent = staffForm.eventId ? events.find((e) => e.id === staffForm.eventId) : undefined;
+  const staffEventUsesDestinations = selectedStaffEvent ? getTemplate(selectedStaffEvent.templateId).usesDestinations : true;
   const repUnis = repForm.destinationId ? universities.filter((u) => u.destinationId === repForm.destinationId) : [];
 
   async function runSave(action: () => Promise<unknown>, onSuccess: () => void) {
@@ -248,7 +251,15 @@ export default function AdminPage() {
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">Assigned Event</label>
                       <select
                         value={staffForm.eventId}
-                        onChange={(e) => setStaffForm({ ...staffForm, eventId: e.target.value })}
+                        onChange={(e) => {
+                          const ev = events.find((x) => x.id === e.target.value);
+                          const usesDestinations = ev ? getTemplate(ev.templateId).usesDestinations : true;
+                          setStaffForm({
+                            ...staffForm,
+                            eventId: e.target.value,
+                            ...(usesDestinations ? {} : { destinationId: "", universityId: "" }),
+                          });
+                        }}
                         className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white"
                       >
                         <option value="">Select event</option>
@@ -259,37 +270,41 @@ export default function AdminPage() {
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Destination</label>
-                      <select
-                        value={staffForm.destinationId}
-                        onChange={(e) => setStaffForm({ ...staffForm, destinationId: e.target.value, universityId: "" })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white"
-                      >
-                        <option value="">Select destination</option>
-                        {destinations.map((d) => (
-                          <option key={d.id} value={d.id}>
-                            {d.flag} {d.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">University</label>
-                      <select
-                        value={staffForm.universityId}
-                        onChange={(e) => setStaffForm({ ...staffForm, universityId: e.target.value })}
-                        disabled={!staffForm.destinationId}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white disabled:opacity-50"
-                      >
-                        <option value="">Select university</option>
-                        {staffUnis.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {staffEventUsesDestinations && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1.5">Destination</label>
+                          <select
+                            value={staffForm.destinationId}
+                            onChange={(e) => setStaffForm({ ...staffForm, destinationId: e.target.value, universityId: "" })}
+                            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white"
+                          >
+                            <option value="">Select destination</option>
+                            {destinations.map((d) => (
+                              <option key={d.id} value={d.id}>
+                                {d.flag} {d.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1.5">University</label>
+                          <select
+                            value={staffForm.universityId}
+                            onChange={(e) => setStaffForm({ ...staffForm, universityId: e.target.value })}
+                            disabled={!staffForm.destinationId}
+                            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white disabled:opacity-50"
+                          >
+                            <option value="">Select university</option>
+                            {staffUnis.map((u) => (
+                              <option key={u.id} value={u.id}>
+                                {u.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
                     {formError && (
                       <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
                         <AlertCircle size={15} className="mt-0.5 shrink-0" />

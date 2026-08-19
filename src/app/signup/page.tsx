@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Eye, EyeOff, Globe2 } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, MapPinCheckInside } from "lucide-react";
 import { login } from "@/lib/store";
 
 export default function SignupPage() {
@@ -50,14 +50,14 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2 mb-8 justify-center">
-          <Globe2 size={24} className="text-[#610064]" />
+          <MapPinCheckInside size={24} className="text-[#610064]" />
           <span className="font-display text-xl" style={{ color: "#610064" }}>
-            UniLink
+            EventPal
           </span>
         </div>
 
         <h2 className="text-2xl font-semibold text-slate-900 mb-1">Create your account</h2>
-        <p className="text-slate-500 text-sm mb-8">Set up your organization to start hosting fairs.</p>
+        <p className="text-slate-500 text-sm mb-8">Set up your organization to start hosting events.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -66,7 +66,7 @@ export default function SignupPage() {
               type="text"
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
-              placeholder="e.g. Bright Futures Education Fairs"
+              placeholder="e.g. Bright Futures Events"
               required
               className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] focus:border-transparent bg-white"
             />

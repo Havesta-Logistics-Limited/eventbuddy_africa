@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Globe2,
+  MapPinCheckInside,
   Building2,
   Calendar,
   Users2,
@@ -21,8 +21,11 @@ import {
   AlertCircle,
   Mail,
   Phone,
+  Lock,
+  LockOpen,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 
 const EVENT_PRICE_USD = 49.99;
 
@@ -41,7 +44,12 @@ type EventRow = {
   organization_id: string;
   name: string;
   date: string;
+  end_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  timezone: string | null;
   payment_status: string;
+  capture_override: "open" | "closed" | null;
   created_at: string;
 };
 type LeadRow = { id: string; organization_id: string };
@@ -58,6 +66,7 @@ export default function PlatformDashboard() {
   const [loadingData, setLoadingData] = useState(true);
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(null);
   const [busyOrgId, setBusyOrgId] = useState<string | null>(null);
+  const [busyEventId, setBusyEventId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -92,7 +101,7 @@ export default function PlatformDashboard() {
           .from("organizations")
           .select("id, name, slug, created_at, is_suspended, is_fee_exempt, phone, email")
           .order("created_at", { ascending: false }),
-        supabase.from("events").select("id, organization_id, name, date, payment_status, created_at"),
+        supabase.from("events").select("id, organization_id, name, date, end_date, start_time, end_time, timezone, payment_status, capture_override, created_at"),
         supabase.from("leads").select("id, organization_id"),
         supabase.from("platform_admins").select("user_id, email, created_at").order("created_at", { ascending: true }),
       ]);
@@ -122,6 +131,16 @@ export default function PlatformDashboard() {
       setOrgs((prev) => prev.map((o) => (o.id === org.id ? { ...o, is_fee_exempt: !o.is_fee_exempt } : o)));
     }
     setBusyOrgId(null);
+  }
+
+  async function setEventCaptureOverride(event: EventRow, value: "open" | "closed" | null) {
+    setBusyEventId(event.id);
+    const supabase = createClient();
+    const { error } = await supabase.from("events").update({ capture_override: value }).eq("id", event.id);
+    if (!error) {
+      setEvents((prev) => prev.map((e) => (e.id === event.id ? { ...e, capture_override: value } : e)));
+    }
+    setBusyEventId(null);
   }
 
   function copyOrgId(id: string) {
@@ -206,9 +225,9 @@ export default function PlatformDashboard() {
       <header className="bg-[#2e0a30] text-white">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Globe2 size={22} className="text-fuchsia-300" />
+            <MapPinCheckInside size={22} className="text-fuchsia-300" />
             <div>
-              <p className="font-display text-base leading-tight">UniLink</p>
+              <p className="font-display text-base leading-tight">EventPal</p>
               <p className="text-[11px] text-white/50 leading-tight">Platform Admin</p>
             </div>
           </div>
@@ -222,7 +241,7 @@ export default function PlatformDashboard() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
           <h1 className="font-display text-2xl text-slate-900">All organizations</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Every business using UniLink, and how they&apos;re doing.</p>
+          <p className="text-slate-500 text-sm mt-0.5">Every business using EventPal, and how they&apos;re doing.</p>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -348,22 +367,61 @@ export default function PlatformDashboard() {
                       {orgEvents.length === 0 ? (
                         <p className="text-xs text-slate-400">No events yet.</p>
                       ) : (
-                        <div className="space-y-1.5">
-                          {orgEvents.map((ev) => (
-                            <div key={ev.id} className="flex items-center justify-between text-xs">
-                              <span className="text-slate-700 truncate">{ev.name}</span>
-                              <span className="flex items-center gap-3 text-slate-400 shrink-0">
-                                {new Date(ev.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                                <span
-                                  className={`px-1.5 py-0.5 rounded-full font-medium ${
-                                    ev.payment_status === "paid" ? "bg-teal-100 text-teal-700" : "bg-amber-100 text-amber-700"
-                                  }`}
-                                >
-                                  {ev.payment_status}
-                                </span>
-                              </span>
-                            </div>
-                          ))}
+                        <div className="space-y-2.5">
+                          {orgEvents.map((ev) => {
+                            const gate = getCaptureGate(windowFromEvent(ev), ev.timezone ?? undefined, ev.capture_override);
+                            const busy = busyEventId === ev.id;
+                            return (
+                              <div key={ev.id} className="pb-2.5 border-b border-slate-200 last:border-0 last:pb-0">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-slate-700 truncate">{ev.name}</span>
+                                  <span className="flex items-center gap-3 text-slate-400 shrink-0">
+                                    {new Date(ev.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                                    <span
+                                      className={`px-1.5 py-0.5 rounded-full font-medium ${
+                                        ev.payment_status === "paid" ? "bg-teal-100 text-teal-700" : "bg-amber-100 text-amber-700"
+                                      }`}
+                                    >
+                                      {ev.payment_status}
+                                    </span>
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-3 mt-1.5">
+                                  <span className={`flex items-center gap-1 text-[11px] font-medium ${gate.open ? "text-teal-600" : "text-slate-400"}`}>
+                                    {gate.open ? <LockOpen size={11} /> : <Lock size={11} />}
+                                    {gate.open
+                                      ? "Accepting leads"
+                                      : gate.reason === "manually_closed"
+                                        ? "Closed by you"
+                                        : gate.reason === "not_started"
+                                          ? "Not open yet"
+                                          : "Closed — ended"}
+                                  </span>
+                                  <div className="flex gap-0.5 bg-white rounded-md p-0.5 border border-slate-200 shrink-0">
+                                    {(
+                                      [
+                                        { label: "Auto", value: null },
+                                        { label: "Open", value: "open" as const },
+                                        { label: "Closed", value: "closed" as const },
+                                      ] as const
+                                    ).map(({ label, value }) => (
+                                      <button
+                                        key={label}
+                                        type="button"
+                                        disabled={busy}
+                                        onClick={() => setEventCaptureOverride(ev, value)}
+                                        className={`px-2 py-1 rounded text-[11px] font-medium transition-colors disabled:opacity-60 ${
+                                          (ev.capture_override ?? null) === value ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:text-slate-700"
+                                        }`}
+                                      >
+                                        {label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

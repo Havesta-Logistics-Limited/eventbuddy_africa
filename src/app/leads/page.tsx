@@ -4,9 +4,11 @@ import { useState } from "react";
 import { AlertCircle, CheckCircle2, Download, Loader2, Mail, Paperclip, Search, Users, X } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import { getDestinationById, getEventById, getUniversityById, useDestinations, useEvents, useLeads, useUniversities } from "@/lib/store";
-import { Role } from "@/lib/types";
+import { getDestinationById, getUniversityById, useDestinations, useEvents, useLeads, useUniversities } from "@/lib/store";
+import { EventRecord, Role } from "@/lib/types";
 import { downloadCsv, leadsToCsv } from "@/lib/csv";
+import { sortEventsByProximity } from "@/lib/utils";
+import { EventLeadsCard } from "@/components/event-leads-card";
 
 const ADMIN_OR_REP: Role[] = ["admin", "rep"];
 
@@ -56,6 +58,9 @@ export default function LeadsPage() {
   };
 
   const activeFilters = [filterEvent, filterDest, filterUni, search].filter(Boolean).length;
+
+  const filteredEventIds = new Set(filtered.map((l) => l.eventId));
+  const groupedEvents = sortEventsByProximity(events.filter((ev) => filteredEventIds.has(ev.id)) as EventRecord[]);
 
   function openEmailModal() {
     const destName = filterDest ? getDestinationById(filterDest)?.name : "";
@@ -157,33 +162,37 @@ export default function LeadsPage() {
                   </option>
                 ))}
               </select>
-              <select
-                value={filterDest}
-                onChange={(e) => {
-                  setFilterDest(e.target.value);
-                  setFilterUni("");
-                }}
-                className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white"
-              >
-                <option value="">All Destinations</option>
-                {destinations.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={filterUni}
-                onChange={(e) => setFilterUni(e.target.value)}
-                className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white min-w-[160px]"
-              >
-                <option value="">All Universities</option>
-                {availableUnis.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.shortName}
-                  </option>
-                ))}
-              </select>
+              {destinations.length > 0 && (
+                <>
+                  <select
+                    value={filterDest}
+                    onChange={(e) => {
+                      setFilterDest(e.target.value);
+                      setFilterUni("");
+                    }}
+                    className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white"
+                  >
+                    <option value="">All Destinations</option>
+                    {destinations.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={filterUni}
+                    onChange={(e) => setFilterUni(e.target.value)}
+                    className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white min-w-[160px]"
+                  >
+                    <option value="">All Universities</option>
+                    {availableUnis.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.shortName}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
               {activeFilters > 0 && (
                 <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-rose-600 hover:bg-rose-50 border border-rose-100">
                   <X size={13} />
@@ -208,68 +217,19 @@ export default function LeadsPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          {filtered.length === 0 ? (
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="text-center py-16 text-slate-400">
               <Users size={36} className="mx-auto mb-3 opacity-40" />
               <p className="font-medium">No leads found</p>
               {activeFilters > 0 && <p className="text-sm mt-1">Try adjusting your filters</p>}
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    {["Name", "Email", "Phone", "Event", "Destination", "University", "Course", "Level", "Start", "Edu", "IELTS", "Date"].map((h) => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 whitespace-nowrap">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filtered.map((lead) => {
-                    const dest = getDestinationById(lead.destinationId);
-                    const uni = getUniversityById(lead.universityId);
-                    const event = getEventById(lead.eventId);
-                    return (
-                      <tr key={lead.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">
-                          {lead.firstName} {lead.lastName}
-                        </td>
-                        <td className="px-4 py-3 text-slate-500 max-w-[160px] truncate">{lead.email}</td>
-                        <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{lead.phone}</td>
-                        <td className="px-4 py-3 text-slate-500 max-w-[120px] truncate" title={event?.name}>
-                          {event?.name.split("—")[0].trim()}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {dest?.flag} {dest?.name}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{uni?.shortName}</td>
-                        <td className="px-4 py-3 text-slate-600 max-w-[120px] truncate">{lead.preferredCourse}</td>
-                        <td className="px-4 py-3">
-                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-[#e8f0fe] text-[#1a3a6e]">{lead.levelOfInterest}</span>
-                        </td>
-                        <td className="px-4 py-3 text-slate-500">{lead.startYear}</td>
-                        <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{lead.highestEducation}</td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                              lead.takenIELTS === "Yes" ? "bg-teal-100 text-teal-700" : lead.takenIELTS === "Registered" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
-                            }`}
-                          >
-                            {lead.takenIELTS}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{new Date(lead.createdAt).toLocaleDateString("en-GB")}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          groupedEvents.map((ev) => (
+            <EventLeadsCard key={ev.id} event={ev} leads={filtered.filter((l) => l.eventId === ev.id)} universities={universities} />
+          ))
+        )}
 
         {emailModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">

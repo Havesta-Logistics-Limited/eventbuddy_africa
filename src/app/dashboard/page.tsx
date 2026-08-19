@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Calendar, MapPin, Users, Clock, CheckCircle2, AlertCircle, X, Search, SlidersHorizontal, KeyRound } from "lucide-react";
+import { Plus, Calendar, MapPin, Users, Clock, CheckCircle2, AlertCircle, Search, SlidersHorizontal } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { PersistError, addEvent, useDestinations, useEvents, useLeads } from "@/lib/store";
@@ -10,6 +10,7 @@ import { EventRecord, EventStatus, Role, getEventStatus } from "@/lib/types";
 import { formatTime, getEventCity, getEventMonthLabel, sortEventsByProximity } from "@/lib/utils";
 import { DestinationFlags } from "@/components/destination-flags";
 import { EventFilterModal } from "@/components/event-filter-modal";
+import { EventWizard, type EventWizardData } from "@/components/event-wizard";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -78,34 +79,6 @@ function EventCard({ event }: { event: EventRecord }) {
   );
 }
 
-type NewEventForm = {
-  name: string;
-  date: string;
-  endDate: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-  venue: string;
-  description: string;
-  destinationIds: string[];
-  staffAccessCode: string;
-  repAccessCode: string;
-};
-
-const EMPTY_FORM: NewEventForm = {
-  name: "",
-  date: "",
-  endDate: "",
-  startTime: "",
-  endTime: "",
-  location: "",
-  venue: "",
-  description: "",
-  destinationIds: [],
-  staffAccessCode: "",
-  repAccessCode: "",
-};
-
 export default function DashboardPage() {
   const session = useRequireRole(ADMIN_ONLY);
   const events = useEvents();
@@ -117,10 +90,7 @@ export default function DashboardPage() {
   const [monthFilter, setMonthFilter] = useState<string[]>([]);
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<NewEventForm>(EMPTY_FORM);
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState("");
+  const [showWizard, setShowWizard] = useState(false);
 
   if (!session) return null;
 
@@ -152,22 +122,12 @@ export default function DashboardPage() {
     { label: "Total Leads", value: leads.length },
   ];
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreateError("");
-    setCreating(true);
+  const handleCreate = async (data: EventWizardData) => {
     try {
-      await addEvent({
-        ...form,
-        staffAccessCode: form.staffAccessCode.trim() || undefined,
-        repAccessCode: form.repAccessCode.trim() || undefined,
-      });
-      setShowForm(false);
-      setForm(EMPTY_FORM);
+      await addEvent(data);
+      setShowWizard(false);
     } catch (err) {
-      setCreateError(err instanceof PersistError ? err.message : "Couldn't create that event. Please try again.");
-    } finally {
-      setCreating(false);
+      throw err instanceof PersistError ? new Error(err.message) : new Error("Couldn't create that event. Please try again.");
     }
   };
 
@@ -177,10 +137,10 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="font-display text-2xl text-slate-900">Events</h1>
-            <p className="text-slate-500 text-sm mt-0.5">Manage your education fair schedule</p>
+            <p className="text-slate-500 text-sm mt-0.5">Manage your event schedule</p>
           </div>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => setShowWizard(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white"
             style={{ background: "#610064" }}
           >
@@ -275,179 +235,8 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {showForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                <h2 className="font-semibold text-slate-900 text-lg">Create New Event</h2>
-                <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
-                  <X size={20} />
-                </button>
-              </div>
-              <form onSubmit={handleCreate} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Event Name</label>
-                  <input
-                    required
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="e.g. Global Education Fair 2027 — Lagos"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Start Date</label>
-                    <input
-                      required
-                      type="date"
-                      value={form.date}
-                      onChange={(e) => setForm({ ...form, date: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">End Date</label>
-                    <input
-                      type="date"
-                      value={form.endDate}
-                      onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Start Time</label>
-                    <input
-                      type="time"
-                      value={form.startTime}
-                      onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">End Time</label>
-                    <input
-                      type="time"
-                      value={form.endTime}
-                      onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Venue</label>
-                  <input
-                    required
-                    value={form.venue}
-                    onChange={(e) => setForm({ ...form, venue: e.target.value })}
-                    placeholder="e.g. Eko Hotel & Suites"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Location (City, Country)</label>
-                  <input
-                    required
-                    value={form.location}
-                    onChange={(e) => setForm({ ...form, location: e.target.value })}
-                    placeholder="e.g. Lagos, Nigeria"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
-                  <textarea
-                    rows={2}
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] resize-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Destinations</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {destinations.map((d) => {
-                      const checked = form.destinationIds.includes(d.id);
-                      return (
-                        <label
-                          key={d.id}
-                          className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${
-                            checked ? "border-[#610064] bg-[#610064]/5" : "border-slate-200 hover:border-slate-300"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => {
-                              setForm((f) => ({
-                                ...f,
-                                destinationIds: checked ? f.destinationIds.filter((x) => x !== d.id) : [...f.destinationIds, d.id],
-                              }));
-                            }}
-                            className="sr-only"
-                          />
-                          <span className="text-base">{d.flag}</span>
-                          <span className="text-sm text-slate-700">{d.name}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-2">
-                    <KeyRound size={13} className="text-slate-400" />
-                    Access codes <span className="font-normal text-slate-400">(optional)</span>
-                  </label>
-                  <p className="text-xs text-slate-500 mb-2">Staff and reps must enter the matching code before they can check in for this event.</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Staff code</label>
-                      <input
-                        value={form.staffAccessCode}
-                        onChange={(e) => setForm({ ...form, staffAccessCode: e.target.value })}
-                        placeholder="e.g. STAFF2026"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Rep code</label>
-                      <input
-                        value={form.repAccessCode}
-                        onChange={(e) => setForm({ ...form, repAccessCode: e.target.value })}
-                        placeholder="e.g. REP2026"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                      />
-                    </div>
-                  </div>
-                </div>
-                {createError && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
-                    <AlertCircle size={15} className="mt-0.5 shrink-0" />
-                    {createError}
-                  </div>
-                )}
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={creating}
-                    className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-                    style={{ background: "#610064" }}
-                  >
-                    {creating ? "Creating…" : "Create Event"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+        {showWizard && (
+          <EventWizard mode="create" destinations={destinations} onSubmit={handleCreate} onCancel={() => setShowWizard(false)} />
         )}
       </div>
     </Shell>

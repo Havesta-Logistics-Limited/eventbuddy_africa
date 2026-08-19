@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Clock, Globe2, MapPin, Search, SlidersHorizontal } from "lucide-react";
+import { Calendar, Clock, MapPinCheckInside, MapPin, Search, SlidersHorizontal } from "lucide-react";
 import { Destination, EventRecord, EventStatus, getEventStatus } from "@/lib/types";
 import { formatDate, formatTime, getEventCity, getEventMonthLabel, sortEventsByProximity } from "@/lib/utils";
 import { DestinationFlags } from "@/components/destination-flags";
@@ -116,10 +116,10 @@ export function EventPicker({
         <div className="relative max-w-5xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <Globe2 size={22} className={theme.eyebrow} />
+              <MapPinCheckInside size={22} className={theme.eyebrow} />
               <div>
-                <p className="font-display text-base leading-tight">UniLink</p>
-                <p className="text-xs text-white/50 leading-tight">Education Fairs</p>
+                <p className="font-display text-base leading-tight">EventPal</p>
+                <p className="text-xs text-white/50 leading-tight">Desired Results On The Go</p>
               </div>
             </div>
             <button type="button" onClick={secondaryAction.onClick} className="text-sm font-medium text-white/80 hover:text-white transition-colors">

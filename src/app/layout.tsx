@@ -16,9 +16,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "UniLink — Education Fairs Management",
+  title: "EventPal — Desired Results On The Go",
   description:
-    "Manage international education fairs, collect qualified leads, and share insights with university partners — all in one platform.",
+    "Run any event, collect qualified leads, and share insights with your team — all in one platform.",
 };
 
 export const viewport: Viewport = {

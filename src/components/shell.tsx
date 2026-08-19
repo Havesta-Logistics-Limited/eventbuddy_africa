@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Calendar, Users, BarChart3, Settings, LogOut, Menu, X, Globe2, BookOpen, ShieldCheck } from "lucide-react";
+import { Calendar, Users, BarChart3, Settings, LogOut, Menu, X, MapPinCheckInside, BookOpen, ShieldCheck } from "lucide-react";
 import { getDestinationById, getEventById, getUniversityById, logout, useSession } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 
@@ -77,10 +77,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <aside className="hidden md:flex w-64 flex-col text-white fixed inset-y-0 left-0 z-40" style={{ background: sidebarBg }}>
         <div className="px-6 py-5 border-b border-white/10">
           <div className="flex items-center gap-2.5">
-            <Globe2 size={22} className={brandIconColor} />
+            <MapPinCheckInside size={22} className={brandIconColor} />
             <div>
-              <p className="font-display text-base leading-tight">UniLink</p>
-              <p className="text-xs text-white/50 leading-tight">Education Fairs</p>
+              <p className="font-display text-base leading-tight">EventPal</p>
+              <p className="text-xs text-white/50 leading-tight">Desired Results On The Go</p>
             </div>
           </div>
         </div>
@@ -143,8 +143,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <Menu size={22} />
         </button>
         <div className="flex items-center gap-2">
-          <Globe2 size={18} className={brandIconColor} />
-          <span className="font-display text-base">UniLink</span>
+          <MapPinCheckInside size={18} className={brandIconColor} />
+          <span className="font-display text-base">EventPal</span>
         </div>
       </header>
 
@@ -154,8 +154,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <div className="w-64 text-white flex flex-col h-full" style={{ background: sidebarBg }}>
             <div className="px-5 py-4 flex items-center justify-between border-b border-white/10">
               <div className="flex items-center gap-2">
-                <Globe2 size={20} className={brandIconColor} />
-                <span className="font-display">UniLink</span>
+                <MapPinCheckInside size={20} className={brandIconColor} />
+                <span className="font-display">EventPal</span>
               </div>
               <button onClick={() => setMobileOpen(false)} aria-label="Close menu">
                 <X size={20} className="text-white/60" />

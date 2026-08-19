@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { Destination, EventRecord, LeadRecord, Session, StaffRecord, University } from "./types";
+import { Destination, EventRecord, FieldDef, LeadRecord, Session, StaffRecord, University } from "./types";
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { newId } from "./utils";
 
-const SESSION_KEY = "unilink:session:v1";
+const SESSION_KEY = "eventpal:session:v1";
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -85,6 +85,10 @@ function mapEventRow(e: {
   cover_image: string | null;
   staff_access_code: string | null;
   rep_access_code: string | null;
+  template_id: string | null;
+  custom_fields: FieldDef[] | null;
+  timezone: string | null;
+  capture_override: "open" | "closed" | null;
   created_at: string;
 }): EventRecord {
   return {
@@ -101,6 +105,10 @@ function mapEventRow(e: {
     coverImage: e.cover_image ?? undefined,
     staffAccessCode: e.staff_access_code ?? undefined,
     repAccessCode: e.rep_access_code ?? undefined,
+    templateId: e.template_id ?? "education-fair",
+    customFields: e.custom_fields ?? [],
+    timezone: e.timezone ?? undefined,
+    captureOverride: e.capture_override ?? null,
     createdAt: e.created_at,
   };
 }
@@ -118,6 +126,10 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.coverImage !== undefined) row.cover_image = input.coverImage || null;
   if (input.staffAccessCode !== undefined) row.staff_access_code = input.staffAccessCode || null;
   if (input.repAccessCode !== undefined) row.rep_access_code = input.repAccessCode || null;
+  if (input.templateId !== undefined) row.template_id = input.templateId;
+  if (input.customFields !== undefined) row.custom_fields = input.customFields;
+  if (input.timezone !== undefined) row.timezone = input.timezone;
+  if (input.captureOverride !== undefined) row.capture_override = input.captureOverride;
   return row;
 }
 function mapStaffRow(s: {
@@ -144,8 +156,8 @@ function mapStaffRow(s: {
 function mapLeadRow(l: {
   id: string;
   event_id: string;
-  destination_id: string;
-  university_id: string;
+  destination_id: string | null;
+  university_id: string | null;
   staff_id: string | null;
   first_name: string;
   middle_name: string | null;
@@ -158,13 +170,14 @@ function mapLeadRow(l: {
   highest_education: string;
   taken_ielts: string;
   comments: string;
+  custom_answers: Record<string, string | string[]> | null;
   created_at: string;
 }): LeadRecord {
   return {
     id: l.id,
     eventId: l.event_id,
-    destinationId: l.destination_id,
-    universityId: l.university_id,
+    destinationId: l.destination_id ?? undefined,
+    universityId: l.university_id ?? undefined,
     staffId: l.staff_id ?? "",
     firstName: l.first_name,
     middleName: l.middle_name ?? undefined,
@@ -177,6 +190,7 @@ function mapLeadRow(l: {
     highestEducation: l.highest_education as LeadRecord["highestEducation"],
     takenIELTS: l.taken_ielts as LeadRecord["takenIELTS"],
     comments: l.comments,
+    customAnswers: l.custom_answers ?? {},
     createdAt: l.created_at,
   };
 }
@@ -312,11 +326,11 @@ export function useSession() {
 // ---- getters (read the in-memory cache; components should prefer the hooks above so
 //      they re-render on change — these are for one-off lookups inside handlers) ----
 
-export function getDestinationById(id: string): Destination | undefined {
-  return destinationsCache.find((d) => d.id === id);
+export function getDestinationById(id?: string): Destination | undefined {
+  return id ? destinationsCache.find((d) => d.id === id) : undefined;
 }
-export function getUniversityById(id: string): University | undefined {
-  return universitiesCache.find((u) => u.id === id);
+export function getUniversityById(id?: string): University | undefined {
+  return id ? universitiesCache.find((u) => u.id === id) : undefined;
 }
 export function getUniversitiesForDestination(destId: string): University[] {
   return universitiesCache.filter((u) => u.destinationId === destId);
@@ -363,6 +377,18 @@ export async function duplicateEvent(id: string): Promise<EventRecord | undefine
   const source = eventsCache.find((e) => e.id === id);
   if (!source) return undefined;
   return addEvent({ ...source, name: `${source.name} (Copy)` });
+}
+
+/** Deletes an event and, via the DB's cascading foreign key, every lead collected for
+ *  it — irreversible. Any staff assigned to it just have their event unset, they aren't
+ *  deleted. Callers must confirm with the admin before calling this. */
+export async function deleteEvent(id: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("events").delete().eq("id", id);
+  if (error) throw new PersistError(error);
+  eventsCache = eventsCache.filter((e) => e.id !== id);
+  leadsCache = leadsCache.filter((l) => l.eventId !== id);
+  emitChange();
 }
 
 // ---- lead CRUD ----
@@ -535,7 +561,7 @@ export async function login(email: string, password: string): Promise<{ success:
  *  and bridges the resulting staff row into the local device session. */
 export async function loginAsStaff(
   orgSlug: string,
-  data: { id?: string; name: string; eventId: string; destinationId: string; universityId: string; code?: string }
+  data: { id?: string; name: string; eventId: string; destinationId?: string; universityId?: string; code?: string }
 ): Promise<{ success: boolean; error?: string }> {
   const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/staff-checkin`, {
     method: "POST",

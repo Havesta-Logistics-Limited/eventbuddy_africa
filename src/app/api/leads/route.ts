@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 
 type LeadBody = {
   staffId: string;
@@ -8,12 +9,13 @@ type LeadBody = {
   lastName: string;
   email: string;
   phone: string;
-  preferredCourse: string;
+  preferredCourse?: string;
   levelOfInterest: string;
   startYear: string;
   highestEducation: string;
   takenIELTS: string;
   comments: string;
+  customAnswers?: Record<string, string | string[]>;
 };
 
 /**
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as Partial<LeadBody>;
   const { staffId, firstName, lastName, email, phone, preferredCourse, levelOfInterest, startYear, highestEducation, takenIELTS } = body;
 
-  if (!staffId || !firstName || !lastName || !email || !phone || !preferredCourse) {
+  if (!staffId || !firstName || !lastName || !email || !phone) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
 
@@ -37,8 +39,34 @@ export async function POST(request: Request) {
   const supabase = createAdminClient();
 
   const { data: staffRow } = await supabase.from("staff").select("*").eq("id", staffId).maybeSingle();
-  if (!staffRow || !staffRow.event_id || !staffRow.destination_id || !staffRow.university_id) {
+  if (!staffRow || !staffRow.event_id) {
     return NextResponse.json({ error: "Your session has expired — please check in again." }, { status: 401 });
+  }
+
+  const { data: eventRow } = await supabase
+    .from("events")
+    .select("date, end_date, start_time, end_time, timezone, capture_override")
+    .eq("id", staffRow.event_id)
+    .maybeSingle();
+  if (!eventRow) {
+    return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });
+  }
+
+  const window = windowFromEvent({
+    date: eventRow.date,
+    endDate: eventRow.end_date ?? undefined,
+    startTime: eventRow.start_time ?? undefined,
+    endTime: eventRow.end_time ?? undefined,
+  });
+  const gate = getCaptureGate(window, eventRow.timezone ?? undefined, eventRow.capture_override ?? undefined);
+  if (!gate.open) {
+    const message =
+      gate.reason === "manually_closed"
+        ? "Lead capture has been closed by the event organizer."
+        : gate.reason === "not_started"
+          ? `Lead capture hasn't opened yet — it opens ${gate.opensAt.toLocaleString()}.`
+          : `Lead capture has closed — it ended ${gate.closesAt.toLocaleString()}.`;
+    return NextResponse.json({ error: message }, { status: 403 });
   }
 
   const { data: lead, error } = await supabase
@@ -46,20 +74,21 @@ export async function POST(request: Request) {
     .insert({
       organization_id: staffRow.organization_id,
       event_id: staffRow.event_id,
-      destination_id: staffRow.destination_id,
-      university_id: staffRow.university_id,
+      destination_id: staffRow.destination_id ?? null,
+      university_id: staffRow.university_id ?? null,
       staff_id: staffRow.id,
       first_name: firstName,
       middle_name: body.middleName || null,
       last_name: lastName,
       email,
       phone,
-      preferred_course: preferredCourse,
+      preferred_course: preferredCourse || "",
       level_of_interest: levelOfInterest || "",
       start_year: startYear || "",
       highest_education: highestEducation || "",
       taken_ielts: takenIELTS || "",
       comments: body.comments || "",
+      custom_answers: body.customAnswers || {},
     })
     .select()
     .single();

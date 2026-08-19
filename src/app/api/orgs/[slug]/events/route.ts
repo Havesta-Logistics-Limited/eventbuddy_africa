@@ -14,6 +14,7 @@ type EventRow = {
   destination_ids: string[] | null;
   description: string | null;
   cover_image: string | null;
+  template_id: string | null;
   has_staff_code: boolean;
   has_rep_code: boolean;
 };
@@ -75,6 +76,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       destinationIds: e.destination_ids ?? [],
       description: e.description ?? "",
       coverImage: e.cover_image ?? undefined,
+      templateId: e.template_id ?? "education-fair",
       hasStaffCode: e.has_staff_code,
       hasRepCode: e.has_rep_code,
     })),

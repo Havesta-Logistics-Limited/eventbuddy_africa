@@ -3,8 +3,10 @@
 import { Users } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import { useLeads } from "@/lib/store";
+import { getEventById, useLeads } from "@/lib/store";
 import { Role } from "@/lib/types";
+import { getTemplate } from "@/lib/event-templates";
+import { formatCustomAnswers } from "@/lib/utils";
 
 const STAFF_ONLY: Role[] = ["staff"];
 
@@ -33,6 +35,9 @@ export default function MyLeadsPage() {
         ) : (
           <div className="space-y-3">
             {myLeads.map((lead) => {
+              const event = getEventById(lead.eventId);
+              const isEducationFair = getTemplate(event?.templateId).id === "education-fair";
+              const details = formatCustomAnswers(lead.customAnswers, event?.customFields);
               return (
                 <div key={lead.id} className="bg-white rounded-xl border border-slate-200 p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -47,18 +52,22 @@ export default function MyLeadsPage() {
                     </div>
                     <p className="text-xs text-slate-400 whitespace-nowrap">{new Date(lead.createdAt).toLocaleDateString("en-GB")}</p>
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-[#e8f0fe] text-[#1a3a6e] font-medium">{lead.levelOfInterest}</span>
-                    <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600">{lead.preferredCourse}</span>
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        lead.takenIELTS === "Yes" ? "bg-teal-100 text-teal-700" : lead.takenIELTS === "Registered" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      IELTS: {lead.takenIELTS}
-                    </span>
-                    <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600">Start {lead.startYear}</span>
-                  </div>
+                  {isEducationFair ? (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-[#e8f0fe] text-[#1a3a6e] font-medium">{lead.levelOfInterest}</span>
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600">{lead.preferredCourse}</span>
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                          lead.takenIELTS === "Yes" ? "bg-teal-100 text-teal-700" : lead.takenIELTS === "Registered" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        IELTS: {lead.takenIELTS}
+                      </span>
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600">Start {lead.startYear}</span>
+                    </div>
+                  ) : (
+                    details && <p className="mt-2 text-xs text-slate-600">{details}</p>
+                  )}
                   {lead.comments && <p className="mt-2 text-xs text-slate-500 italic">&quot;{lead.comments}&quot;</p>}
                 </div>
               );

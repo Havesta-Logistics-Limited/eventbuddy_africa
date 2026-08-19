@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Globe2, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { MapPinCheckInside, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { login, useSession } from "@/lib/store";
 
 export default function LoginPage() {
@@ -47,43 +47,40 @@ export default function LoginPage() {
         />
         <div className="relative">
           <div className="flex items-center gap-3">
-            <Globe2 size={28} className="text-fuchsia-300" />
+            <MapPinCheckInside size={28} className="text-fuchsia-300" />
             <div>
-              <p className="font-display text-xl">UniLink</p>
-              <p className="text-xs text-white/50 -mt-0.5">Education Fairs Management</p>
+              <p className="font-display text-xl">EventPal</p>
+              <p className="text-xs text-white/50 -mt-0.5">Desired Results On The Go</p>
             </div>
           </div>
         </div>
         <div className="relative space-y-6">
           <h1 className="font-display text-4xl leading-tight">
-            Connecting students
+            Run any event.
             <br />
-            <em>to the world&apos;s</em>
+            <em>Capture every</em>
             <br />
-            best universities.
+            qualified lead.
           </h1>
-          <p className="text-white/60 text-base max-w-sm">
-            Manage your international education fairs, collect qualified leads, and share insights — all in one
-            platform.
-          </p>
+          <p className="text-white/60 text-base max-w-sm">Manage your events, collect qualified leads, and share insights — all in one platform.</p>
           <div className="grid grid-cols-3 gap-4 pt-2">
-            {["🇬🇧 UK", "🇨🇦 Canada", "🇦🇺 Australia", "🇮🇪 Ireland", "🇦🇪 Dubai", "🇺🇸 USA"].map((d) => (
+            {["🎓 Education Fairs", "💼 Job Fairs", "🎤 Conferences", "🏬 Trade Shows", "🚀 Launches", "✨ Custom Events"].map((d) => (
               <div key={d} className="bg-white/10 rounded-lg px-3 py-2 text-sm text-center">
                 {d}
               </div>
             ))}
           </div>
         </div>
-        <p className="relative text-white/30 text-xs">© 2026 UniLink. All rights reserved.</p>
+        <p className="relative text-white/30 text-xs">© 2026 EventPal. All rights reserved.</p>
       </div>
 
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <Globe2 size={24} className="text-[#610064]" />
+            <MapPinCheckInside size={24} className="text-[#610064]" />
             <span className="font-display text-xl" style={{ color: "#610064" }}>
-              UniLink
+              EventPal
             </span>
           </div>
 
@@ -97,7 +94,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@unilink.com"
+                placeholder="you@eventpal.com"
                 required
                 className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] focus:border-transparent bg-white"
               />

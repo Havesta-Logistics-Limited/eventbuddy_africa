@@ -62,6 +62,10 @@ export async function GET(request: Request) {
       destinationIds: e.destination_ids ?? [],
       description: e.description ?? "",
       coverImage: e.cover_image ?? undefined,
+      templateId: e.template_id ?? "education-fair",
+      customFields: e.custom_fields ?? [],
+      timezone: e.timezone ?? undefined,
+      captureOverride: e.capture_override ?? null,
       createdAt: e.created_at,
     })),
     leads: (leadRes.data ?? []).map(mapLead),
@@ -71,8 +75,8 @@ export async function GET(request: Request) {
 function mapLead(l: {
   id: string;
   event_id: string;
-  destination_id: string;
-  university_id: string;
+  destination_id: string | null;
+  university_id: string | null;
   staff_id: string | null;
   first_name: string;
   middle_name: string | null;
@@ -85,13 +89,14 @@ function mapLead(l: {
   highest_education: string;
   taken_ielts: string;
   comments: string;
+  custom_answers: Record<string, string | string[]> | null;
   created_at: string;
 }) {
   return {
     id: l.id,
     eventId: l.event_id,
-    destinationId: l.destination_id,
-    universityId: l.university_id,
+    destinationId: l.destination_id ?? undefined,
+    universityId: l.university_id ?? undefined,
     staffId: l.staff_id ?? "",
     firstName: l.first_name,
     middleName: l.middle_name ?? undefined,
@@ -104,6 +109,7 @@ function mapLead(l: {
     highestEducation: l.highest_education,
     takenIELTS: l.taken_ielts,
     comments: l.comments,
+    customAnswers: l.custom_answers ?? {},
     createdAt: l.created_at,
   };
 }

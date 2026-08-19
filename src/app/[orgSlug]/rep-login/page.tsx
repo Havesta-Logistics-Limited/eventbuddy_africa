@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { AlertCircle, KeyRound } from "lucide-react";
 import { loginAsRep } from "@/lib/store";
 import { Destination, EventRecord, University } from "@/lib/types";
+import { getTemplate } from "@/lib/event-templates";
 import { EventPicker } from "@/components/event-picker";
 import { EventSignInHero } from "@/components/event-signin-hero";
 
@@ -79,13 +80,17 @@ export default function RepLoginPage() {
     );
   }
 
+  // Reps are scoped to a destination + university, which only the Education Fair
+  // template has — other event types have no rep flow, so they're not selectable here.
+  const repEligibleEvents = events.filter((e) => getTemplate(e.templateId).usesDestinations);
+
   if (!selectedEventId) {
     return (
       <EventPicker
         eyebrow="Rep sign-in"
         title="Which event are you viewing?"
         subtitle={`Pick the fair to view the leads collected for your university — ${orgName}.`}
-        events={events}
+        events={repEligibleEvents}
         destinations={destinations}
         onSelect={setSelectedEventId}
         secondaryAction={{ label: "Back to Login", onClick: () => router.push("/login") }}

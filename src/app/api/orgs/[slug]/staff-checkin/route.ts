@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTemplate } from "@/lib/event-templates";
 
 type StaffCheckinBody = {
   eventId: string;
   staffId?: string;
   name: string;
-  destinationId: string;
-  universityId: string;
+  destinationId?: string;
+  universityId?: string;
   code?: string;
 };
 
@@ -20,7 +21,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const body = (await request.json()) as Partial<StaffCheckinBody>;
   const { eventId, staffId, name, destinationId, universityId, code } = body;
 
-  if (!eventId || !destinationId || !universityId || (!staffId && !name?.trim())) {
+  if (!eventId || (!staffId && !name?.trim())) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
 
@@ -37,7 +38,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, staff_access_code")
+    .select("id, staff_access_code, template_id")
     .eq("id", eventId)
     .eq("organization_id", org.id)
     .maybeSingle();
@@ -47,34 +48,49 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     return NextResponse.json({ error: "That access code doesn't match this event. Check with your coordinator and try again." }, { status: 403 });
   }
 
+  const template = getTemplate(event.template_id ?? undefined);
+  if (template.usesDestinations && (!destinationId || !universityId)) {
+    return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  const checkinPatch = {
+    destination_id: template.usesDestinations ? destinationId : null,
+    university_id: template.usesDestinations ? universityId : null,
+    event_id: eventId,
+  };
+
   let staffRow;
   if (staffId) {
-    const { data, error } = await supabase
-      .from("staff")
-      .update({ destination_id: destinationId, university_id: universityId, event_id: eventId })
-      .eq("id", staffId)
-      .eq("organization_id", org.id)
-      .select()
-      .maybeSingle();
+    const { data, error } = await supabase.from("staff").update(checkinPatch).eq("id", staffId).eq("organization_id", org.id).select().maybeSingle();
     if (error || !data) return NextResponse.json({ error: error?.message || "Couldn't find that staff member." }, { status: 400 });
     staffRow = data;
   } else {
     const trimmedName = name!.trim();
-    const { data, error } = await supabase
-      .from("staff")
-      .insert({
-        organization_id: org.id,
-        name: trimmedName,
-        email: `${trimmedName.replace(/\s+/g, ".").toLowerCase()}@unilink.com`,
-        role: "staff",
-        destination_id: destinationId,
-        university_id: universityId,
-        event_id: eventId,
-      })
-      .select()
-      .single();
-    if (error || !data) return NextResponse.json({ error: error?.message || "Couldn't check you in." }, { status: 500 });
-    staffRow = data;
+
+    // Someone typing their name again through "New staff member" (e.g. on a different
+    // device, or after a previous session ended) should reuse their existing row rather
+    // than fork into a duplicate — match by name within this org, case-insensitively.
+    const { data: existing } = await supabase.from("staff").select("*").eq("organization_id", org.id).eq("role", "staff").ilike("name", trimmedName).maybeSingle();
+
+    if (existing) {
+      const { data, error } = await supabase.from("staff").update(checkinPatch).eq("id", existing.id).select().single();
+      if (error || !data) return NextResponse.json({ error: error?.message || "Couldn't check you in." }, { status: 500 });
+      staffRow = data;
+    } else {
+      const { data, error } = await supabase
+        .from("staff")
+        .insert({
+          organization_id: org.id,
+          name: trimmedName,
+          email: `${trimmedName.replace(/\s+/g, ".").toLowerCase()}@eventpal.com`,
+          role: "staff",
+          ...checkinPatch,
+        })
+        .select()
+        .single();
+      if (error || !data) return NextResponse.json({ error: error?.message || "Couldn't check you in." }, { status: 500 });
+      staffRow = data;
+    }
   }
 
   return NextResponse.json({

@@ -1,21 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { Globe2, Check, ArrowRight } from "lucide-react";
+import { MapPinCheckInside, Check, ArrowRight } from "lucide-react";
 
 const INCLUDED = [
-  "Unlimited staff and university rep accounts",
+  "Templates for education fairs, job fairs, conferences — or build your own form",
+  "Unlimited staff accounts (plus university reps for education fairs)",
   "Unlimited leads collected",
   "Staff and rep access codes per event",
-  "Live analytics — destinations, courses, IELTS readiness",
+  "Live analytics, tailored to your event's own fields",
   "CSV export and email delivery, filtered any way you like",
-  "Multi-destination, multi-day events",
+  "Multi-destination, multi-day education fairs",
 ];
 
 const FAQS = [
   {
     q: "What counts as \"one event\"?",
-    a: "A single fair — one entry on your dashboard, whatever destinations, dates, or duration it covers. A 3-day fair across 6 destinations is still one event, one $49.99 charge.",
+    a: "A single event — one entry on your dashboard, whatever type it is or however long it runs. A 3-day education fair across 6 destinations, or a one-day job fair, is still one event, one $49.99 charge.",
   },
   {
     q: "Is there a subscription or monthly fee?",
@@ -36,10 +37,10 @@ export default function PricingPage() {
     <div className="min-h-screen bg-slate-50">
       <header className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <Globe2 size={24} className="text-[#610064]" />
+          <MapPinCheckInside size={24} className="text-[#610064]" />
           <div>
-            <p className="font-display text-lg leading-tight text-slate-900">UniLink</p>
-            <p className="text-[11px] text-slate-500 leading-tight">Education Fairs</p>
+            <p className="font-display text-lg leading-tight text-slate-900">EventPal</p>
+            <p className="text-[11px] text-slate-500 leading-tight">Desired Results On The Go</p>
           </div>
         </Link>
         <nav className="flex items-center gap-6">
@@ -54,7 +55,7 @@ export default function PricingPage() {
 
       <section className="max-w-3xl mx-auto px-6 pt-10 pb-6 text-center">
         <p className="font-mono text-xs font-semibold uppercase tracking-widest text-[#610064] mb-3">Pricing</p>
-        <h1 className="font-display text-4xl text-slate-900 mb-3">One price. Every fair.</h1>
+        <h1 className="font-display text-4xl text-slate-900 mb-3">One price. Every event.</h1>
         <p className="text-slate-500 max-w-xl mx-auto">
           No subscription, no per-seat charges, no tiers to pick between. You pay once, when you create an event —
           nothing before, nothing after.
@@ -111,10 +112,10 @@ export default function PricingPage() {
       <footer className="border-t border-slate-200">
         <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
           <div className="flex items-center gap-2">
-            <Globe2 size={14} />
-            <span>UniLink — Education Fairs Management</span>
+            <MapPinCheckInside size={14} />
+            <span>EventPal — Desired Results On The Go</span>
           </div>
-          <p>© 2026 UniLink. All rights reserved.</p>
+          <p>© 2026 EventPal. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Globe2, Eye, EyeOff, AlertCircle, ShieldCheck } from "lucide-react";
+import { MapPinCheckInside, Eye, EyeOff, AlertCircle, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -57,9 +57,9 @@ export default function PlatformLoginPage() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-2 mb-8 text-center">
           <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-1">
-            <Globe2 size={22} className="text-fuchsia-300" />
+            <MapPinCheckInside size={22} className="text-fuchsia-300" />
           </div>
-          <p className="font-display text-xl text-white">UniLink</p>
+          <p className="font-display text-xl text-white">EventPal</p>
           <p className="text-xs text-white/40 flex items-center gap-1.5">
             <ShieldCheck size={12} />
             Platform Admin
@@ -73,7 +73,7 @@ export default function PlatformLoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@unilink.com"
+              placeholder="you@eventpal.com"
               required
               className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:border-transparent"
             />

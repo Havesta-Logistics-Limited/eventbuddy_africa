@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Globe2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { MapPinCheckInside, AlertCircle, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ForgotPasswordPage() {
@@ -34,9 +34,9 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2 mb-8 justify-center">
-          <Globe2 size={24} className="text-[#610064]" />
+          <MapPinCheckInside size={24} className="text-[#610064]" />
           <span className="font-display text-xl" style={{ color: "#610064" }}>
-            UniLink
+            EventPal
           </span>
         </div>
 
