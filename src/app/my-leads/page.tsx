@@ -7,6 +7,7 @@ import { getEventById, useLeads } from "@/lib/store";
 import { Role } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
 import { formatCustomAnswers } from "@/lib/utils";
+import { Reveal } from "@/components/reveal";
 
 const STAFF_ONLY: Role[] = ["staff"];
 
@@ -34,12 +35,13 @@ export default function MyLeadsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {myLeads.map((lead) => {
+            {myLeads.map((lead, i) => {
               const event = getEventById(lead.eventId);
               const isEducationFair = getTemplate(event?.templateId).id === "education-fair";
               const details = formatCustomAnswers(lead.customAnswers, event?.customFields);
               return (
-                <div key={lead.id} className="bg-white rounded-xl border border-slate-200 p-4">
+                <Reveal key={lead.id} index={i}>
+                <div className="bg-white rounded-xl border border-slate-200 p-4 transition-shadow hover:shadow-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-slate-900">
@@ -70,6 +72,7 @@ export default function MyLeadsPage() {
                   )}
                   {lead.comments && <p className="mt-2 text-xs text-slate-500 italic">&quot;{lead.comments}&quot;</p>}
                 </div>
+                </Reveal>
               );
             })}
           </div>

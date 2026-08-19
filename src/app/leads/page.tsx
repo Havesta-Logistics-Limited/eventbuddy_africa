@@ -9,6 +9,7 @@ import { EventRecord, Role } from "@/lib/types";
 import { downloadCsv, leadsToCsv } from "@/lib/csv";
 import { sortEventsByProximity } from "@/lib/utils";
 import { EventLeadsCard } from "@/components/event-leads-card";
+import { Reveal } from "@/components/reveal";
 
 const ADMIN_OR_REP: Role[] = ["admin", "rep"];
 
@@ -129,7 +130,7 @@ export default function LeadsPage() {
             <button
               onClick={downloadFiltered}
               disabled={filtered.length === 0}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 transition-transform active:scale-[0.97]"
               style={{ background: "#610064" }}
             >
               <Download size={14} />
@@ -226,8 +227,10 @@ export default function LeadsPage() {
             </div>
           </div>
         ) : (
-          groupedEvents.map((ev) => (
-            <EventLeadsCard key={ev.id} event={ev} leads={filtered.filter((l) => l.eventId === ev.id)} universities={universities} />
+          groupedEvents.map((ev, i) => (
+            <Reveal key={ev.id} index={i}>
+              <EventLeadsCard event={ev} leads={filtered.filter((l) => l.eventId === ev.id)} universities={universities} />
+            </Reveal>
           ))
         )}
 

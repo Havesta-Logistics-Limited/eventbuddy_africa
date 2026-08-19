@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, KeyRound, Plus, UserRound } from "lucide-react";
+import { AlertCircle, KeyRound, MapPinCheckInside, Plus, UserRound } from "lucide-react";
 import { loginAsStaff } from "@/lib/store";
 import { Destination, EventRecord, University } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
@@ -85,7 +85,13 @@ export default function StaffSetupPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-slate-50" />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <MapPinCheckInside size={26} className="text-[#610064]/40 animate-pulse" />
+      </div>
+    );
+  }
 
   if (loadError) {
     return (

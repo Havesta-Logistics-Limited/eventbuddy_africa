@@ -6,6 +6,7 @@ import { useRequireRole } from "@/lib/auth";
 import { useDestinations, useEvents, useLeads } from "@/lib/store";
 import { EventRecord, FieldDef, Role } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
+import { Reveal } from "@/components/reveal";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -124,14 +125,16 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {stats.map((s) => (
-            <div key={s.label} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: s.bg }}>
-                <s.icon size={18} style={{ color: s.accent }} />
+          {stats.map((s, i) => (
+            <Reveal key={s.label} index={i}>
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: s.bg }}>
+                  <s.icon size={18} style={{ color: s.accent }} />
+                </div>
+                <p className="text-3xl font-bold text-slate-900 leading-none">{s.value}</p>
+                <p className="text-xs text-slate-500 mt-1.5">{s.label}</p>
               </div>
-              <p className="text-3xl font-bold text-slate-900 leading-none">{s.value}</p>
-              <p className="text-xs text-slate-500 mt-1.5">{s.label}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
 
@@ -143,8 +146,8 @@ export default function AnalyticsPage() {
                 <h2 className="font-semibold text-slate-800">Leads by Destination</h2>
               </div>
               <div className="space-y-4">
-                {byDest.map(({ dest, count }) => (
-                  <div key={dest.id}>
+                {byDest.map(({ dest, count }, i) => (
+                  <Reveal key={dest.id} index={i}>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="flex items-center gap-1.5 text-sm text-slate-600">
                         <span className="text-sm leading-none">{dest.flag}</span>
@@ -156,11 +159,11 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all"
+                        className="h-full rounded-full transition-all duration-500"
                         style={{ width: `${(count / maxDest) * 100}%`, background: "linear-gradient(90deg, #c17bc7, #610064)" }}
                       />
                     </div>
-                  </div>
+                  </Reveal>
                 ))}
                 {byDest.length === 0 && <p className="text-slate-400 text-sm">No data yet</p>}
               </div>
@@ -212,8 +215,8 @@ export default function AnalyticsPage() {
                 <h2 className="font-semibold text-slate-800">Top Courses</h2>
               </div>
               <div className="space-y-3">
-                {topCourses.map(([course, count]) => (
-                  <div key={course}>
+                {topCourses.map(([course, count], i) => (
+                  <Reveal key={course} index={i}>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-sm text-slate-600 truncate mr-2">{course}</span>
                       <span className="text-sm font-semibold text-slate-900 shrink-0">
@@ -222,11 +225,11 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full"
+                        className="h-full rounded-full transition-all duration-500"
                         style={{ width: `${(count / maxCourse) * 100}%`, background: "linear-gradient(90deg, #64748b, #1e293b)" }}
                       />
                     </div>
-                  </div>
+                  </Reveal>
                 ))}
                 {topCourses.length === 0 && <p className="text-slate-400 text-sm">No data yet</p>}
               </div>
@@ -239,8 +242,9 @@ export default function AnalyticsPage() {
               <h2 className="font-semibold text-slate-800">Leads by Event</h2>
             </div>
             <div className="space-y-3">
-              {byEvent.map(({ ev, count }) => (
-                <div key={ev.id} className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+              {byEvent.map(({ ev, count }, i) => (
+                <Reveal key={ev.id} index={i}>
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
                   <div className="flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800 truncate">{ev.name.split("—")[0].trim()}</p>
@@ -251,9 +255,10 @@ export default function AnalyticsPage() {
                     <span className="text-lg font-bold text-slate-900 shrink-0">{count}</span>
                   </div>
                   <div className="h-1.5 mt-2 bg-slate-200/70 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full bg-[#610064]" style={{ width: `${(count / maxEvent) * 100}%` }} />
+                    <div className="h-full rounded-full bg-[#610064] transition-all duration-500" style={{ width: `${(count / maxEvent) * 100}%` }} />
                   </div>
                 </div>
+                </Reveal>
               ))}
               {byEvent.length === 0 && <p className="text-slate-400 text-sm">No data yet</p>}
             </div>
@@ -262,11 +267,12 @@ export default function AnalyticsPage() {
 
         {customBreakdowns.length > 0 && (
           <div className="grid lg:grid-cols-2 gap-5 mt-5">
-            {customBreakdowns.map(({ event, field, options }) => {
+            {customBreakdowns.map(({ event, field, options }, i) => {
               const total = options.reduce((sum, o) => sum + o.count, 0);
               const maxOption = Math.max(...options.map((o) => o.count), 1);
               return (
-                <div key={`${event.id}-${field.id}`} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <Reveal key={`${event.id}-${field.id}`} index={i}>
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
                   <div className="flex items-center gap-2 mb-1">
                     <ListChecks size={16} className="text-[#610064]" />
                     <h2 className="font-semibold text-slate-800">{field.label || "Untitled question"}</h2>
@@ -283,7 +289,7 @@ export default function AnalyticsPage() {
                         </div>
                         <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full rounded-full"
+                            className="h-full rounded-full transition-all duration-500"
                             style={{ width: `${(count / maxOption) * 100}%`, background: "linear-gradient(90deg, #c17bc7, #610064)" }}
                           />
                         </div>
@@ -291,6 +297,7 @@ export default function AnalyticsPage() {
                     ))}
                   </div>
                 </div>
+                </Reveal>
               );
             })}
           </div>

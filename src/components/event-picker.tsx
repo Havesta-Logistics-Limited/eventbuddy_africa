@@ -7,6 +7,7 @@ import { getEventStatus } from "@/lib/capture-window";
 import { formatDate, formatTime, getEventCity, getEventMonthLabel, sortEventsByProximity } from "@/lib/utils";
 import { DestinationFlags } from "@/components/destination-flags";
 import { EventFilterModal } from "@/components/event-filter-modal";
+import { Reveal } from "@/components/reveal";
 
 const statusStyles: Record<EventStatus, string> = {
   active: "bg-teal-100 text-teal-700",
@@ -203,13 +204,13 @@ export function EventPicker({
               </div>
             ) : (
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                {sortedEvents.map((evt) => {
+                {sortedEvents.map((evt, i) => {
                   const status = getEventStatus(evt);
                   const eventDests = destinations.filter((d) => evt.destinationIds.includes(d.id));
                   const primaryFlag = eventDests[0]?.flag ?? "🌍";
                   return (
+                    <Reveal key={evt.id} index={i} className="h-full">
                     <button
-                      key={evt.id}
                       onClick={() => onSelect(evt.id)}
                       className={`group flex h-full flex-col text-left bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-all ${theme.cardHoverBorder}`}
                     >
@@ -252,6 +253,7 @@ export function EventPicker({
                         </div>
                       </div>
                     </button>
+                    </Reveal>
                   );
                 })}
               </div>

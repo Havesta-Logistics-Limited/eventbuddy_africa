@@ -12,6 +12,7 @@ import { formatTime, getEventCity, getEventMonthLabel, sortEventsByProximity } f
 import { DestinationFlags } from "@/components/destination-flags";
 import { EventFilterModal } from "@/components/event-filter-modal";
 import { EventWizard, type EventWizardData } from "@/components/event-wizard";
+import { Reveal } from "@/components/reveal";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -151,7 +152,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={() => setShowWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97]"
             style={{ background: "#610064" }}
           >
             <Plus size={16} />
@@ -160,11 +161,13 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {stats.map((s) => (
-            <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 mb-1">{s.label}</p>
-              <p className="text-2xl font-bold text-slate-900">{s.value}</p>
-            </div>
+          {stats.map((s, i) => (
+            <Reveal key={s.label} index={i}>
+              <div className="bg-white rounded-xl border border-slate-200 p-4">
+                <p className="text-xs text-slate-500 mb-1">{s.label}</p>
+                <p className="text-2xl font-bold text-slate-900">{s.value}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
 
@@ -234,8 +237,10 @@ export default function DashboardPage() {
         />
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sorted.map((ev) => (
-            <EventCard key={ev.id} event={ev} />
+          {sorted.map((ev, i) => (
+            <Reveal key={ev.id} index={i} className="h-full">
+              <EventCard event={ev} />
+            </Reveal>
           ))}
           {sorted.length === 0 && (
             <div className="col-span-3 text-center py-16 text-slate-400">

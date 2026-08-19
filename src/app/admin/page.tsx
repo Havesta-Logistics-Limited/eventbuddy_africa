@@ -23,6 +23,7 @@ import {
 } from "@/lib/store";
 import { Role } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
+import { Reveal } from "@/components/reveal";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -159,7 +160,7 @@ export default function AdminPage() {
                   setStaffForm(EMPTY_STAFF);
                   setShowStaffForm(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97]"
                 style={{ background: "#610064" }}
               >
                 <Plus size={14} />
@@ -169,12 +170,13 @@ export default function AdminPage() {
             <div className="space-y-3">
               {staff
                 .filter((s) => s.role !== "rep")
-                .map((s) => {
+                .map((s, i) => {
                   const dest = s.destinationId ? destinations.find((d) => d.id === s.destinationId) : null;
                   const uni = s.universityId ? universities.find((u) => u.id === s.universityId) : null;
                   const ev = s.eventId ? events.find((e) => e.id === s.eventId) : null;
                   return (
-                    <div key={s.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#610064]/30 transition-colors">
+                    <Reveal key={s.id} index={i}>
+                    <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#610064]/30 hover:shadow-sm transition-all">
                       <div className="w-10 h-10 rounded-full bg-[#610064]/10 flex items-center justify-center text-[#610064] font-semibold shrink-0">{s.name.charAt(0)}</div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-slate-900">{s.name}</p>
@@ -214,6 +216,7 @@ export default function AdminPage() {
                         </button>
                       </div>
                     </div>
+                    </Reveal>
                   );
                 })}
             </div>
@@ -315,7 +318,7 @@ export default function AdminPage() {
                       <button type="button" onClick={() => setShowStaffForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
                         Cancel
                       </button>
-                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60" style={{ background: "#610064" }}>
+                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" style={{ background: "#610064" }}>
                         {saving ? "Saving…" : staffForm.id ? "Save Changes" : "Add Staff"}
                       </button>
                     </div>
@@ -335,7 +338,7 @@ export default function AdminPage() {
                   setRepForm(EMPTY_REP);
                   setShowRepForm(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97]"
                 style={{ background: "#610064" }}
               >
                 <Plus size={14} />
@@ -345,11 +348,12 @@ export default function AdminPage() {
             <div className="space-y-3">
               {staff
                 .filter((s) => s.role === "rep")
-                .map((s) => {
+                .map((s, i) => {
                   const dest = s.destinationId ? destinations.find((d) => d.id === s.destinationId) : null;
                   const uni = s.universityId ? universities.find((u) => u.id === s.universityId) : null;
                   return (
-                    <div key={s.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#610064]/30 transition-colors">
+                    <Reveal key={s.id} index={i}>
+                    <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#610064]/30 hover:shadow-sm transition-all">
                       <div className="w-10 h-10 rounded-full bg-[#610064]/10 flex items-center justify-center text-[#610064] font-semibold shrink-0">{s.name.charAt(0)}</div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-slate-900 flex items-center gap-2">
@@ -388,6 +392,7 @@ export default function AdminPage() {
                         </button>
                       </div>
                     </div>
+                    </Reveal>
                   );
                 })}
             </div>
@@ -464,7 +469,7 @@ export default function AdminPage() {
                       <button type="button" onClick={() => setShowRepForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
                         Cancel
                       </button>
-                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60" style={{ background: "#610064" }}>
+                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" style={{ background: "#610064" }}>
                         {saving ? "Saving…" : "Save Rep"}
                       </button>
                     </div>
@@ -484,7 +489,7 @@ export default function AdminPage() {
                   setUniForm(EMPTY_UNI);
                   setShowUniForm(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97]"
                 style={{ background: "#610064" }}
               >
                 <Plus size={14} />
@@ -500,8 +505,9 @@ export default function AdminPage() {
                     {dest.flag} {dest.name}
                   </h3>
                   <div className="grid sm:grid-cols-2 gap-2">
-                    {unis.map((u) => (
-                      <div key={u.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3 group hover:border-[#610064]/30 transition-colors">
+                    {unis.map((u, i) => (
+                      <Reveal key={u.id} index={i}>
+                      <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3 group hover:border-[#610064]/30 hover:shadow-sm transition-all">
                         <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">{u.shortName.slice(0, 3)}</div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-slate-800 text-sm truncate">{u.name}</p>
@@ -522,6 +528,7 @@ export default function AdminPage() {
                           </button>
                         </div>
                       </div>
+                      </Reveal>
                     ))}
                   </div>
                 </div>
@@ -584,7 +591,7 @@ export default function AdminPage() {
                       <button type="button" onClick={() => setShowUniForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
                         Cancel
                       </button>
-                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60" style={{ background: "#610064" }}>
+                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" style={{ background: "#610064" }}>
                         {saving ? "Saving…" : uniForm.id ? "Save Changes" : "Add"}
                       </button>
                     </div>
@@ -604,7 +611,7 @@ export default function AdminPage() {
                   setDestForm(EMPTY_DEST);
                   setShowDestForm(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97]"
                 style={{ background: "#610064" }}
               >
                 <Plus size={14} />
@@ -612,10 +619,11 @@ export default function AdminPage() {
               </button>
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
-              {destinations.map((d) => {
+              {destinations.map((d, i) => {
                 const uniCount = universities.filter((u) => u.destinationId === d.id).length;
                 return (
-                  <div key={d.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#610064]/30 transition-colors">
+                  <Reveal key={d.id} index={i}>
+                  <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#610064]/30 transition-colors">
                     <span className="text-3xl shrink-0">{d.flag}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-slate-900 truncate">{d.name}</p>
@@ -638,6 +646,7 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
+                  </Reveal>
                 );
               })}
             </div>
@@ -682,7 +691,7 @@ export default function AdminPage() {
                       <button type="button" onClick={() => setShowDestForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
                         Cancel
                       </button>
-                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60" style={{ background: "#610064" }}>
+                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" style={{ background: "#610064" }}>
                         {saving ? "Saving…" : "Save"}
                       </button>
                     </div>

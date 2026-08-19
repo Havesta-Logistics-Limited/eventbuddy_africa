@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
+import { Reveal } from "@/components/reveal";
+import { RowSkeleton, StatTileSkeleton } from "@/components/skeleton";
 
 const EVENT_PRICE_USD = 49.99;
 
@@ -192,7 +194,13 @@ export default function PlatformDashboard() {
     setRemovingAdminId(null);
   }
 
-  if (checking) return <div className="min-h-screen bg-slate-950" />;
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <MapPinCheckInside size={28} className="text-fuchsia-300/70 animate-pulse" />
+      </div>
+    );
+  }
 
   if (!authorized) {
     return (
@@ -245,15 +253,19 @@ export default function PlatformDashboard() {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {stats.map((s) => (
-            <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: "#f5edf6" }}>
-                <s.icon size={16} style={{ color: "#610064" }} />
-              </div>
-              <p className="text-2xl font-bold text-slate-900">{s.value}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
-            </div>
-          ))}
+          {loadingData
+            ? Array.from({ length: 4 }).map((_, i) => <StatTileSkeleton key={i} />)
+            : stats.map((s, i) => (
+                <Reveal key={s.label} index={i}>
+                  <div className="bg-white rounded-xl border border-slate-200 p-4">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: "#f5edf6" }}>
+                      <s.icon size={16} style={{ color: "#610064" }} />
+                    </div>
+                    <p className="text-2xl font-bold text-slate-900">{s.value}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
+                  </div>
+                </Reveal>
+              ))}
         </div>
         {paidEvents === 0 && (
           <p className="text-xs text-slate-400 mb-6 -mt-2">
@@ -262,7 +274,11 @@ export default function PlatformDashboard() {
         )}
 
         {loadingData ? (
-          <div className="text-center py-16 text-slate-400 text-sm">Loading…</div>
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <RowSkeleton key={i} />
+            ))}
+          </div>
         ) : orgs.length === 0 ? (
           <div className="text-center py-16 text-slate-400">
             <Building2 size={32} className="mx-auto mb-3 opacity-40" />
@@ -270,12 +286,13 @@ export default function PlatformDashboard() {
           </div>
         ) : (
           <div className="space-y-3">
-            {orgs.map((org) => {
+            {orgs.map((org, i) => {
               const orgEvents = events.filter((e) => e.organization_id === org.id);
               const orgLeads = leads.filter((l) => l.organization_id === org.id);
               const expanded = expandedOrgId === org.id;
               return (
-                <div key={org.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <Reveal key={org.id} index={i}>
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-sm transition-shadow">
                   <div className="flex items-center gap-4 p-4">
                     <button
                       type="button"
@@ -427,6 +444,7 @@ export default function PlatformDashboard() {
                     </div>
                   )}
                 </div>
+                </Reveal>
               );
             })}
           </div>
@@ -453,7 +471,7 @@ export default function PlatformDashboard() {
               <button
                 type="submit"
                 disabled={addingAdmin}
-                className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white shrink-0 disabled:opacity-60"
+                className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white shrink-0 disabled:opacity-60 transition-transform active:scale-[0.97]"
                 style={{ background: "#610064" }}
               >
                 <UserPlus size={14} />
@@ -476,8 +494,9 @@ export default function PlatformDashboard() {
               <p className="text-sm text-slate-400 py-4 text-center">No platform admins yet.</p>
             ) : (
               <div className="divide-y divide-slate-100">
-                {admins.map((admin) => (
-                  <div key={admin.user_id} className="flex items-center justify-between py-2.5 gap-3">
+                {admins.map((admin, i) => (
+                  <Reveal key={admin.user_id} index={i}>
+                  <div className="flex items-center justify-between py-2.5 gap-3">
                     <div className="min-w-0">
                       <p className="text-sm text-slate-900 truncate flex items-center gap-2">
                         {admin.email || admin.user_id}
@@ -509,6 +528,7 @@ export default function PlatformDashboard() {
                       Remove
                     </button>
                   </div>
+                  </Reveal>
                 ))}
               </div>
             )}

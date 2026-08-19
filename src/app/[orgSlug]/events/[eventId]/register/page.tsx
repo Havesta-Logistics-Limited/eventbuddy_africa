@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import QRCode from "qrcode";
-import { AlertCircle, Calendar, Check, Copy, MapPin, Video } from "lucide-react";
+import { AlertCircle, Calendar, Check, Copy, MapPin, MapPinCheckInside, Video } from "lucide-react";
 import { EventRecord } from "@/lib/types";
 import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/components/dynamic-registration-form";
 import { formatDate } from "@/lib/utils";
@@ -94,7 +94,13 @@ export default function RegisterPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  if (loading) return <div className="min-h-screen bg-slate-50" />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <MapPinCheckInside size={26} className="text-[#610064]/40 animate-pulse" />
+      </div>
+    );
+  }
 
   if (loadError || !event) {
     return (
