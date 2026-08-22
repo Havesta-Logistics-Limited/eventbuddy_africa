@@ -86,8 +86,12 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Logo height={32} className="sm:hidden" />
-          <Logo height={45} className="hidden sm:block" />
+          <span className="sm:hidden">
+            <Logo height={32} />
+          </span>
+          <span className="hidden sm:block">
+            <Logo height={45} />
+          </span>
           <nav className="flex items-center gap-3 sm:gap-6">
             <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
               Pricing
