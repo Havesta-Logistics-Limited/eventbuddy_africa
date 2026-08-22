@@ -27,6 +27,7 @@ import {
   MapPin,
   RefreshCw,
   Download,
+  Wrench,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
@@ -35,6 +36,7 @@ import { RowSkeleton, StatTileSkeleton } from "@/components/skeleton";
 import { Logo } from "@/components/logo";
 import { downloadCsv } from "@/lib/csv";
 import { EVENT_PRICE_USD, formatUSD, isBillable as isFormatBillable, eventPrice as priceForFormat, updateEventPrice } from "@/lib/billing";
+import { DEFAULT_MAINTENANCE_MESSAGE, DEFAULT_MAINTENANCE_TITLE, updateMaintenanceState } from "@/lib/maintenance";
 import { getTemplate } from "@/lib/event-templates";
 
 const SIDEBAR_BG = "#2e0a30";
@@ -44,6 +46,7 @@ const NAV = [
   { id: "organizations", label: "Organizations", icon: Building2 },
   { id: "events", label: "Events", icon: Calendar },
   { id: "billing", label: "Billing", icon: DollarSign },
+  { id: "maintenance", label: "Maintenance", icon: Wrench },
   { id: "admins", label: "Team", icon: ShieldCheck },
 ] as const;
 type ViewId = (typeof NAV)[number]["id"];
@@ -78,6 +81,18 @@ type EventRow = {
 type LeadRow = { id: string; organization_id: string; event_id: string };
 type RegistrationRow = { id: string; organization_id: string; event_id: string; status: string; created_at: string };
 type AdminRow = { user_id: string; email: string | null; created_at: string };
+type TransactionRow = {
+  id: string;
+  organization_id: string;
+  event_id: string;
+  reference: string;
+  amount_usd: number;
+  charge_currency: string;
+  charge_amount_minor: number;
+  status: "pending" | "success" | "failed";
+  created_at: string;
+  verified_at: string | null;
+};
 
 function isBillable(ev: Pick<EventRow, "event_format">) {
   return isFormatBillable(ev.event_format);
@@ -106,6 +121,9 @@ export default function PlatformDashboard() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [registrations, setRegistrations] = useState<RegistrationRow[]>([]);
+  const [transactions, setTransactions] = useState<TransactionRow[]>([]);
+  const [txnSearch, setTxnSearch] = useState("");
+  const [txnStatusFilter, setTxnStatusFilter] = useState<"all" | "pending" | "success" | "failed">("all");
   const [loadingData, setLoadingData] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -140,13 +158,22 @@ export default function PlatformDashboard() {
   const [priceError, setPriceError] = useState("");
   const [busyPaymentEventId, setBusyPaymentEventId] = useState<string | null>(null);
 
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceTitle, setMaintenanceTitle] = useState(DEFAULT_MAINTENANCE_TITLE);
+  const [maintenanceMessage, setMaintenanceMessage] = useState(DEFAULT_MAINTENANCE_MESSAGE);
+  const [maintenanceTitleDraft, setMaintenanceTitleDraft] = useState("");
+  const [maintenanceMessageDraft, setMaintenanceMessageDraft] = useState("");
+  const [editingMaintenanceCopy, setEditingMaintenanceCopy] = useState(false);
+  const [savingMaintenance, setSavingMaintenance] = useState(false);
+  const [maintenanceError, setMaintenanceError] = useState("");
+
   /** Runs both the initial load and manual/focus refreshes. Surfaces the first query
    *  error instead of silently falling back to empty lists — a missing migration
    *  (e.g. a column a query selects not existing yet) previously failed every query
    *  silently, showing "no organizations yet" even when the data was fine. */
   async function fetchPlatformData() {
     const supabase = createClient();
-    const [orgsRes, eventsRes, leadsRes, registrationsRes, adminsRes, settingsRes] = await Promise.all([
+    const [orgsRes, eventsRes, leadsRes, registrationsRes, adminsRes, settingsRes, transactionsRes] = await Promise.all([
       supabase
         .from("organizations")
         .select("id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email")
@@ -159,16 +186,26 @@ export default function PlatformDashboard() {
       supabase.from("leads").select("id, organization_id, event_id"),
       supabase.from("registrations").select("id, organization_id, event_id, status, created_at"),
       supabase.from("platform_admins").select("user_id, email, created_at").order("created_at", { ascending: true }),
-      supabase.from("platform_settings").select("event_price_usd").eq("id", true).maybeSingle(),
+      supabase.from("platform_settings").select("event_price_usd, maintenance_mode, maintenance_title, maintenance_message").eq("id", true).maybeSingle(),
+      supabase
+        .from("paystack_transactions")
+        .select("id, organization_id, event_id, reference, amount_usd, charge_currency, charge_amount_minor, status, created_at, verified_at")
+        .order("created_at", { ascending: false }),
     ]);
-    const firstError = orgsRes.error || eventsRes.error || leadsRes.error || registrationsRes.error || adminsRes.error;
+    const firstError = orgsRes.error || eventsRes.error || leadsRes.error || registrationsRes.error || adminsRes.error || transactionsRes.error;
     setLoadError(firstError ? firstError.message : "");
     setOrgs((orgsRes.data as OrgRow[]) ?? []);
     setEvents((eventsRes.data as EventRow[]) ?? []);
     setLeads((leadsRes.data as LeadRow[]) ?? []);
     setRegistrations((registrationsRes.data as RegistrationRow[]) ?? []);
     setAdmins((adminsRes.data as AdminRow[]) ?? []);
-    if (settingsRes.data) setCurrentPrice(Number(settingsRes.data.event_price_usd));
+    setTransactions((transactionsRes.data as TransactionRow[]) ?? []);
+    if (settingsRes.data) {
+      setCurrentPrice(Number(settingsRes.data.event_price_usd));
+      setMaintenanceMode(!!settingsRes.data.maintenance_mode);
+      setMaintenanceTitle(settingsRes.data.maintenance_title || DEFAULT_MAINTENANCE_TITLE);
+      setMaintenanceMessage(settingsRes.data.maintenance_message || DEFAULT_MAINTENANCE_MESSAGE);
+    }
   }
 
   async function handleRefresh() {
@@ -286,6 +323,43 @@ export default function PlatformDashboard() {
       setPriceError(err instanceof Error ? err.message : "Couldn't save the new price.");
     } finally {
       setSavingPrice(false);
+    }
+  }
+
+  async function toggleMaintenanceMode() {
+    const next = !maintenanceMode;
+    setSavingMaintenance(true);
+    setMaintenanceError("");
+    try {
+      await updateMaintenanceState({ maintenanceMode: next, maintenanceTitle, maintenanceMessage });
+      setMaintenanceMode(next);
+      toast.success(next ? "Maintenance mode is now on — the site is showing the maintenance page to visitors." : "Maintenance mode is off — the site is live again.");
+    } catch (err) {
+      setMaintenanceError(err instanceof Error ? err.message : "Couldn't change maintenance mode.");
+    } finally {
+      setSavingMaintenance(false);
+    }
+  }
+
+  async function saveMaintenanceCopy() {
+    const title = maintenanceTitleDraft.trim();
+    const message = maintenanceMessageDraft.trim();
+    if (!title || !message) {
+      setMaintenanceError("Both a title and a message are required.");
+      return;
+    }
+    setSavingMaintenance(true);
+    setMaintenanceError("");
+    try {
+      await updateMaintenanceState({ maintenanceMode, maintenanceTitle: title, maintenanceMessage: message });
+      setMaintenanceTitle(title);
+      setMaintenanceMessage(message);
+      setEditingMaintenanceCopy(false);
+      toast.success("Maintenance page updated");
+    } catch (err) {
+      setMaintenanceError(err instanceof Error ? err.message : "Couldn't save the maintenance page copy.");
+    } finally {
+      setSavingMaintenance(false);
     }
   }
 
@@ -408,10 +482,40 @@ export default function PlatformDashboard() {
     toast.success(`${data?.length ?? 0} registration${(data?.length ?? 0) === 1 ? "" : "s"} exported`);
   }
 
+  function exportTransactions(rows: TransactionRow[]) {
+    const csv = csvFrom(
+      ["Organization", "Email", "Event", "Amount (USD)", "Charged", "Paystack Reference", "Status", "Date"],
+      rows.map((t) => {
+        const org = orgById.get(t.organization_id);
+        const ev = eventById.get(t.event_id);
+        return [
+          org?.name ?? t.organization_id,
+          org?.email ?? "",
+          ev?.name ?? t.event_id,
+          formatUSD(Number(t.amount_usd)),
+          `${(t.charge_amount_minor / 100).toFixed(2)} ${t.charge_currency}`,
+          t.reference,
+          t.status,
+          new Date(t.created_at).toLocaleString("en-GB"),
+        ];
+      })
+    );
+    downloadCsv("eventbuddy_payments.csv", csv);
+    toast.success(`${rows.length} payment${rows.length === 1 ? "" : "s"} exported`);
+  }
+
   function copyOrgId(id: string) {
     navigator.clipboard.writeText(id).then(() => {
       setCopiedId(id);
       toast.success("Organization ID copied");
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  }
+
+  function copyReference(reference: string) {
+    navigator.clipboard.writeText(reference).then(() => {
+      setCopiedId(reference);
+      toast.success("Reference copied");
       setTimeout(() => setCopiedId(null), 2000);
     });
   }
@@ -516,6 +620,7 @@ export default function PlatformDashboard() {
   }
 
   const orgById = new Map(orgs.map((o) => [o.id, o]));
+  const eventById = new Map(events.map((e) => [e.id, e]));
   const activeRegistrations = registrations.filter((r) => r.status !== "cancelled");
   const billableEvents = events.filter(isBillable);
   // Fee-exempt orgs never owe money, regardless of how an individual event's
@@ -550,6 +655,20 @@ export default function PlatformDashboard() {
         return map;
       }, new Map<string, number>())
   ).map(([month, total]) => ({ month, total }));
+
+  // Every individual Paystack attempt (success, failed, or still pending) — unlike the
+  // revenue figures above, which only reflect an event's current payment_status, this
+  // is a durable log: a failed retry followed by a successful payment still shows both
+  // rows, so nothing about a payment's history is ever lost.
+  const filteredTransactions = transactions
+    .filter((t) => txnStatusFilter === "all" || t.status === txnStatusFilter)
+    .filter((t) => {
+      if (!txnSearch.trim()) return true;
+      const q = txnSearch.trim().toLowerCase();
+      const org = orgById.get(t.organization_id);
+      const ev = eventById.get(t.event_id);
+      return [org?.name, org?.email, ev?.name, t.reference].some((v) => v?.toLowerCase().includes(q));
+    });
 
   const newOrgsThisWeek = orgs.filter((o) => now - new Date(o.created_at).getTime() < WEEK_MS).length;
   const newEventsThisWeek = events.filter((e) => now - new Date(e.created_at).getTime() < WEEK_MS).length;
@@ -1270,6 +1389,225 @@ export default function PlatformDashboard() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 mt-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <div className="min-w-0">
+                    <h2 className="font-semibold text-slate-900">All payments</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">Every Paystack attempt — success, failed, or still pending.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => exportTransactions(filteredTransactions)}
+                    disabled={filteredTransactions.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 shrink-0"
+                  >
+                    <Download size={12} />
+                    Export CSV
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="relative flex-1 min-w-[180px]">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      value={txnSearch}
+                      onChange={(e) => setTxnSearch(e.target.value)}
+                      placeholder="Search organization, email, event, or reference..."
+                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    />
+                  </div>
+                  <select
+                    value={txnStatusFilter}
+                    onChange={(e) => setTxnStatusFilter(e.target.value as typeof txnStatusFilter)}
+                    className="px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
+                  >
+                    <option value="all">All statuses</option>
+                    <option value="success">Success</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+
+                {filteredTransactions.length === 0 ? (
+                  <p className="text-sm text-slate-400 py-10 text-center">
+                    {transactions.length === 0 ? "No payment attempts yet." : "No payments match your search."}
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto -mx-5">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50 border-y border-slate-200">
+                        <tr>
+                          <th className="text-left px-5 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Organization</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Event</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Amount</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Reference</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Status</th>
+                          <th className="text-left px-5 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredTransactions.map((t) => {
+                          const org = orgById.get(t.organization_id);
+                          const ev = eventById.get(t.event_id);
+                          const statusPill = {
+                            success: "bg-emerald-100 text-emerald-700",
+                            pending: "bg-amber-100 text-amber-700",
+                            failed: "bg-rose-100 text-rose-700",
+                          }[t.status];
+                          return (
+                            <tr key={t.id} className="hover:bg-slate-50/60">
+                              <td className="px-5 py-3 max-w-[200px]">
+                                {org ? (
+                                  <button type="button" onClick={() => goToOrg(org.name)} className="text-slate-900 font-medium hover:text-brand-600 hover:underline truncate block text-left">
+                                    {org.name}
+                                  </button>
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )}
+                                {org?.email && <p className="text-[11px] text-slate-400 truncate">{org.email}</p>}
+                              </td>
+                              <td className="px-4 py-3 text-slate-600 max-w-[180px] truncate">{ev?.name ?? "—"}</td>
+                              <td className="px-4 py-3 text-slate-900 font-medium tabular-nums whitespace-nowrap">{formatUSD(Number(t.amount_usd))}</td>
+                              <td className="px-4 py-3 max-w-[140px]">
+                                <button
+                                  type="button"
+                                  onClick={() => copyReference(t.reference)}
+                                  title={t.reference}
+                                  className="flex items-center gap-1 text-slate-500 hover:text-slate-700 font-mono text-xs truncate max-w-full"
+                                >
+                                  {copiedId === t.reference ? <Check size={10} className="shrink-0 text-teal-600" /> : <Copy size={10} className="shrink-0" />}
+                                  <span className="truncate">{t.reference}</span>
+                                </button>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize ${statusPill}`}>{t.status}</span>
+                              </td>
+                              <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(t.created_at).toLocaleString("en-GB")}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {view === "maintenance" && (
+            <>
+              <div className="mb-6">
+                <h1 className="font-display text-2xl text-slate-900">Maintenance</h1>
+                <p className="text-slate-500 text-sm mt-0.5">
+                  Take the site offline for every visitor except platform admins, and customize what they see while it&apos;s down.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${maintenanceMode ? "bg-rose-100" : "bg-emerald-100"}`}>
+                      <Wrench size={18} className={maintenanceMode ? "text-rose-600" : "text-emerald-600"} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900">{maintenanceMode ? "Maintenance mode is ON" : "Site is live"}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {maintenanceMode
+                          ? "Every page except /platform is showing the maintenance page below."
+                          : "Visitors see the normal site. Turn this on before making risky changes."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleMaintenanceMode}
+                    disabled={savingMaintenance}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 shrink-0 transition-colors ${
+                      maintenanceMode ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
+                    }`}
+                  >
+                    {savingMaintenance ? "Saving…" : maintenanceMode ? "Turn off maintenance mode" : "Turn on maintenance mode"}
+                  </button>
+                </div>
+                {maintenanceError && <p className="text-xs text-rose-600 mt-3">{maintenanceError}</p>}
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 p-5">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <h2 className="font-semibold text-slate-900">Maintenance page</h2>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <a href="/maintenance" target="_blank" rel="noreferrer" className="text-xs font-medium text-slate-500 hover:text-slate-700 hover:underline">
+                      Preview
+                    </a>
+                    {!editingMaintenanceCopy && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMaintenanceTitleDraft(maintenanceTitle);
+                          setMaintenanceMessageDraft(maintenanceMessage);
+                          setMaintenanceError("");
+                          setEditingMaintenanceCopy(true);
+                        }}
+                        className="text-xs font-medium text-brand-600 hover:underline"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 mb-4">What visitors see at any blocked URL while maintenance mode is on.</p>
+
+                {editingMaintenanceCopy ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Title</label>
+                      <input
+                        value={maintenanceTitleDraft}
+                        onChange={(e) => setMaintenanceTitleDraft(e.target.value)}
+                        autoFocus
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Message</label>
+                      <textarea
+                        value={maintenanceMessageDraft}
+                        onChange={(e) => setMaintenanceMessageDraft(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={saveMaintenanceCopy}
+                        disabled={savingMaintenance}
+                        className="px-3 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60"
+                      >
+                        {savingMaintenance ? "Saving…" : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingMaintenanceCopy(false);
+                          setMaintenanceError("");
+                        }}
+                        disabled={savingMaintenance}
+                        className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 disabled:opacity-60"
+                      >
+                        Cancel
+                      </button>
+                      {maintenanceError && <p className="w-full text-xs text-rose-600">{maintenanceError}</p>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg bg-slate-50 border border-slate-200 p-4">
+                    <p className="font-display text-base text-slate-900 mb-1">{maintenanceTitle}</p>
+                    <p className="text-sm text-slate-500 leading-relaxed">{maintenanceMessage}</p>
+                  </div>
+                )}
               </div>
             </>
           )}

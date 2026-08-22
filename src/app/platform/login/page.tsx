@@ -71,7 +71,7 @@ export default function PlatformLoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@eventpal.com"
+              placeholder="you@eventbuddy.africa"
               required
               className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:border-transparent"
             />

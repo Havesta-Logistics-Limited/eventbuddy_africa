@@ -167,14 +167,14 @@ export default function AdminPage() {
 
         {tab === "staff" && (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-800">Team Members ({staff.filter((s) => s.role !== "rep").length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="font-semibold text-slate-800 min-w-0">Team Members ({staff.filter((s) => s.role !== "rep").length})</h2>
               <button
                 onClick={() => {
                   setStaffForm(EMPTY_STAFF);
                   setShowStaffForm(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97]"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
                 style={{ background: "#610064" }}
               >
                 <Plus size={14} />
@@ -345,14 +345,14 @@ export default function AdminPage() {
 
         {tab === "reps" && (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-800">University Reps ({staff.filter((s) => s.role === "rep").length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="font-semibold text-slate-800 min-w-0">University Reps ({staff.filter((s) => s.role === "rep").length})</h2>
               <button
                 onClick={() => {
                   setRepForm(EMPTY_REP);
                   setShowRepForm(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97]"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
                 style={{ background: "#610064" }}
               >
                 <Plus size={14} />
@@ -496,14 +496,14 @@ export default function AdminPage() {
 
         {tab === "universities" && (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-800">Universities ({universities.length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="font-semibold text-slate-800 min-w-0">Universities ({universities.length})</h2>
               <button
                 onClick={() => {
                   setUniForm(EMPTY_UNI);
                   setShowUniForm(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97]"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
                 style={{ background: "#610064" }}
               >
                 <Plus size={14} />
@@ -619,14 +619,14 @@ export default function AdminPage() {
 
         {tab === "destinations" && (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-800">Destinations ({destinations.length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="font-semibold text-slate-800 min-w-0">Destinations ({destinations.length})</h2>
               <button
                 onClick={() => {
                   setDestForm(EMPTY_DEST);
                   setShowDestForm(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97]"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
                 style={{ background: "#610064" }}
               >
                 <Plus size={14} />

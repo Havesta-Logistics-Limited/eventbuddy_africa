@@ -1,7 +1,12 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+
+export const metadata: Metadata = {
+  title: "Terms & Conditions",
+  description: "The terms governing use of eventbuddy's event lead-capture and check-in platform for organizations, staff, reps, and attendees.",
+  alternates: { canonical: "/terms" },
+};
 
 const SECTIONS = [
   {

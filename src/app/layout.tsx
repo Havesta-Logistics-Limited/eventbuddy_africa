@@ -18,13 +18,27 @@ const inter = Inter({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-const title = "eventbuddy — Desired Results On The Go";
-const description = "Run any event, collect qualified leads, and share insights with your team — all in one platform.";
+const title = "eventbuddy — Never Lose a Lead";
+// Keyword-bearing but factually accurate — every phrase here names something the
+// product actually does (lead capture, staff check-in, education/job fair support)
+// rather than generic marketing filler, since that's what both Google and a reader
+// scanning a search snippet actually need to see.
+const description =
+  "Event lead capture and check-in software for education fairs, job fairs, and conferences across Africa. Collect qualified leads, run staff check-in, and export data instantly — pay per event, no subscription.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: title, template: "%s — eventbuddy" },
   description,
+  keywords: [
+    "event lead capture software",
+    "event check-in app",
+    "education fair software",
+    "job fair lead management",
+    "conference lead capture",
+    "event management software Africa",
+    "event management software Nigeria",
+  ],
   openGraph: {
     title,
     description,
@@ -48,6 +62,7 @@ const structuredData = {
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   description,
+  keywords: "event lead capture software, event check-in app, education fair software, job fair lead management, conference lead capture, Africa",
   url: siteUrl,
   offers: { "@type": "Offer", priceCurrency: "USD", price: String(EVENT_PRICE_USD), description: "Pay-per-event pricing, no subscription" },
 };

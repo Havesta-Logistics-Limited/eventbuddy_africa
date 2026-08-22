@@ -1,7 +1,12 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "How eventbuddy collects, uses, and protects data for organizations, staff, reps, and attendees using our event lead-capture platform.",
+  alternates: { canonical: "/privacy" },
+};
 
 const SECTIONS = [
   {

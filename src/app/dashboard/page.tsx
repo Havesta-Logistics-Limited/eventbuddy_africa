@@ -197,14 +197,14 @@ export default function DashboardPage() {
   return (
     <Shell>
       <div className="p-6 max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="min-w-0">
             <h1 className="font-display text-2xl text-slate-900">Events</h1>
             <p className="text-slate-500 text-sm mt-0.5">Manage your event schedule</p>
           </div>
           <button
             onClick={() => setShowWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-[transform,background-color] active:scale-[0.97]"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-[transform,background-color] active:scale-[0.97] shrink-0 whitespace-nowrap"
           >
             <Plus size={16} />
             New Event

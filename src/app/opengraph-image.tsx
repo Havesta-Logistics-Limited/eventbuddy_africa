@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "eventbuddy — Desired Results On The Go";
+export const alt = "eventbuddy — Never Lose a Lead";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -45,7 +45,7 @@ export default function Image() {
           <div style={{ display: "flex", color: "white", fontSize: 88, fontWeight: 700 }}>eventbuddy</div>
         </div>
         <div style={{ display: "flex", color: "#dba8e0", fontSize: 30, marginTop: 20, letterSpacing: 2, textTransform: "uppercase" }}>
-          Desired Results On The Go
+          Never Lose a Lead
         </div>
       </div>
     ),

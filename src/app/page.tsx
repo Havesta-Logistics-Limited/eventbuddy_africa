@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LayoutTemplate, Users2, KeyRound, BarChart3, ShieldCheck, Mail, ArrowRight, Settings2, Link2, Download, Presentation } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { EVENT_PRICE_USD, fetchCurrentEventPrice, formatUSD } from "@/lib/billing";
 
 const STEP_ICONS = [Settings2, Link2, Download];
 
@@ -24,17 +26,30 @@ const STEPS = [
   },
 ];
 
-const FEATURES = [
-  { icon: Users2, title: "Role-based access", body: "Admins run the show, staff capture leads for their event, and — for education fairs — reps see only their own university's leads." },
-  { icon: KeyRound, title: "Access codes per event", body: "Gate staff and rep check-in behind a code you set — or leave it open for smaller, trusted teams." },
-  { icon: BarChart3, title: "Live analytics", body: "Destination and course breakdowns for education fairs, custom-question breakdowns for everything else, plus per-event lead counts — updated as your team collects." },
-  { icon: Mail, title: "Export & email leads", body: "Download a CSV or email it straight from the app, filtered by event, destination, or university." },
-  { icon: ShieldCheck, title: "Your data, isolated", body: "Every organization's events, leads, and staff are kept fully separate — nothing is ever shared across accounts." },
-  { icon: LayoutTemplate, title: "Any kind of event", body: "Start from a template — education fair, job fair, conference, trade show — or build a custom lead-capture form from scratch." },
-  { icon: Presentation, title: "Virtual events are free", body: "Only physical, in-person events cost $49.99. Host as many virtual events as you like, always at no charge." },
-];
+function getFeatures(priceLabel: string) {
+  return [
+    { icon: Users2, title: "Role-based access", body: "Admins run the show, staff capture leads for their event, and — for education fairs — reps see only their own university's leads." },
+    { icon: KeyRound, title: "Access codes per event", body: "Gate staff and rep check-in behind a code you set — or leave it open for smaller, trusted teams." },
+    { icon: BarChart3, title: "Live analytics", body: "Destination and course breakdowns for education fairs, custom-question breakdowns for everything else, plus per-event lead counts — updated as your team collects." },
+    { icon: Mail, title: "Export & email leads", body: "Download a CSV or email it straight from the app, filtered by event, destination, or university." },
+    { icon: ShieldCheck, title: "Your data, isolated", body: "Every organization's events, leads, and staff are kept fully separate — nothing is ever shared across accounts." },
+    { icon: LayoutTemplate, title: "Any kind of event", body: "Start from a template — education fair, job fair, conference, trade show — or build a custom lead-capture form from scratch." },
+    { icon: Presentation, title: "Virtual events are free", body: `Only physical, in-person events cost ${priceLabel}. Host as many virtual events as you like, always at no charge.` },
+  ];
+}
 
 export default function MarketingHomePage() {
+  // Every visible price on this page mirrors platform_settings.event_price_usd (the
+  // same value the platform admin's Billing tab edits and Paystack actually charges)
+  // rather than the EVENT_PRICE_USD fallback constant, so it can never drift out of
+  // sync with a live price change.
+  const [eventPrice, setEventPrice] = useState(EVENT_PRICE_USD);
+  useEffect(() => {
+    fetchCurrentEventPrice().then(setEventPrice);
+  }, []);
+  const priceLabel = formatUSD(eventPrice);
+  const FEATURES = getFeatures(priceLabel);
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Nav — sticky + glassmorphic: translucent bg with backdrop-blur so content
@@ -116,7 +131,7 @@ export default function MarketingHomePage() {
                 See pricing
               </Link>
             </div>
-            <p className="mt-4 text-white/50 text-xs">$49.99 per physical event · virtual events are free · no subscription</p>
+            <p className="mt-4 text-white/50 text-xs">{priceLabel} per physical event · virtual events are free · no subscription</p>
           </div>
 
           {/* Offsets the hero from a pure centered-text block — a live-feeling
@@ -242,7 +257,7 @@ export default function MarketingHomePage() {
         >
           <h2 className="font-display text-3xl mb-3">Simple, honest pricing</h2>
           <p className="text-white/70 mb-8 max-w-md mx-auto">
-            No subscription, no per-seat fees. $49.99 per physical event — virtual events are always free.
+            No subscription, no per-seat fees. {priceLabel} per physical event — virtual events are always free.
           </p>
           <Link
             href="/pricing"
@@ -259,7 +274,7 @@ export default function MarketingHomePage() {
         <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <div className="flex items-center gap-2">
             <Logo variant="full" height={28} />
-            <span>— Desired Results On The Go</span>
+            <span>— Never Lose a Lead</span>
           </div>
           <nav className="flex items-center gap-5">
             <Link href="/privacy" className="hover:text-slate-600">
