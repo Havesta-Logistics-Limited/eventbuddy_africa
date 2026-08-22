@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Eye, EyeOff, MapPinCheckInside } from "lucide-react";
-import { login } from "@/lib/store";
+import { AlertCircle, Eye, EyeOff, MailCheck } from "lucide-react";
 import { AttendeeBadgeArt } from "@/components/attendee-badge-art";
+import { Logo } from "@/components/logo";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -15,6 +15,7 @@ export default function SignupPage() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,58 +33,85 @@ export default function SignupPage() {
         setLoading(false);
         return;
       }
-
-      const result = await login(email, password);
-      if (!result.success) {
-        setError(result.error || "Account created — please sign in.");
-        setLoading(false);
-        router.push("/login");
-        return;
-      }
-      router.replace("/dashboard");
+      setSubmittedEmail(email);
     } catch {
       setError("Couldn't reach the server. Check your connection and try again.");
       setLoading(false);
     }
   };
 
-  const fieldClass =
-    "w-full px-4 py-2.5 rounded-lg border border-[#E8E1E6] text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] focus:border-transparent bg-white transition-shadow";
-  const labelClass = "block text-sm font-medium text-[#221726] mb-1.5";
-
-  return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: "#FBF9F7" }}>
-      {/* Brand panel — the product's own artifact (QR + reference ID) as the hero, not a generic illustration */}
-      <div
-        className="relative lg:w-[44%] xl:w-[42%] overflow-hidden px-8 pt-9 pb-14 lg:py-14 lg:px-12 flex flex-col shrink-0"
-        style={{ background: "linear-gradient(160deg, #2B0130 0%, #4A0250 48%, #610064 100%)" }}
-      >
-        <div className="flex items-center gap-2">
-          <MapPinCheckInside size={20} className="text-white" />
-          <span className="font-display text-lg text-white">EventPal</span>
-        </div>
-
-        <div className="mt-10 lg:mt-14 max-w-sm">
-          <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-white/45 mb-3">For event organizers</p>
-          <h1 className="font-display text-[1.75rem] lg:text-[2.05rem] leading-[1.18] text-white">
-            Every attendee gets a badge that does the work for you.
-          </h1>
-          <p className="text-white/55 text-[13.5px] mt-4 leading-relaxed">
-            QR check-in, reference IDs, and lead capture — built into one link you share, for every event you run.
+  if (submittedEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+        <div className="w-full max-w-sm text-center">
+          <div className="w-14 h-14 rounded-2xl bg-brand-100 flex items-center justify-center mx-auto mb-5">
+            <MailCheck size={24} className="text-brand-600" />
+          </div>
+          <h2 className="text-2xl font-semibold text-slate-900 mb-2">Check your email</h2>
+          <p className="text-slate-500 text-sm mb-8">
+            We&apos;ve sent a verification link to <span className="font-medium text-slate-700">{submittedEmail}</span>. Verify your email to
+            activate your account — you won&apos;t be able to sign in until it&apos;s confirmed.
           </p>
-        </div>
-
-        <div className="mt-10 lg:mt-auto lg:pt-10 flex justify-center lg:justify-start">
-          <AttendeeBadgeArt />
+          <button type="button" onClick={() => router.push("/login")} className="text-sm font-medium text-brand-600 hover:underline">
+            Back to sign in
+          </button>
         </div>
       </div>
+    );
+  }
 
-      {/* Form side */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 lg:py-14">
+  const fieldClass =
+    "w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white transition-shadow";
+  const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
+
+  return (
+    <div className="min-h-screen flex">
+      {/* Left panel — same structure/rhythm as the login page's (hidden below lg,
+          justify-between 3-section layout, p-12), with the product's own artifact
+          (QR + reference ID) as the supporting visual instead of a generic one. */}
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white relative overflow-hidden" style={{ background: "#2B0130" }}>
+        {/* Real photo behind the gradient — same source as the marketing hero. */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url(https://images.unsplash.com/photo-1531058020387-3be344556be6?w=1000&h=1400&fit=crop&q=75&auto=format)" }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: "radial-gradient(ellipse 100% 80% at 15% 0%, rgba(97,0,100,0.85) 0%, rgba(74,2,80,0.9) 55%, rgba(43,1,48,0.94) 100%)" }}
+        />
+
+        <div className="relative">
+          <Logo tone="white" height={32} />
+        </div>
+
+        <div className="relative space-y-6">
+          <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-white/45">For event organizers</p>
+          <h1 className="font-display text-4xl leading-tight">
+            Every attendee gets
+            <br />
+            a badge that does
+            <br />
+            the work for you.
+          </h1>
+          <p className="text-white/60 text-base max-w-sm">
+            QR check-in, reference IDs, and lead capture — built into one link you share, for every event you run.
+          </p>
+          <div className="pt-2">
+            <AttendeeBadgeArt compact />
+          </div>
+        </div>
+
+        <p className="relative text-white/30 text-xs">© 2026 eventbuddy. All rights reserved.</p>
+      </div>
+
+      {/* Right panel — matches login's p-6/bg-slate-50/max-w-sm form column exactly. */}
+      <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
         <div className="w-full max-w-sm">
-          <h2 className="font-display text-2xl mb-1" style={{ color: "#221726" }}>
-            Create your account
-          </h2>
+          <div className="lg:hidden flex items-center justify-center mb-8">
+            <Logo height={28} />
+          </div>
+
+          <h2 className="text-2xl font-semibold text-slate-900 mb-1">Create your account</h2>
           <p className="text-slate-500 text-sm mb-8">Set up your organization to start hosting events.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -139,19 +167,20 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-lg font-medium text-sm text-white transition-colors disabled:opacity-60"
-              style={{ background: loading ? "#8a0e8f" : "#610064" }}
+              className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-brand-600 hover:bg-brand-700 transition-colors disabled:opacity-60"
             >
               {loading ? "Creating account…" : "Create account"}
             </button>
           </form>
 
-          <p className="text-center text-sm text-slate-500 mt-6">
-            Already have an account?{" "}
-            <button type="button" onClick={() => router.push("/login")} className="text-[#610064] font-medium hover:underline">
-              Sign in
-            </button>
-          </p>
+          <div className="mt-8 p-4 rounded-xl bg-slate-100 text-xs text-slate-500 text-center">
+            <p>
+              Already have an account?{" "}
+              <button type="button" onClick={() => router.push("/login")} className="text-brand-600 font-medium hover:underline">
+                Sign in
+              </button>
+            </p>
+          </div>
         </div>
       </div>
     </div>

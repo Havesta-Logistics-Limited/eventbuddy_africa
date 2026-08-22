@@ -26,6 +26,10 @@
 
 # AI agent tooling/config — not part of the app
 .claude/
+.agents/
+.codex/
+.impeccable/
+skills-lock.json
 CLAUDE.md
 AGENTS.md
 

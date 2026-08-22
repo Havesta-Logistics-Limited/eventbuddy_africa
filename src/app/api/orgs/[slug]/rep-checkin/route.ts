@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { accessCodeMatches } from "@/lib/access-code";
 
 type RepCheckinBody = {
   eventId: string;
@@ -35,13 +36,17 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, rep_access_code")
+    .select("id, rep_access_code, allow_rep_access, published")
     .eq("id", eventId)
     .eq("organization_id", org.id)
     .maybeSingle();
   if (!event) return NextResponse.json({ error: "That event couldn't be found." }, { status: 404 });
+  if (!event.published) return NextResponse.json({ error: "This event isn't live yet." }, { status: 403 });
+  if (event.allow_rep_access === false) {
+    return NextResponse.json({ error: "This event doesn't have rep check-in enabled." }, { status: 403 });
+  }
 
-  if (event.rep_access_code && event.rep_access_code.trim().toLowerCase() !== (code || "").trim().toLowerCase()) {
+  if (event.rep_access_code && !accessCodeMatches(event.rep_access_code, code || "")) {
     return NextResponse.json({ error: "That access code doesn't match this event. Check with your event coordinator and try again." }, { status: 403 });
   }
 

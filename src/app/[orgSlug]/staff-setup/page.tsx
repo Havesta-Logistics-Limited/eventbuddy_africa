@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, KeyRound, MapPinCheckInside, Plus, UserRound } from "lucide-react";
 import { loginAsStaff } from "@/lib/store";
 import { Destination, EventRecord, University } from "@/lib/types";
@@ -15,6 +15,10 @@ export default function StaffSetupPage() {
   const params = useParams<{ orgSlug: string }>();
   const orgSlug = params.orgSlug;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // A per-event share link (?event=<id>) locks the flow to that one event and skips
+  // the "which event are you at?" picker entirely — see CheckinLinksCard.
+  const pinnedEventId = searchParams.get("event");
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -22,10 +26,13 @@ export default function StaffSetupPage() {
   const [events, setEvents] = useState<CheckinEvent[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
-  const [staffMembers, setStaffMembers] = useState<{ id: string; name: string }[]>([]);
+  // Names only — never the staff row's real id. That id is a bearer credential (see
+  // store.ts's session model), so the public "who are you?" picker must never expose
+  // it pre-auth; check-in resolves name -> row server-side, access-code gated.
+  const [staffMembers, setStaffMembers] = useState<{ name: string }[]>([]);
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [selectedStaffName, setSelectedStaffName] = useState<string | null>(null);
   const [newStaffName, setNewStaffName] = useState("");
   const [isNewStaff, setIsNewStaff] = useState(false);
 
@@ -48,9 +55,13 @@ export default function StaffSetupPage() {
         setDestinations(data.destinations);
         setUniversities(data.universities);
         setStaffMembers(data.staff);
+        if (pinnedEventId && data.events.some((e: CheckinEvent) => e.id === pinnedEventId)) {
+          setSelectedEventId(pinnedEventId);
+        }
       })
       .catch(() => setLoadError("Couldn't load this page. Check your connection and try again."))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgSlug]);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId);
@@ -62,14 +73,15 @@ export default function StaffSetupPage() {
   const handleStart = async () => {
     if (!selectedEventId) return;
     if (usesDestinations && (!selectedDestId || !selectedUniId)) return;
-    if (!isNewStaff && !selectedStaffId) return;
+    if (!isNewStaff && !selectedStaffName) return;
     if (isNewStaff && !newStaffName.trim()) return;
     setError("");
     setSubmitting(true);
     try {
+      // Always by name, never by id — the server resolves an existing row (or
+      // creates one) by name match, gated behind the event's access code either way.
       const result = await loginAsStaff(orgSlug, {
-        id: isNewStaff ? undefined : selectedStaffId!,
-        name: isNewStaff ? newStaffName.trim() : staffMembers.find((s) => s.id === selectedStaffId)?.name || "",
+        name: isNewStaff ? newStaffName.trim() : selectedStaffName || "",
         eventId: selectedEventId,
         destinationId: usesDestinations ? selectedDestId! : undefined,
         universityId: usesDestinations ? selectedUniId! : undefined,
@@ -104,6 +116,17 @@ export default function StaffSetupPage() {
     );
   }
 
+  if (pinnedEventId && !selectedEventId) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <div className="text-center text-slate-500">
+          <p className="font-medium text-slate-700">This event&apos;s check-in link isn&apos;t valid anymore.</p>
+          <p className="text-sm mt-1">Ask your event coordinator for the current staff check-in link.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!selectedEventId) {
     return (
       <EventPicker
@@ -122,7 +145,7 @@ export default function StaffSetupPage() {
   const isFormValid =
     selectedEventId &&
     (!usesDestinations || (selectedDestId && selectedUniId)) &&
-    (isNewStaff ? newStaffName.trim().length > 0 : selectedStaffId) &&
+    (isNewStaff ? newStaffName.trim().length > 0 : selectedStaffName) &&
     (!codeRequired || accessCode.trim().length > 0);
 
   if (!selectedEvent) return null;
@@ -133,7 +156,7 @@ export default function StaffSetupPage() {
         eyebrow="Staff sign-in"
         event={selectedEvent}
         instruction="Pick your name, then the destination and school you're collecting for. It stays locked for every lead you add until you end the session."
-        secondaryAction={{ label: "Back to events", onClick: () => setSelectedEventId(null) }}
+        secondaryAction={pinnedEventId ? undefined : { label: "Back to events", onClick: () => setSelectedEventId(null) }}
         variant="staff"
       />
       <div className="relative max-w-xl mx-auto px-4 -mt-8">
@@ -162,25 +185,25 @@ export default function StaffSetupPage() {
             <div className="flex flex-wrap gap-2.5">
               {staffMembers.map((s) => (
                 <button
-                  key={s.id}
+                  key={s.name}
                   onClick={() => {
                     setIsNewStaff(false);
-                    setSelectedStaffId(s.id);
+                    setSelectedStaffName(s.name);
                   }}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-colors ${
-                    !isNewStaff && selectedStaffId === s.id
+                    !isNewStaff && selectedStaffName === s.name
                       ? "border-[#1098F7] bg-[#1098F7] text-white"
                       : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                   }`}
                 >
-                  <UserRound size={14} className={!isNewStaff && selectedStaffId === s.id ? "text-white/70" : "text-slate-400"} />
+                  <UserRound size={14} className={!isNewStaff && selectedStaffName === s.name ? "text-white/70" : "text-slate-400"} />
                   {s.name}
                 </button>
               ))}
               <button
                 onClick={() => {
                   setIsNewStaff(true);
-                  setSelectedStaffId(null);
+                  setSelectedStaffName(null);
                 }}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-full border border-dashed text-sm font-medium transition-colors ${
                   isNewStaff

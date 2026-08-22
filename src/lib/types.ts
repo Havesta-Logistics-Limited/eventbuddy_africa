@@ -56,6 +56,25 @@ export interface EventRecord {
   staffAccessCode?: string;
   /** University reps must enter this at check-in on /rep-login for this event. Unset = no gate. */
   repAccessCode?: string;
+  /** Only meaningful for templates that use destinations (see event-templates.ts). false
+   *  = "students only" — reps get no check-in link and no visibility into this event's
+   *  leads at all. Defaults true ("students and reps") for every event, including ones
+   *  created before this existed. */
+  allowRepAccess?: boolean;
+  /** Physical events only — false means no public sign-up link exists for this event at
+   *  all; staff capture every lead directly at the booth (walk-up, no registration or
+   *  QR code involved). Always true for virtual events, where self-service registration
+   *  IS the only way attendees get captured — see /api/orgs/[slug]/register. */
+  selfRegistrationEnabled?: boolean;
+  /** false = a physical event awaiting Paystack payment — it exists but is inert (no
+   *  check-in, no lead capture, not listed for self-service registration) until payment
+   *  succeeds. Always true for virtual events and every event created before this
+   *  feature existed. Only ever flipped by the Paystack payment routes (or a platform
+   *  admin) — see protect_event_payment_fields in the paystack_payments migration. */
+  published?: boolean;
+  /** The price actually snapshotted on this event at creation time (0 for virtual) —
+   *  see events_set_price_usd in the platform_settings_and_event_pricing migration. */
+  priceUsd?: number;
   /** Which event-templates.ts template this event was created from. Optional here even
    *  though the DB column is NOT NULL DEFAULT 'education-fair' — the DB default covers
    *  any call site that doesn't set it. */

@@ -2,8 +2,9 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MapPinCheckInside, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/logo";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -67,15 +68,20 @@ function ResetPasswordForm() {
     setError("");
     setLoading(true);
     const supabase = createClient();
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-    setLoading(false);
+    const { error: updateError, data } = await supabase.auth.updateUser({ password });
     if (updateError) {
+      setLoading(false);
       setError(updateError.message);
       return;
     }
+    // A platform admin resetting their password has no organization account — send
+    // them back to the platform login, not the org-admin one, so "forgot password"
+    // works the same from either sign-in screen.
+    const { data: platformMembership } = await supabase.from("platform_admins").select("user_id").eq("user_id", data.user.id).maybeSingle();
+    setLoading(false);
     await supabase.auth.signOut();
     setDone(true);
-    setTimeout(() => router.push("/login"), 2000);
+    setTimeout(() => router.push(platformMembership ? "/platform/login" : "/login"), 2000);
   }
 
   if (!ready) return <div className="min-h-screen bg-slate-50" />;
@@ -83,11 +89,8 @@ function ResetPasswordForm() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
       <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2 mb-8 justify-center">
-          <MapPinCheckInside size={24} className="text-[#610064]" />
-          <span className="font-display text-xl" style={{ color: "#610064" }}>
-            EventPal
-          </span>
+        <div className="flex items-center justify-center mb-8">
+          <Logo height={28} />
         </div>
 
         {linkError ? (

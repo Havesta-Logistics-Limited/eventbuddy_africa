@@ -215,7 +215,7 @@ export default function LeadCollectPage() {
     }
   };
 
-  const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1098F7] focus:border-transparent";
+  const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-staff-600 focus:border-transparent";
   const selectClass = `${fieldClass} cursor-pointer`;
   const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
 
@@ -313,13 +313,12 @@ export default function LeadCollectPage() {
                   value={lookupRef}
                   onChange={(e) => setLookupRef(e.target.value)}
                   placeholder="e.g. K7QX-4R2M"
-                  className="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#1098F7]"
+                  className="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-staff-600"
                 />
                 <button
                   type="submit"
                   disabled={lookupLoading || !lookupRef.trim()}
-                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-                  style={{ background: "#1098F7" }}
+                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-staff-600 hover:bg-staff-700 disabled:opacity-60 transition-[transform,background-color] active:scale-[0.97]"
                 >
                   {lookupLoading ? "Looking up…" : "Pull details"}
                 </button>
@@ -428,7 +427,7 @@ export default function LeadCollectPage() {
                     <label
                       key={val}
                       className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer text-sm transition-colors ${
-                        form.takenIELTS === val ? "border-sky-500 bg-sky-50 text-sky-800 font-medium" : "border-slate-200 text-slate-600 hover:border-slate-300"
+                        form.takenIELTS === val ? "border-sky-500 bg-sky-50 text-sky-800 font-medium" : "border-slate-200 text-slate-700 hover:border-slate-300"
                       }`}
                     >
                       <input
@@ -454,7 +453,7 @@ export default function LeadCollectPage() {
                 value={form.comments}
                 onChange={(e) => set("comments", e.target.value)}
                 placeholder="Any notes, questions, or special requirements…"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1098F7] resize-none"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-staff-600 resize-none"
               />
             </div>
 
@@ -467,8 +466,7 @@ export default function LeadCollectPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3.5 rounded-xl font-semibold text-white text-base disabled:opacity-60"
-              style={{ background: "#1098F7" }}
+              className="w-full py-3.5 rounded-xl font-semibold text-white text-base bg-staff-600 hover:bg-staff-700 disabled:opacity-60 transition-[transform,background-color] active:scale-[0.98]"
             >
               {submitting ? "Saving…" : "Save Lead"}
             </button>

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "./store";
+import { logout, useSession } from "./store";
+import { createClient } from "./supabase/client";
 import { Role, Session } from "./types";
 
 function fallbackRouteFor(role: Role) {
@@ -44,6 +45,32 @@ export function useRequireRole(allowedRoles: Role[]): Session | null {
       router.replace(fallbackRouteFor(session.role));
     }
   }, [ready, session, allowedRoles, router]);
+
+  // Admin sessions are tied to a real Supabase Auth JWT plus an organizations row.
+  // login() checks the org still exists at sign-in, but a tab that's been open since
+  // before the org was deleted (e.g. from the platform admin portal) never re-runs
+  // that check — its token stays valid even though nothing it can see or write exists
+  // anymore, so every save would fail an RLS check with no clear explanation. Catch
+  // that here instead, once per gated page, and sign out cleanly.
+  useEffect(() => {
+    if (!ready || !session || session.role !== "admin") return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: org } = await supabase.from("organizations").select("id").eq("owner_user_id", user.id).maybeSingle();
+      if (!cancelled && !org) {
+        await logout();
+        router.replace("/login");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, session, router]);
 
   return ready && allowed ? session : null;
 }

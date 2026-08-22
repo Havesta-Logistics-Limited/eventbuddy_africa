@@ -1,6 +1,7 @@
 "use client";
 
 import { Download } from "lucide-react";
+import { toast } from "sonner";
 import { EventRecord, LeadRecord, University } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
 import { downloadCsv, eventLeadsToCsv } from "@/lib/csv";
@@ -16,16 +17,19 @@ export function EventLeadsCard({ event, leads, universities }: { event: EventRec
   const customFields = event.customFields ?? [];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 mb-4 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-4 overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
         <div>
           <h2 className="font-semibold text-slate-900">{event.name}</h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 tabular-nums">
             {leads.length} lead{leads.length !== 1 ? "s" : ""}
           </p>
         </div>
         <button
-          onClick={() => downloadCsv(`${event.name.replace(/[^a-z0-9]/gi, "_")}_leads.csv`, eventLeadsToCsv(leads, event))}
+          onClick={() => {
+            downloadCsv(`${event.name.replace(/[^a-z0-9]/gi, "_")}_leads.csv`, eventLeadsToCsv(leads, event));
+            toast.success("Leads exported");
+          }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
         >
           <Download size={12} />
@@ -70,7 +74,7 @@ export function EventLeadsCard({ event, leads, universities }: { event: EventRec
                     <td className="px-4 py-3">
                       <span
                         className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                          lead.takenIELTS === "Yes" ? "bg-teal-100 text-teal-700" : lead.takenIELTS === "Registered" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
+                          lead.takenIELTS === "Yes" ? "bg-emerald-100 text-emerald-700" : lead.takenIELTS === "Registered" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"
                         }`}
                       >
                         {lead.takenIELTS}

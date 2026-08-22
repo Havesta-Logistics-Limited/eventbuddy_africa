@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, KeyRound, MapPinCheckInside } from "lucide-react";
 import { loginAsRep } from "@/lib/store";
 import { Destination, EventRecord, University } from "@/lib/types";
@@ -15,6 +15,10 @@ export default function RepLoginPage() {
   const params = useParams<{ orgSlug: string }>();
   const orgSlug = params.orgSlug;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // A per-event share link (?event=<id>) locks the flow to that one event and skips
+  // the "which event are you viewing?" picker entirely — see CheckinLinksCard.
+  const pinnedEventId = searchParams.get("event");
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -42,9 +46,14 @@ export default function RepLoginPage() {
         setEvents(data.events);
         setDestinations(data.destinations);
         setUniversities(data.universities);
+        const events: CheckinEvent[] = data.events;
+        if (pinnedEventId && events.some((e) => e.id === pinnedEventId && getTemplate(e.templateId).usesDestinations && e.allowRepAccess !== false)) {
+          setSelectedEventId(pinnedEventId);
+        }
       })
       .catch(() => setLoadError("Couldn't load this page. Check your connection and try again."))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgSlug]);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId);
@@ -88,7 +97,18 @@ export default function RepLoginPage() {
 
   // Reps are scoped to a destination + university, which only the Education Fair
   // template has — other event types have no rep flow, so they're not selectable here.
-  const repEligibleEvents = events.filter((e) => getTemplate(e.templateId).usesDestinations);
+  const repEligibleEvents = events.filter((e) => getTemplate(e.templateId).usesDestinations && e.allowRepAccess !== false);
+
+  if (pinnedEventId && !selectedEventId) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <div className="text-center text-slate-500">
+          <p className="font-medium text-slate-700">This event&apos;s check-in link isn&apos;t valid anymore.</p>
+          <p className="text-sm mt-1">Ask your event coordinator for the current rep check-in link.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!selectedEventId) {
     return (
@@ -115,13 +135,17 @@ export default function RepLoginPage() {
         eyebrow="Rep sign-in"
         event={selectedEvent}
         instruction="Select your destination and university to view the leads collected for your school."
-        secondaryAction={{
-          label: "Back to events",
-          onClick: () => {
-            setSelectedEventId(null);
-            setError("");
-          },
-        }}
+        secondaryAction={
+          pinnedEventId
+            ? undefined
+            : {
+                label: "Back to events",
+                onClick: () => {
+                  setSelectedEventId(null);
+                  setError("");
+                },
+              }
+        }
         variant="rep"
       />
       <div className="relative max-w-xl mx-auto px-4 -mt-8">

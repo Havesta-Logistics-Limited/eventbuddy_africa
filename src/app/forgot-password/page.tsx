@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPinCheckInside, AlertCircle, CheckCircle2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { Logo } from "@/components/logo";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -16,28 +16,31 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const supabase = createClient();
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setLoading(false);
-    // Show the same success state either way — confirming whether an email exists
-    // would let someone probe for registered accounts.
-    if (resetError) {
-      setError("Something went wrong. Please try again.");
-      return;
+    try {
+      const res = await fetch("/api/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      // Show the same success state either way — confirming whether an email exists
+      // would let someone probe for registered accounts.
+      if (!res.ok) {
+        setError("Something went wrong. Please try again.");
+        return;
+      }
+      setSent(true);
+    } catch {
+      setError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setLoading(false);
     }
-    setSent(true);
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
       <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2 mb-8 justify-center">
-          <MapPinCheckInside size={24} className="text-[#610064]" />
-          <span className="font-display text-xl" style={{ color: "#610064" }}>
-            EventPal
-          </span>
+        <div className="flex items-center justify-center mb-8">
+          <Logo height={28} />
         </div>
 
         {sent ? (
@@ -52,7 +55,7 @@ export default function ForgotPasswordPage() {
             <button
               type="button"
               onClick={() => router.push("/login")}
-              className="text-sm font-medium text-[#610064] hover:underline"
+              className="text-sm font-medium text-brand-600 hover:underline"
             >
               Back to sign in
             </button>
@@ -71,7 +74,7 @@ export default function ForgotPasswordPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] focus:border-transparent bg-white"
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white"
                 />
               </div>
 
@@ -85,15 +88,14 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 rounded-lg font-medium text-sm text-white transition-colors disabled:opacity-60"
-                style={{ background: loading ? "#8a0e8f" : "#610064" }}
+                className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-brand-600 hover:bg-brand-700 transition-colors disabled:opacity-60"
               >
                 {loading ? "Sending…" : "Send reset link"}
               </button>
             </form>
 
             <p className="text-center text-sm text-slate-500 mt-6">
-              <button type="button" onClick={() => router.push("/login")} className="text-[#610064] font-medium hover:underline">
+              <button type="button" onClick={() => router.push("/login")} className="text-brand-600 font-medium hover:underline">
                 Back to sign in
               </button>
             </p>

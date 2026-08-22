@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Calendar, MapPin, Users, QrCode, Clock, CheckCircle2, AlertCircle, Search, SlidersHorizontal } from "lucide-react";
+import { toast } from "sonner";
+import { Plus, Calendar, CreditCard, MapPin, Users, QrCode, Clock, CheckCircle2, AlertCircle, Search, SlidersHorizontal, Presentation } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import { PersistError, addEvent, useDestinations, useEvents, useLeads, useRegistrations } from "@/lib/store";
+import { PersistError, addEvent, useDataReady, useDestinations, useEvents, useLeads, useRegistrations } from "@/lib/store";
 import { EventRecord, EventStatus, Role } from "@/lib/types";
 import { getEventStatus } from "@/lib/capture-window";
 import { formatTime, getEventCity, getEventMonthLabel, sortEventsByProximity } from "@/lib/utils";
@@ -13,11 +14,15 @@ import { DestinationFlags } from "@/components/destination-flags";
 import { EventFilterModal } from "@/components/event-filter-modal";
 import { EventWizard, type EventWizardData } from "@/components/event-wizard";
 import { Reveal } from "@/components/reveal";
+import { EventCardSkeleton, StatTileSkeleton } from "@/components/skeleton";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
+// "Active" uses emerald rather than the app's legacy teal tokens (a pre-rebrand
+// leftover still used elsewhere) so a live event's status never reads as the
+// same color family as the purple brand accent.
 const statusConfig: Record<EventStatus, { label: string; color: string; icon: typeof AlertCircle; dot: string }> = {
-  active: { label: "Active", color: "bg-teal-100 text-teal-700", icon: AlertCircle, dot: "bg-teal-500" },
+  active: { label: "Active", color: "bg-emerald-100 text-emerald-700", icon: AlertCircle, dot: "bg-emerald-500" },
   upcoming: { label: "Upcoming", color: "bg-amber-100 text-amber-700", icon: Clock, dot: "bg-amber-500" },
   completed: { label: "Completed", color: "bg-slate-100 text-slate-500", icon: CheckCircle2, dot: "bg-slate-400" },
 };
@@ -34,7 +39,7 @@ function EventCard({ event }: { event: EventRecord }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className="h-full bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md hover:border-[#610064]/30 transition-all flex flex-col"
+      className="h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md hover:border-brand-600/30 transition-all flex flex-col"
     >
       <div className="h-32 bg-slate-100 relative">
         {event.coverImage && !imgError ? (
@@ -44,10 +49,17 @@ function EventCard({ event }: { event: EventRecord }) {
           <div className="w-full h-full bg-gradient-to-tr from-slate-200 to-slate-100" />
         )}
         <div className="absolute top-3 left-3">
-          <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${cfg.color} shadow-sm bg-white/90 backdrop-blur-sm`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-            {cfg.label}
-          </span>
+          {event.published === false ? (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 shadow-sm bg-white/90 backdrop-blur-sm">
+              <CreditCard size={11} />
+              Payment pending
+            </span>
+          ) : (
+            <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${cfg.color} shadow-sm bg-white/90 backdrop-blur-sm`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+              {cfg.label}
+            </span>
+          )}
         </div>
       </div>
       <div className="p-5 flex flex-col flex-1">
@@ -65,21 +77,30 @@ function EventCard({ event }: { event: EventRecord }) {
           </div>
         )}
         <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-5">
-          <MapPin size={12} className="shrink-0" />
-          <span className="truncate">
-            {event.venue}, {event.location}
-          </span>
+          {event.eventFormat === "virtual" ? (
+            <>
+              <Presentation size={12} className="shrink-0" />
+              <span className="truncate">{event.virtualPlatform || "Online"} (Virtual)</span>
+            </>
+          ) : (
+            <>
+              <MapPin size={12} className="shrink-0" />
+              <span className="truncate">
+                {event.venue}, {event.location}
+              </span>
+            </>
+          )}
         </div>
         <div className="flex items-center justify-between gap-3 mt-auto pt-4 border-t border-slate-100">
           <DestinationFlags destinations={eventDests} />
           <div className="flex items-center gap-3 shrink-0">
-            {registrations.length > 0 && (
-              <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+            {event.eventFormat !== "virtual" && registrations.length > 0 && (
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 tabular-nums">
                 <QrCode size={14} className="text-slate-400" />
                 {registrations.length}
               </div>
             )}
-            <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 tabular-nums">
               <Users size={14} className="text-slate-400" />
               {leads.length} leads
             </div>
@@ -92,6 +113,7 @@ function EventCard({ event }: { event: EventRecord }) {
 
 export default function DashboardPage() {
   const session = useRequireRole(ADMIN_ONLY);
+  const dataReady = useDataReady();
   const events = useEvents();
   const destinations = useDestinations();
   const leads = useLeads();
@@ -102,6 +124,16 @@ export default function DashboardPage() {
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+
+  // Each card's Active/Upcoming/Completed badge is computed fresh on every render from
+  // the current time, but nothing else re-renders this page as time passes — a tab left
+  // open past an event's end time would keep showing "Active" forever. One interval
+  // here re-renders every card at once, cheaper than one per EventCard.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => forceTick((t) => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   if (!session) return null;
 
@@ -133,12 +165,32 @@ export default function DashboardPage() {
     { label: "Total Leads", value: leads.length },
   ];
 
-  const handleCreate = async (data: EventWizardData) => {
+  const handleCreate = async (data: EventWizardData, intent: "draft" | "publish") => {
     try {
-      await addEvent(data);
+      // Physical events are always created unpublished — inert until Paystack payment
+      // succeeds (see the paystack_payments migration's protect_event_payment_fields
+      // trigger) — whether the admin is saving a draft to come back to or is about to
+      // pay right away. Virtual events stay free and publish immediately, same as before.
+      const event = await addEvent({ ...data, published: data.eventFormat !== "physical" });
+      if (data.eventFormat === "physical" && intent === "publish") {
+        const res = await fetch("/api/paystack/initialize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventId: event.id }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.authorizationUrl) {
+          throw new Error(json.error || "Couldn't start payment. You can retry from this event's page.");
+        }
+        // Full-page redirect to Paystack's hosted checkout — leaving the app entirely,
+        // so there's nothing left to close/toast here.
+        window.location.assign(json.authorizationUrl);
+        return;
+      }
       setShowWizard(false);
+      toast.success(data.eventFormat === "physical" ? "Draft saved — pay anytime from the event page to publish" : "Event created");
     } catch (err) {
-      throw err instanceof PersistError ? new Error(err.message) : new Error("Couldn't create that event. Please try again.");
+      throw err instanceof PersistError ? new Error(err.message) : err instanceof Error ? err : new Error("Couldn't create that event. Please try again.");
     }
   };
 
@@ -152,8 +204,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={() => setShowWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97]"
-            style={{ background: "#610064" }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-[transform,background-color] active:scale-[0.97]"
           >
             <Plus size={16} />
             New Event
@@ -161,14 +212,16 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {stats.map((s, i) => (
-            <Reveal key={s.label} index={i}>
-              <div className="bg-white rounded-xl border border-slate-200 p-4">
-                <p className="text-xs text-slate-500 mb-1">{s.label}</p>
-                <p className="text-2xl font-bold text-slate-900">{s.value}</p>
-              </div>
-            </Reveal>
-          ))}
+          {!dataReady
+            ? Array.from({ length: 4 }).map((_, i) => <StatTileSkeleton key={i} />)
+            : stats.map((s, i) => (
+                <Reveal key={s.label} index={i}>
+                  <div className="rounded-xl bg-slate-50 p-4">
+                    <p className="text-xs text-slate-500 mb-1">{s.label}</p>
+                    <p className="text-2xl font-bold text-slate-900 tabular-nums">{s.value}</p>
+                  </div>
+                </Reveal>
+              ))}
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-5">
@@ -193,7 +246,7 @@ export default function DashboardPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search events, venue, city..."
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
             />
           </div>
 
@@ -201,14 +254,14 @@ export default function DashboardPage() {
             onClick={() => setShowFilterModal(true)}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm font-medium transition-colors ${
               activeFilterCount > 0
-                ? "border-[#610064]/30 bg-[#610064]/5 text-[#610064]"
+                ? "border-brand-600/30 bg-brand-600/5 text-brand-600"
                 : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
             }`}
           >
             <SlidersHorizontal size={14} />
             Filter
             {activeFilterCount > 0 && (
-              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-[#610064] text-white text-[10px] font-semibold">
+              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-brand-600 text-white text-[10px] font-semibold tabular-nums">
                 {activeFilterCount}
               </span>
             )}
@@ -237,16 +290,22 @@ export default function DashboardPage() {
         />
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sorted.map((ev, i) => (
-            <Reveal key={ev.id} index={i} className="h-full">
-              <EventCard event={ev} />
-            </Reveal>
-          ))}
-          {sorted.length === 0 && (
-            <div className="col-span-3 text-center py-16 text-slate-400">
-              <Calendar size={32} className="mx-auto mb-3 opacity-40" />
-              <p>No events found</p>
-            </div>
+          {!dataReady ? (
+            Array.from({ length: 6 }).map((_, i) => <EventCardSkeleton key={i} />)
+          ) : (
+            <>
+              {sorted.map((ev, i) => (
+                <Reveal key={ev.id} index={i} className="h-full">
+                  <EventCard event={ev} />
+                </Reveal>
+              ))}
+              {sorted.length === 0 && (
+                <div className="col-span-3 text-center py-16 text-slate-400">
+                  <Calendar size={32} className="mx-auto mb-3 opacity-40" />
+                  <p>No events found</p>
+                </div>
+              )}
+            </>
           )}
         </div>
 

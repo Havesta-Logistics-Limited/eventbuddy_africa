@@ -1,8 +1,9 @@
 "use client";
 
-import { Calendar, MapPinCheckInside, MapPin } from "lucide-react";
+import { Calendar, MapPin, Presentation } from "lucide-react";
 import { EventRecord } from "@/lib/types";
 import { formatDate, formatTime } from "@/lib/utils";
+import { Logo } from "@/components/logo";
 
 const VARIANTS = {
   staff: {
@@ -25,7 +26,7 @@ export function EventSignInHero({
   eyebrow: string;
   event: EventRecord;
   instruction: string;
-  secondaryAction: { label: string; onClick: () => void };
+  secondaryAction?: { label: string; onClick: () => void };
   variant?: "staff" | "rep";
 }) {
   const theme = VARIANTS[variant];
@@ -40,22 +41,26 @@ export function EventSignInHero({
       />
       <div className="relative max-w-xl mx-auto">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <MapPinCheckInside size={22} className={theme.eyebrow} />
-            <div>
-              <p className="font-display text-base leading-tight">EventPal</p>
-              <p className="text-xs text-white/50 leading-tight">Desired Results On The Go</p>
-            </div>
-          </div>
-          <button type="button" onClick={secondaryAction.onClick} className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-            {secondaryAction.label}
-          </button>
+          <Logo tone="white" height={24} />
+          {secondaryAction && (
+            <button type="button" onClick={secondaryAction.onClick} className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+              {secondaryAction.label}
+            </button>
+          )}
         </div>
         <p className={`mt-8 font-mono text-xs font-semibold uppercase tracking-widest ${theme.eyebrow}`}>{eyebrow}</p>
         <h1 className="mt-2 font-display text-2xl sm:text-3xl leading-tight">{event.name}</h1>
         <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/70">
           <span className="inline-flex items-center gap-1.5">
-            <MapPin size={13} /> {event.venue}, {event.location}
+            {event.eventFormat === "virtual" ? (
+              <>
+                <Presentation size={13} /> {event.virtualPlatform || "Online"} (Virtual)
+              </>
+            ) : (
+              <>
+                <MapPin size={13} /> {event.venue}, {event.location}
+              </>
+            )}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Calendar size={13} />

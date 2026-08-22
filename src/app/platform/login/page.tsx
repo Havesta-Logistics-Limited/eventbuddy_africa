@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPinCheckInside, Eye, EyeOff, AlertCircle, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/logo";
 
 /**
  * Deliberately separate from /login and store.ts's login(). Platform admin is its
@@ -56,10 +57,7 @@ export default function PlatformLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-2 mb-8 text-center">
-          <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-1">
-            <MapPinCheckInside size={22} className="text-fuchsia-300" />
-          </div>
-          <p className="font-display text-xl text-white">EventPal</p>
+          <Logo tone="white" height={32} />
           <p className="text-xs text-white/40 flex items-center gap-1.5">
             <ShieldCheck size={12} />
             Platform Admin
@@ -116,7 +114,13 @@ export default function PlatformLoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-xs text-white/25 mt-6">
+        <p className="text-center text-sm mt-6">
+          <button type="button" onClick={() => router.push("/forgot-password")} className="text-white/50 hover:text-white/80 transition-colors">
+            Forgot password?
+          </button>
+        </p>
+
+        <p className="text-center text-xs text-white/25 mt-4">
           This is a separate credential from any organization account.
         </p>
       </div>

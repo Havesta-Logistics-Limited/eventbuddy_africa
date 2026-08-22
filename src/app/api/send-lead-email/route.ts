@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 
 type SendLeadEmailBody = {
   to: string;
@@ -9,7 +10,23 @@ type SendLeadEmailBody = {
   filename: string;
 };
 
+/**
+ * Sends a CSV of leads by email — reachable only by a signed-in org admin. This route
+ * had no auth check at all before: anyone on the internet could POST an arbitrary
+ * `to`/`subject`/`text`/attachment and use this app's Resend sending identity as an
+ * open relay. The cookie-bound, RLS-respecting server client confirms a real Supabase
+ * Auth session exists before any email goes out — same pattern as
+ * /api/platform/create-admin and /api/platform/delete-org.
+ */
 export async function POST(request: Request) {
+  const supabase = await createServerClient();
+  const {
+    data: { user: caller },
+  } = await supabase.auth.getUser();
+  if (!caller) {
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
   const body = (await request.json()) as Partial<SendLeadEmailBody>;
   const { to, subject, message, csv, filename } = body;
 
@@ -32,7 +49,7 @@ export async function POST(request: Request) {
 
   try {
     const { error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || "EventPal <onboarding@resend.dev>",
+      from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
       to,
       subject: subject || "Attendee leads",
       text: message || "",

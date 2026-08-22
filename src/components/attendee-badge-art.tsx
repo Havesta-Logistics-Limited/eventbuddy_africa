@@ -35,7 +35,7 @@ function MiniQr({ size = 64 }: { size?: number }) {
  *  rendered as the hero image instead of a generic illustration. */
 export function AttendeeBadgeArt({ compact = false }: { compact?: boolean }) {
   return (
-    <div className={`relative ${compact ? "h-36 w-64" : "h-48 w-72"} shrink-0`} aria-hidden="true">
+    <div className={`relative ${compact ? "h-36 w-64" : "h-48 w-72"} shrink-0 animate-idle-float hover-bounce`} aria-hidden="true">
       <div
         className={`absolute left-6 top-2 ${compact ? "w-44" : "w-52"} rounded-2xl bg-white/8 border border-white/15 animate-badge-settle-back`}
         style={{ height: compact ? 118 : 148 }}

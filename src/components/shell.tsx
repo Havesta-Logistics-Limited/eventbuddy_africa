@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Calendar, Users, BarChart3, Settings, LogOut, Menu, X, MapPinCheckInside, BookOpen, ScanLine, ShieldCheck } from "lucide-react";
+import { Calendar, Users, Settings, LogOut, Menu, X, BookOpen, ScanLine, ShieldCheck } from "lucide-react";
 import { getDestinationById, getEventById, getUniversityById, logout, useSession } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/logo";
 
 const adminNav = [
   { to: "/dashboard", label: "Events", icon: Calendar },
   { to: "/leads", label: "Leads", icon: Users },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin", label: "Settings", icon: Settings },
 ];
 
@@ -61,10 +61,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
   // Purple is the app-wide brand identity; Staff gets its own distinct blue
   // identity so it's never mistaken for the Admin/Rep experience.
   const sidebarBg = isStaff ? "#04223d" : "#2e0a30";
-  const brandIconColor = isStaff ? "text-sky-400" : "text-fuchsia-300";
-  const activeNavBg = isStaff ? "#1098F7" : "#610064";
+  const activeNavAccent = isStaff ? "#1098F7" : "var(--color-brand-600)";
   const sessionAccentColor = isStaff ? "text-sky-300" : "text-fuchsia-300";
-  const avatarBg = isStaff ? "bg-[#1098F7]/20" : "bg-[#610064]/25";
+  const avatarBg = isStaff ? "bg-[#1098F7]/20" : "bg-brand-600/25";
   const avatarText = isStaff ? "text-sky-300" : "text-fuchsia-300";
 
   async function handleLogout() {
@@ -77,13 +76,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {/* Sidebar — desktop */}
       <aside className="hidden md:flex w-64 flex-col text-white fixed inset-y-0 left-0 z-40" style={{ background: sidebarBg }}>
         <div className="px-6 py-5 border-b border-white/10">
-          <div className="flex items-center gap-2.5">
-            <MapPinCheckInside size={22} className={brandIconColor} />
-            <div>
-              <p className="font-display text-base leading-tight">EventPal</p>
-              <p className="text-xs text-white/50 leading-tight">Desired Results On The Go</p>
-            </div>
-          </div>
+          <Logo tone="white" height={26} />
         </div>
 
         {!isAdmin && staffEvent && (
@@ -106,12 +99,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <Link
                 key={to}
                 href={to}
-                style={active ? { background: activeNavBg } : undefined}
+                style={active ? { background: `color-mix(in srgb, ${activeNavAccent} 20%, transparent)` } : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                   active ? "text-white font-medium" : "text-white/60 hover:text-white hover:bg-white/8"
                 }`}
               >
-                <Icon size={17} />
+                <Icon size={17} className={active ? sessionAccentColor : undefined} />
                 {label}
               </Link>
             );
@@ -143,10 +136,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <button onClick={() => setMobileOpen(true)} aria-label="Open menu">
           <Menu size={22} />
         </button>
-        <div className="flex items-center gap-2">
-          <MapPinCheckInside size={18} className={brandIconColor} />
-          <span className="font-display text-base">EventPal</span>
-        </div>
+        <Logo tone="white" height={20} />
       </header>
 
       {/* Mobile drawer */}
@@ -154,10 +144,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div className="w-64 text-white flex flex-col h-full" style={{ background: sidebarBg }}>
             <div className="px-5 py-4 flex items-center justify-between border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <MapPinCheckInside size={20} className={brandIconColor} />
-                <span className="font-display">EventPal</span>
-              </div>
+              <Logo tone="white" height={22} />
               <button onClick={() => setMobileOpen(false)} aria-label="Close menu">
                 <X size={20} className="text-white/60" />
               </button>
@@ -181,12 +168,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
                     key={to}
                     href={to}
                     onClick={() => setMobileOpen(false)}
-                    style={active ? { background: activeNavBg } : undefined}
+                    style={active ? { background: `color-mix(in srgb, ${activeNavAccent} 20%, transparent)` } : undefined}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                      active ? "text-white" : "text-white/60 hover:text-white hover:bg-white/8"
+                      active ? "text-white font-medium" : "text-white/60 hover:text-white hover:bg-white/8"
                     }`}
                   >
-                    <Icon size={17} />
+                    <Icon size={17} className={active ? sessionAccentColor : undefined} />
                     {label}
                   </Link>
                 );

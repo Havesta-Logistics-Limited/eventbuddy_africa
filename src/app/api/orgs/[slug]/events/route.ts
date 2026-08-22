@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAnonClient } from "@/lib/supabase/anon";
+import type { FieldDef } from "@/lib/types";
 
 type OrgRow = { id: string; name: string; slug: string };
 type EventRow = {
@@ -15,18 +16,21 @@ type EventRow = {
   description: string | null;
   cover_image: string | null;
   template_id: string | null;
+  custom_fields: unknown;
   event_format: string | null;
   virtual_join_url: string | null;
   virtual_platform: string | null;
   virtual_access_notes: string | null;
   timezone: string | null;
   capture_override: "open" | "closed" | null;
+  allow_rep_access: boolean | null;
+  self_registration_enabled: boolean | null;
   has_staff_code: boolean;
   has_rep_code: boolean;
 };
 type DestinationRow = { id: string; name: string; flag: string };
 type UniversityRow = { id: string; destination_id: string; name: string; short_name: string };
-type StaffNameRow = { id: string; name: string };
+type StaffNameRow = { name: string };
 
 /**
  * Everything the org-scoped check-in picker (/[orgSlug]/staff-setup, /[orgSlug]/rep-login)
@@ -35,6 +39,11 @@ type StaffNameRow = { id: string; name: string };
  * destinations, and its universities. Access codes are validated server-side at
  * check-in, never sent to the browser. Maps Postgres's snake_case columns to the
  * camelCase shapes the rest of the app already uses (EventRecord, Destination, University).
+ *
+ * Staff names are name-only too — never the row's real id, which is a permanent bearer
+ * session credential (see staff-checkin/route.ts and store.ts's session model); handing
+ * it out here, pre-auth, would let anyone skip the access-code check entirely and call
+ * /api/session-data, /api/checkin, etc. directly as that staff member.
  */
 export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]/events">) {
   const { slug } = await ctx.params;
@@ -83,12 +92,15 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       description: e.description ?? "",
       coverImage: e.cover_image ?? undefined,
       templateId: e.template_id ?? "education-fair",
+      customFields: (e.custom_fields as FieldDef[] | null) ?? [],
       eventFormat: (e.event_format as "physical" | "virtual" | null) ?? "physical",
       virtualJoinUrl: e.virtual_join_url ?? undefined,
       virtualPlatform: e.virtual_platform ?? undefined,
       virtualAccessNotes: e.virtual_access_notes ?? undefined,
       timezone: e.timezone ?? undefined,
       captureOverride: e.capture_override ?? null,
+      allowRepAccess: e.allow_rep_access ?? true,
+      selfRegistrationEnabled: e.self_registration_enabled ?? true,
       hasStaffCode: e.has_staff_code,
       hasRepCode: e.has_rep_code,
     })),
@@ -99,6 +111,6 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       name: u.name,
       shortName: u.short_name,
     })),
-    staff: staffRows.map((s) => ({ id: s.id, name: s.name })),
+    staff: staffRows.map((s) => ({ name: s.name })),
   });
 }

@@ -35,10 +35,17 @@ let registrationsCache: RegistrationRecord[] = [];
 let sessionCache: Session | null = null;
 let sessionHydrated = false;
 
-/** Thrown when a Supabase read/write fails — the caller decides how to surface it. */
+/** Thrown when a Supabase read/write fails — the caller decides how to surface it.
+ *  Prefers the actual Postgres/PostgREST error text (e.g. a constraint violation or
+ *  RLS rejection) over the generic fallback, so a failed save is diagnosable from the
+ *  UI instead of always showing the same unhelpful message regardless of cause. */
 export class PersistError extends Error {
   constructor(cause: unknown) {
-    super("Couldn't save your changes. Please try again.");
+    const detail =
+      cause && typeof cause === "object" && "message" in cause && typeof (cause as { message: unknown }).message === "string"
+        ? (cause as { message: string }).message
+        : undefined;
+    super(detail || "Couldn't save your changes. Please try again.");
     this.cause = cause;
   }
 }
@@ -86,6 +93,10 @@ function mapEventRow(e: {
   cover_image: string | null;
   staff_access_code: string | null;
   rep_access_code: string | null;
+  allow_rep_access: boolean | null;
+  self_registration_enabled: boolean | null;
+  published: boolean | null;
+  price_usd: number | null;
   template_id: string | null;
   custom_fields: FieldDef[] | null;
   timezone: string | null;
@@ -110,6 +121,10 @@ function mapEventRow(e: {
     coverImage: e.cover_image ?? undefined,
     staffAccessCode: e.staff_access_code ?? undefined,
     repAccessCode: e.rep_access_code ?? undefined,
+    allowRepAccess: e.allow_rep_access ?? true,
+    selfRegistrationEnabled: e.self_registration_enabled ?? true,
+    published: e.published ?? true,
+    priceUsd: e.price_usd !== null && e.price_usd !== undefined ? Number(e.price_usd) : undefined,
     templateId: e.template_id ?? "education-fair",
     customFields: e.custom_fields ?? [],
     timezone: e.timezone ?? undefined,
@@ -135,6 +150,9 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.coverImage !== undefined) row.cover_image = input.coverImage || null;
   if (input.staffAccessCode !== undefined) row.staff_access_code = input.staffAccessCode || null;
   if (input.repAccessCode !== undefined) row.rep_access_code = input.repAccessCode || null;
+  if (input.allowRepAccess !== undefined) row.allow_rep_access = input.allowRepAccess;
+  if (input.selfRegistrationEnabled !== undefined) row.self_registration_enabled = input.selfRegistrationEnabled;
+  if (input.published !== undefined) row.published = input.published;
   if (input.templateId !== undefined) row.template_id = input.templateId;
   if (input.customFields !== undefined) row.custom_fields = input.customFields;
   if (input.timezone !== undefined) row.timezone = input.timezone;
@@ -293,6 +311,17 @@ function ensureDataFetched() {
   else fetchSessionData();
 }
 
+/** Force a refetch of org-scoped data (events/leads/registrations/staff/...) right now,
+ *  bypassing the "already fetched" cache. Use where staleness is likely to matter —
+ *  e.g. reopening a view that shows check-in status another device just changed —
+ *  rather than waiting on the window-focus revalidation in useRevalidateOnFocus. */
+export async function refreshData(): Promise<void> {
+  if (!sessionCache || orgDataFetching) return;
+  orgDataFetched = false;
+  if (sessionCache.role === "admin") await fetchAdminData();
+  else await fetchSessionData();
+}
+
 /** Refetch when the tab regains focus, so multi-device changes (e.g. a staff member's
  *  new lead) show up without a full reload. Cheap SWR-style revalidation — not full
  *  realtime, but covers the common case of switching back to an already-open tab. */
@@ -393,6 +422,25 @@ export function getLeadsForEvent(eventId: string): LeadRecord[] {
 export function getRegistrationsForEvent(eventId: string): RegistrationRecord[] {
   return registrationsCache.filter((r) => r.eventId === eventId);
 }
+
+/** Admin-side manual check-in/undo, direct via the RLS-scoped browser client — the
+ *  admin owns this org's registrations outright, unlike the door-staff flow in
+ *  /api/checkin which goes through the service-role API since staff isn't a Supabase
+ *  Auth user. Lets an admin mark someone checked-in from the dashboard itself instead
+ *  of only via a physical scan at the door. */
+export async function updateRegistrationStatus(id: string, status: RegistrationRecord["status"]): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const patch: { status: RegistrationRecord["status"]; checked_in_at: string | null; checked_in_by: string | null } = {
+    status,
+    checked_in_at: status === "checked_in" ? new Date().toISOString() : null,
+    checked_in_by: status === "checked_in" ? sessionCache?.name || sessionCache?.id || null : null,
+  };
+  const { data, error } = await supabase.from("registrations").update(patch).eq("id", id).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapRegistrationRow(data);
+  registrationsCache = registrationsCache.map((r) => (r.id === id ? record : r));
+  emitChange();
+}
 export function getLeadsFiltered(eventId?: string, destId?: string, uniId?: string): LeadRecord[] {
   return leadsCache.filter((l) => {
     if (eventId && l.eventId !== eventId) return false;
@@ -428,7 +476,11 @@ export async function updateEvent(id: string, patch: Partial<Omit<EventRecord, "
 export async function duplicateEvent(id: string): Promise<EventRecord | undefined> {
   const source = eventsCache.find((e) => e.id === id);
   if (!source) return undefined;
-  return addEvent({ ...source, name: `${source.name} (Copy)` });
+  // A duplicate of a physical event is a NEW physical event — it must be paid for on
+  // its own, not inherit the source's already-paid `published`. payment_status isn't
+  // part of EventRecord (only the platform admin's raw queries touch it) — the
+  // database's own default ('pending') applies correctly since this omits it.
+  return addEvent({ ...source, name: `${source.name} (Copy)`, published: source.eventFormat !== "physical" });
 }
 
 /** Deletes an event and, via the DB's cascading foreign key, every lead collected for
@@ -516,7 +568,7 @@ export async function addUniversity(input: Omit<University, "id">): Promise<Univ
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase
     .from("universities")
-    .insert({ id: newId("uni"), destination_id: input.destinationId, name: input.name, short_name: input.shortName })
+    .insert({ id: newId("uni"), destination_id: input.destinationId, name: input.name, short_name: input.shortName.trim() || input.name })
     .select()
     .single();
   if (error || !data) throw new PersistError(error);
@@ -530,7 +582,7 @@ export async function updateUniversity(id: string, patch: Partial<Omit<Universit
   const row: Record<string, unknown> = {};
   if (patch.destinationId !== undefined) row.destination_id = patch.destinationId;
   if (patch.name !== undefined) row.name = patch.name;
-  if (patch.shortName !== undefined) row.short_name = patch.shortName;
+  if (patch.shortName !== undefined) row.short_name = patch.shortName.trim() || patch.name || "";
   const { data, error } = await supabase.from("universities").update(row).eq("id", id).select().single();
   if (error || !data) throw new PersistError(error);
   const record = mapUniversityRow(data);
@@ -584,6 +636,9 @@ export async function login(email: string, password: string): Promise<{ success:
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
   if (error || !data.user) {
+    if (error?.message.toLowerCase().includes("email not confirmed")) {
+      return { success: false, error: "Please verify your email before signing in — check your inbox for the verification link." };
+    }
     return { success: false, error: error?.message || "Invalid email or password." };
   }
 
@@ -593,7 +648,11 @@ export async function login(email: string, password: string): Promise<{ success:
     .eq("owner_user_id", data.user.id)
     .maybeSingle();
 
-  if (org?.is_suspended) {
+  if (!org) {
+    await supabase.auth.signOut();
+    return { success: false, error: "This organization no longer exists. Contact support for help." };
+  }
+  if (org.is_suspended) {
     await supabase.auth.signOut();
     return { success: false, error: "This account has been suspended. Contact support for help." };
   }
@@ -601,20 +660,22 @@ export async function login(email: string, password: string): Promise<{ success:
   hydrateSession();
   sessionCache = {
     id: data.user.id,
-    name: org?.name || data.user.email || "Admin",
+    name: org.name || data.user.email || "Admin",
     email: data.user.email || email,
     role: "admin",
-    orgSlug: org?.slug ?? undefined,
+    orgSlug: org.slug ?? undefined,
   };
   persistSession();
   return { success: true };
 }
 
 /** Staff check-in — validates the access code server-side (see /api/orgs/[slug]/staff-checkin)
- *  and bridges the resulting staff row into the local device session. */
+ *  and bridges the resulting staff row into the local device session. Always by name,
+ *  never by id — the returned staff.id becomes this device's bearer session credential,
+ *  so the client must never already know one going in (see public_org_staff_names). */
 export async function loginAsStaff(
   orgSlug: string,
-  data: { id?: string; name: string; eventId: string; destinationId?: string; universityId?: string; code?: string }
+  data: { name: string; eventId: string; destinationId?: string; universityId?: string; code?: string }
 ): Promise<{ success: boolean; error?: string }> {
   const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/staff-checkin`, {
     method: "POST",

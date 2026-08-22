@@ -6,6 +6,7 @@ import { Destination, EventRecord } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
 import type { EventWizardData } from "./types";
 import { TemplateStep } from "./steps/template-step";
+import { AudienceStep } from "./steps/audience-step";
 import { BasicsStep } from "./steps/basics-step";
 import { DestinationsStep } from "./steps/destinations-step";
 import { FieldBuilderStep } from "./steps/field-builder-step";
@@ -27,6 +28,8 @@ const EMPTY_DATA: EventWizardData = {
   repAccessCode: "",
   templateId: "education-fair",
   customFields: [],
+  allowRepAccess: true,
+  selfRegistrationEnabled: true,
   eventFormat: "physical",
   virtualJoinUrl: "",
   virtualPlatform: "",
@@ -49,6 +52,8 @@ function toWizardData(event: EventRecord): EventWizardData {
     repAccessCode: event.repAccessCode || "",
     templateId: event.templateId || "education-fair",
     customFields: event.customFields || [],
+    allowRepAccess: event.allowRepAccess ?? true,
+    selfRegistrationEnabled: event.selfRegistrationEnabled ?? true,
     timezone: event.timezone,
     eventFormat: event.eventFormat || "physical",
     virtualJoinUrl: event.virtualJoinUrl || "",
@@ -57,27 +62,36 @@ function toWizardData(event: EventRecord): EventWizardData {
   };
 }
 
-type StepId = "template" | "basics" | "customize" | "access" | "review";
+type StepId = "template" | "basics" | "audience" | "destinations" | "fields" | "access" | "review";
 
 export function EventWizard(props: {
   mode: "create" | "edit";
   initialEvent?: EventRecord;
   destinations: Destination[];
-  onSubmit: (data: EventWizardData) => Promise<void>;
+  onSubmit: (data: EventWizardData, intent: "draft" | "publish") => Promise<void>;
   onCancel: () => void;
 }) {
   const { mode, initialEvent, destinations, onSubmit, onCancel } = props;
   const [data, setData] = useState<EventWizardData>(() =>
     initialEvent ? toWizardData(initialEvent) : { ...EMPTY_DATA, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }
   );
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState<"draft" | "publish" | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [stepIndex, setStepIndex] = useState(0);
 
   const template = getTemplate(data.templateId);
   // The template choice is immutable after creation — changing it once leads exist
-  // would orphan customAnswers against a field set that no longer matches.
-  const steps: StepId[] = mode === "create" ? ["template", "basics", "customize", "access", "review"] : ["basics", "customize", "access", "review"];
+  // would orphan customAnswers against a field set that no longer matches. Audience
+  // comes right after picking the template (or first, when editing) since it shapes
+  // what the rest of the wizard even needs to ask. Destinations and additional
+  // questions are independent steps — a template using destinations (Education Fair)
+  // can still define its own extra questions on top of them, same as any other template.
+  const audienceSteps: StepId[] = template.usesDestinations ? ["audience"] : [];
+  const destFieldSteps: StepId[] = template.usesDestinations ? ["destinations", "fields"] : ["fields"];
+  const steps: StepId[] =
+    mode === "create"
+      ? ["template", ...audienceSteps, "basics", ...destFieldSteps, "access", "review"]
+      : ["basics", ...audienceSteps, ...destFieldSteps, "access", "review"];
   const step = steps[stepIndex];
 
   function patch(p: Partial<EventWizardData>) {
@@ -96,19 +110,30 @@ export function EventWizard(props: {
   );
   const isStepValid = step === "basics" ? isBasicsValid : true;
 
-  async function handleSubmit() {
+  // Physical events cost money to publish — an admin should be able to save one as a
+  // draft (no payment) and come back to it, rather than being forced to pay the moment
+  // they finish the wizard. This only applies while the event is actually unpaid: a
+  // brand-new physical event (create mode) or an existing draft awaiting payment (edit
+  // mode, initialEvent.published === false). Virtual events and already-paid physical
+  // events have nothing to publish, so they keep a single save button.
+  const needsPayment = data.eventFormat === "physical" && (mode === "create" || initialEvent?.published === false);
+
+  async function handleSubmit(intent: "draft" | "publish") {
     setSubmitError("");
-    setSubmitting(true);
+    setSubmitting(intent);
     try {
-      await onSubmit({
-        ...data,
-        staffAccessCode: data.staffAccessCode?.trim() || undefined,
-        repAccessCode: data.repAccessCode?.trim() || undefined,
-      });
+      await onSubmit(
+        {
+          ...data,
+          staffAccessCode: data.staffAccessCode?.trim() || undefined,
+          repAccessCode: data.repAccessCode?.trim() || undefined,
+        },
+        intent
+      );
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Couldn't save this event. Please try again.");
     } finally {
-      setSubmitting(false);
+      setSubmitting(null);
     }
   }
 
@@ -123,7 +148,9 @@ export function EventWizard(props: {
   const titles: Record<StepId, string> = {
     template: "Choose a template",
     basics: "Event details",
-    customize: template.usesDestinations ? "Destinations" : "Customize your form",
+    audience: "Who is this event for?",
+    destinations: "Destinations",
+    fields: "Additional questions",
     access: "Access codes",
     review: "Review & create",
   };
@@ -146,13 +173,20 @@ export function EventWizard(props: {
         <div className="p-6 space-y-4 overflow-y-auto flex-1">
           {step === "template" && <TemplateStep selectedId={data.templateId || "education-fair"} onSelect={selectTemplate} />}
           {step === "basics" && <BasicsStep data={data} onChange={patch} />}
-          {step === "customize" &&
-            (template.usesDestinations ? (
-              <DestinationsStep destinations={destinations} selectedIds={data.destinationIds} onChange={(destinationIds) => patch({ destinationIds })} />
-            ) : (
-              <FieldBuilderStep fields={data.customFields || []} onChange={(customFields) => patch({ customFields })} />
-            ))}
-          {step === "access" && <AccessStep data={data} onChange={patch} showRepCode={template.usesDestinations} />}
+          {step === "audience" && (
+            <AudienceStep allowRepAccess={data.allowRepAccess ?? true} onChange={(allowRepAccess) => patch({ allowRepAccess })} />
+          )}
+          {step === "destinations" && (
+            <DestinationsStep destinations={destinations} selectedIds={data.destinationIds} onChange={(destinationIds) => patch({ destinationIds })} />
+          )}
+          {step === "fields" && (
+            <FieldBuilderStep
+              fields={data.customFields || []}
+              onChange={(customFields) => patch({ customFields })}
+              alreadyCollectsAcademicFields={template.usesDestinations}
+            />
+          )}
+          {step === "access" && <AccessStep data={data} onChange={patch} showRepCode={template.usesDestinations && data.allowRepAccess !== false} />}
           {step === "review" && <ReviewStep data={data} template={template} destinations={destinations} />}
 
           {submitError && step === "review" && <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">{submitError}</div>}
@@ -163,15 +197,37 @@ export function EventWizard(props: {
             {stepIndex === 0 ? "Cancel" : "Back"}
           </button>
           {step === "review" ? (
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-              style={{ background: "#610064" }}
-            >
-              {submitting ? "Saving…" : mode === "create" ? "Create Event" : "Save Changes"}
-            </button>
+            needsPayment ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSubmit("draft")}
+                  disabled={submitting !== null}
+                  className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                >
+                  {submitting === "draft" ? "Saving…" : "Save Draft"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmit("publish")}
+                  disabled={submitting !== null}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
+                  style={{ background: "#610064" }}
+                >
+                  {submitting === "publish" ? "Redirecting…" : "Publish"}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleSubmit(mode === "create" ? "publish" : "draft")}
+                disabled={submitting !== null}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
+                style={{ background: "#610064" }}
+              >
+                {submitting !== null ? "Saving…" : mode === "create" ? "Create Event" : "Save Changes"}
+              </button>
+            )
           ) : (
             <button
               type="button"

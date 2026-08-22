@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTemplate } from "@/lib/event-templates";
+import { accessCodeMatches } from "@/lib/access-code";
 
 type StaffCheckinBody = {
   eventId: string;
-  staffId?: string;
   name: string;
   destinationId?: string;
   universityId?: string;
@@ -15,13 +15,18 @@ type StaffCheckinBody = {
  * Staff check-in — validates the event's staffAccessCode server-side (never sent to the
  * browser) and creates/updates the staff row via the service-role client, since this is
  * a lightweight device session, not a Supabase Auth user (see src/lib/store.ts).
+ *
+ * Deliberately name-only, never accepts a client-supplied staff id: the returned
+ * staff.id becomes a permanent bearer credential for every subsequent staff action
+ * (see /api/session-data, /api/checkin, /api/leads), so this is the only place that's
+ * allowed to hand one out, and only after the access-code check below passes.
  */
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/staff-checkin">) {
   const { slug } = await ctx.params;
   const body = (await request.json()) as Partial<StaffCheckinBody>;
-  const { eventId, staffId, name, destinationId, universityId, code } = body;
+  const { eventId, name, destinationId, universityId, code } = body;
 
-  if (!eventId || (!staffId && !name?.trim())) {
+  if (!eventId || !name?.trim()) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
 
@@ -38,13 +43,14 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, staff_access_code, template_id")
+    .select("id, staff_access_code, template_id, published")
     .eq("id", eventId)
     .eq("organization_id", org.id)
     .maybeSingle();
   if (!event) return NextResponse.json({ error: "That event couldn't be found." }, { status: 404 });
+  if (!event.published) return NextResponse.json({ error: "This event isn't live yet." }, { status: 403 });
 
-  if (event.staff_access_code && event.staff_access_code.trim().toLowerCase() !== (code || "").trim().toLowerCase()) {
+  if (event.staff_access_code && !accessCodeMatches(event.staff_access_code, code || "")) {
     return NextResponse.json({ error: "That access code doesn't match this event. Check with your coordinator and try again." }, { status: 403 });
   }
 
@@ -60,37 +66,31 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   };
 
   let staffRow;
-  if (staffId) {
-    const { data, error } = await supabase.from("staff").update(checkinPatch).eq("id", staffId).eq("organization_id", org.id).select().maybeSingle();
-    if (error || !data) return NextResponse.json({ error: error?.message || "Couldn't find that staff member." }, { status: 400 });
+  const trimmedName = name!.trim();
+
+  // Someone typing/picking their name again (e.g. on a different device, or after a
+  // previous session ended) should reuse their existing row rather than fork into a
+  // duplicate — match by name within this org, case-insensitively.
+  const { data: existing } = await supabase.from("staff").select("*").eq("organization_id", org.id).eq("role", "staff").ilike("name", trimmedName).maybeSingle();
+
+  if (existing) {
+    const { data, error } = await supabase.from("staff").update(checkinPatch).eq("id", existing.id).select().single();
+    if (error || !data) return NextResponse.json({ error: error?.message || "Couldn't check you in." }, { status: 500 });
     staffRow = data;
   } else {
-    const trimmedName = name!.trim();
-
-    // Someone typing their name again through "New staff member" (e.g. on a different
-    // device, or after a previous session ended) should reuse their existing row rather
-    // than fork into a duplicate — match by name within this org, case-insensitively.
-    const { data: existing } = await supabase.from("staff").select("*").eq("organization_id", org.id).eq("role", "staff").ilike("name", trimmedName).maybeSingle();
-
-    if (existing) {
-      const { data, error } = await supabase.from("staff").update(checkinPatch).eq("id", existing.id).select().single();
-      if (error || !data) return NextResponse.json({ error: error?.message || "Couldn't check you in." }, { status: 500 });
-      staffRow = data;
-    } else {
-      const { data, error } = await supabase
-        .from("staff")
-        .insert({
-          organization_id: org.id,
-          name: trimmedName,
-          email: `${trimmedName.replace(/\s+/g, ".").toLowerCase()}@eventpal.com`,
-          role: "staff",
-          ...checkinPatch,
-        })
-        .select()
-        .single();
-      if (error || !data) return NextResponse.json({ error: error?.message || "Couldn't check you in." }, { status: 500 });
-      staffRow = data;
-    }
+    const { data, error } = await supabase
+      .from("staff")
+      .insert({
+        organization_id: org.id,
+        name: trimmedName,
+        email: `${trimmedName.replace(/\s+/g, ".").toLowerCase()}@eventpal.com`,
+        role: "staff",
+        ...checkinPatch,
+      })
+      .select()
+      .single();
+    if (error || !data) return NextResponse.json({ error: error?.message || "Couldn't check you in." }, { status: 500 });
+    staffRow = data;
   }
 
   return NextResponse.json({

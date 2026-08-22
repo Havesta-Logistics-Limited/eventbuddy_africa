@@ -2,6 +2,7 @@
 
 import { Globe2 } from "lucide-react";
 import { Destination } from "@/lib/types";
+import { isoCodeForCountryName } from "@/lib/country-flags";
 
 /**
  * Flag + short code per destination (e.g. "🇬🇧 UK"), matching the reference
@@ -21,7 +22,7 @@ export function DestinationFlags({ destinations, max = 4 }: { destinations: Dest
       {shown.map((d) => (
         <span key={d.id} title={d.name} className="inline-flex shrink-0 items-center gap-1 text-xs text-slate-600 whitespace-nowrap">
           <span className="text-sm leading-none">{d.flag}</span>
-          {d.id.toUpperCase()}
+          {isoCodeForCountryName(d.name) ?? d.name}
         </span>
       ))}
       {overflow > 0 && <span className="shrink-0 text-xs text-slate-400">+{overflow}</span>}

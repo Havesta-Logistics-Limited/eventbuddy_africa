@@ -5,7 +5,20 @@ import { FieldDef } from "@/lib/types";
 import { newId } from "@/lib/utils";
 import { FieldEditorRow } from "../field-editor-row";
 
-export function FieldBuilderStep({ fields, onChange }: { fields: FieldDef[]; onChange: (fields: FieldDef[]) => void }) {
+export function FieldBuilderStep({
+  fields,
+  onChange,
+  alreadyCollectsAcademicFields = false,
+}: {
+  fields: FieldDef[];
+  onChange: (fields: FieldDef[]) => void;
+  /** Education Fair events already collect destination, university, preferred course,
+   *  IELTS status, and more through their own dedicated fields (see the Destinations
+   *  step and the staff lead-capture form) — this step is purely for anything extra on
+   *  top of that, not the starting point, so the empty state shouldn't read as "from
+   *  scratch." */
+  alreadyCollectsAcademicFields?: boolean;
+}) {
   function addField() {
     onChange([...fields, { id: newId("field"), label: "", type: "short_text", required: false }]);
   }
@@ -25,9 +38,13 @@ export function FieldBuilderStep({ fields, onChange }: { fields: FieldDef[]; onC
 
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">What should this event&apos;s lead form collect?</label>
+      <label className="block text-sm font-medium text-slate-700 mb-1">
+        {alreadyCollectsAcademicFields ? "Anything else this event's lead form should collect?" : "What should this event's lead form collect?"}
+      </label>
       <p className="text-xs text-slate-500 mb-3">
-        Every event already collects name, email, and phone. Add whatever else you need here — like Microsoft Forms.
+        {alreadyCollectsAcademicFields
+          ? "Education Fair events already collect name, email, phone, destination, university, preferred course, and IELTS status — no setup needed for those. Only add a question here if you need something on top of that."
+          : "Every event already collects name, email, and phone. Add whatever else you need here."}
       </p>
       <div className="space-y-3">
         {fields.map((f, i) => (
@@ -40,7 +57,11 @@ export function FieldBuilderStep({ fields, onChange }: { fields: FieldDef[]; onC
             onMoveDown={i < fields.length - 1 ? () => move(i, 1) : undefined}
           />
         ))}
-        {fields.length === 0 && <p className="text-sm text-slate-400 text-center py-4">No questions yet — add one below.</p>}
+        {fields.length === 0 && (
+          <p className="text-sm text-slate-400 text-center py-4">
+            {alreadyCollectsAcademicFields ? "No extra questions — the standard fields already cover this event." : "No questions yet — add one below."}
+          </p>
+        )}
       </div>
       <button
         type="button"

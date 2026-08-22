@@ -19,18 +19,27 @@ export function ReviewStep({ data, template, destinations }: { data: EventWizard
             {data.virtualPlatform && <Row label="Platform" value={data.virtualPlatform} />}
           </>
         ) : (
-          <Row label="Venue" value={`${data.venue || "—"}, ${data.location || "—"}`} />
+          <>
+            <Row label="Venue" value={`${data.venue || "—"}, ${data.location || "—"}`} />
+            <Row label="Self-service registration" value={data.selfRegistrationEnabled === false ? "Off — booth capture only" : "On"} />
+          </>
         )}
-        {template.usesDestinations ? (
+        {template.usesDestinations && <Row label="Audience" value={data.allowRepAccess === false ? "Students only" : "Students & reps"} />}
+        {template.usesDestinations && (
           <Row label="Destinations" value={eventDests.length ? eventDests.map((d) => `${d.flag} ${d.name}`).join(", ") : "None selected"} />
-        ) : (
-          <Row
-            label="Form questions"
-            value={data.customFields?.length ? `${data.customFields.length} question${data.customFields.length !== 1 ? "s" : ""}` : "None — just name, email, phone"}
-          />
         )}
+        <Row
+          label="Additional questions"
+          value={
+            data.customFields?.length
+              ? `${data.customFields.length} question${data.customFields.length !== 1 ? "s" : ""}`
+              : template.usesDestinations
+                ? "None — standard fields only"
+                : "None — just name, email, phone"
+          }
+        />
         <Row label="Staff code" value={data.staffAccessCode || "None — open check-in"} />
-        {template.usesDestinations && <Row label="Rep code" value={data.repAccessCode || "None — open check-in"} />}
+        {template.usesDestinations && data.allowRepAccess !== false && <Row label="Rep code" value={data.repAccessCode || "None — open check-in"} />}
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, Check, Copy, Plus, Users, UserCheck, Building2, Globe2, X, Edit2, Trash2, LogOut } from "lucide-react";
+import { toast } from "sonner";
+import { AlertCircle, Plus, Users, UserCheck, Building2, Globe2, X, Edit2, Trash2, LogOut } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import {
@@ -24,6 +25,7 @@ import {
 import { Role } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
 import { Reveal } from "@/components/reveal";
+import { flagForCountryName } from "@/lib/country-flags";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -61,16 +63,26 @@ export default function AdminPage() {
   const staffEventUsesDestinations = selectedStaffEvent ? getTemplate(selectedStaffEvent.templateId).usesDestinations : true;
   const repUnis = repForm.destinationId ? universities.filter((u) => u.destinationId === repForm.destinationId) : [];
 
-  async function runSave(action: () => Promise<unknown>, onSuccess: () => void) {
+  async function runSave(action: () => Promise<unknown>, onSuccess: () => void, successMessage: string) {
     setFormError("");
     setSaving(true);
     try {
       await action();
       onSuccess();
+      toast.success(successMessage);
     } catch (err) {
       setFormError(err instanceof PersistError ? err.message : "Couldn't save your changes. Please try again.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete(action: () => Promise<void>, successMessage: string) {
+    try {
+      await action();
+      toast.success(successMessage);
+    } catch (err) {
+      toast.error(err instanceof PersistError ? err.message : "Couldn't complete that action. Please try again.");
     }
   }
 
@@ -81,7 +93,8 @@ export default function AdminPage() {
       () => {
         setShowStaffForm(false);
         setStaffForm(EMPTY_STAFF);
-      }
+      },
+      staffForm.id ? "Staff updated" : "Staff added"
     );
   };
 
@@ -93,7 +106,8 @@ export default function AdminPage() {
       () => {
         setShowRepForm(false);
         setRepForm(EMPTY_REP);
-      }
+      },
+      repForm.id ? "Rep updated" : "Rep added"
     );
   };
 
@@ -104,7 +118,8 @@ export default function AdminPage() {
       () => {
         setShowUniForm(false);
         setUniForm(EMPTY_UNI);
-      }
+      },
+      uniForm.id ? "University updated" : "University added"
     );
   };
 
@@ -115,7 +130,8 @@ export default function AdminPage() {
       () => {
         setShowDestForm(false);
         setDestForm(EMPTY_DEST);
-      }
+      },
+      destForm.id ? "Destination updated" : "Destination added"
     );
   };
 
@@ -134,9 +150,7 @@ export default function AdminPage() {
           <p className="text-slate-500 text-sm mt-0.5">Manage staff, universities, and destinations</p>
         </div>
 
-        {session.orgSlug && <CheckinLinksCard orgSlug={session.orgSlug} />}
-
-        <div className="flex gap-1 mb-6 bg-slate-100 rounded-lg p-1 w-fit">
+        <div className="flex flex-wrap gap-1 mb-6 bg-slate-100 rounded-lg p-1 w-fit">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -193,7 +207,7 @@ export default function AdminPage() {
                         {uni && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hidden sm:inline-block">{uni.shortName}</span>}
                         {ev && <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 max-w-[120px] sm:max-w-[160px] truncate">{ev.name.split("—")[0].trim()}</span>}
                       </div>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
+                      <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
                         <button
                           onClick={() => {
                             setStaffForm({
@@ -211,7 +225,7 @@ export default function AdminPage() {
                         >
                           <Edit2 size={16} />
                         </button>
-                        <button onClick={() => deleteStaff(s.id)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
+                        <button onClick={() => handleDelete(() => deleteStaff(s.id), `${s.name} removed`)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -372,9 +386,9 @@ export default function AdminPage() {
                         {dest && <span className="px-2 py-0.5 rounded-full bg-[#610064]/10 text-[#610064] hidden sm:inline-block">{dest.name}</span>}
                         {uni && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hidden sm:inline-block">{uni.name}</span>}
                       </div>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
+                      <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
                         {s.isOnline && (
-                          <button onClick={() => forceLogoutRep(s.id)} title="Force Logout" className="p-1.5 text-slate-400 hover:text-amber-600 rounded-md hover:bg-amber-50">
+                          <button onClick={() => handleDelete(() => forceLogoutRep(s.id), `${s.name} signed out`)} title="Force Logout" className="p-1.5 text-slate-400 hover:text-amber-600 rounded-md hover:bg-amber-50">
                             <LogOut size={16} />
                           </button>
                         )}
@@ -387,7 +401,7 @@ export default function AdminPage() {
                         >
                           <Edit2 size={16} />
                         </button>
-                        <button onClick={() => deleteStaff(s.id)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
+                        <button onClick={() => handleDelete(() => deleteStaff(s.id), `${s.name} removed`)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -513,7 +527,7 @@ export default function AdminPage() {
                           <p className="font-medium text-slate-800 text-sm truncate">{u.name}</p>
                           <p className="text-xs text-slate-400 truncate">{u.shortName}</p>
                         </div>
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                           <button
                             onClick={() => {
                             setUniForm({ id: u.id, name: u.name, shortName: u.shortName, destinationId: u.destinationId });
@@ -523,7 +537,7 @@ export default function AdminPage() {
                           >
                             <Edit2 size={14} />
                           </button>
-                          <button onClick={() => deleteUniversity(u.id)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
+                          <button onClick={() => handleDelete(() => deleteUniversity(u.id), `${u.name} removed`)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -572,13 +586,14 @@ export default function AdminPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Short Name / Abbreviation</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                        Short Name / Abbreviation <span className="text-slate-400 font-normal">(optional)</span>
+                      </label>
                       <input
-                        required
                         value={uniForm.shortName}
                         onChange={(e) => setUniForm({ ...uniForm, shortName: e.target.value })}
                         className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                        placeholder="e.g. Oxford"
+                        placeholder="e.g. Oxford — defaults to the full name if left blank"
                       />
                     </div>
                     {formError && (
@@ -631,7 +646,7 @@ export default function AdminPage() {
                         {uniCount} universit{uniCount !== 1 ? "ies" : "y"}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                       <button
                         onClick={() => {
                           setDestForm({ id: d.id, name: d.name, flag: d.flag });
@@ -641,7 +656,7 @@ export default function AdminPage() {
                       >
                         <Edit2 size={14} />
                       </button>
-                      <button onClick={() => deleteDestination(d.id)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
+                      <button onClick={() => handleDelete(() => deleteDestination(d.id), `${d.name} removed`)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -666,7 +681,11 @@ export default function AdminPage() {
                       <input
                         required
                         value={destForm.name}
-                        onChange={(e) => setDestForm({ ...destForm, name: e.target.value })}
+                        onChange={(e) => {
+                          const name = e.target.value;
+                          const autoFlag = flagForCountryName(name);
+                          setDestForm((prev) => ({ ...prev, name, flag: autoFlag ?? prev.flag }));
+                        }}
                         className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
                         placeholder="e.g. United Kingdom"
                       />
@@ -680,6 +699,7 @@ export default function AdminPage() {
                         className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
                         placeholder="e.g. 🇬🇧"
                       />
+                      <p className="text-xs text-slate-400 mt-1">Auto-filled for recognized countries — edit if this destination isn&apos;t one.</p>
                     </div>
                     {formError && (
                       <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
@@ -703,48 +723,5 @@ export default function AdminPage() {
         )}
       </div>
     </Shell>
-  );
-}
-
-function CheckinLinksCard({ orgSlug }: { orgSlug: string }) {
-  const [copied, setCopied] = useState<"staff" | "rep" | null>(null);
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const links = [
-    { key: "staff" as const, label: "Staff check-in link", path: `/${orgSlug}/staff-setup` },
-    { key: "rep" as const, label: "Rep check-in link", path: `/${orgSlug}/rep-login` },
-  ];
-
-  function copy(key: "staff" | "rep", url: string) {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(key);
-      setTimeout(() => setCopied(null), 2000);
-    });
-  }
-
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
-      <h2 className="text-sm font-semibold text-slate-800 mb-1">Check-in links</h2>
-      <p className="text-xs text-slate-500 mb-3">Share these with your team — staff and reps use them to check in, no admin login needed.</p>
-      <div className="space-y-2">
-        {links.map(({ key, label, path }) => {
-          const url = `${origin}${path}`;
-          return (
-            <div key={key} className="flex items-center gap-2">
-              <div className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-600 truncate">
-                <span className="text-slate-400">{label}:</span> {url}
-              </div>
-              <button
-                type="button"
-                onClick={() => copy(key, url)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 shrink-0"
-              >
-                {copied === key ? <Check size={13} className="text-teal-600" /> : <Copy size={13} />}
-                {copied === key ? "Copied" : "Copy"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
   );
 }

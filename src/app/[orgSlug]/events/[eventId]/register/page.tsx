@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import QRCode from "qrcode";
 import { AlertCircle, Calendar, Check, Copy, MapPin, MapPinCheckInside, Video } from "lucide-react";
 import { EventRecord } from "@/lib/types";
 import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/components/dynamic-registration-form";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatTime } from "@/lib/utils";
 
 type PublicEvent = EventRecord & { hasStaffCode: boolean; hasRepCode: boolean };
 
 type Confirmation = {
-  referenceId: string;
+  /** Unset for virtual events — no physical check-in, so no reference ID/QR is issued;
+   *  the registration is captured straight as a lead instead. */
+  referenceId?: string;
   emailSent: boolean;
   event: {
     name: string;
@@ -59,7 +62,7 @@ export default function RegisterPage() {
   }, [orgSlug, eventId]);
 
   useEffect(() => {
-    if (!confirmation) return;
+    if (!confirmation?.referenceId) return;
     QRCode.toDataURL(confirmation.referenceId, { width: 220, margin: 1, color: { dark: "#1e1b2e", light: "#ffffff" } })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(""));
@@ -88,9 +91,10 @@ export default function RegisterPage() {
   }
 
   async function copyReferenceId() {
-    if (!confirmation) return;
+    if (!confirmation?.referenceId) return;
     await navigator.clipboard.writeText(confirmation.referenceId);
     setCopied(true);
+    toast.success("Reference ID copied");
     setTimeout(() => setCopied(false), 2000);
   }
 
@@ -113,6 +117,17 @@ export default function RegisterPage() {
     );
   }
 
+  if (event.eventFormat !== "virtual" && event.selfRegistrationEnabled === false) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <div className="text-center text-slate-500 max-w-sm">
+          <p className="font-medium text-slate-700">Registration isn&apos;t available for {event.name}.</p>
+          <p className="text-sm mt-1">This event captures attendees directly at the door — no sign-up needed ahead of time.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
       <div className="pt-12 pb-8 px-4" style={{ background: "#610064" }}>
@@ -123,6 +138,8 @@ export default function RegisterPage() {
             <span className="flex items-center gap-1.5">
               <Calendar size={14} />
               {formatDate(event.date)}
+              {event.startTime && ` · ${formatTime(event.startTime)}`}
+              {event.endTime && ` - ${formatTime(event.endTime)}`}
             </span>
             {event.eventFormat === "virtual" ? (
               <span className="flex items-center gap-1.5">
@@ -147,22 +164,32 @@ export default function RegisterPage() {
             </div>
             <h2 className="font-semibold text-lg text-slate-900 mb-1">You&apos;re registered!</h2>
             <p className="text-sm text-slate-500 mb-6">
-              {confirmation.emailSent ? "We've also emailed you this confirmation. Keep it — you'll need it to check in." : "Keep this reference ID — you'll need it to check in."}
+              {confirmation.event.eventFormat === "virtual"
+                ? confirmation.emailSent
+                  ? "We've also emailed you the joining details. No check-in needed — just join at the time above."
+                  : "No check-in needed for this one — just join at the time above."
+                : confirmation.emailSent
+                  ? "We've also emailed you this confirmation. Keep it — you'll need it to check in."
+                  : "Keep this reference ID — you'll need it to check in."}
             </p>
 
-            {qrDataUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={qrDataUrl} alt="Registration QR code" className="mx-auto mb-4 rounded-lg border border-slate-200" width={180} height={180} />
-            )}
+            {confirmation.referenceId && (
+              <>
+                {qrDataUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={qrDataUrl} alt="Registration QR code" className="mx-auto mb-4 rounded-lg border border-slate-200" width={180} height={180} />
+                )}
 
-            <button
-              type="button"
-              onClick={copyReferenceId}
-              className="inline-flex items-center gap-2 mx-auto px-4 py-2 rounded-lg border border-slate-200 font-mono text-base font-semibold text-slate-800 hover:bg-slate-50"
-            >
-              {confirmation.referenceId}
-              {copied ? <Check size={15} className="text-teal-600" /> : <Copy size={15} className="text-slate-400" />}
-            </button>
+                <button
+                  type="button"
+                  onClick={copyReferenceId}
+                  className="inline-flex items-center gap-2 mx-auto px-4 py-2 rounded-lg border border-slate-200 font-mono text-base font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  {confirmation.referenceId}
+                  {copied ? <Check size={15} className="text-teal-600" /> : <Copy size={15} className="text-slate-400" />}
+                </button>
+              </>
+            )}
 
             {confirmation.event.eventFormat === "virtual" ? (
               <div className="mt-6 pt-5 border-t border-slate-100 text-left">

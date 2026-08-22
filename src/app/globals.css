@@ -4,13 +4,21 @@
   --font-display: var(--font-dm-serif), Georgia, serif;
   --font-sans: var(--font-inter), system-ui, sans-serif;
 
-  --color-navy-950: #030d1a;
-  --color-navy-900: #0a1f3d;
-  --color-navy-800: #0f2a4e;
-  --color-navy-700: #163561;
-  --color-navy-600: #1e4278;
-  --color-navy-500: #2a5298;
-  --color-navy-400: #3b6ab5;
+  /* Brand accent — pinned to the app's #610064 purple at 600 so this is a
+     drop-in replacement for the ~170 hardcoded #610064/text-[#610064] literals
+     across the app (none of which use any other shade). 50/100 are tints for
+     hover/active fills, 700 is the hover/pressed darken. */
+  --color-brand-50: #faf0fb;
+  --color-brand-100: #f2d9f4;
+  --color-brand-500: #9b1a9f;
+  --color-brand-600: #610064;
+  --color-brand-700: #4a004d;
+
+  /* Staff's distinct blue identity (kept separate from the purple admin/rep
+     brand — see shell.tsx). Same value as the existing #1098F7 literals. */
+  --color-staff-600: #1098f7;
+  --color-staff-700: #0c7bcc;
+
   --color-teal-600: #0d7c6e;
   --color-teal-500: #0e9d8c;
   --color-teal-400: #14b8a6;
@@ -82,6 +90,89 @@ select {
 }
 .animate-badge-settle-back {
   animation: badge-settle-back 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Same settle language as the badge cards above (same curve/duration/delay
+   split), but ending at this card's own resting tilt (-2deg front, 2deg back)
+   instead of the badge stack's. Used by the homepage hero mockup. */
+@keyframes hero-card-settle-front {
+  from {
+    opacity: 0;
+    transform: translateY(18px) rotate(4deg) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(-2deg) scale(1);
+  }
+}
+@keyframes hero-card-settle-back {
+  from {
+    opacity: 0;
+    transform: translateY(10px) rotate(-6deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(2deg);
+  }
+}
+.animate-hero-card-settle-front {
+  animation: hero-card-settle-front 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+.animate-hero-card-settle-back {
+  animation: hero-card-settle-back 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Slow ambient float for hero/decorative cards, once their entrance has
+   settled (0.9s delay ≈ settle's own delay + duration). Applied to a
+   *wrapping* element so it composes with — rather than fights — the settle
+   animations' own transform on the card itself. A back-style overshoot
+   curve (rather than ease-in-out) gives the float a soft bounce instead of
+   a plain sine sway. */
+@keyframes idle-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.animate-idle-float {
+  animation: idle-float 4.5s cubic-bezier(0.45, 0, 0.15, 1.6) 0.9s infinite;
+}
+
+/* Bouncy hover response for decorative/marketing elements only (badge art,
+   hero mockup, feature icons, login page tags) — never on frequently-clicked
+   UI. CSS transition, not keyframes, so rapid hover in/out retargets
+   smoothly instead of restarting from zero. Hover-gated: touch taps
+   shouldn't trigger a fake ":hover" bounce. */
+.hover-bounce,
+.hover-bounce-sm {
+  transition: transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hover-bounce:hover {
+    transform: scale(1.06) translateY(-3px);
+  }
+  .hover-bounce-sm:hover {
+    transform: scale(1.12) translateY(-2px);
+  }
+}
+
+/* Staggered entrance for decorative grids (e.g. the login page's event-type
+   tags) — pair with an inline `animationDelay` per item for the stagger. */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 /* Single global reduced-motion reset — covers every animation/transition in the

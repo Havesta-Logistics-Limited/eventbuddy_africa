@@ -9,8 +9,9 @@ type LookupBody = {
 /**
  * Staff at a delegate/rep booth scans (or types) an attendee's reference ID to pull their
  * self-service registration details into the lead-capture form, instead of re-typing name/
- * email/phone from scratch. Read-only — unlike /api/checkin this never changes the
- * registration's status; it's a separate action from marking someone as arrived at the door.
+ * email/phone from scratch. Being scanned at a booth is itself evidence the attendee showed
+ * up, so this also marks the registration checked-in (unless it's cancelled) — staff working
+ * a booth shouldn't have to separately visit /checkin to get the same attendee marked present.
  * Modeled on /api/checkin: eventId is resolved authoritatively from the staffId's own row
  * server-side, and the registration looked up must belong to that same event.
  */
@@ -37,13 +38,20 @@ export async function POST(request: Request) {
   const normalized = referenceId.trim().toUpperCase();
   const { data: registration } = await supabase
     .from("registrations")
-    .select("id, full_name, email, phone, custom_answers")
+    .select("id, full_name, email, phone, custom_answers, status")
     .eq("event_id", staffRow.event_id)
     .eq("reference_id", normalized)
     .maybeSingle();
 
   if (!registration) {
     return NextResponse.json({ error: "No registration found for that code, for this event." }, { status: 404 });
+  }
+
+  if (registration.status === "registered") {
+    await supabase
+      .from("registrations")
+      .update({ status: "checked_in", checked_in_at: new Date().toISOString(), checked_in_by: staffRow.id })
+      .eq("id", registration.id);
   }
 
   // One collection per attendee per university — a different university's booth scanning

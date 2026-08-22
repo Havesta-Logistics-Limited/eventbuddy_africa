@@ -45,6 +45,24 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
           ))}
         </div>
       </div>
+      {!isVirtual && (
+        <label className="flex items-start gap-2.5 p-3 rounded-lg border border-slate-200 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.selfRegistrationEnabled ?? true}
+            onChange={(e) => onChange({ selfRegistrationEnabled: e.target.checked })}
+            className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#610064] focus:ring-[#610064]"
+          />
+          <span>
+            <span className="block text-sm font-medium text-slate-700">Allow self-service registration</span>
+            <span className="block text-xs text-slate-500 mt-0.5">
+              {data.selfRegistrationEnabled === false
+                ? "Off — no public sign-up link. Staff capture every lead directly at the booth, walk-up, no QR code needed."
+                : "On — attendees can pre-register and get a QR code to check in with."}
+            </span>
+          </span>
+        </label>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClass}>Start Date</label>

@@ -46,11 +46,14 @@ export async function POST(request: Request) {
 
   const { data: eventRow } = await supabase
     .from("events")
-    .select("date, end_date, start_time, end_time, timezone, capture_override")
+    .select("date, end_date, start_time, end_time, timezone, capture_override, published")
     .eq("id", staffRow.event_id)
     .maybeSingle();
   if (!eventRow) {
     return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });
+  }
+  if (!eventRow.published) {
+    return NextResponse.json({ error: "This event isn't live yet." }, { status: 403 });
   }
 
   const window = windowFromEvent({

@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Clock, MapPinCheckInside, MapPin, Search, SlidersHorizontal } from "lucide-react";
+import { Calendar, Clock, MapPin, Search, SlidersHorizontal, Presentation } from "lucide-react";
 import { Destination, EventRecord, EventStatus } from "@/lib/types";
 import { getEventStatus } from "@/lib/capture-window";
 import { formatDate, formatTime, getEventCity, getEventMonthLabel, sortEventsByProximity } from "@/lib/utils";
 import { DestinationFlags } from "@/components/destination-flags";
 import { EventFilterModal } from "@/components/event-filter-modal";
 import { Reveal } from "@/components/reveal";
+import { Logo } from "@/components/logo";
 
 const statusStyles: Record<EventStatus, string> = {
   active: "bg-teal-100 text-teal-700",
@@ -117,13 +118,7 @@ export function EventPicker({
         />
         <div className="relative max-w-5xl mx-auto">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <MapPinCheckInside size={22} className={theme.eyebrow} />
-              <div>
-                <p className="font-display text-base leading-tight">EventPal</p>
-                <p className="text-xs text-white/50 leading-tight">Desired Results On The Go</p>
-              </div>
-            </div>
+            <Logo tone="white" height={24} />
             <button type="button" onClick={secondaryAction.onClick} className="text-sm font-medium text-white/80 hover:text-white transition-colors">
               {secondaryAction.label}
             </button>
@@ -237,8 +232,17 @@ export function EventPicker({
                           </p>
                         )}
                         <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500 truncate">
-                          <MapPin size={13} className="shrink-0" />
-                          <span className="truncate">{evt.location}</span>
+                          {evt.eventFormat === "virtual" ? (
+                            <>
+                              <Presentation size={13} className="shrink-0" />
+                              <span className="truncate">{evt.virtualPlatform || "Online"} (Virtual)</span>
+                            </>
+                          ) : (
+                            <>
+                              <MapPin size={13} className="shrink-0" />
+                              <span className="truncate">{evt.location}</span>
+                            </>
+                          )}
                         </p>
                         {eventDests.length > 0 && (
                           <div className="mt-2.5">

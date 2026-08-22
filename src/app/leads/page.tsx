@@ -1,20 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Download, Loader2, Mail, Paperclip, Search, Users, X } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import { getDestinationById, getUniversityById, useDestinations, useEvents, useLeads, useUniversities } from "@/lib/store";
+import { getDestinationById, getUniversityById, useDataReady, useDestinations, useEvents, useLeads, useUniversities } from "@/lib/store";
 import { EventRecord, Role } from "@/lib/types";
 import { downloadCsv, leadsToCsv } from "@/lib/csv";
 import { sortEventsByProximity } from "@/lib/utils";
 import { EventLeadsCard } from "@/components/event-leads-card";
 import { Reveal } from "@/components/reveal";
+import { RowSkeleton } from "@/components/skeleton";
 
 const ADMIN_OR_REP: Role[] = ["admin", "rep"];
 
 export default function LeadsPage() {
   const session = useRequireRole(ADMIN_OR_REP);
+  const dataReady = useDataReady();
   const leads = useLeads();
   const events = useEvents();
   const destinations = useDestinations();
@@ -78,6 +81,7 @@ export default function LeadsPage() {
 
   function downloadFiltered() {
     downloadCsv("leads_export.csv", leadsToCsv(filtered, { includeEvent: true }));
+    toast.success(`${filtered.length} lead${filtered.length !== 1 ? "s" : ""} exported`);
   }
 
   async function sendEmail() {
@@ -101,6 +105,7 @@ export default function LeadsPage() {
         return;
       }
       setSent(true);
+      toast.success("Email sent");
     } catch {
       setSendError("Couldn't reach the server. Check your connection and try again.");
     } finally {
@@ -111,18 +116,18 @@ export default function LeadsPage() {
   return (
     <Shell>
       <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h1 className="font-display text-2xl text-slate-900">Leads</h1>
-            <p className="text-slate-500 text-sm mt-0.5">
+            <p className="text-slate-500 text-sm mt-0.5 tabular-nums">
               {filtered.length} of {isRep ? leads.filter((l) => l.universityId === session?.universityId).length : leads.length} records
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={openEmailModal}
               disabled={filtered.length === 0}
-              className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
             >
               <Mail size={14} />
               Email
@@ -130,8 +135,7 @@ export default function LeadsPage() {
             <button
               onClick={downloadFiltered}
               disabled={filtered.length === 0}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 transition-transform active:scale-[0.97]"
-              style={{ background: "#610064" }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-[transform,background-color] active:scale-[0.97]"
             >
               <Download size={14} />
               Export CSV
@@ -140,7 +144,7 @@ export default function LeadsPage() {
         </div>
 
         {!isRep && (
-          <div className="bg-white rounded-xl border border-slate-200 p-4 mb-5">
+          <div className="rounded-xl bg-slate-50 p-4 mb-5">
             <div className="flex flex-wrap gap-3">
               <div className="relative flex-1 min-w-[180px]">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -148,13 +152,13 @@ export default function LeadsPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name or email…"
-                  className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
+                  className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                 />
               </div>
               <select
                 value={filterEvent}
                 onChange={(e) => setFilterEvent(e.target.value)}
-                className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] min-w-[150px] bg-white"
+                className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 min-w-[150px] bg-white"
               >
                 <option value="">All Events</option>
                 {events.map((ev) => (
@@ -171,7 +175,7 @@ export default function LeadsPage() {
                       setFilterDest(e.target.value);
                       setFilterUni("");
                     }}
-                    className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white"
+                    className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
                   >
                     <option value="">All Destinations</option>
                     {destinations.map((d) => (
@@ -183,7 +187,7 @@ export default function LeadsPage() {
                   <select
                     value={filterUni}
                     onChange={(e) => setFilterUni(e.target.value)}
-                    className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white min-w-[160px]"
+                    className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white min-w-[160px]"
                   >
                     <option value="">All Universities</option>
                     {availableUnis.map((u) => (
@@ -205,20 +209,26 @@ export default function LeadsPage() {
         )}
 
         {isRep && (
-          <div className="bg-white rounded-xl border border-slate-200 p-4 mb-5">
+          <div className="rounded-xl bg-slate-50 p-4 mb-5">
             <div className="relative w-full max-w-md">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search leads by name, email or phone..."
-                className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
+                className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
               />
             </div>
           </div>
         )}
 
-        {filtered.length === 0 ? (
+        {!dataReady ? (
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <RowSkeleton key={i} />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="text-center py-16 text-slate-400">
               <Users size={36} className="mx-auto mb-3 opacity-40" />
@@ -259,7 +269,7 @@ export default function LeadsPage() {
                       setSendError("");
                     }}
                     placeholder="recipient@example.com"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
                 <div>
@@ -267,7 +277,7 @@ export default function LeadsPage() {
                   <input
                     value={emailSubject}
                     onChange={(e) => setEmailSubject(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
                 <div>
@@ -276,7 +286,7 @@ export default function LeadsPage() {
                     rows={4}
                     value={emailMessage}
                     onChange={(e) => setEmailMessage(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] resize-none"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
                   />
                 </div>
                 <div>
@@ -309,8 +319,7 @@ export default function LeadsPage() {
                     type="button"
                     onClick={sendEmail}
                     disabled={!emailTo || sending}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-50"
-                    style={{ background: "#610064" }}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors"
                   >
                     {sending && <Loader2 size={14} className="animate-spin" />}
                     {sending ? "Sending…" : "Send Email"}
