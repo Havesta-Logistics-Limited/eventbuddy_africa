@@ -11,6 +11,7 @@ import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 import { formatDate, formatTime } from "@/lib/utils";
 import { DynamicLeadForm, type DynamicLeadFormValues } from "@/components/dynamic-lead-form";
 import { QrScannerPanel } from "@/components/qr-scanner-panel";
+import { AuthLoading } from "@/components/auth-loading";
 
 const STAFF_ONLY: Role[] = ["staff"];
 
@@ -77,7 +78,7 @@ export default function LeadCollectPage() {
     return () => clearInterval(id);
   }, [gate?.open]);
 
-  if (!session) return null;
+  if (!session) return <AuthLoading />;
 
   if (event && gate && !gate.open) {
     return (

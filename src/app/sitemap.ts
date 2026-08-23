@@ -7,11 +7,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
  *  or meant to be reached only via a direct link an organizer shares, never surfaced
  *  in search. See robots.ts for the matching disallow rules. */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const pages = ["", "/pricing", "/privacy", "/terms"];
+  const pages = ["", "/pricing", "/managed-events", "/privacy", "/terms"];
   return pages.map((path) => ({
     url: `${siteUrl}${path}`,
     lastModified: new Date(),
     changeFrequency: path === "" ? "weekly" : "monthly",
-    priority: path === "" ? 1 : 0.5,
+    priority: path === "" ? 1 : path === "/managed-events" ? 0.7 : 0.5,
   }));
 }

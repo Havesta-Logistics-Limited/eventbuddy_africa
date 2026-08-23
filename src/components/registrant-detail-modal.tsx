@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { toast } from "sonner";
-import { X, QrCode, Mail, Phone, Calendar, CheckCircle2, MapPin, BookMarked, GraduationCap, Globe2, Building2, MessageSquare } from "lucide-react";
-import { Destination, EventRecord, LeadRecord, RegistrationRecord, University } from "@/lib/types";
+import { X, QrCode, Mail, Phone, Calendar, CheckCircle2, MapPin, BookMarked, GraduationCap, Globe2, Building2, MessageSquare, Ticket } from "lucide-react";
+import { Destination, EventRecord, LeadRecord, RegistrationRecord, TicketType, University } from "@/lib/types";
 import { updateRegistrationStatus } from "@/lib/store";
+import { formatNaira } from "@/lib/billing";
 
 const statusStyles: Record<RegistrationRecord["status"], string> = {
   registered: "bg-amber-100 text-amber-700",
@@ -29,6 +30,7 @@ export function RegistrantDetailModal({
   destination,
   university,
   checkedInByName,
+  ticketType,
   onClose,
 }: {
   registration: RegistrationRecord;
@@ -37,6 +39,7 @@ export function RegistrantDetailModal({
   destination?: Destination;
   university?: University;
   checkedInByName?: string;
+  ticketType?: TicketType;
   onClose: () => void;
 }) {
   const [qrDataUrl, setQrDataUrl] = useState("");
@@ -62,8 +65,8 @@ export function RegistrantDetailModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-y-auto max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop" onClick={onClose}>
+      <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-2xl shadow-2xl overflow-y-auto max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between p-6 border-b border-slate-100">
           <div>
             <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Registration details</p>
@@ -95,6 +98,14 @@ export function RegistrantDetailModal({
                 <p className="flex items-center gap-2 text-teal-700">
                   <CheckCircle2 size={14} /> Checked in {new Date(registration.checkedInAt).toLocaleString()}
                   {checkedInByName ? ` by ${checkedInByName}` : ""}
+                </p>
+              )}
+              {ticketType && (
+                <p className="flex items-center gap-2 text-slate-600">
+                  <Ticket size={14} className="text-slate-400" /> {ticketType.name}
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${ticketType.priceNaira > 0 ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}>
+                    {ticketType.priceNaira > 0 ? formatNaira(ticketType.priceNaira) : "Free"}
+                  </span>
                 </p>
               )}
             </div>

@@ -8,6 +8,7 @@ import { Role } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
 import { formatCustomAnswers } from "@/lib/utils";
 import { Reveal } from "@/components/reveal";
+import { AuthLoading } from "@/components/auth-loading";
 
 const STAFF_ONLY: Role[] = ["staff"];
 
@@ -15,7 +16,7 @@ export default function MyLeadsPage() {
   const session = useRequireRole(STAFF_ONLY);
   const leads = useLeads();
 
-  if (!session) return null;
+  if (!session) return <AuthLoading />;
 
   const myLeads = leads.filter((l) => l.staffId === session.id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 

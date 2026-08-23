@@ -28,24 +28,37 @@ import {
   RefreshCw,
   Download,
   Wrench,
+  ClipboardList,
+  Mail,
+  Phone,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 import { Reveal } from "@/components/reveal";
 import { RowSkeleton, StatTileSkeleton } from "@/components/skeleton";
 import { Logo } from "@/components/logo";
+import { AuthLoading } from "@/components/auth-loading";
 import { downloadCsv } from "@/lib/csv";
-import { EVENT_PRICE_USD, formatUSD, isBillable as isFormatBillable, eventPrice as priceForFormat, updateEventPrice } from "@/lib/billing";
+import {
+  EVENT_PRICE_NAIRA,
+  TICKET_FEE_PERCENTAGE,
+  formatNaira,
+  isBillable as isFormatBillable,
+  eventPrice as priceForFormat,
+  updateEventPrice,
+  updateTicketFeePercentage,
+} from "@/lib/billing";
 import { DEFAULT_MAINTENANCE_MESSAGE, DEFAULT_MAINTENANCE_TITLE, updateMaintenanceState } from "@/lib/maintenance";
 import { getTemplate } from "@/lib/event-templates";
 
-const SIDEBAR_BG = "#2e0a30";
+const SIDEBAR_BG = "#0d2615";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 const NAV = [
   { id: "organizations", label: "Organizations", icon: Building2 },
   { id: "events", label: "Events", icon: Calendar },
   { id: "billing", label: "Billing", icon: DollarSign },
+  { id: "managed-requests", label: "Managed Events", icon: ClipboardList },
   { id: "maintenance", label: "Maintenance", icon: Wrench },
   { id: "admins", label: "Team", icon: ShieldCheck },
 ] as const;
@@ -74,19 +87,33 @@ type EventRow = {
   template_id: string | null;
   event_format: "physical" | "virtual";
   payment_status: string;
-  price_usd: number;
+  price_naira: number;
   capture_override: "open" | "closed" | null;
   created_at: string;
 };
 type LeadRow = { id: string; organization_id: string; event_id: string };
 type RegistrationRow = { id: string; organization_id: string; event_id: string; status: string; created_at: string };
 type AdminRow = { user_id: string; email: string | null; created_at: string };
+type ManagedRequestRow = {
+  id: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string | null;
+  organization_name: string | null;
+  event_name: string;
+  event_date: string | null;
+  expected_attendees: string | null;
+  city: string;
+  message: string | null;
+  status: "new" | "contacted" | "quoted" | "closed";
+  created_at: string;
+};
 type TransactionRow = {
   id: string;
   organization_id: string;
   event_id: string;
   reference: string;
-  amount_usd: number;
+  amount_naira: number;
   charge_currency: string;
   charge_amount_minor: number;
   status: "pending" | "success" | "failed";
@@ -97,11 +124,11 @@ type TransactionRow = {
 function isBillable(ev: Pick<EventRow, "event_format">) {
   return isFormatBillable(ev.event_format);
 }
-/** The price actually snapshotted on this event at creation time (events_set_price_usd
+/** The price actually snapshotted on this event at creation time (events_set_price_naira
  *  trigger) — not the platform's current price, which may have changed since. Falls
- *  back to the format-based constant only for rows fetched before price_usd existed. */
-function eventPrice(ev: Pick<EventRow, "event_format" | "price_usd">) {
-  return ev.price_usd ?? priceForFormat(ev.event_format);
+ *  back to the format-based constant only for rows fetched before price_naira existed. */
+function eventPrice(ev: Pick<EventRow, "event_format" | "price_naira">) {
+  return ev.price_naira ?? priceForFormat(ev.event_format);
 }
 
 export default function PlatformDashboard() {
@@ -124,6 +151,9 @@ export default function PlatformDashboard() {
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [txnSearch, setTxnSearch] = useState("");
   const [txnStatusFilter, setTxnStatusFilter] = useState<"all" | "pending" | "success" | "failed">("all");
+  const [managedRequests, setManagedRequests] = useState<ManagedRequestRow[]>([]);
+  const [managedStatusFilter, setManagedStatusFilter] = useState<"all" | "new" | "contacted" | "quoted" | "closed">("all");
+  const [busyManagedRequestId, setBusyManagedRequestId] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -151,12 +181,18 @@ export default function PlatformDashboard() {
   const [createAccountError, setCreateAccountError] = useState("");
   const [createAccountSuccess, setCreateAccountSuccess] = useState("");
 
-  const [currentPrice, setCurrentPrice] = useState(EVENT_PRICE_USD);
+  const [currentPrice, setCurrentPrice] = useState(EVENT_PRICE_NAIRA);
   const [priceDraft, setPriceDraft] = useState("");
   const [editingPrice, setEditingPrice] = useState(false);
   const [savingPrice, setSavingPrice] = useState(false);
   const [priceError, setPriceError] = useState("");
   const [busyPaymentEventId, setBusyPaymentEventId] = useState<string | null>(null);
+
+  const [currentFeePct, setCurrentFeePct] = useState(TICKET_FEE_PERCENTAGE);
+  const [feePctDraft, setFeePctDraft] = useState("");
+  const [editingFeePct, setEditingFeePct] = useState(false);
+  const [savingFeePct, setSavingFeePct] = useState(false);
+  const [feePctError, setFeePctError] = useState("");
 
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceTitle, setMaintenanceTitle] = useState(DEFAULT_MAINTENANCE_TITLE);
@@ -173,7 +209,7 @@ export default function PlatformDashboard() {
    *  silently, showing "no organizations yet" even when the data was fine. */
   async function fetchPlatformData() {
     const supabase = createClient();
-    const [orgsRes, eventsRes, leadsRes, registrationsRes, adminsRes, settingsRes, transactionsRes] = await Promise.all([
+    const [orgsRes, eventsRes, leadsRes, registrationsRes, adminsRes, settingsRes, transactionsRes, managedRequestsRes] = await Promise.all([
       supabase
         .from("organizations")
         .select("id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email")
@@ -181,18 +217,26 @@ export default function PlatformDashboard() {
       supabase
         .from("events")
         .select(
-          "id, organization_id, name, date, end_date, start_time, end_time, timezone, template_id, event_format, payment_status, price_usd, capture_override, created_at"
+          "id, organization_id, name, date, end_date, start_time, end_time, timezone, template_id, event_format, payment_status, price_naira, capture_override, created_at"
         ),
       supabase.from("leads").select("id, organization_id, event_id"),
       supabase.from("registrations").select("id, organization_id, event_id, status, created_at"),
       supabase.from("platform_admins").select("user_id, email, created_at").order("created_at", { ascending: true }),
-      supabase.from("platform_settings").select("event_price_usd, maintenance_mode, maintenance_title, maintenance_message").eq("id", true).maybeSingle(),
+      supabase
+        .from("platform_settings")
+        .select("event_price_naira, ticket_fee_percentage, maintenance_mode, maintenance_title, maintenance_message")
+        .eq("id", true)
+        .maybeSingle(),
       supabase
         .from("paystack_transactions")
-        .select("id, organization_id, event_id, reference, amount_usd, charge_currency, charge_amount_minor, status, created_at, verified_at")
+        .select("id, organization_id, event_id, reference, amount_naira, charge_currency, charge_amount_minor, status, created_at, verified_at")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("managed_event_requests")
+        .select("id, contact_name, contact_email, contact_phone, organization_name, event_name, event_date, expected_attendees, city, message, status, created_at")
         .order("created_at", { ascending: false }),
     ]);
-    const firstError = orgsRes.error || eventsRes.error || leadsRes.error || registrationsRes.error || adminsRes.error || transactionsRes.error;
+    const firstError = orgsRes.error || eventsRes.error || leadsRes.error || registrationsRes.error || adminsRes.error || transactionsRes.error || managedRequestsRes.error;
     setLoadError(firstError ? firstError.message : "");
     setOrgs((orgsRes.data as OrgRow[]) ?? []);
     setEvents((eventsRes.data as EventRow[]) ?? []);
@@ -200,8 +244,10 @@ export default function PlatformDashboard() {
     setRegistrations((registrationsRes.data as RegistrationRow[]) ?? []);
     setAdmins((adminsRes.data as AdminRow[]) ?? []);
     setTransactions((transactionsRes.data as TransactionRow[]) ?? []);
+    setManagedRequests((managedRequestsRes.data as ManagedRequestRow[]) ?? []);
     if (settingsRes.data) {
-      setCurrentPrice(Number(settingsRes.data.event_price_usd));
+      setCurrentPrice(Number(settingsRes.data.event_price_naira));
+      setCurrentFeePct(Number(settingsRes.data.ticket_fee_percentage));
       setMaintenanceMode(!!settingsRes.data.maintenance_mode);
       setMaintenanceTitle(settingsRes.data.maintenance_title || DEFAULT_MAINTENANCE_TITLE);
       setMaintenanceMessage(settingsRes.data.maintenance_message || DEFAULT_MAINTENANCE_MESSAGE);
@@ -289,6 +335,18 @@ export default function PlatformDashboard() {
     setBusyOrgId(null);
   }
 
+  async function updateManagedRequestStatus(req: ManagedRequestRow, status: ManagedRequestRow["status"]) {
+    setBusyManagedRequestId(req.id);
+    const supabase = createClient();
+    const { error } = await supabase.from("managed_event_requests").update({ status }).eq("id", req.id);
+    if (!error) {
+      setManagedRequests((prev) => prev.map((r) => (r.id === req.id ? { ...r, status } : r)));
+    } else {
+      toast.error(error.message);
+    }
+    setBusyManagedRequestId(null);
+  }
+
   // Manual, until real payment collection (Paystack) is wired up — lets the platform
   // admin actually record which billable events have been paid, so the Billing tab's
   // revenue figures mean something today rather than sitting at "pending" forever.
@@ -318,11 +376,31 @@ export default function PlatformDashboard() {
       await updateEventPrice(parsed);
       setCurrentPrice(parsed);
       setEditingPrice(false);
-      toast.success(`Per-event price updated to ${formatUSD(parsed)}`);
+      toast.success(`Per-event price updated to ${formatNaira(parsed)}`);
     } catch (err) {
       setPriceError(err instanceof Error ? err.message : "Couldn't save the new price.");
     } finally {
       setSavingPrice(false);
+    }
+  }
+
+  async function saveFeePct() {
+    const parsed = Number(feePctDraft);
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+      setFeePctError("Enter a valid percentage between 0 and 100.");
+      return;
+    }
+    setFeePctError("");
+    setSavingFeePct(true);
+    try {
+      await updateTicketFeePercentage(parsed);
+      setCurrentFeePct(parsed);
+      setEditingFeePct(false);
+      toast.success(`Ticket fee updated to ${parsed}%`);
+    } catch (err) {
+      setFeePctError(err instanceof Error ? err.message : "Couldn't save the new fee.");
+    } finally {
+      setSavingFeePct(false);
     }
   }
 
@@ -484,7 +562,7 @@ export default function PlatformDashboard() {
 
   function exportTransactions(rows: TransactionRow[]) {
     const csv = csvFrom(
-      ["Organization", "Email", "Event", "Amount (USD)", "Charged", "Paystack Reference", "Status", "Date"],
+      ["Organization", "Email", "Event", "Amount (₦)", "Charged", "Paystack Reference", "Status", "Date"],
       rows.map((t) => {
         const org = orgById.get(t.organization_id);
         const ev = eventById.get(t.event_id);
@@ -492,7 +570,7 @@ export default function PlatformDashboard() {
           org?.name ?? t.organization_id,
           org?.email ?? "",
           ev?.name ?? t.event_id,
-          formatUSD(Number(t.amount_usd)),
+          formatNaira(Number(t.amount_naira)),
           `${(t.charge_amount_minor / 100).toFixed(2)} ${t.charge_currency}`,
           t.reference,
           t.status,
@@ -597,21 +675,17 @@ export default function PlatformDashboard() {
   }
 
   if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: SIDEBAR_BG }}>
-        <Logo tone="white" height={32} className="opacity-70 animate-pulse" />
-      </div>
-    );
+    return <AuthLoading />;
   }
 
   if (!authorized) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6" style={{ background: SIDEBAR_BG }}>
         <div className="text-center max-w-sm">
-          <Logo tone="white" height={32} className="mx-auto mb-6 opacity-90" />
+          <Logo tone="white" height={18} className="mx-auto mb-6 opacity-90" />
           <p className="font-display text-xl text-white mb-2">Not authorized</p>
           <p className="text-sm text-white/40 mb-6">This account doesn&apos;t have platform admin access.</p>
-          <button type="button" onClick={handleSignOut} className="text-sm font-medium text-fuchsia-300 hover:underline">
+          <button type="button" onClick={handleSignOut} className="text-sm font-medium text-[#a5e9bc] hover:underline">
             Sign out and try a different account
           </button>
         </div>
@@ -684,7 +758,7 @@ export default function PlatformDashboard() {
       delta: newRegistrationsThisWeek > 0 ? `+${newRegistrationsThisWeek} this week` : null,
     },
     { label: "Total Leads", value: leads.length, icon: Users2, delta: null },
-    { label: "Revenue to date", value: formatUSD(revenue), icon: DollarSign, delta: null },
+    { label: "Revenue to date", value: formatNaira(revenue), icon: DollarSign, delta: null },
   ];
 
   const filteredOrgs = orgs.filter((org) => {
@@ -727,7 +801,7 @@ export default function PlatformDashboard() {
               active ? "text-white font-medium" : "text-white/60 hover:text-white hover:bg-white/8"
             }`}
           >
-            <Icon size={17} className={active ? "text-fuchsia-300" : undefined} />
+            <Icon size={17} className={active ? "text-[#a5e9bc]" : undefined} />
             {label}
           </button>
         );
@@ -738,7 +812,7 @@ export default function PlatformDashboard() {
   const sidebarFooter = (
     <div className="px-3 pb-5 border-t border-white/10 pt-4">
       <div className="flex items-center gap-3 px-3 mb-3">
-        <div className="w-8 h-8 rounded-full bg-fuchsia-300/15 flex items-center justify-center text-fuchsia-300 font-semibold text-sm shrink-0">
+        <div className="w-8 h-8 rounded-full bg-[#a5e9bc]/15 flex items-center justify-center text-[#a5e9bc] font-semibold text-sm shrink-0">
           {currentUserEmail.charAt(0).toUpperCase() || "?"}
         </div>
         <div className="flex-1 min-w-0">
@@ -762,7 +836,7 @@ export default function PlatformDashboard() {
       {/* Sidebar — desktop */}
       <aside className="hidden md:flex w-64 flex-col text-white fixed inset-y-0 left-0 z-40" style={{ background: SIDEBAR_BG }}>
         <div className="px-6 py-5 border-b border-white/10">
-          <Logo tone="white" height={26} />
+          <Logo tone="white" height={18} />
           <p className="text-[11px] text-white/50 leading-tight mt-1.5 flex items-center gap-1.5">
             <ShieldCheck size={11} />
             Platform Admin
@@ -777,15 +851,15 @@ export default function PlatformDashboard() {
         <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
           <Menu size={22} />
         </button>
-        <Logo tone="white" height={20} />
+        <Logo tone="white" height={12} />
       </header>
 
       {/* Mobile drawer */}
       {mobileNavOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          <div className="w-64 text-white flex flex-col h-full" style={{ background: SIDEBAR_BG }}>
+          <div className="w-64 text-white flex flex-col h-full animate-drawer-in" style={{ background: SIDEBAR_BG }}>
             <div className="px-5 py-4 flex items-center justify-between border-b border-white/10">
-              <Logo tone="white" height={22} />
+              <Logo tone="white" height={13} />
               <button type="button" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
                 <X size={20} className="text-white/60" />
               </button>
@@ -793,7 +867,7 @@ export default function PlatformDashboard() {
             {sidebarNav}
             {sidebarFooter}
           </div>
-          <div className="flex-1 bg-black/50" onClick={() => setMobileNavOpen(false)} />
+          <div className="flex-1 bg-black/50 animate-modal-backdrop" onClick={() => setMobileNavOpen(false)} />
         </div>
       )}
 
@@ -844,8 +918,8 @@ export default function PlatformDashboard() {
                       <Reveal key={s.label} index={i}>
                         <div className="bg-white rounded-xl border border-slate-200 p-4">
                           <div className="flex items-start justify-between mb-2">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#f5edf6" }}>
-                              <s.icon size={16} style={{ color: "#610064" }} />
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#e8f7ed" }}>
+                              <s.icon size={16} style={{ color: "#1B512D" }} />
                             </div>
                             {s.delta && (
                               <span className="text-[10px] font-semibold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded-full">{s.delta}</span>
@@ -953,7 +1027,7 @@ export default function PlatformDashboard() {
                               <td className="px-4 py-3 text-slate-600 tabular-nums">{orgRegs.length}</td>
                               <td className="px-4 py-3 text-slate-600 tabular-nums">{orgLeads.length}</td>
                               <td className="px-4 py-3 text-slate-700 tabular-nums whitespace-nowrap">
-                                {formatUSD(orgBilling)}
+                                {formatNaira(orgBilling)}
                                 {org.is_fee_exempt && <span className="block text-[10px] text-teal-600 font-medium">exempt</span>}
                               </td>
                               <td className="px-4 py-3">
@@ -1034,7 +1108,7 @@ export default function PlatformDashboard() {
               <div className="mb-6">
                 <h1 className="font-display text-2xl text-slate-900">Events</h1>
                 <p className="text-slate-500 text-sm mt-0.5">
-                  Every event across every organization. Physical events are billable at {formatUSD(currentPrice)}; virtual events are always free.
+                  Every event across every organization. Physical events are billable at {formatNaira(currentPrice)}; virtual events are always free.
                 </p>
               </div>
 
@@ -1157,7 +1231,7 @@ export default function PlatformDashboard() {
                           <div className="hidden md:block w-32 shrink-0">
                             {billable ? (
                               <span className="flex items-center gap-1.5">
-                                <span className="text-slate-700 text-sm tabular-nums">{formatUSD(eventPrice(ev))}</span>
+                                <span className="text-slate-700 text-sm tabular-nums">{formatNaira(eventPrice(ev))}</span>
                                 <button
                                   type="button"
                                   disabled={busyPaymentEventId === ev.id}
@@ -1255,10 +1329,10 @@ export default function PlatformDashboard() {
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
-                  { label: "Revenue to date", value: formatUSD(revenue), accent: "#610064", bg: "#f5edf6" },
-                  { label: "Revenue this week", value: formatUSD(revenueThisWeek), accent: "#0d9488", bg: "#e7f6f0" },
-                  { label: "Pending revenue", value: formatUSD(pendingRevenue), accent: "#b45309", bg: "#fdf1e2" },
-                  { label: "Waived (fee-exempt)", value: formatUSD(exemptedRevenue), accent: "#64748b", bg: "#f1f5f9" },
+                  { label: "Revenue to date", value: formatNaira(revenue), accent: "#1B512D", bg: "#e8f7ed" },
+                  { label: "Revenue this week", value: formatNaira(revenueThisWeek), accent: "#0d9488", bg: "#e7f6f0" },
+                  { label: "Pending revenue", value: formatNaira(pendingRevenue), accent: "#b45309", bg: "#fdf1e2" },
+                  { label: "Waived (fee-exempt)", value: formatNaira(exemptedRevenue), accent: "#64748b", bg: "#f1f5f9" },
                 ].map((tile, i) => (
                   <Reveal key={tile.label} index={i}>
                     <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -1296,11 +1370,11 @@ export default function PlatformDashboard() {
                 {editingPrice ? (
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₦</span>
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="1"
                         value={priceDraft}
                         onChange={(e) => setPriceDraft(e.target.value)}
                         autoFocus
@@ -1329,7 +1403,70 @@ export default function PlatformDashboard() {
                     {priceError && <p className="w-full text-xs text-rose-600">{priceError}</p>}
                   </div>
                 ) : (
-                  <p className="text-3xl font-bold text-slate-900 tabular-nums">{formatUSD(currentPrice)}</p>
+                  <p className="text-3xl font-bold text-slate-900 tabular-nums">{formatNaira(currentPrice)}</p>
+                )}
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <h2 className="font-semibold text-slate-900">Ticket transaction fee</h2>
+                  {!editingFeePct && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFeePctDraft(String(currentFeePct));
+                        setFeePctError("");
+                        setEditingFeePct(true);
+                      }}
+                      className="text-xs font-medium text-brand-600 hover:underline"
+                    >
+                      Change fee
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mb-3">
+                  eventbuddy&apos;s cut of every self-serve ticket sale — the rest settles straight to the organizer&apos;s own bank account via
+                  their Paystack subaccount. Only applies to organizations that set up payouts from now on; existing subaccounts keep the rate
+                  they were created with.
+                </p>
+                {editingFeePct ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={feePctDraft}
+                        onChange={(e) => setFeePctDraft(e.target.value)}
+                        autoFocus
+                        className="w-24 pl-3 pr-7 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={saveFeePct}
+                      disabled={savingFeePct}
+                      className="px-3 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60"
+                    >
+                      {savingFeePct ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingFeePct(false);
+                        setFeePctError("");
+                      }}
+                      disabled={savingFeePct}
+                      className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                    {feePctError && <p className="w-full text-xs text-rose-600">{feePctError}</p>}
+                  </div>
+                ) : (
+                  <p className="text-3xl font-bold text-slate-900 tabular-nums">{currentFeePct}%</p>
                 )}
               </div>
 
@@ -1346,12 +1483,12 @@ export default function PlatformDashboard() {
                           <Reveal key={m.month} index={i}>
                             <div className="flex items-center justify-between mb-1.5">
                               <span className="text-sm text-slate-600">{m.month}</span>
-                              <span className="text-sm font-semibold text-slate-900 tabular-nums">{formatUSD(m.total)}</span>
+                              <span className="text-sm font-semibold text-slate-900 tabular-nums">{formatNaira(m.total)}</span>
                             </div>
                             <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full transition-all duration-500"
-                                style={{ width: `${(m.total / max) * 100}%`, background: "linear-gradient(90deg, #c17bc7, #610064)" }}
+                                style={{ width: `${(m.total / max) * 100}%`, background: "#1B512D" }}
                               />
                             </div>
                           </Reveal>
@@ -1375,12 +1512,12 @@ export default function PlatformDashboard() {
                               <button type="button" onClick={() => goToOrg(r.org!.name)} className="text-sm text-slate-600 hover:text-brand-600 hover:underline truncate">
                                 {r.org!.name}
                               </button>
-                              <span className="text-sm font-semibold text-slate-900 tabular-nums shrink-0">{formatUSD(r.total)}</span>
+                              <span className="text-sm font-semibold text-slate-900 tabular-nums shrink-0">{formatNaira(r.total)}</span>
                             </div>
                             <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full transition-all duration-500"
-                                style={{ width: `${(r.total / max) * 100}%`, background: "linear-gradient(90deg, #64748b, #1e293b)" }}
+                                style={{ width: `${(r.total / max) * 100}%`, background: "#66329A" }}
                               />
                             </div>
                           </Reveal>
@@ -1469,7 +1606,7 @@ export default function PlatformDashboard() {
                                 {org?.email && <p className="text-[11px] text-slate-400 truncate">{org.email}</p>}
                               </td>
                               <td className="px-4 py-3 text-slate-600 max-w-[180px] truncate">{ev?.name ?? "—"}</td>
-                              <td className="px-4 py-3 text-slate-900 font-medium tabular-nums whitespace-nowrap">{formatUSD(Number(t.amount_usd))}</td>
+                              <td className="px-4 py-3 text-slate-900 font-medium tabular-nums whitespace-nowrap">{formatNaira(Number(t.amount_naira))}</td>
                               <td className="px-4 py-3 max-w-[140px]">
                                 <button
                                   type="button"
@@ -1493,6 +1630,124 @@ export default function PlatformDashboard() {
                   </div>
                 )}
               </div>
+            </>
+          )}
+
+          {view === "managed-requests" && (
+            <>
+              <div className="mb-6 flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="font-display text-2xl text-slate-900">Managed Events</h1>
+                  <p className="text-slate-500 text-sm mt-0.5">Quote requests from the &quot;let us run it for you&quot; page — reach out and update their status here.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  title="Refresh"
+                  aria-label="Refresh"
+                  className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 shrink-0"
+                >
+                  <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mb-5">
+                {(["all", "new", "contacted", "quoted", "closed"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setManagedStatusFilter(s)}
+                    className={`px-3.5 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
+                      managedStatusFilter === s ? "bg-brand-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              {(() => {
+                const filteredRequests = managedRequests.filter((r) => managedStatusFilter === "all" || r.status === managedStatusFilter);
+                const statusPill: Record<ManagedRequestRow["status"], string> = {
+                  new: "bg-amber-100 text-amber-700",
+                  contacted: "bg-blue-100 text-blue-700",
+                  quoted: "bg-brand-100 text-brand-700",
+                  closed: "bg-slate-100 text-slate-500",
+                };
+                return filteredRequests.length === 0 ? (
+                  <div className="text-center py-16 text-slate-400 bg-white rounded-xl border border-slate-200">
+                    <ClipboardList size={32} className="mx-auto mb-3 opacity-40" />
+                    <p>{managedRequests.length === 0 ? "No managed-event requests yet." : "No requests match this filter."}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredRequests.map((req) => (
+                      <div key={req.id} className="bg-white rounded-xl border border-slate-200 p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900">{req.event_name}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              Submitted {new Date(req.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                            </p>
+                          </div>
+                          <select
+                            value={req.status}
+                            onChange={(e) => updateManagedRequestStatus(req, e.target.value as ManagedRequestRow["status"])}
+                            disabled={busyManagedRequestId === req.id}
+                            className={`shrink-0 text-xs font-semibold capitalize px-2.5 py-1 rounded-full border-0 disabled:opacity-50 ${statusPill[req.status]}`}
+                          >
+                            {(["new", "contacted", "quoted", "closed"] as const).map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-3">
+                          <p className="flex items-center gap-1.5 text-slate-600">
+                            <Mail size={13} className="text-slate-400 shrink-0" />
+                            <a href={`mailto:${req.contact_email}`} className="hover:text-brand-600 hover:underline truncate">
+                              {req.contact_name} — {req.contact_email}
+                            </a>
+                          </p>
+                          {req.contact_phone && (
+                            <p className="flex items-center gap-1.5 text-slate-600">
+                              <Phone size={13} className="text-slate-400 shrink-0" />
+                              <a href={`tel:${req.contact_phone}`} className="hover:text-brand-600 hover:underline">
+                                {req.contact_phone}
+                              </a>
+                            </p>
+                          )}
+                          {req.organization_name && (
+                            <p className="flex items-center gap-1.5 text-slate-600">
+                              <Building2 size={13} className="text-slate-400 shrink-0" />
+                              {req.organization_name}
+                            </p>
+                          )}
+                          <p className="flex items-center gap-1.5 text-slate-600">
+                            <MapPin size={13} className="text-slate-400 shrink-0" />
+                            {req.city}
+                          </p>
+                          {req.event_date && (
+                            <p className="flex items-center gap-1.5 text-slate-600">
+                              <Calendar size={13} className="text-slate-400 shrink-0" />
+                              {new Date(req.event_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                            </p>
+                          )}
+                          {req.expected_attendees && (
+                            <p className="flex items-center gap-1.5 text-slate-600">
+                              <Users2 size={13} className="text-slate-400 shrink-0" />
+                              {req.expected_attendees} expected
+                            </p>
+                          )}
+                        </div>
+                        {req.message && <p className="text-sm text-slate-500 leading-relaxed pt-3 border-t border-slate-100">{req.message}</p>}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </>
           )}
 

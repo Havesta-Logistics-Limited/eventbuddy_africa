@@ -54,10 +54,10 @@ export default function PlatformLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6">
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#0d2615" }}>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-2 mb-8 text-center">
-          <Logo tone="white" height={32} />
+          <Logo tone="white" height={18} />
           <p className="text-xs text-white/40 flex items-center gap-1.5">
             <ShieldCheck size={12} />
             Platform Admin
@@ -73,7 +73,7 @@ export default function PlatformLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@eventbuddy.africa"
               required
-              className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:border-transparent"
+              className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#a5e9bc] focus:border-transparent"
             />
           </div>
           <div>
@@ -85,7 +85,7 @@ export default function PlatformLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:border-transparent pr-10"
+                className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#a5e9bc] focus:border-transparent pr-10"
               />
               <button
                 type="button"
@@ -108,7 +108,7 @@ export default function PlatformLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg font-medium text-sm text-slate-950 bg-fuchsia-300 hover:bg-fuchsia-200 transition-colors disabled:opacity-60"
+            className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
           >
             {loading ? "Signing in…" : "Sign in"}
           </button>

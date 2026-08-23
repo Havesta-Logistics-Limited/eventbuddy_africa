@@ -5,7 +5,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { compressImageFile } from "@/lib/utils";
 import type { EventWizardData } from "../types";
 
-const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]";
+const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]";
 const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
 
 export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange: (patch: Partial<EventWizardData>) => void }) {
@@ -36,7 +36,7 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
               onClick={() => onChange({ eventFormat: format })}
               className={`py-2.5 rounded-lg border text-sm font-medium transition-colors ${
                 (data.eventFormat || "physical") === format
-                  ? "border-[#610064] bg-[#610064] text-white"
+                  ? "border-[#1B512D] bg-[#1B512D] text-white"
                   : "border-slate-200 text-slate-600 hover:border-slate-300"
               }`}
             >
@@ -51,7 +51,7 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
             type="checkbox"
             checked={data.selfRegistrationEnabled ?? true}
             onChange={(e) => onChange({ selfRegistrationEnabled: e.target.checked })}
-            className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#610064] focus:ring-[#610064]"
+            className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#1B512D] focus:ring-[#1B512D]"
           />
           <span>
             <span className="block text-sm font-medium text-slate-700">Allow self-service registration</span>
@@ -154,7 +154,7 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
           />
           <div className="flex items-center gap-3">
             <span className="text-sm text-slate-500">or</span>
-            <label className="cursor-pointer flex-1 text-center py-2 px-3 border border-dashed border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:border-[#610064] transition-colors">
+            <label className="cursor-pointer flex-1 text-center py-2 px-3 border border-dashed border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:border-[#1B512D] transition-colors">
               {imageUploading ? (
                 <span className="inline-flex items-center gap-1.5 justify-center">
                   <Loader2 size={14} className="animate-spin" />

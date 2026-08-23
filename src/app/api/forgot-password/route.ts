@@ -20,12 +20,12 @@ async function sendResetEmail(to: string, resetUrl: string) {
       text: `Reset your eventbuddy password: ${resetUrl}\n\nIf you didn't request this, you can safely ignore this email — your password won't change.`,
       html: `
         <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
-          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#610064; font-weight:600; margin:0 0 8px;">Password reset</p>
+          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#1B512D; font-weight:600; margin:0 0 8px;">Password reset</p>
           <h1 style="font-size:20px; margin:0 0 12px;">Reset your password</h1>
           <p style="margin:0 0 20px; color:#666; font-size:14px; line-height:1.5;">
             We got a request to reset your eventbuddy password. Click below to choose a new one — this link expires soon.
           </p>
-          <a href="${resetUrl}" style="display:inline-block; padding:11px 20px; border-radius:8px; background:#610064; color:#ffffff; font-size:14px; font-weight:600; text-decoration:none;">
+          <a href="${resetUrl}" style="display:inline-block; padding:11px 20px; border-radius:8px; background:#1B512D; color:#ffffff; font-size:14px; font-weight:600; text-decoration:none;">
             Reset password
           </a>
           <p style="margin:20px 0 0; color:#999; font-size:12px;">Didn't request this? You can safely ignore this email — your password won't change.</p>

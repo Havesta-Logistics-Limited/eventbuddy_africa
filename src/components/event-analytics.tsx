@@ -12,13 +12,13 @@ function pct(count: number, total: number) {
   return total === 0 ? 0 : Math.round((count / total) * 100);
 }
 
-const NO_DATA_COLOR = "linear-gradient(90deg, #cbd5e1, #94a3b8)";
-const NO_DATA_COLOR_VERTICAL = "linear-gradient(180deg, #cbd5e1, #94a3b8)";
+const NO_DATA_COLOR = "#cbd5e1";
+const NO_DATA_COLOR_VERTICAL = "#cbd5e1";
 
 const REGISTRATION_STATUS_COLORS: Record<RegistrationRecord["status"], string> = {
-  registered: "linear-gradient(90deg, #fbbf24, #b45309)",
-  checked_in: "linear-gradient(90deg, #5eead4, #0d9488)",
-  cancelled: "linear-gradient(90deg, #cbd5e1, #64748b)",
+  registered: "#f7c326",
+  checked_in: "#0d7c6e",
+  cancelled: "#94a3b8",
 };
 const REGISTRATION_STATUS_LABELS: Record<RegistrationRecord["status"], string> = {
   registered: "Registered",
@@ -57,11 +57,11 @@ function VerticalBars({ items }: { items: { label: string; value: number; color:
 function BarList({
   rows,
   total,
-  gradient,
+  color,
 }: {
   rows: { key: string; label: ReactNode; count: number; color?: string }[];
   total: number;
-  gradient: string;
+  color: string;
 }) {
   const max = Math.max(...rows.map((r) => r.count), 1);
   return (
@@ -75,7 +75,7 @@ function BarList({
             </span>
           </div>
           <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(r.count / max) * 100}%`, background: r.color ?? gradient }} />
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(r.count / max) * 100}%`, background: r.color ?? color }} />
           </div>
         </Reveal>
       ))}
@@ -129,7 +129,7 @@ export function EventAnalytics({
   const byEducationAll = (["Undergraduate", "BSc", "MSc", "PhD"] as const).map((level) => ({
     label: level as string,
     value: leads.filter((l) => l.highestEducation === level).length,
-    color: "linear-gradient(180deg, #c17bc7, #610064)",
+    color: "#1B512D",
   }));
   const byEducation = byEducationAll.filter((x) => x.value > 0);
   const educationMissing = leads.length - byEducationAll.reduce((sum, x) => sum + x.value, 0);
@@ -190,7 +190,7 @@ export function EventAnalytics({
   }
 
   const stats = [
-    { label: "Total Leads", value: leads.length, icon: Users, accent: "#610064", bg: "#f5edf6" },
+    { label: "Total Leads", value: leads.length, icon: Users, accent: "#1B512D", bg: "#e8f7ed" },
     { label: "Registrations", value: registrations.length, icon: Ticket, accent: "#9b1fa0", bg: "#f7ecf8" },
     ...(registrations.length > 0 ? [{ label: "Participants", value: participants.length, icon: UserCheck, accent: "#0d9488", bg: "#e7f6f0" }] : []),
     ...(isEducationFair
@@ -222,7 +222,7 @@ export function EventAnalytics({
       </div>
 
       {registrations.length > 0 && (
-        <div className="grid lg:grid-cols-2 gap-5 mb-5">
+        <div className="grid md:grid-cols-2 gap-5 mb-5">
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Ticket size={16} className="text-brand-600" />
@@ -230,8 +230,8 @@ export function EventAnalytics({
             </div>
             <VerticalBars
               items={[
-                { label: "Registrations", value: registrations.length, color: "linear-gradient(180deg, #c17bc7, #610064)" },
-                { label: `Participants (${conversion}%)`, value: participants.length, color: "linear-gradient(180deg, #5eead4, #0d9488)" },
+                { label: "Registrations", value: registrations.length, color: "#66329A" },
+                { label: `Participants (${conversion}%)`, value: participants.length, color: "#0d7c6e" },
               ]}
             />
           </div>
@@ -245,7 +245,7 @@ export function EventAnalytics({
               <BarList
                 rows={registrationStatusRows.map((r) => ({ key: r.key, label: r.label, count: r.count, color: r.color }))}
                 total={registrations.length}
-                gradient="linear-gradient(90deg, #c17bc7, #610064)"
+                color="#66329A"
               />
             </div>
           )}
@@ -261,7 +261,7 @@ export function EventAnalytics({
       )}
 
       {isEducationFair && leads.length > 0 && (
-        <div className="grid lg:grid-cols-2 gap-5 mb-5">
+        <div className="grid md:grid-cols-2 gap-5 mb-5">
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Globe2 size={16} className="text-brand-600" />
@@ -282,7 +282,7 @@ export function EventAnalytics({
                 ...(destMissing > 0 ? [{ key: "no-data", count: destMissing, label: "No Data", color: NO_DATA_COLOR }] : []),
               ]}
               total={leads.length}
-              gradient="linear-gradient(90deg, #c17bc7, #610064)"
+              color="#66329A"
             />
           </div>
 
@@ -297,7 +297,7 @@ export function EventAnalytics({
                 ...(levelMissing > 0 ? [{ key: "no-data", count: levelMissing, label: "No Data", color: NO_DATA_COLOR }] : []),
               ]}
               total={leads.length}
-              gradient="linear-gradient(90deg, #dba8e0, #610064)"
+              color="#f7c326"
             />
 
             <div className="flex items-center gap-2 mb-4 mt-6">
@@ -318,7 +318,7 @@ export function EventAnalytics({
       )}
 
       {isEducationFair && leads.length > 0 && (
-        <div className="grid lg:grid-cols-2 gap-5 mb-5">
+        <div className="grid md:grid-cols-2 gap-5 mb-5">
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Award size={16} className="text-brand-600" />
@@ -333,7 +333,7 @@ export function EventAnalytics({
               <h3 className="font-semibold text-slate-800">Leads by University</h3>
             </div>
             {byUniversity.length > 0 ? (
-              <BarList rows={byUniversity.map(({ uni, count }) => ({ key: uni.id, count, label: uni.name }))} total={leads.length} gradient="linear-gradient(90deg, #64748b, #1e293b)" />
+              <BarList rows={byUniversity.map(({ uni, count }) => ({ key: uni.id, count, label: uni.name }))} total={leads.length} color="#0B0500" />
             ) : (
               <p className="text-sm text-slate-400 py-6">No leads have a university recorded yet.</p>
             )}
@@ -353,13 +353,13 @@ export function EventAnalytics({
               ...(courseMissing > 0 ? [{ key: "no-data", count: courseMissing, label: "No Data", color: NO_DATA_COLOR }] : []),
             ]}
             total={leads.length}
-            gradient="linear-gradient(90deg, #64748b, #1e293b)"
+            color="#66329A"
           />
         </div>
       )}
 
       {customBreakdowns.length > 0 && (
-        <div className="grid lg:grid-cols-2 gap-5">
+        <div className="grid md:grid-cols-2 gap-5">
           {customBreakdowns.map(({ field, options }, i) => {
             const total = options.reduce((sum, o) => sum + o.count, 0);
             return (
@@ -372,7 +372,7 @@ export function EventAnalytics({
                   <BarList
                     rows={options.map((o) => ({ key: o.label, count: o.count, label: o.label }))}
                     total={total}
-                    gradient="linear-gradient(90deg, #c17bc7, #610064)"
+                    color="#1B512D"
                   />
                 </div>
               </Reveal>

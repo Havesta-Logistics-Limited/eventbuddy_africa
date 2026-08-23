@@ -1,8 +1,13 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 export const alt = "eventbuddy — Never Lose a Lead";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+const markPng = await readFile(join(process.cwd(), "public/logo-mark.png"));
+const markSrc = `data:image/png;base64,${markPng.toString("base64")}`;
 
 /** Default OG/social-share card for the whole site — any route can override this by
  *  adding its own opengraph-image.tsx, but most of this app's public surface (the
@@ -18,7 +23,7 @@ export default function Image() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(145deg, #1a0533 0%, #610064 100%)",
+          background: "linear-gradient(145deg, #0b0500 0%, #1B512D 100%)",
         }}
       >
         <div
@@ -28,23 +33,10 @@ export default function Image() {
             gap: 20,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              width: 84,
-              height: 84,
-              borderRadius: 24,
-              background: "rgba(255,255,255,0.12)",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 44,
-            }}
-          >
-            🎟️
-          </div>
+          <img src={markSrc} width={84} height={84} alt="" style={{ objectFit: "contain" }} />
           <div style={{ display: "flex", color: "white", fontSize: 88, fontWeight: 700 }}>eventbuddy</div>
         </div>
-        <div style={{ display: "flex", color: "#dba8e0", fontSize: 30, marginTop: 20, letterSpacing: 2, textTransform: "uppercase" }}>
+        <div style={{ display: "flex", color: "#f9d158", fontSize: 30, marginTop: 20, letterSpacing: 2, textTransform: "uppercase" }}>
           Never Lose a Lead
         </div>
       </div>

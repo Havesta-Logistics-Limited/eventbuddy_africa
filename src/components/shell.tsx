@@ -58,13 +58,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const staffUni = session?.universityId ? getUniversityById(session.universityId) : null;
   const staffEvent = session?.eventId ? getEventById(session.eventId) : null;
 
-  // Purple is the app-wide brand identity; Staff gets its own distinct blue
+  // Brand green is the app-wide identity; Staff gets its own distinct blue
   // identity so it's never mistaken for the Admin/Rep experience.
-  const sidebarBg = isStaff ? "#04223d" : "#2e0a30";
+  const sidebarBg = isStaff ? "#04223d" : "#0d2615";
   const activeNavAccent = isStaff ? "#1098F7" : "var(--color-brand-600)";
-  const sessionAccentColor = isStaff ? "text-sky-300" : "text-fuchsia-300";
+  const sessionAccentColor = isStaff ? "text-sky-300" : "text-[#a5e9bc]";
   const avatarBg = isStaff ? "bg-[#1098F7]/20" : "bg-brand-600/25";
-  const avatarText = isStaff ? "text-sky-300" : "text-fuchsia-300";
+  const avatarText = isStaff ? "text-sky-300" : "text-[#a5e9bc]";
 
   async function handleLogout() {
     await logout();
@@ -76,7 +76,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {/* Sidebar — desktop */}
       <aside className="hidden md:flex w-64 flex-col text-white fixed inset-y-0 left-0 z-40" style={{ background: sidebarBg }}>
         <div className="px-6 py-5 border-b border-white/10">
-          <Logo tone="white" height={26} />
+          <Logo tone="white" height={18} />
         </div>
 
         {!isAdmin && staffEvent && (
@@ -136,15 +136,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <button onClick={() => setMobileOpen(true)} aria-label="Open menu">
           <Menu size={22} />
         </button>
-        <Logo tone="white" height={20} />
+        <Logo tone="white" height={12} />
       </header>
 
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          <div className="w-64 text-white flex flex-col h-full" style={{ background: sidebarBg }}>
+          <div className="w-64 text-white flex flex-col h-full animate-drawer-in" style={{ background: sidebarBg }}>
             <div className="px-5 py-4 flex items-center justify-between border-b border-white/10">
-              <Logo tone="white" height={22} />
+              <Logo tone="white" height={13} />
               <button onClick={() => setMobileOpen(false)} aria-label="Close menu">
                 <X size={20} className="text-white/60" />
               </button>
@@ -192,7 +192,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </button>
             </div>
           </div>
-          <div className="flex-1 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <div className="flex-1 bg-black/50 animate-modal-backdrop" onClick={() => setMobileOpen(false)} />
         </div>
       )}
 

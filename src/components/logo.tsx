@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const FULL_ASPECT = 4220 / 1036;
+const FULL_ASPECT = 3940 / 559;
 
 /** `tone="white"` swaps in a recolored export for dark surfaces (sidebars, dark
  *  hero panels) — the source "full" lockup's wordmark is brand-purple-on-transparent,

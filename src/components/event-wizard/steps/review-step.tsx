@@ -1,11 +1,9 @@
 "use client";
 
-import { Destination } from "@/lib/types";
 import type { EventTemplate } from "@/lib/event-templates";
 import type { EventWizardData } from "../types";
 
-export function ReviewStep({ data, template, destinations }: { data: EventWizardData; template: EventTemplate; destinations: Destination[] }) {
-  const eventDests = destinations.filter((d) => data.destinationIds.includes(d.id));
+export function ReviewStep({ data, template }: { data: EventWizardData; template: EventTemplate }) {
   return (
     <div className="space-y-4 text-sm">
       <div className="rounded-lg bg-slate-50 border border-slate-200 p-4 space-y-2">
@@ -25,9 +23,6 @@ export function ReviewStep({ data, template, destinations }: { data: EventWizard
           </>
         )}
         {template.usesDestinations && <Row label="Audience" value={data.allowRepAccess === false ? "Students only" : "Students & reps"} />}
-        {template.usesDestinations && (
-          <Row label="Destinations" value={eventDests.length ? eventDests.map((d) => `${d.flag} ${d.name}`).join(", ") : "None selected"} />
-        )}
         <Row
           label="Additional questions"
           value={
@@ -41,6 +36,9 @@ export function ReviewStep({ data, template, destinations }: { data: EventWizard
         <Row label="Staff code" value={data.staffAccessCode || "None — open check-in"} />
         {template.usesDestinations && data.allowRepAccess !== false && <Row label="Rep code" value={data.repAccessCode || "None — open check-in"} />}
       </div>
+      {template.usesDestinations && (
+        <p className="text-xs text-slate-400">Add this fair&apos;s destinations, universities, and reps from its own page once it&apos;s created.</p>
+      )}
     </div>
   );
 }

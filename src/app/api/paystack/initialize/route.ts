@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { convertUsdToChargeAmount, paystackInitialize } from "@/lib/paystack";
+import { nairaToChargeAmount, paystackInitialize } from "@/lib/paystack";
 import { newId } from "@/lib/utils";
 
 type InitializeBody = { eventId: string };
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, organization_id, event_format, published, payment_status, price_usd")
+    .select("id, organization_id, event_format, published, payment_status, price_naira")
     .eq("id", eventId)
     .maybeSingle();
   if (!event) {
@@ -43,8 +43,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "This event has already been paid for." }, { status: 400 });
   }
 
-  const amountUsd = Number(event.price_usd);
-  if (!(amountUsd > 0)) {
+  const amountNaira = Number(event.price_naira);
+  if (!(amountNaira > 0)) {
     return NextResponse.json({ error: "This event has no price set. Please contact support." }, { status: 500 });
   }
 
@@ -52,13 +52,7 @@ export async function POST(request: Request) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   const callbackUrl = `${siteUrl}/events/${eventId}?payment=callback&reference=${encodeURIComponent(reference)}`;
 
-  let currency: string;
-  let amountMinor: number;
-  try {
-    ({ currency, amountMinor } = convertUsdToChargeAmount(amountUsd));
-  } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Payments aren't configured yet." }, { status: 500 });
-  }
+  const { currency, amountMinor } = nairaToChargeAmount(amountNaira);
 
   // paystack_transactions has no insert policy for an org's own RLS-scoped client —
   // only the payment routes (this one) write here, via the service-role client.
@@ -67,7 +61,7 @@ export async function POST(request: Request) {
     organization_id: event.organization_id,
     event_id: event.id,
     reference,
-    amount_usd: amountUsd,
+    amount_naira: amountNaira,
     charge_currency: currency,
     charge_amount_minor: amountMinor,
   });

@@ -1,40 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Plus, Users, UserCheck, Building2, Globe2, X, Edit2, Trash2, LogOut } from "lucide-react";
+import { AlertCircle, Plus, Users, X, Edit2, Trash2, Landmark, ShieldCheck } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import {
-  PersistError,
-  addDestination,
-  addStaff,
-  addUniversity,
-  deleteDestination,
-  deleteStaff,
-  deleteUniversity,
-  forceLogoutRep,
-  updateDestination,
-  updateStaff,
-  updateUniversity,
-  useDestinations,
-  useEvents,
-  useStaff,
-  useUniversities,
-} from "@/lib/store";
+import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { PersistError, addStaff, deleteStaff, updateStaff, useDestinations, useEvents, useStaff, useUniversities } from "@/lib/store";
 import { Role } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
 import { Reveal } from "@/components/reveal";
-import { flagForCountryName } from "@/lib/country-flags";
+import { AuthLoading } from "@/components/auth-loading";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
-type Tab = "staff" | "reps" | "universities" | "destinations";
+type Tab = "staff" | "payouts";
+
+type OrgPayout = {
+  paystackSubaccountCode: string | null;
+  payoutBankName: string | null;
+  payoutAccountNumber: string | null;
+  payoutAccountName: string | null;
+};
 
 const EMPTY_STAFF = { id: "", name: "", email: "", role: "staff" as const, destinationId: "", universityId: "", eventId: "" };
-const EMPTY_UNI = { id: "", name: "", shortName: "", destinationId: "" };
-const EMPTY_DEST = { id: "", name: "", flag: "" };
-const EMPTY_REP = { id: "", name: "", email: "", destinationId: "", universityId: "" };
 
 export default function AdminPage() {
   const session = useRequireRole(ADMIN_ONLY);
@@ -45,23 +34,110 @@ export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("staff");
 
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
-  const [uniForm, setUniForm] = useState(EMPTY_UNI);
-  const [destForm, setDestForm] = useState(EMPTY_DEST);
-  const [repForm, setRepForm] = useState(EMPTY_REP);
-
   const [showStaffForm, setShowStaffForm] = useState(false);
-  const [showRepForm, setShowRepForm] = useState(false);
-  const [showUniForm, setShowUniForm] = useState(false);
-  const [showDestForm, setShowDestForm] = useState(false);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  if (!session) return null;
+  const [orgPayout, setOrgPayout] = useState<OrgPayout | null>(null);
+  const [loadingPayout, setLoadingPayout] = useState(true);
+  const [banks, setBanks] = useState<{ name: string; code: string }[]>([]);
+  const [loadingBanks, setLoadingBanks] = useState(false);
+  const [payoutBankCode, setPayoutBankCode] = useState("");
+  const [payoutAccountNumber, setPayoutAccountNumber] = useState("");
+  const [resolvedAccountName, setResolvedAccountName] = useState("");
+  const [resolvingAccount, setResolvingAccount] = useState(false);
+  const [savingPayout, setSavingPayout] = useState(false);
+  const [payoutError, setPayoutError] = useState("");
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase
+      .from("organizations")
+      .select("paystack_subaccount_code, payout_bank_name, payout_account_number, payout_account_name")
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setOrgPayout({
+            paystackSubaccountCode: data.paystack_subaccount_code,
+            payoutBankName: data.payout_bank_name,
+            payoutAccountNumber: data.payout_account_number,
+            payoutAccountName: data.payout_account_name,
+          });
+        }
+        setLoadingPayout(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (tab !== "payouts" || banks.length > 0 || loadingBanks) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoadingBanks(true);
+    fetch("/api/paystack/banks")
+      .then((res) => res.json())
+      .then((json) => setBanks(json.banks || []))
+      .finally(() => setLoadingBanks(false));
+  }, [tab, banks.length, loadingBanks]);
+
+  async function handleResolveAccount() {
+    setPayoutError("");
+    setResolvedAccountName("");
+    if (!payoutBankCode || payoutAccountNumber.trim().length < 10) {
+      setPayoutError("Select a bank and enter a valid account number.");
+      return;
+    }
+    const bankName = banks.find((b) => b.code === payoutBankCode)?.name || "";
+    setResolvingAccount(true);
+    try {
+      const res = await fetch("/api/paystack/subaccount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resolve", bankCode: payoutBankCode, bankName, accountNumber: payoutAccountNumber.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) throw new Error(json.error || "Couldn't verify that account number.");
+      setResolvedAccountName(json.accountName);
+    } catch (err) {
+      setPayoutError(err instanceof Error ? err.message : "Couldn't verify that account number.");
+    } finally {
+      setResolvingAccount(false);
+    }
+  }
+
+  async function handleSavePayout() {
+    setPayoutError("");
+    const bankName = banks.find((b) => b.code === payoutBankCode)?.name || "";
+    setSavingPayout(true);
+    try {
+      const res = await fetch("/api/paystack/subaccount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create", bankCode: payoutBankCode, bankName, accountNumber: payoutAccountNumber.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) throw new Error(json.error || "Couldn't set up payouts.");
+      setOrgPayout({
+        paystackSubaccountCode: json.subaccountCode,
+        payoutBankName: bankName,
+        payoutAccountNumber: payoutAccountNumber.trim(),
+        payoutAccountName: json.accountName,
+      });
+      setPayoutBankCode("");
+      setPayoutAccountNumber("");
+      setResolvedAccountName("");
+      toast.success("Payouts are set up — ticket sales will now split straight to this account.");
+    } catch (err) {
+      setPayoutError(err instanceof Error ? err.message : "Couldn't set up payouts.");
+    } finally {
+      setSavingPayout(false);
+    }
+  }
+
+  if (!session) return <AuthLoading />;
 
   const staffUnis = staffForm.destinationId ? universities.filter((u) => u.destinationId === staffForm.destinationId) : [];
   const selectedStaffEvent = staffForm.eventId ? events.find((e) => e.id === staffForm.eventId) : undefined;
   const staffEventUsesDestinations = selectedStaffEvent ? getTemplate(selectedStaffEvent.templateId).usesDestinations : true;
-  const repUnis = repForm.destinationId ? universities.filter((u) => u.destinationId === repForm.destinationId) : [];
 
   async function runSave(action: () => Promise<unknown>, onSuccess: () => void, successMessage: string) {
     setFormError("");
@@ -98,48 +174,9 @@ export default function AdminPage() {
     );
   };
 
-  const handleAddRep = (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload = { ...repForm, role: "rep" as const, isOnline: false };
-    runSave(
-      () => (repForm.id ? updateStaff(repForm.id, payload) : addStaff(payload)),
-      () => {
-        setShowRepForm(false);
-        setRepForm(EMPTY_REP);
-      },
-      repForm.id ? "Rep updated" : "Rep added"
-    );
-  };
-
-  const handleAddUni = (e: React.FormEvent) => {
-    e.preventDefault();
-    runSave(
-      () => (uniForm.id ? updateUniversity(uniForm.id, uniForm) : addUniversity(uniForm)),
-      () => {
-        setShowUniForm(false);
-        setUniForm(EMPTY_UNI);
-      },
-      uniForm.id ? "University updated" : "University added"
-    );
-  };
-
-  const handleAddDest = (e: React.FormEvent) => {
-    e.preventDefault();
-    runSave(
-      () => (destForm.id ? updateDestination(destForm.id, destForm) : addDestination(destForm)),
-      () => {
-        setShowDestForm(false);
-        setDestForm(EMPTY_DEST);
-      },
-      destForm.id ? "Destination updated" : "Destination added"
-    );
-  };
-
   const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
     { id: "staff", label: "Staff", icon: Users },
-    { id: "reps", label: "Reps", icon: UserCheck },
-    { id: "universities", label: "Universities", icon: Building2 },
-    { id: "destinations", label: "Destinations", icon: Globe2 },
+    { id: "payouts", label: "Payouts", icon: Landmark },
   ];
 
   return (
@@ -147,7 +184,7 @@ export default function AdminPage() {
       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <div className="mb-6">
           <h1 className="font-display text-2xl text-slate-900">Settings</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Manage staff, universities, and destinations</p>
+          <p className="text-slate-500 text-sm mt-0.5">Manage staff and ticket payouts</p>
         </div>
 
         <div className="flex flex-wrap gap-1 mb-6 bg-slate-100 rounded-lg p-1 w-fit">
@@ -166,7 +203,7 @@ export default function AdminPage() {
         </div>
 
         {tab === "staff" && (
-          <div>
+          <div key="staff" className="animate-tab-fade">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h2 className="font-semibold text-slate-800 min-w-0">Team Members ({staff.filter((s) => s.role !== "rep").length})</h2>
               <button
@@ -175,7 +212,7 @@ export default function AdminPage() {
                   setShowStaffForm(true);
                 }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
-                style={{ background: "#610064" }}
+                style={{ background: "#1B512D" }}
               >
                 <Plus size={14} />
                 Add Staff
@@ -190,8 +227,8 @@ export default function AdminPage() {
                   const ev = s.eventId ? events.find((e) => e.id === s.eventId) : null;
                   return (
                     <Reveal key={s.id} index={i}>
-                    <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#610064]/30 hover:shadow-sm transition-all">
-                      <div className="w-10 h-10 rounded-full bg-[#610064]/10 flex items-center justify-center text-[#610064] font-semibold shrink-0">{s.name.charAt(0)}</div>
+                    <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#1B512D]/30 hover:shadow-sm transition-all">
+                      <div className="w-10 h-10 rounded-full bg-[#1B512D]/10 flex items-center justify-center text-[#1B512D] font-semibold shrink-0">{s.name.charAt(0)}</div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-slate-900">{s.name}</p>
                         <p className="text-sm text-slate-500">{s.email}</p>
@@ -203,7 +240,7 @@ export default function AdminPage() {
                         >
                           {s.role}
                         </span>
-                        {dest && <span className="px-2 py-0.5 rounded-full bg-[#610064]/10 text-[#610064] hidden sm:inline-block">{dest.flag} {dest.name}</span>}
+                        {dest && <span className="px-2 py-0.5 rounded-full bg-[#1B512D]/10 text-[#1B512D] hidden sm:inline-block">{dest.flag} {dest.name}</span>}
                         {uni && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hidden sm:inline-block">{uni.shortName}</span>}
                         {ev && <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 max-w-[120px] sm:max-w-[160px] truncate">{ev.name.split("—")[0].trim()}</span>}
                       </div>
@@ -221,7 +258,7 @@ export default function AdminPage() {
                             });
                             setShowStaffForm(true);
                           }}
-                          className="p-1.5 text-slate-400 hover:text-[#610064] rounded-md hover:bg-slate-100"
+                          className="p-1.5 text-slate-400 hover:text-[#1B512D] rounded-md hover:bg-slate-100"
                         >
                           <Edit2 size={16} />
                         </button>
@@ -236,8 +273,8 @@ export default function AdminPage() {
             </div>
 
             {showStaffForm && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
+                <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
                   <div className="flex items-center justify-between p-6 border-b border-slate-100">
                     <h2 className="font-semibold text-slate-900">{staffForm.id ? "Edit Staff" : "Add Staff Member"}</h2>
                     <button onClick={() => setShowStaffForm(false)}>
@@ -251,7 +288,7 @@ export default function AdminPage() {
                         required
                         value={staffForm.name}
                         onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
                       />
                     </div>
                     <div>
@@ -261,7 +298,7 @@ export default function AdminPage() {
                         type="email"
                         value={staffForm.email}
                         onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
                       />
                     </div>
                     <div>
@@ -277,7 +314,7 @@ export default function AdminPage() {
                             ...(usesDestinations ? {} : { destinationId: "", universityId: "" }),
                           });
                         }}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D] bg-white"
                       >
                         <option value="">Select event</option>
                         {events.map((ev) => (
@@ -294,7 +331,7 @@ export default function AdminPage() {
                           <select
                             value={staffForm.destinationId}
                             onChange={(e) => setStaffForm({ ...staffForm, destinationId: e.target.value, universityId: "" })}
-                            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white"
+                            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D] bg-white"
                           >
                             <option value="">Select destination</option>
                             {destinations.map((d) => (
@@ -310,7 +347,7 @@ export default function AdminPage() {
                             value={staffForm.universityId}
                             onChange={(e) => setStaffForm({ ...staffForm, universityId: e.target.value })}
                             disabled={!staffForm.destinationId}
-                            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white disabled:opacity-50"
+                            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D] bg-white disabled:opacity-50"
                           >
                             <option value="">Select university</option>
                             {staffUnis.map((u) => (
@@ -332,7 +369,7 @@ export default function AdminPage() {
                       <button type="button" onClick={() => setShowStaffForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
                         Cancel
                       </button>
-                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" style={{ background: "#610064" }}>
+                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" style={{ background: "#1B512D" }}>
                         {saving ? "Saving…" : staffForm.id ? "Save Changes" : "Add Staff"}
                       </button>
                     </div>
@@ -343,380 +380,99 @@ export default function AdminPage() {
           </div>
         )}
 
-        {tab === "reps" && (
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h2 className="font-semibold text-slate-800 min-w-0">University Reps ({staff.filter((s) => s.role === "rep").length})</h2>
-              <button
-                onClick={() => {
-                  setRepForm(EMPTY_REP);
-                  setShowRepForm(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
-                style={{ background: "#610064" }}
-              >
-                <Plus size={14} />
-                Add Rep
-              </button>
-            </div>
-            <div className="space-y-3">
-              {staff
-                .filter((s) => s.role === "rep")
-                .map((s, i) => {
-                  const dest = s.destinationId ? destinations.find((d) => d.id === s.destinationId) : null;
-                  const uni = s.universityId ? universities.find((u) => u.id === s.universityId) : null;
-                  return (
-                    <Reveal key={s.id} index={i}>
-                    <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#610064]/30 hover:shadow-sm transition-all">
-                      <div className="w-10 h-10 rounded-full bg-[#610064]/10 flex items-center justify-center text-[#610064] font-semibold shrink-0">{s.name.charAt(0)}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-900 flex items-center gap-2">
-                          {s.name}
-                          {s.isOnline && (
-                            <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                              Online
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-sm text-slate-500">{s.email}</p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        <span className="px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700">Rep</span>
-                        {dest && <span className="px-2 py-0.5 rounded-full bg-[#610064]/10 text-[#610064] hidden sm:inline-block">{dest.name}</span>}
-                        {uni && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hidden sm:inline-block">{uni.name}</span>}
-                      </div>
-                      <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
-                        {s.isOnline && (
-                          <button onClick={() => handleDelete(() => forceLogoutRep(s.id), `${s.name} signed out`)} title="Force Logout" className="p-1.5 text-slate-400 hover:text-amber-600 rounded-md hover:bg-amber-50">
-                            <LogOut size={16} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            setRepForm({ id: s.id, name: s.name, email: s.email, destinationId: s.destinationId || "", universityId: s.universityId || "" });
-                            setShowRepForm(true);
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-[#610064] rounded-md hover:bg-slate-100"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button onClick={() => handleDelete(() => deleteStaff(s.id), `${s.name} removed`)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    </Reveal>
-                  );
-                })}
+        {tab === "payouts" && (
+          <div key="payouts" className="animate-tab-fade">
+            <div className="mb-4">
+              <h2 className="font-semibold text-slate-800">Ticket payouts</h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Add your bank account once — every paid ticket sold on eventbuddy settles straight into it automatically, minus eventbuddy&apos;s
+                transaction fee. eventbuddy never holds or forwards this money itself.
+              </p>
             </div>
 
-            {showRepForm && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
-                  <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                    <h2 className="font-semibold text-slate-900">{repForm.id ? "Edit Rep" : "Add Rep"}</h2>
-                    <button onClick={() => setShowRepForm(false)}>
-                      <X size={20} className="text-slate-400" />
-                    </button>
-                  </div>
-                  <form onSubmit={handleAddRep} className="p-6 space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Rep Name</label>
-                      <input
-                        required
-                        value={repForm.name}
-                        onChange={(e) => setRepForm({ ...repForm, name: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
-                      <input
-                        required
-                        type="email"
-                        value={repForm.email}
-                        onChange={(e) => setRepForm({ ...repForm, email: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Destination</label>
-                      <select
-                        required
-                        value={repForm.destinationId}
-                        onChange={(e) => setRepForm({ ...repForm, destinationId: e.target.value, universityId: "" })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white"
-                      >
-                        <option value="">Select destination</option>
-                        {destinations.map((d) => (
-                          <option key={d.id} value={d.id}>
-                            {d.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">University Name</label>
-                      <select
-                        required
-                        value={repForm.universityId}
-                        onChange={(e) => setRepForm({ ...repForm, universityId: e.target.value })}
-                        disabled={!repForm.destinationId}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white disabled:opacity-50"
-                      >
-                        <option value="">Select university</option>
-                        {repUnis.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {formError && (
-                      <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
-                        <AlertCircle size={15} className="mt-0.5 shrink-0" />
-                        {formError}
-                      </div>
-                    )}
-                    <div className="flex gap-3 pt-2">
-                      <button type="button" onClick={() => setShowRepForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                        Cancel
-                      </button>
-                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" style={{ background: "#610064" }}>
-                        {saving ? "Saving…" : "Save Rep"}
-                      </button>
-                    </div>
-                  </form>
+            {loadingPayout ? (
+              <div className="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-400">Loading…</div>
+            ) : orgPayout?.paystackSubaccountCode ? (
+              <div className="bg-white rounded-xl border border-slate-200 p-5 flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={18} />
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900">Payouts are set up</p>
+                  <p className="text-sm text-slate-500 mt-0.5">
+                    {orgPayout.payoutAccountName} · {orgPayout.payoutBankName} · {orgPayout.payoutAccountNumber}
+                  </p>
                 </div>
               </div>
-            )}
-          </div>
-        )}
-
-        {tab === "universities" && (
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h2 className="font-semibold text-slate-800 min-w-0">Universities ({universities.length})</h2>
-              <button
-                onClick={() => {
-                  setUniForm(EMPTY_UNI);
-                  setShowUniForm(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
-                style={{ background: "#610064" }}
-              >
-                <Plus size={14} />
-                Add University
-              </button>
-            </div>
-            {destinations.map((dest) => {
-              const unis = universities.filter((u) => u.destinationId === dest.id);
-              if (unis.length === 0) return null;
-              return (
-                <div key={dest.id} className="mb-5">
-                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                    {dest.flag} {dest.name}
-                  </h3>
-                  <div className="grid sm:grid-cols-2 gap-2">
-                    {unis.map((u, i) => (
-                      <Reveal key={u.id} index={i}>
-                      <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3 group hover:border-[#610064]/30 hover:shadow-sm transition-all">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">{u.shortName.slice(0, 3)}</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-800 text-sm truncate">{u.name}</p>
-                          <p className="text-xs text-slate-400 truncate">{u.shortName}</p>
-                        </div>
-                        <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                          <button
-                            onClick={() => {
-                            setUniForm({ id: u.id, name: u.name, shortName: u.shortName, destinationId: u.destinationId });
-                            setShowUniForm(true);
-                          }}
-                            className="p-1.5 text-slate-400 hover:text-[#610064] rounded-md hover:bg-slate-100"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button onClick={() => handleDelete(() => deleteUniversity(u.id), `${u.name} removed`)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                      </Reveal>
+            ) : (
+              <div className="bg-white rounded-xl border border-slate-200 p-5 max-w-md space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Bank</label>
+                  <select
+                    value={payoutBankCode}
+                    onChange={(e) => {
+                      setPayoutBankCode(e.target.value);
+                      setResolvedAccountName("");
+                    }}
+                    disabled={loadingBanks}
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D] bg-white disabled:opacity-50"
+                  >
+                    <option value="">{loadingBanks ? "Loading banks…" : "Select bank"}</option>
+                    {banks.map((b) => (
+                      <option key={b.code} value={b.code}>
+                        {b.name}
+                      </option>
                     ))}
-                  </div>
+                  </select>
                 </div>
-              );
-            })}
-
-            {showUniForm && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
-                  <div className="flex items-center justify-between mb-5">
-                    <h2 className="font-semibold text-slate-900">{uniForm.id ? "Edit University" : "Add University"}</h2>
-                    <button onClick={() => setShowUniForm(false)}>
-                      <X size={20} className="text-slate-400" />
-                    </button>
-                  </div>
-                  <form onSubmit={handleAddUni} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Destination</label>
-                      <select
-                        required
-                        value={uniForm.destinationId}
-                        onChange={(e) => setUniForm({ ...uniForm, destinationId: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] bg-white"
-                      >
-                        <option value="">Select destination</option>
-                        {destinations.map((d) => (
-                          <option key={d.id} value={d.id}>
-                            {d.flag} {d.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">University Name</label>
-                      <input
-                        required
-                        value={uniForm.name}
-                        onChange={(e) => setUniForm({ ...uniForm, name: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                        placeholder="e.g. University of Oxford"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                        Short Name / Abbreviation <span className="text-slate-400 font-normal">(optional)</span>
-                      </label>
-                      <input
-                        value={uniForm.shortName}
-                        onChange={(e) => setUniForm({ ...uniForm, shortName: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                        placeholder="e.g. Oxford — defaults to the full name if left blank"
-                      />
-                    </div>
-                    {formError && (
-                      <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
-                        <AlertCircle size={15} className="mt-0.5 shrink-0" />
-                        {formError}
-                      </div>
-                    )}
-                    <div className="flex gap-3 pt-2">
-                      <button type="button" onClick={() => setShowUniForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                        Cancel
-                      </button>
-                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" style={{ background: "#610064" }}>
-                        {saving ? "Saving…" : uniForm.id ? "Save Changes" : "Add"}
-                      </button>
-                    </div>
-                  </form>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Account number</label>
+                  <input
+                    value={payoutAccountNumber}
+                    onChange={(e) => {
+                      setPayoutAccountNumber(e.target.value.replace(/\D/g, ""));
+                      setResolvedAccountName("");
+                    }}
+                    inputMode="numeric"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
+                    placeholder="0123456789"
+                  />
                 </div>
-              </div>
-            )}
-          </div>
-        )}
 
-        {tab === "destinations" && (
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h2 className="font-semibold text-slate-800 min-w-0">Destinations ({destinations.length})</h2>
-              <button
-                onClick={() => {
-                  setDestForm(EMPTY_DEST);
-                  setShowDestForm(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
-                style={{ background: "#610064" }}
-              >
-                <Plus size={14} />
-                Add Destination
-              </button>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {destinations.map((d, i) => {
-                const uniCount = universities.filter((u) => u.destinationId === d.id).length;
-                return (
-                  <Reveal key={d.id} index={i}>
-                  <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#610064]/30 transition-colors">
-                    <span className="text-3xl shrink-0">{d.flag}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900 truncate">{d.name}</p>
-                      <p className="text-sm text-slate-400">
-                        {uniCount} universit{uniCount !== 1 ? "ies" : "y"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                      <button
-                        onClick={() => {
-                          setDestForm({ id: d.id, name: d.name, flag: d.flag });
-                          setShowDestForm(true);
-                        }}
-                        className="p-1.5 text-slate-400 hover:text-[#610064] rounded-md hover:bg-slate-100"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button onClick={() => handleDelete(() => deleteDestination(d.id), `${d.name} removed`)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                {resolvedAccountName ? (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm">
+                    <ShieldCheck size={15} className="mt-0.5 shrink-0" />
+                    Verified: {resolvedAccountName}
                   </div>
-                  </Reveal>
-                );
-              })}
-            </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResolveAccount}
+                    disabled={resolvingAccount}
+                    className="w-full py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    {resolvingAccount ? "Verifying…" : "Verify account"}
+                  </button>
+                )}
 
-            {showDestForm && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
-                  <div className="flex items-center justify-between mb-5">
-                    <h2 className="font-semibold text-slate-900">{destForm.id ? "Edit Destination" : "Add Destination"}</h2>
-                    <button onClick={() => setShowDestForm(false)}>
-                      <X size={20} className="text-slate-400" />
-                    </button>
+                {payoutError && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                    <AlertCircle size={15} className="mt-0.5 shrink-0" />
+                    {payoutError}
                   </div>
-                  <form onSubmit={handleAddDest} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Destination Name</label>
-                      <input
-                        required
-                        value={destForm.name}
-                        onChange={(e) => {
-                          const name = e.target.value;
-                          const autoFlag = flagForCountryName(name);
-                          setDestForm((prev) => ({ ...prev, name, flag: autoFlag ?? prev.flag }));
-                        }}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                        placeholder="e.g. United Kingdom"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Flag (Emoji)</label>
-                      <input
-                        required
-                        value={destForm.flag}
-                        onChange={(e) => setDestForm({ ...destForm, flag: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
-                        placeholder="e.g. 🇬🇧"
-                      />
-                      <p className="text-xs text-slate-400 mt-1">Auto-filled for recognized countries — edit if this destination isn&apos;t one.</p>
-                    </div>
-                    {formError && (
-                      <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
-                        <AlertCircle size={15} className="mt-0.5 shrink-0" />
-                        {formError}
-                      </div>
-                    )}
-                    <div className="flex gap-3 pt-2">
-                      <button type="button" onClick={() => setShowDestForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                        Cancel
-                      </button>
-                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" style={{ background: "#610064" }}>
-                        {saving ? "Saving…" : "Save"}
-                      </button>
-                    </div>
-                  </form>
-                </div>
+                )}
+
+                {resolvedAccountName && (
+                  <button
+                    type="button"
+                    onClick={handleSavePayout}
+                    disabled={savingPayout}
+                    className="w-full py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
+                    style={{ background: "#1B512D" }}
+                  >
+                    {savingPayout ? "Setting up…" : "Confirm and set up payouts"}
+                  </button>
+                )}
               </div>
             )}
           </div>

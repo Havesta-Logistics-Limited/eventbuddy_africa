@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Users, UserCheck, Download, Loader2 } from "lucide-react";
-import { Destination, EventRecord, LeadRecord, RegistrationRecord, StaffRecord, University } from "@/lib/types";
+import { Destination, EventRecord, LeadRecord, RegistrationRecord, StaffRecord, TicketType, University } from "@/lib/types";
 import { downloadCsv, registrationsToCsv } from "@/lib/csv";
 import { updateRegistrationStatus } from "@/lib/store";
 import { RegistrantDetailModal } from "@/components/registrant-detail-modal";
+import { formatNaira } from "@/lib/billing";
 
 const statusStyles: Record<RegistrationRecord["status"], string> = {
   registered: "bg-amber-100 text-amber-700",
@@ -32,6 +33,7 @@ export function ProspectsTab({
   destinations,
   universities,
   staff,
+  ticketTypes,
 }: {
   event: EventRecord;
   registrations: RegistrationRecord[];
@@ -39,6 +41,7 @@ export function ProspectsTab({
   destinations: Destination[];
   universities: University[];
   staff: StaffRecord[];
+  ticketTypes: TicketType[];
 }) {
   const [view, setView] = useState<"registrations" | "participants">("registrations");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -76,6 +79,8 @@ export function ProspectsTab({
   const selectedDest = selectedLead?.destinationId ? destinations.find((d) => d.id === selectedLead.destinationId) : undefined;
   const selectedUni = selectedLead?.universityId ? universities.find((u) => u.id === selectedLead.universityId) : undefined;
   const checkedInByName = selected?.checkedInBy ? staff.find((s) => s.id === selected.checkedInBy)?.name : undefined;
+  const selectedTicket = selected?.ticketTypeId ? ticketTypes.find((t) => t.id === selected.ticketTypeId) : undefined;
+  const showTicketColumn = ticketTypes.length > 0;
 
   return (
     <div>
@@ -133,7 +138,17 @@ export function ProspectsTab({
           <table className="w-full text-sm">
             <thead className="bg-slate-50">
               <tr>
-                {["Reference ID", "Name", "Email", "Phone", ...customFields.map((f) => f.label || "Untitled"), "Status", "Checked In", "Registered"].map((h, i) => (
+                {[
+                  "Reference ID",
+                  "Name",
+                  "Email",
+                  "Phone",
+                  ...(showTicketColumn ? ["Ticket"] : []),
+                  ...customFields.map((f) => f.label || "Untitled"),
+                  "Status",
+                  "Checked In",
+                  "Registered",
+                ].map((h, i) => (
                   <th key={i} className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">
                     {h}
                   </th>
@@ -147,6 +162,22 @@ export function ProspectsTab({
                   <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">{r.fullName}</td>
                   <td className="px-4 py-3 text-slate-500 max-w-[180px] truncate">{r.email}</td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{r.phone || "—"}</td>
+                  {showTicketColumn && (
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {(() => {
+                        const ticket = r.ticketTypeId ? ticketTypes.find((t) => t.id === r.ticketTypeId) : undefined;
+                        if (!ticket) return <span className="text-slate-400">—</span>;
+                        return (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="text-slate-700">{ticket.name}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${ticket.priceNaira > 0 ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}>
+                              {ticket.priceNaira > 0 ? formatNaira(ticket.priceNaira) : "Free"}
+                            </span>
+                          </span>
+                        );
+                      })()}
+                    </td>
+                  )}
                   {customFields.map((f) => {
                     const v = r.customAnswers?.[f.id];
                     return (
@@ -188,6 +219,7 @@ export function ProspectsTab({
           destination={selectedDest}
           university={selectedUni}
           checkedInByName={checkedInByName}
+          ticketType={selectedTicket}
           onClose={() => setSelectedId(null)}
         />
       )}

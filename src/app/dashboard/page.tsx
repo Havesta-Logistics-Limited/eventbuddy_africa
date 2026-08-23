@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Plus, Calendar, CreditCard, MapPin, Users, QrCode, Clock, CheckCircle2, AlertCircle, Search, SlidersHorizontal, Presentation } from "lucide-react";
+import { Plus, Calendar, MapPin, Users, QrCode, Clock, CheckCircle2, AlertCircle, Search, SlidersHorizontal, Presentation } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { PersistError, addEvent, useDataReady, useDestinations, useEvents, useLeads, useRegistrations } from "@/lib/store";
@@ -15,6 +15,7 @@ import { EventFilterModal } from "@/components/event-filter-modal";
 import { EventWizard, type EventWizardData } from "@/components/event-wizard";
 import { Reveal } from "@/components/reveal";
 import { EventCardSkeleton, StatTileSkeleton } from "@/components/skeleton";
+import { AuthLoading } from "@/components/auth-loading";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -49,17 +50,10 @@ function EventCard({ event }: { event: EventRecord }) {
           <div className="w-full h-full bg-gradient-to-tr from-slate-200 to-slate-100" />
         )}
         <div className="absolute top-3 left-3">
-          {event.published === false ? (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 shadow-sm bg-white/90 backdrop-blur-sm">
-              <CreditCard size={11} />
-              Payment pending
-            </span>
-          ) : (
-            <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${cfg.color} shadow-sm bg-white/90 backdrop-blur-sm`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-              {cfg.label}
-            </span>
-          )}
+          <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${cfg.color} shadow-sm bg-white/90 backdrop-blur-sm`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+            {cfg.label}
+          </span>
         </div>
       </div>
       <div className="p-5 flex flex-col flex-1">
@@ -135,7 +129,7 @@ export default function DashboardPage() {
     return () => clearInterval(id);
   }, []);
 
-  if (!session) return null;
+  if (!session) return <AuthLoading />;
 
   const query = search.trim().toLowerCase();
   const filtered = events
@@ -165,30 +159,11 @@ export default function DashboardPage() {
     { label: "Total Leads", value: leads.length },
   ];
 
-  const handleCreate = async (data: EventWizardData, intent: "draft" | "publish") => {
+  const handleCreate = async (data: EventWizardData) => {
     try {
-      // Physical events are always created unpublished — inert until Paystack payment
-      // succeeds (see the paystack_payments migration's protect_event_payment_fields
-      // trigger) — whether the admin is saving a draft to come back to or is about to
-      // pay right away. Virtual events stay free and publish immediately, same as before.
-      const event = await addEvent({ ...data, published: data.eventFormat !== "physical" });
-      if (data.eventFormat === "physical" && intent === "publish") {
-        const res = await fetch("/api/paystack/initialize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId: event.id }),
-        });
-        const json = await res.json();
-        if (!res.ok || !json.authorizationUrl) {
-          throw new Error(json.error || "Couldn't start payment. You can retry from this event's page.");
-        }
-        // Full-page redirect to Paystack's hosted checkout — leaving the app entirely,
-        // so there's nothing left to close/toast here.
-        window.location.assign(json.authorizationUrl);
-        return;
-      }
+      await addEvent({ ...data, published: true });
       setShowWizard(false);
-      toast.success(data.eventFormat === "physical" ? "Draft saved — pay anytime from the event page to publish" : "Event created");
+      toast.success("Event created");
     } catch (err) {
       throw err instanceof PersistError ? new Error(err.message) : err instanceof Error ? err : new Error("Couldn't create that event. Please try again.");
     }
@@ -204,7 +179,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={() => setShowWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-[transform,background-color] active:scale-[0.97] shrink-0 whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-[transform,background-color] active:scale-[0.97] shrink-0 whitespace-nowrap"
           >
             <Plus size={16} />
             New Event
@@ -310,7 +285,7 @@ export default function DashboardPage() {
         </div>
 
         {showWizard && (
-          <EventWizard mode="create" destinations={destinations} onSubmit={handleCreate} onCancel={() => setShowWizard(false)} />
+          <EventWizard mode="create" onSubmit={handleCreate} onCancel={() => setShowWizard(false)} />
         )}
       </div>
     </Shell>

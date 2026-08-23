@@ -90,7 +90,7 @@ function ResetPasswordForm() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center mb-8">
-          <Logo height={28} />
+          <Logo height={16} />
         </div>
 
         {linkError ? (
@@ -102,7 +102,7 @@ function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => router.push("/forgot-password")}
-              className="text-sm font-medium text-[#610064] hover:underline"
+              className="text-sm font-medium text-[#1B512D] hover:underline"
             >
               Request a new link
             </button>
@@ -128,7 +128,7 @@ function ResetPasswordForm() {
                     placeholder="At least 8 characters"
                     required
                     minLength={8}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064] focus:border-transparent bg-white pr-10"
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D] focus:border-transparent bg-white pr-10"
                   />
                   <button
                     type="button"
@@ -152,7 +152,7 @@ function ResetPasswordForm() {
                 type="submit"
                 disabled={loading}
                 className="w-full py-2.5 rounded-lg font-medium text-sm text-white transition-colors disabled:opacity-60"
-                style={{ background: loading ? "#8a0e8f" : "#610064" }}
+                style={{ background: loading ? "#0e2b18" : "#1B512D" }}
               >
                 {loading ? "Updating…" : "Update password"}
               </button>

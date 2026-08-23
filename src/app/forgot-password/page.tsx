@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center mb-8">
-          <Logo height={28} />
+          <Logo height={16} />
         </div>
 
         {sent ? (

@@ -4,15 +4,35 @@
   --font-display: var(--font-dm-serif), Georgia, serif;
   --font-sans: var(--font-inter), system-ui, sans-serif;
 
-  /* Brand accent — pinned to the app's #610064 purple at 600 so this is a
-     drop-in replacement for the ~170 hardcoded #610064/text-[#610064] literals
-     across the app (none of which use any other shade). 50/100 are tints for
-     hover/active fills, 700 is the hover/pressed darken. */
-  --color-brand-50: #faf0fb;
-  --color-brand-100: #f2d9f4;
-  --color-brand-500: #9b1a9f;
-  --color-brand-600: #610064;
-  --color-brand-700: #4a004d;
+  /* Brand palette v4 (preview) — primary swapped from orange to deep green
+     #1B512D; every brand-colored utility class cascades to every existing usage
+     across the app automatically. Purple/yellow/green(accent)/near-black remain
+     as-is. */
+  --color-brand-50: #e8f7ed;
+  --color-brand-100: #c9edd5;
+  --color-brand-500: #287742;
+  --color-brand-600: #1b512d;
+  --color-brand-700: #0e2b18;
+
+  --color-accent-purple-50: #f3ecf8;
+  --color-accent-purple-100: #e2cdf0;
+  --color-accent-purple-500: #8a4cb8;
+  --color-accent-purple-600: #66329a;
+  --color-accent-purple-700: #4e2578;
+
+  --color-accent-yellow-50: #fef8e5;
+  --color-accent-yellow-100: #fceec0;
+  --color-accent-yellow-500: #f9d158;
+  --color-accent-yellow-600: #f7c326;
+  --color-accent-yellow-700: #c99b13;
+
+  --color-accent-green-50: #e8f4ee;
+  --color-accent-green-100: #c3e3d3;
+  --color-accent-green-500: #22935f;
+  --color-accent-green-600: #1a744f;
+  --color-accent-green-700: #14573b;
+
+  --color-ink-900: #0b0500;
 
   /* Staff's distinct blue identity (kept separate from the purple admin/rep
      brand — see shell.tsx). Same value as the existing #1098F7 literals. */
@@ -63,6 +83,13 @@ select {
 
 .font-display {
   font-family: var(--font-display);
+}
+
+/* Heavy-weight serif for spots that need real bold display type (e.g. the
+   homepage trust band's stat numbers) — see layout.tsx for why this isn't just
+   font-display with font-bold applied. */
+.font-display-bold {
+  font-family: var(--font-playfair), Georgia, serif;
 }
 
 @keyframes badge-settle-front {
@@ -173,6 +200,100 @@ select {
 }
 .animate-fade-in-up {
   animation: fade-in-up 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* Continuous right-to-left marquee for the homepage's scrolling strips — track
+   holds two identical copies of the content back to back, and the animation
+   translates exactly half its own width so the loop point is invisible. Always
+   running, including on hover — never freezes. */
+@keyframes marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-marquee {
+  animation: marquee-left 32s linear infinite;
+}
+
+/* Mirror image of marquee-left, authored as its own forward keyframe rather than
+   `animation-direction: reverse` on marquee-left — reverse playback on an infinite
+   loop has a real cross-browser stutter at the iteration boundary (most visible in
+   WebKit). A native from/to keyframe loops exactly as seamlessly as marquee-left
+   does, just moving the opposite way. */
+@keyframes marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.animate-marquee-reverse {
+  animation: marquee-right 32s linear infinite;
+}
+
+/* Modal enter transition — every `fixed inset-0 z-50 ... bg-black/50` overlay in
+   the app pairs the backdrop fade with a slight scale+lift on the card itself, so
+   opening a modal reads as a deliberate motion instead of a hard cut. Enter-only
+   (no exit state) — closing still hides instantly, matching how animate-fade-in-up
+   is used elsewhere as a one-shot mount animation, not a full transition system. */
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-modal-backdrop {
+  animation: modal-backdrop-in 180ms ease-out both;
+}
+@keyframes modal-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.animate-modal-panel {
+  animation: modal-panel-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Mobile nav drawer — slides in from the left (where the hamburger that opened it
+   lives) instead of appearing instantly. Kept fast and free of any bounce/overshoot
+   since this is a daily-use control, not a one-off moment. */
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.animate-drawer-in {
+  animation: drawer-in 220ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Tab-content cross-fade — the tab buttons themselves already have
+   transition-colors; this bridges the panel underneath so switching tabs doesn't
+   hard-cut. Opacity only (no slide/scale) since panels differ in height and this
+   is dense admin UI read far more often than it's clicked — kept fast and quiet. */
+@keyframes tab-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-tab-fade {
+  animation: tab-fade-in 150ms ease-out both;
 }
 
 /* Single global reduced-motion reset — covers every animation/transition in the

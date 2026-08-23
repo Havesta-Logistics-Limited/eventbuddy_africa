@@ -21,12 +21,12 @@ async function sendVerificationEmail(to: string, orgName: string, verifyUrl: str
       text: `Welcome to eventbuddy, ${orgName}!\n\nVerify your email to activate your organization account: ${verifyUrl}\n\nYou won't be able to sign in until it's verified.`,
       html: `
         <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
-          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#610064; font-weight:600; margin:0 0 8px;">Verify your email</p>
+          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#1B512D; font-weight:600; margin:0 0 8px;">Verify your email</p>
           <h1 style="font-size:20px; margin:0 0 12px;">One step left, ${orgName}</h1>
           <p style="margin:0 0 20px; color:#666; font-size:14px; line-height:1.5;">
             Verify your email to activate your organization account. You won't be able to sign in until it's verified.
           </p>
-          <a href="${verifyUrl}" style="display:inline-block; padding:11px 20px; border-radius:8px; background:#610064; color:#ffffff; font-size:14px; font-weight:600; text-decoration:none;">
+          <a href="${verifyUrl}" style="display:inline-block; padding:11px 20px; border-radius:8px; background:#1B512D; color:#ffffff; font-size:14px; font-weight:600; text-decoration:none;">
             Verify email
           </a>
         </div>
@@ -39,6 +39,7 @@ async function sendVerificationEmail(to: string, orgName: string, verifyUrl: str
 }
 
 const SignupSchema = z.object({
+  fullName: z.string().trim().min(2, "Enter your full name."),
   orgName: z.string().trim().min(2, "Organization name must be at least 2 characters."),
   email: z.string().trim().email("Enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid input." }, { status: 400 });
   }
-  const { orgName, email, password, phone } = parsed.data;
+  const { fullName, orgName, email, password, phone } = parsed.data;
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY === "paste_your_supabase_service_role_key_here") {
     return NextResponse.json(
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
     type: "signup",
     email,
     password,
-    options: { redirectTo: new URL("/login?verified=1", request.url).toString() },
+    options: { redirectTo: new URL("/login?verified=1", request.url).toString(), data: { full_name: fullName } },
   });
   if (linkError || !linkData.user) {
     return NextResponse.json({ error: linkError?.message || "Couldn't create that account." }, { status: 400 });

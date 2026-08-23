@@ -40,7 +40,7 @@ export function FieldEditorRow({
             value={field.label}
             onChange={(e) => onChange({ ...field, label: e.target.value })}
             placeholder="Question"
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
+            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
           />
           <select
             value={field.type}
@@ -82,7 +82,7 @@ export function FieldEditorRow({
                   options[i] = e.target.value;
                   onChange({ ...field, options });
                 }}
-                className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#610064]"
+                className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
               />
               <button
                 type="button"
@@ -96,7 +96,7 @@ export function FieldEditorRow({
           <button
             type="button"
             onClick={() => onChange({ ...field, options: [...(field.options ?? []), `Option ${(field.options?.length ?? 0) + 1}`] })}
-            className="flex items-center gap-1.5 text-xs font-medium text-[#610064] hover:underline"
+            className="flex items-center gap-1.5 text-xs font-medium text-[#1B512D] hover:underline"
           >
             <Plus size={13} />
             Add option
@@ -105,7 +105,7 @@ export function FieldEditorRow({
       )}
 
       <label className="flex items-center gap-2 text-xs text-slate-600">
-        <input type="checkbox" checked={field.required} onChange={(e) => onChange({ ...field, required: e.target.checked })} className="accent-[#610064]" />
+        <input type="checkbox" checked={field.required} onChange={(e) => onChange({ ...field, required: e.target.checked })} className="accent-[#1B512D]" />
         Required
       </label>
     </div>

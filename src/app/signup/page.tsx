@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Eye, EyeOff, MailCheck } from "lucide-react";
 import { AttendeeBadgeArt } from "@/components/attendee-badge-art";
@@ -8,6 +9,7 @@ import { Logo } from "@/components/logo";
 
 export default function SignupPage() {
   const router = useRouter();
+  const [fullName, setFullName] = useState("");
   const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -25,7 +27,7 @@ export default function SignupPage() {
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgName, email, phone, password }),
+        body: JSON.stringify({ fullName, orgName, email, phone, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -77,11 +79,15 @@ export default function SignupPage() {
         />
         <div
           className="absolute inset-0"
-          style={{ background: "radial-gradient(ellipse 100% 80% at 15% 0%, rgba(97,0,100,0.85) 0%, rgba(74,2,80,0.9) 55%, rgba(43,1,48,0.94) 100%)" }}
+          style={{ background: "radial-gradient(ellipse 140% 160% at 15% -10%, rgba(27,81,45,0.9) 0%, rgba(14,43,24,0.93) 40%, rgba(11,5,0,0.97) 100%)" }}
         />
+        {/* Extra scrim in the top-left corner, where the logo sits — the main
+            gradient's brightest point is nearly the same spot, so without this the
+            white wordmark loses contrast against the bright green/photo underneath. */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 32%)" }} />
 
         <div className="relative">
-          <Logo tone="white" height={32} />
+          <Logo tone="white" height={18} />
         </div>
 
         <div className="relative space-y-6">
@@ -108,13 +114,24 @@ export default function SignupPage() {
       <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <Logo height={28} />
+            <Logo height={16} />
           </div>
 
           <h2 className="text-2xl font-semibold text-slate-900 mb-1">Create your account</h2>
           <p className="text-slate-500 text-sm mb-8">Set up your organization to start hosting events.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className={labelClass}>Full name</label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="e.g. Amaka Obi"
+                required
+                className={fieldClass}
+              />
+            </div>
             <div>
               <label className={labelClass}>Organization name</label>
               <input
@@ -167,10 +184,22 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-brand-600 hover:bg-brand-700 transition-colors disabled:opacity-60"
+              className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
             >
               {loading ? "Creating account…" : "Create account"}
             </button>
+
+            <p className="text-xs text-slate-400 text-center leading-relaxed">
+              By creating an account, you agree to eventbuddy&apos;s{" "}
+              <Link href="/terms" className="text-slate-500 hover:text-slate-700 underline underline-offset-2">
+                Terms &amp; Conditions
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="text-slate-500 hover:text-slate-700 underline underline-offset-2">
+                Privacy Policy
+              </Link>
+              .
+            </p>
           </form>
 
           <div className="mt-8 p-4 rounded-xl bg-slate-100 text-xs text-slate-500 text-center">

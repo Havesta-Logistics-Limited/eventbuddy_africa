@@ -9,6 +9,7 @@ import { Role } from "@/lib/types";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 import { formatDate, formatTime } from "@/lib/utils";
 import { QrScannerPanel } from "@/components/qr-scanner-panel";
+import { AuthLoading } from "@/components/auth-loading";
 
 const STAFF_ONLY: Role[] = ["staff"];
 
@@ -80,7 +81,7 @@ export default function CheckinPage() {
     checkIn(referenceId);
   }
 
-  if (!session) return null;
+  if (!session) return <AuthLoading />;
 
   if (event && gate && !gate.open) {
     return (

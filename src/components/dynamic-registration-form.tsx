@@ -32,7 +32,7 @@ export interface DynamicRegistrationFormValues {
 }
 
 const fieldClass =
-  "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#610064] focus:border-transparent";
+  "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1B512D] focus:border-transparent";
 const selectClass = `${fieldClass} cursor-pointer`;
 const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
 const errorClass = "text-rose-600 text-xs mt-1";
@@ -61,7 +61,7 @@ function DynamicField({ field, register, errors }: { field: FieldDef; register: 
         <div className="grid grid-cols-2 gap-2">
           {(field.options ?? []).map((opt) => (
             <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-200 text-sm cursor-pointer hover:border-slate-300">
-              <input type="radio" value={opt} {...register(path)} className="accent-[#610064]" />
+              <input type="radio" value={opt} {...register(path)} className="accent-[#1B512D]" />
               {opt}
             </label>
           ))}
@@ -70,7 +70,7 @@ function DynamicField({ field, register, errors }: { field: FieldDef; register: 
         <div className="grid grid-cols-2 gap-2">
           {(field.options ?? []).map((opt) => (
             <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-200 text-sm cursor-pointer hover:border-slate-300">
-              <input type="checkbox" value={opt} {...register(path)} className="accent-[#610064]" />
+              <input type="checkbox" value={opt} {...register(path)} className="accent-[#1B512D]" />
               {opt}
             </label>
           ))}
@@ -169,7 +169,7 @@ export function DynamicRegistrationForm(props: {
         type="submit"
         disabled={submitting}
         className="w-full py-3.5 rounded-xl font-semibold text-white text-base disabled:opacity-60"
-        style={{ background: "#610064" }}
+        style={{ background: "#1B512D" }}
       >
         {submitting ? "Registering…" : "Register"}
       </button>

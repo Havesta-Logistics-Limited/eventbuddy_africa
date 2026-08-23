@@ -2,31 +2,39 @@
  *  (for FAQPage structured data) and the client pricing-content.tsx (for the
  *  rendered FAQ section). A function exported from a client-marked file can't be
  *  called directly from a Server Component, so this has to live in its own module. */
-export function faqs(price: string) {
+export function faqs(feePercent: string) {
   return [
     {
-      q: "What counts as \"one event\"?",
-      a: `A single event — one entry on your dashboard, whatever type it is or however long it runs. A 3-day education fair across 6 destinations, or a one-day job fair, is still one event, one ${price} charge (if it's in-person).`,
+      q: "How much does Self-Serve cost?",
+      a: `Nothing to start. Create your account and publish as many virtual or in-person events as you like, free. You only ever pay when a ticket actually sells — ${feePercent} of the ticket price, taken automatically at checkout. Free tickets and free events cost nothing at all.`,
     },
     {
-      q: "Do I pay for virtual events?",
-      a: `No — virtual events are free, always. The ${price} fee only applies when you host a physical, in-person event. Run as many virtual events as you like at no cost.`,
+      q: "What's the difference between Self-Serve, Full-Service, and Enterprise?",
+      a: "Self-Serve is do-it-yourself — you set up the event and run it from your dashboard. Full-Service means eventbuddy's own team shows up on the day and runs registration, ticketing, and check-in for you. Enterprise is Full-Service across multiple events or venues, with dedicated support and custom terms.",
     },
     {
       q: "Is there a subscription or monthly fee?",
-      a: "No. There's nothing to pay until you create a physical event, and nothing recurring after that — you're only ever charged when you actually host an in-person fair.",
+      a: "No, not on Self-Serve — there's nothing to pay until a ticket sells, and nothing recurring after that. Full-Service and Enterprise are quoted per event or per program, not billed monthly either.",
     },
     {
-      q: "What if I need to edit an event after paying?",
-      a: `Editing dates, venue, destinations, or access codes on an existing event is free — the ${price} only applies to creating a new physical event.`,
+      q: "Do I pay anything for free tickets or free events?",
+      a: "No. An event with no paid tickets — virtual or in-person — costs nothing to run, ever. The transaction fee only applies to tickets that actually sell.",
     },
     {
-      q: "Can I try it before paying?",
-      a: "Signing up and exploring your dashboard is free, and so is hosting a virtual event. You're only charged when you create your first physical event.",
+      q: "How do I actually get paid for ticket sales?",
+      a: "Ticket revenue splits automatically the moment someone pays — your share settles straight to your own bank account. eventbuddy never holds your money; it only ever takes its transaction fee off the top.",
+    },
+    {
+      q: "Can I try it before paying for anything?",
+      a: "Yes. Signing up, creating events, and collecting free registrations is entirely free on Self-Serve. You only pay once you sell a paid ticket.",
     },
     {
       q: "Do my staff and reps need their own accounts?",
       a: "No. They check in with the access code you set for that event — no admin login, no separate signup. Unlimited staff and reps are included at no extra cost.",
+    },
+    {
+      q: "How do I bring eventbuddy's team on-site for my event?",
+      a: "Request a quote for Full-Service or Enterprise — tell us about your event and we'll follow up with pricing and next steps.",
     },
   ];
 }

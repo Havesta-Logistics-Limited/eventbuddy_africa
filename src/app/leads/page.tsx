@@ -12,6 +12,7 @@ import { sortEventsByProximity } from "@/lib/utils";
 import { EventLeadsCard } from "@/components/event-leads-card";
 import { Reveal } from "@/components/reveal";
 import { RowSkeleton } from "@/components/skeleton";
+import { AuthLoading } from "@/components/auth-loading";
 
 const ADMIN_OR_REP: Role[] = ["admin", "rep"];
 
@@ -37,7 +38,7 @@ export default function LeadsPage() {
   const [sendError, setSendError] = useState("");
   const [sent, setSent] = useState(false);
 
-  if (!session) return null;
+  if (!session) return <AuthLoading />;
 
   const availableUnis = filterDest ? universities.filter((u) => u.destinationId === filterDest) : universities;
 
@@ -245,8 +246,8 @@ export default function LeadsPage() {
         )}
 
         {emailModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-            <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
+            <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-semibold text-slate-900">Email Leads</h2>
                 <button onClick={() => setEmailModal(false)} className="text-slate-400 hover:text-slate-600">

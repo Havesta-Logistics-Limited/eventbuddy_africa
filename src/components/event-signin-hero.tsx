@@ -11,7 +11,7 @@ const VARIANTS = {
     eyebrow: "text-sky-300",
   },
   rep: {
-    gradient: "linear-gradient(145deg, #1a0533 0%, #610064 100%)",
+    gradient: "linear-gradient(145deg, #0b0500 0%, #1B512D 100%)",
     eyebrow: "text-fuchsia-300",
   },
 };
@@ -41,7 +41,7 @@ export function EventSignInHero({
       />
       <div className="relative max-w-xl mx-auto">
         <div className="flex items-center justify-between">
-          <Logo tone="white" height={24} />
+          <Logo tone="white" height={14} />
           {secondaryAction && (
             <button type="button" onClick={secondaryAction.onClick} className="text-sm font-medium text-white/80 hover:text-white transition-colors">
               {secondaryAction.label}

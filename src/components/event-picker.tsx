@@ -26,11 +26,11 @@ const VARIANTS = {
     accent: "blue" as const,
   },
   rep: {
-    gradient: "linear-gradient(145deg, #1a0533 0%, #610064 100%)",
+    gradient: "linear-gradient(145deg, #0b0500 0%, #1B512D 100%)",
     eyebrow: "text-fuchsia-300",
-    focusRing: "focus:ring-[#610064]",
-    cardHoverBorder: "hover:border-[#610064]",
-    ctaHover: "group-hover:border-[#610064] group-hover:text-[#610064] group-hover:bg-[#610064]/5",
+    focusRing: "focus:ring-[#1B512D]",
+    cardHoverBorder: "hover:border-[#1B512D]",
+    ctaHover: "group-hover:border-[#1B512D] group-hover:text-[#1B512D] group-hover:bg-[#1B512D]/5",
     accent: "purple" as const,
   },
 };
@@ -118,7 +118,7 @@ export function EventPicker({
         />
         <div className="relative max-w-5xl mx-auto">
           <div className="flex items-center justify-between">
-            <Logo tone="white" height={24} />
+            <Logo tone="white" height={14} />
             <button type="button" onClick={secondaryAction.onClick} className="text-sm font-medium text-white/80 hover:text-white transition-colors">
               {secondaryAction.label}
             </button>
@@ -154,7 +154,7 @@ export function EventPicker({
                 className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-sm font-medium shadow-sm transition-colors ${
                   activeFilterCount > 0
                     ? variant === "rep"
-                      ? "border-[#610064]/30 bg-[#610064]/5 text-[#610064]"
+                      ? "border-[#1B512D]/30 bg-[#1B512D]/5 text-[#1B512D]"
                       : "border-[#1098F7]/30 bg-[#1098F7]/5 text-[#1098F7]"
                     : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                 }`}
@@ -164,7 +164,7 @@ export function EventPicker({
                 {activeFilterCount > 0 && (
                   <span
                     className="flex items-center justify-center w-4 h-4 rounded-full text-white text-[10px] font-semibold"
-                    style={{ background: variant === "rep" ? "#610064" : "#1098F7" }}
+                    style={{ background: variant === "rep" ? "#1B512D" : "#1098F7" }}
                   >
                     {activeFilterCount}
                   </span>

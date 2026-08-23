@@ -1,7 +1,13 @@
 export type Role = "admin" | "staff" | "rep";
 
+/** Owned by exactly one event — not shared across an org's events. Two events that
+ *  both need "United Kingdom" each get their own independent Destination row (and
+ *  their own Universities under it); editing one never affects the other. See
+ *  copyDestinationsFromEvent in store.ts for the "start from another event's list"
+ *  shortcut. */
 export interface Destination {
   id: string;
+  eventId: string;
   name: string;
   flag: string;
 }
@@ -73,8 +79,8 @@ export interface EventRecord {
    *  admin) — see protect_event_payment_fields in the paystack_payments migration. */
   published?: boolean;
   /** The price actually snapshotted on this event at creation time (0 for virtual) —
-   *  see events_set_price_usd in the platform_settings_and_event_pricing migration. */
-  priceUsd?: number;
+   *  see events_set_price_naira in the currency_usd_to_naira migration. */
+  priceNaira?: number;
   /** Which event-templates.ts template this event was created from. Optional here even
    *  though the DB column is NOT NULL DEFAULT 'education-fair' — the DB default covers
    *  any call site that doesn't set it. */
@@ -159,6 +165,65 @@ export interface LeadRecord {
  *  event/destination/university a staff or rep session is locked to. */
 export type Session = StaffRecord;
 
+/** A purchasable option for an event's self-service registration — priceNaira = 0 is a
+ *  free ticket (registers instantly, same as before ticketing existed); priceNaira > 0
+ *  routes the attendee through a real Paystack split payment before any registration
+ *  is created (see /api/orgs/[slug]/ticket-purchase/initialize). */
+export interface TicketType {
+  id: string;
+  eventId: string;
+  name: string;
+  description?: string;
+  priceNaira: number;
+  /** null = unlimited. */
+  quantityAvailable?: number | null;
+  quantitySold: number;
+  salesStart?: string;
+  salesEnd?: string;
+  createdAt: string;
+}
+
+export type DiscountType = "percentage" | "fixed";
+export type PerCustomerLimit = "single" | "unlimited";
+
+/** A promo code scoped to one event. Redemption (usesCount) only increments once a
+ *  purchase actually succeeds, mirroring how ticket_types.quantitySold works — all
+ *  validation (scope, dates, caps, per-customer limit) lives in one place, the
+ *  public_validate_discount_code Postgres function, not duplicated in the client. */
+export interface DiscountCode {
+  id: string;
+  eventId: string;
+  code: string;
+  discountType: DiscountType;
+  /** Percentage (0-100) or a flat Naira amount, depending on discountType. */
+  discountValue: number;
+  /** null/undefined = applies to every paid ticket type on the event. */
+  ticketTypeIds?: string[] | null;
+  /** Whether the same buyer (matched by email) can redeem this code more than once. */
+  perCustomerLimit: PerCustomerLimit;
+  /** null = unlimited redemptions across all customers. */
+  maxUses?: number | null;
+  usesCount: number;
+  /** The ticket's own listed price must be at least this for the code to apply. */
+  minSpendNaira?: number | null;
+  /** Caps the Naira amount actually discounted — mainly relevant to percentage codes. */
+  maxDiscountNaira?: number | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  createdAt: string;
+}
+
+/** One successful redemption of a discount code — who used it, on which ticket
+ *  purchase, and what they actually paid after the discount. Read from
+ *  paystack_transactions directly (see getDiscountCodeRedemptions), not stored as
+ *  its own table — a code's usage history IS just its successful transactions. */
+export interface DiscountRedemption {
+  fullName: string;
+  email: string;
+  amountPaidNaira: number;
+  purchasedAt: string;
+}
+
 export type RegistrationStatus = "registered" | "checked_in" | "cancelled";
 
 /** A self-service attendee sign-up via an event's public registration link — distinct
@@ -175,6 +240,9 @@ export interface RegistrationRecord {
   /** Answers to the event's admin-defined customFields, keyed by FieldDef.id — same
    *  convention as LeadRecord.customAnswers. */
   customAnswers?: Record<string, string | string[]>;
+  /** Which ticket type this attendee registered under — unset for events with no
+   *  ticket types (or registrations created before ticketing existed). */
+  ticketTypeId?: string;
   status: RegistrationStatus;
   checkedInAt?: string;
   checkedInBy?: string;

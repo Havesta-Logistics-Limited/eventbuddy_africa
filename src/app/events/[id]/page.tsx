@@ -4,22 +4,26 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { AlertCircle, ArrowLeft, Calendar, Copy, CreditCard, Link2, Loader2, MapPin, Users, Download, Edit2, Lock, LockOpen, RefreshCw, Trash2, Video, X, Search } from "lucide-react";
+import { AlertCircle, ArrowLeft, Calendar, Copy, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, RefreshCw, Trash2, Video, X, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import {
   PersistError,
   deleteEvent,
   duplicateEvent,
+  getDiscountCodesForEvent,
   getEventById,
+  getTicketTypesForEvent,
   refreshData,
   updateEvent,
   useDataReady,
   useDestinations,
+  useDiscountCodes,
   useEvents,
   useLeads,
   useRegistrations,
   useStaff,
+  useTicketTypes,
   useUniversities,
 } from "@/lib/store";
 import { Role } from "@/lib/types";
@@ -27,25 +31,29 @@ import { downloadCsv, eventLeadsToCsv, leadsToCsv } from "@/lib/csv";
 import { formatTime } from "@/lib/utils";
 import { getCaptureGate, getEventStatus, windowFromEvent } from "@/lib/capture-window";
 import { getTemplate } from "@/lib/event-templates";
-import { formatUSD } from "@/lib/billing";
 import { EventWizard, type EventWizardData } from "@/components/event-wizard";
 import { EventLeadsCard } from "@/components/event-leads-card";
 import { EventAnalytics } from "@/components/event-analytics";
 import { UniversitiesTab } from "@/components/universities-tab";
+import { DestinationsUniversitiesManagement } from "@/components/destinations-universities-management";
 import { ProspectsTab } from "@/components/prospects-tab";
 import { StaffRosterTab } from "@/components/staff-roster-tab";
+import { RepsManagement } from "@/components/reps-management";
+import { TicketsTab } from "@/components/tickets-tab";
 import { RowSkeleton } from "@/components/skeleton";
+import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { AuthLoading } from "@/components/auth-loading";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
-type TabId = "dashboard" | "universities" | "prospects" | "leads" | "checkin-staff" | "representatives";
+type TabId = "dashboard" | "universities" | "prospects" | "tickets" | "leads" | "checkin-staff" | "representatives";
 
 export default function EventDetailPage() {
   const session = useRequireRole(ADMIN_ONLY);
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  useEvents(); // subscribe so edits refresh this view
+  const allEvents = useEvents();
   const dataReady = useDataReady();
   const event = getEventById(params.id);
   const leads = useLeads().filter((l) => l.eventId === params.id);
@@ -53,6 +61,11 @@ export default function EventDetailPage() {
   const staff = useStaff();
   const destinations = useDestinations();
   const universities = useUniversities();
+  useTicketTypes(); // subscribe so ticket-type edits refresh this view
+  const ticketTypes = getTicketTypesForEvent(params.id);
+  useDiscountCodes(); // subscribe so discount-code edits refresh this view
+  const discountCodes = getDiscountCodesForEvent(params.id);
+  const [hasPayoutsConfigured, setHasPayoutsConfigured] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
@@ -68,9 +81,6 @@ export default function EventDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
-  const [verifyingPayment, setVerifyingPayment] = useState(false);
-  const [paymentError, setPaymentError] = useState("");
-  const [startingPayment, setStartingPayment] = useState(false);
 
   // A freshly duplicated event lands here with ?edit=1 so the admin can
   // adjust the copy (name, dates, venue) immediately instead of hunting
@@ -113,60 +123,15 @@ export default function EventDetailPage() {
     return () => clearInterval(id);
   }, []);
 
-  // Paystack redirects the browser back here after checkout with ?payment=callback —
-  // verify immediately rather than waiting on the webhook (which can lag a few
-  // seconds); finalizePaystackTransaction is idempotent, so whichever of the two runs
-  // first does the real work and this is a harmless no-op if the webhook already fired.
   useEffect(() => {
-    if (searchParams.get("payment") !== "callback") return;
-    const reference = searchParams.get("reference");
-    const eventId = params.id;
-    if (!reference) return;
-    let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setVerifyingPayment(true);
-    fetch(`/api/paystack/verify?reference=${encodeURIComponent(reference)}`)
-      .then((res) => res.json())
-      .then(async (json) => {
-        if (cancelled) return;
-        if (json.success) {
-          toast.success("Payment received — event published!");
-          await refreshData();
-        } else {
-          setPaymentError(json.error || "Couldn't verify this payment. Please try again.");
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setPaymentError("Couldn't reach the server to verify payment. Please try again.");
-      })
-      .finally(() => {
-        if (!cancelled) setVerifyingPayment(false);
-      });
-    router.replace(`/events/${eventId}`);
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
-
-  async function handlePayNow() {
-    if (!event) return;
-    setStartingPayment(true);
-    setPaymentError("");
-    try {
-      const res = await fetch("/api/paystack/initialize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId: event.id }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.authorizationUrl) throw new Error(json.error || "Couldn't start payment.");
-      window.location.assign(json.authorizationUrl);
-    } catch (err) {
-      setPaymentError(err instanceof Error ? err.message : "Couldn't start payment. Please try again.");
-      setStartingPayment(false);
-    }
-  }
+    const supabase = createSupabaseBrowserClient();
+    supabase
+      .from("organizations")
+      .select("paystack_subaccount_code")
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setHasPayoutsConfigured(!!data?.paystack_subaccount_code));
+  }, []);
 
   async function handleDuplicate() {
     if (!event) return;
@@ -207,7 +172,7 @@ export default function EventDetailPage() {
     setTimeout(() => setLinkCopied(false), 2000);
   }
 
-  if (!session) return null;
+  if (!session) return <AuthLoading />;
 
   if (!event) {
     if (!dataReady) {
@@ -235,24 +200,18 @@ export default function EventDetailPage() {
     );
   }
 
-  const handleEditSubmit = async (data: EventWizardData, intent: "draft" | "publish") => {
+  const handleEditSubmit = async (data: EventWizardData) => {
     try {
       await updateEvent(event.id, data);
       setIsEditing(false);
-      if (intent === "publish" && data.eventFormat === "physical" && event.published === false) {
-        // Reuses the same initialize+redirect flow as the "Pay now" button on the
-        // payment-required screen below — handlePayNow only needs event.id, which is
-        // stable across this edit, so the stale `event` closure here is harmless.
-        await handlePayNow();
-      } else {
-        toast.success(event.published === false ? "Draft saved" : "Event updated");
-      }
+      toast.success("Event updated");
     } catch (err) {
       throw err instanceof PersistError ? new Error(err.message) : new Error("Couldn't save your changes. Please try again.");
     }
   };
 
   const eventDests = destinations.filter((d) => event.destinationIds.includes(d.id));
+  const eventUnis = universities.filter((u) => eventDests.some((d) => d.id === u.destinationId));
   const availableUnis = filterDest ? universities.filter((u) => u.destinationId === filterDest) : universities;
 
   const filteredLeads = leads.filter((l) => {
@@ -293,72 +252,19 @@ export default function EventDetailPage() {
     { id: "dashboard", label: "Dashboard" },
     ...(usesDestinations ? ([{ id: "universities", label: "Universities" }] as const) : []),
     ...(event.eventFormat !== "virtual" && event.selfRegistrationEnabled !== false ? ([{ id: "prospects", label: "Prospects" }] as const) : []),
+    ...(event.eventFormat === "virtual" || event.selfRegistrationEnabled !== false ? ([{ id: "tickets", label: "Tickets" }] as const) : []),
     { id: "leads", label: "Leads" },
     { id: "checkin-staff", label: "Check-in Staff" },
-    ...(allowRepAccess ? ([{ id: "representatives", label: "Representatives" }] as const) : []),
+    // Reps are an org-wide resource managed from here now (see RepsManagement) — the
+    // tab itself only needs usesDestinations (is this an Education Fair event at
+    // all), not allowRepAccess, since "this specific event doesn't let reps check
+    // in" shouldn't also block managing the org's rep roster from ever being reached.
+    ...(usesDestinations ? ([{ id: "representatives", label: "Representatives" }] as const) : []),
   ];
 
-  // A physical event created but not yet paid for — inert everywhere else in the app
-  // (staff can't check in, leads can't be captured, it's not listed for registration).
-  // Blocks the normal tabbed page entirely rather than showing a half-usable event.
-  if (!event.published) {
-    return (
-      <Shell>
-        <div className="p-6 max-w-lg mx-auto">
-          <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-5">
-            <ArrowLeft size={15} />
-            Back to events
-          </Link>
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
-            {verifyingPayment ? (
-              <>
-                <Loader2 size={32} className="animate-spin text-brand-600 mx-auto mb-4" />
-                <h1 className="font-display text-xl text-slate-900 mb-1">Verifying your payment…</h1>
-                <p className="text-sm text-slate-500">This only takes a moment.</p>
-              </>
-            ) : (
-              <>
-                <div className="w-14 h-14 rounded-full bg-brand-600/10 flex items-center justify-center mx-auto mb-4">
-                  <CreditCard size={24} className="text-brand-600" />
-                </div>
-                <h1 className="font-display text-xl text-slate-900 mb-1">Payment required to publish this event</h1>
-                <p className="text-sm text-slate-500 mb-1">{event.name}</p>
-                <p className="text-3xl font-bold text-slate-900 tabular-nums mb-5">{formatUSD(event.priceUsd ?? 0)}</p>
-                <p className="text-xs text-slate-400 mb-5">
-                  This event exists as a draft — staff can&apos;t check in, leads can&apos;t be captured, and it won&apos;t appear for registration
-                  until payment succeeds.
-                </p>
-                {paymentError && (
-                  <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-rose-50 text-rose-700 text-sm text-left">
-                    <AlertCircle size={15} className="mt-0.5 shrink-0" />
-                    {paymentError}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={handlePayNow}
-                  disabled={startingPayment}
-                  className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60 transition-colors"
-                >
-                  {startingPayment ? "Redirecting to Paystack…" : "Pay now"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="w-full mt-2.5 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  Edit details
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-        {isEditing && (
-          <EventWizard mode="edit" initialEvent={event} destinations={destinations} onSubmit={handleEditSubmit} onCancel={() => setIsEditing(false)} />
-        )}
-      </Shell>
-    );
-  }
+  // Other Education Fair events this org has created, for the "copy destinations
+  // from a past event" convenience — see copyDestinationsFromEvent in store.ts.
+  const otherEducationFairEvents = allEvents.filter((e) => e.id !== event.id && getTemplate(e.templateId).usesDestinations).map((e) => ({ id: e.id, name: e.name }));
 
   return (
     <Shell>
@@ -524,50 +430,81 @@ export default function EventDetailPage() {
         </div>
 
         {activeTab === "dashboard" && (
-          <EventAnalytics event={event} leads={leads} registrations={registrations} destinations={destinations} universities={universities} />
+          <div key="dashboard" className="animate-tab-fade">
+            <EventAnalytics event={event} leads={leads} registrations={registrations} destinations={destinations} universities={universities} />
+          </div>
         )}
 
         {activeTab === "universities" && (
-          <UniversitiesTab
-            eventDests={eventDests}
-            universities={universities}
-            leads={leads}
-            onSelectUniversity={(destId, uniId) => {
-              setFilterDest(destId);
-              setFilterUni(uniId);
-              setActiveTab("leads");
-            }}
-          />
+          <div key="universities" className="space-y-10 animate-tab-fade">
+            <DestinationsUniversitiesManagement eventId={event.id} destinations={eventDests} universities={eventUnis} otherEvents={otherEducationFairEvents} />
+            <div className="pt-8 border-t border-slate-200">
+              <h2 className="font-semibold text-slate-800 mb-4">Leads by university</h2>
+              <UniversitiesTab
+                eventDests={eventDests}
+                universities={universities}
+                leads={leads}
+                onSelectUniversity={(destId, uniId) => {
+                  setFilterDest(destId);
+                  setFilterUni(uniId);
+                  setActiveTab("leads");
+                }}
+              />
+            </div>
+          </div>
         )}
 
         {activeTab === "prospects" && (
-          <ProspectsTab event={event} registrations={registrations} leads={leads} destinations={destinations} universities={universities} staff={staff} />
+          <div key="prospects" className="animate-tab-fade">
+            <ProspectsTab event={event} registrations={registrations} leads={leads} destinations={destinations} universities={universities} staff={staff} ticketTypes={ticketTypes} />
+          </div>
+        )}
+
+        {activeTab === "tickets" && (
+          <div key="tickets" className="animate-tab-fade">
+            <TicketsTab event={event} ticketTypes={ticketTypes} discountCodes={discountCodes} hasPayoutsConfigured={hasPayoutsConfigured} />
+          </div>
         )}
 
         {activeTab === "checkin-staff" && (
-          <StaffRosterTab
-            role="staff"
-            staff={staff.filter((s) => s.eventId === event.id && s.role === "staff")}
-            destinations={destinations}
-            universities={universities}
-            orgSlug={session.orgSlug}
-            eventId={event.id}
-          />
+          <div key="checkin-staff" className="animate-tab-fade">
+            <StaffRosterTab
+              role="staff"
+              staff={staff.filter((s) => s.eventId === event.id && s.role === "staff")}
+              destinations={destinations}
+              universities={universities}
+              orgSlug={session.orgSlug}
+              eventId={event.id}
+            />
+          </div>
         )}
 
         {activeTab === "representatives" && (
-          <StaffRosterTab
-            role="rep"
-            staff={staff.filter((s) => s.eventId === event.id && s.role === "rep")}
-            destinations={destinations}
-            universities={universities}
-            orgSlug={session.orgSlug}
-            eventId={event.id}
-          />
+          <div key="representatives" className="space-y-10 animate-tab-fade">
+            <RepsManagement eventId={event.id} staff={staff} destinations={eventDests} universities={eventUnis} />
+            <div className="pt-8 border-t border-slate-200">
+              <h2 className="font-semibold text-slate-800 mb-4">Signed in for this event</h2>
+              {allowRepAccess ? (
+                <StaffRosterTab
+                  role="rep"
+                  staff={staff.filter((s) => s.eventId === event.id && s.role === "rep")}
+                  destinations={destinations}
+                  universities={universities}
+                  orgSlug={session.orgSlug}
+                  eventId={event.id}
+                />
+              ) : (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-sm text-slate-500">
+                  Rep check-in is off for this event — reps above can still be managed, but none can sign in here until you turn it on from Edit
+                  Event.
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {activeTab === "leads" && (
-          <>
+          <div key="leads" className="animate-tab-fade">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <p className="text-sm text-slate-500">
                 {filteredLeads.length} lead{filteredLeads.length !== 1 ? "s" : ""}
@@ -714,22 +651,16 @@ export default function EventDetailPage() {
                 {activeFilters > 0 ? <p className="text-sm mt-1">Try adjusting your filters</p> : <p className="text-sm mt-1">Leads collected by staff will appear here</p>}
               </div>
             )}
-          </>
+          </div>
         )}
 
         {isEditing && (
-          <EventWizard
-            mode="edit"
-            initialEvent={event}
-            destinations={destinations}
-            onSubmit={handleEditSubmit}
-            onCancel={() => setIsEditing(false)}
-          />
+          <EventWizard mode="edit" initialEvent={event} onSubmit={handleEditSubmit} onCancel={() => setIsEditing(false)} />
         )}
 
         {showDeleteConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-            <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
+            <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
               <h2 className="font-semibold text-slate-900 text-lg mb-2">Delete this event?</h2>
               <p className="text-sm text-slate-600">
                 This permanently deletes <span className="font-semibold">{event.name}</span>

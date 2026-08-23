@@ -92,10 +92,10 @@ export default function PrivacyPolicyPage() {
       <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <span className="sm:hidden">
-            <Logo height={32} />
+            <Logo height={18} />
           </span>
           <span className="hidden sm:block">
-            <Logo height={45} />
+            <Logo height={26} />
           </span>
           <nav className="flex items-center gap-3 sm:gap-6">
             <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
@@ -134,20 +134,51 @@ export default function PrivacyPolicyPage() {
         </div>
       </section>
 
-      <footer className="border-t border-slate-200">
-        <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-          <div className="flex items-center gap-2">
-            <Logo variant="full" height={28} />
+      <footer className="text-white" style={{ background: "#0B0500" }}>
+        <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
+          <div>
+            <Logo tone="white" variant="full" height={16} />
+            <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">
+              Registration, ticketing, and check-in for any event — education fairs, job fairs, conferences, and more — never lose a lead.
+            </p>
           </div>
-          <nav className="flex items-center gap-5">
-            <Link href="/privacy" className="hover:text-slate-600">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-slate-600">
-              Terms &amp; Conditions
-            </Link>
-          </nav>
-          <p>© 2026 eventbuddy. All rights reserved.</p>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-3">Product</p>
+            <div className="flex flex-col gap-2.5 text-sm">
+              <Link href="/pricing" className="text-white/70 hover:text-white">
+                Pricing
+              </Link>
+              <Link href="/login" className="text-white/70 hover:text-white">
+                Sign in
+              </Link>
+              <Link href="/signup" className="text-white/70 hover:text-white">
+                Get Started
+              </Link>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-3">Legal</p>
+            <div className="flex flex-col gap-2.5 text-sm">
+              <Link href="/privacy" className="text-white/70 hover:text-white">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-white/70 hover:text-white">
+                Terms &amp; Conditions
+              </Link>
+            </div>
+          </div>
+        </div>
+        <div className="h-1 w-full flex">
+          <div className="flex-1" style={{ background: "#1B512D" }} />
+          <div className="flex-1" style={{ background: "#66329A" }} />
+          <div className="flex-1" style={{ background: "#F7C326" }} />
+          <div className="flex-1" style={{ background: "#1A744F" }} />
+        </div>
+        <div className="border-t border-white/10">
+          <div className="max-w-5xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/40">
+            <p>© 2026 eventbuddy. All rights reserved.</p>
+            <p>Never Lose a Lead</p>
+          </div>
         </div>
       </footer>
     </div>

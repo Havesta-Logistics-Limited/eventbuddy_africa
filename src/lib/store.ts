@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { Destination, EventRecord, FieldDef, LeadRecord, RegistrationRecord, Session, StaffRecord, University } from "./types";
+import { Destination, DiscountCode, DiscountRedemption, EventRecord, FieldDef, LeadRecord, RegistrationRecord, Session, StaffRecord, TicketType, University } from "./types";
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { newId } from "./utils";
 
@@ -32,6 +32,8 @@ let eventsCache: EventRecord[] = [];
 let staffCache: StaffRecord[] = [];
 let leadsCache: LeadRecord[] = [];
 let registrationsCache: RegistrationRecord[] = [];
+let ticketTypesCache: TicketType[] = [];
+let discountCodesCache: DiscountCode[] = [];
 let sessionCache: Session | null = null;
 let sessionHydrated = false;
 
@@ -73,8 +75,8 @@ function persistSession() {
 
 // ---- row <-> app-type mapping (Postgres snake_case <-> camelCase) ----
 
-function mapDestinationRow(d: { id: string; name: string; flag: string }): Destination {
-  return { id: d.id, name: d.name, flag: d.flag };
+function mapDestinationRow(d: { id: string; event_id: string; name: string; flag: string }): Destination {
+  return { id: d.id, eventId: d.event_id, name: d.name, flag: d.flag };
 }
 function mapUniversityRow(u: { id: string; destination_id: string; name: string; short_name: string }): University {
   return { id: u.id, destinationId: u.destination_id, name: u.name, shortName: u.short_name };
@@ -96,7 +98,7 @@ function mapEventRow(e: {
   allow_rep_access: boolean | null;
   self_registration_enabled: boolean | null;
   published: boolean | null;
-  price_usd: number | null;
+  price_naira: number | null;
   template_id: string | null;
   custom_fields: FieldDef[] | null;
   timezone: string | null;
@@ -124,7 +126,7 @@ function mapEventRow(e: {
     allowRepAccess: e.allow_rep_access ?? true,
     selfRegistrationEnabled: e.self_registration_enabled ?? true,
     published: e.published ?? true,
-    priceUsd: e.price_usd !== null && e.price_usd !== undefined ? Number(e.price_usd) : undefined,
+    priceNaira: e.price_naira !== null && e.price_naira !== undefined ? Number(e.price_naira) : undefined,
     templateId: e.template_id ?? "education-fair",
     customFields: e.custom_fields ?? [],
     timezone: e.timezone ?? undefined,
@@ -238,6 +240,7 @@ function mapRegistrationRow(r: {
   status: string;
   checked_in_at: string | null;
   checked_in_by: string | null;
+  ticket_type_id: string | null;
   created_at: string;
 }): RegistrationRecord {
   return {
@@ -251,8 +254,93 @@ function mapRegistrationRow(r: {
     status: r.status as RegistrationRecord["status"],
     checkedInAt: r.checked_in_at ?? undefined,
     checkedInBy: r.checked_in_by ?? undefined,
+    ticketTypeId: r.ticket_type_id ?? undefined,
     createdAt: r.created_at,
   };
+}
+function mapTicketTypeRow(t: {
+  id: string;
+  event_id: string;
+  name: string;
+  description: string | null;
+  price_naira: number;
+  quantity_available: number | null;
+  quantity_sold: number;
+  sales_start: string | null;
+  sales_end: string | null;
+  created_at: string;
+}): TicketType {
+  return {
+    id: t.id,
+    eventId: t.event_id,
+    name: t.name,
+    description: t.description ?? undefined,
+    priceNaira: Number(t.price_naira),
+    quantityAvailable: t.quantity_available,
+    quantitySold: t.quantity_sold,
+    salesStart: t.sales_start ?? undefined,
+    salesEnd: t.sales_end ?? undefined,
+    createdAt: t.created_at,
+  };
+}
+function ticketTypeToRow(input: Partial<Omit<TicketType, "id" | "createdAt" | "quantitySold">>) {
+  const row: Record<string, unknown> = {};
+  if (input.eventId !== undefined) row.event_id = input.eventId;
+  if (input.name !== undefined) row.name = input.name;
+  if (input.description !== undefined) row.description = input.description || null;
+  if (input.priceNaira !== undefined) row.price_naira = input.priceNaira;
+  if (input.quantityAvailable !== undefined) row.quantity_available = input.quantityAvailable;
+  if (input.salesStart !== undefined) row.sales_start = input.salesStart || null;
+  if (input.salesEnd !== undefined) row.sales_end = input.salesEnd || null;
+  return row;
+}
+function mapDiscountCodeRow(d: {
+  id: string;
+  event_id: string;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+  ticket_type_ids: string[] | null;
+  per_customer_limit: string;
+  max_uses: number | null;
+  uses_count: number;
+  min_spend_naira: number | null;
+  max_discount_naira: number | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  created_at: string;
+}): DiscountCode {
+  return {
+    id: d.id,
+    eventId: d.event_id,
+    code: d.code,
+    discountType: d.discount_type as DiscountCode["discountType"],
+    discountValue: Number(d.discount_value),
+    ticketTypeIds: d.ticket_type_ids,
+    perCustomerLimit: d.per_customer_limit as DiscountCode["perCustomerLimit"],
+    maxUses: d.max_uses,
+    usesCount: d.uses_count,
+    minSpendNaira: d.min_spend_naira != null ? Number(d.min_spend_naira) : null,
+    maxDiscountNaira: d.max_discount_naira != null ? Number(d.max_discount_naira) : null,
+    startsAt: d.starts_at,
+    endsAt: d.ends_at,
+    createdAt: d.created_at,
+  };
+}
+function discountCodeToRow(input: Partial<Omit<DiscountCode, "id" | "createdAt" | "usesCount">>) {
+  const row: Record<string, unknown> = {};
+  if (input.eventId !== undefined) row.event_id = input.eventId;
+  if (input.code !== undefined) row.code = input.code;
+  if (input.discountType !== undefined) row.discount_type = input.discountType;
+  if (input.discountValue !== undefined) row.discount_value = input.discountValue;
+  if (input.ticketTypeIds !== undefined) row.ticket_type_ids = input.ticketTypeIds && input.ticketTypeIds.length > 0 ? input.ticketTypeIds : null;
+  if (input.perCustomerLimit !== undefined) row.per_customer_limit = input.perCustomerLimit;
+  if (input.maxUses !== undefined) row.max_uses = input.maxUses;
+  if (input.minSpendNaira !== undefined) row.min_spend_naira = input.minSpendNaira;
+  if (input.maxDiscountNaira !== undefined) row.max_discount_naira = input.maxDiscountNaira;
+  if (input.startsAt !== undefined) row.starts_at = input.startsAt || null;
+  if (input.endsAt !== undefined) row.ends_at = input.endsAt || null;
+  return row;
 }
 
 // ---- org-scoped data fetch (admin via RLS-protected browser client, staff/rep via API) ----
@@ -265,13 +353,15 @@ async function fetchAdminData() {
   orgDataFetching = true;
   try {
     const supabase = createSupabaseBrowserClient();
-    const [destRes, uniRes, eventRes, staffRes, leadRes, registrationRes] = await Promise.all([
+    const [destRes, uniRes, eventRes, staffRes, leadRes, registrationRes, ticketTypeRes, discountCodeRes] = await Promise.all([
       supabase.from("destinations").select("*"),
       supabase.from("universities").select("*"),
       supabase.from("events").select("*"),
       supabase.from("staff").select("*"),
       supabase.from("leads").select("*"),
       supabase.from("registrations").select("*"),
+      supabase.from("ticket_types").select("*"),
+      supabase.from("discount_codes").select("*"),
     ]);
     destinationsCache = (destRes.data ?? []).map(mapDestinationRow);
     universitiesCache = (uniRes.data ?? []).map(mapUniversityRow);
@@ -279,6 +369,8 @@ async function fetchAdminData() {
     staffCache = (staffRes.data ?? []).map(mapStaffRow);
     leadsCache = (leadRes.data ?? []).map(mapLeadRow);
     registrationsCache = (registrationRes.data ?? []).map(mapRegistrationRow);
+    ticketTypesCache = (ticketTypeRes.data ?? []).map(mapTicketTypeRow);
+    discountCodesCache = (discountCodeRes.data ?? []).map(mapDiscountCodeRow);
     orgDataFetched = true;
   } finally {
     orgDataFetching = false;
@@ -371,6 +463,8 @@ const eventsSnap = snap(() => eventsCache, [] as EventRecord[]);
 const staffSnap = snap(() => staffCache, [] as StaffRecord[]);
 const leadsSnap = snap(() => leadsCache, [] as LeadRecord[]);
 const registrationsSnap = snap(() => registrationsCache, [] as RegistrationRecord[]);
+const ticketTypesSnap = snap(() => ticketTypesCache, [] as TicketType[]);
+const discountCodesSnap = snap(() => discountCodesCache, [] as DiscountCode[]);
 const sessionSnap = snap<Session | null>(() => sessionCache, null);
 
 export function useDestinations() {
@@ -400,6 +494,14 @@ export function useRegistrations() {
 export function useSession() {
   return useSyncExternalStore(subscribe, sessionSnap.client, sessionSnap.server);
 }
+export function useTicketTypes() {
+  useEnsureDataFetched();
+  return useSyncExternalStore(subscribe, ticketTypesSnap.client, ticketTypesSnap.server);
+}
+export function useDiscountCodes() {
+  useEnsureDataFetched();
+  return useSyncExternalStore(subscribe, discountCodesSnap.client, discountCodesSnap.server);
+}
 
 // ---- getters (read the in-memory cache; components should prefer the hooks above so
 //      they re-render on change — these are for one-off lookups inside handlers) ----
@@ -421,6 +523,12 @@ export function getLeadsForEvent(eventId: string): LeadRecord[] {
 }
 export function getRegistrationsForEvent(eventId: string): RegistrationRecord[] {
   return registrationsCache.filter((r) => r.eventId === eventId);
+}
+export function getTicketTypesForEvent(eventId: string): TicketType[] {
+  return ticketTypesCache.filter((t) => t.eventId === eventId);
+}
+export function getDiscountCodesForEvent(eventId: string): DiscountCode[] {
+  return discountCodesCache.filter((d) => d.eventId === eventId);
 }
 
 /** Admin-side manual check-in/undo, direct via the RLS-scoped browser client — the
@@ -471,16 +579,12 @@ export async function updateEvent(id: string, patch: Partial<Omit<EventRecord, "
 }
 
 /** Clones an event (destinations, venue, cover image, description) as a new
- *  draft — deliberately not its leads, since those belong to the original
+ *  event — deliberately not its leads, since those belong to the original
  *  fair, not the copy. */
 export async function duplicateEvent(id: string): Promise<EventRecord | undefined> {
   const source = eventsCache.find((e) => e.id === id);
   if (!source) return undefined;
-  // A duplicate of a physical event is a NEW physical event — it must be paid for on
-  // its own, not inherit the source's already-paid `published`. payment_status isn't
-  // part of EventRecord (only the platform admin's raw queries touch it) — the
-  // database's own default ('pending') applies correctly since this omits it.
-  return addEvent({ ...source, name: `${source.name} (Copy)`, published: source.eventFormat !== "physical" });
+  return addEvent({ ...source, name: `${source.name} (Copy)`, published: true });
 }
 
 /** Deletes an event and, via the DB's cascading foreign key, every lead collected for
@@ -493,7 +597,89 @@ export async function deleteEvent(id: string): Promise<void> {
   eventsCache = eventsCache.filter((e) => e.id !== id);
   leadsCache = leadsCache.filter((l) => l.eventId !== id);
   registrationsCache = registrationsCache.filter((r) => r.eventId !== id);
+  ticketTypesCache = ticketTypesCache.filter((t) => t.eventId !== id);
+  discountCodesCache = discountCodesCache.filter((d) => d.eventId !== id);
   emitChange();
+}
+
+// ---- ticket type CRUD (admin only — browser client, RLS + auto-filled organization_id) ----
+
+export async function addTicketType(input: Omit<TicketType, "id" | "createdAt" | "quantitySold">): Promise<TicketType> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("ticket_types").insert(ticketTypeToRow(input)).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapTicketTypeRow(data);
+  ticketTypesCache = [...ticketTypesCache, record];
+  emitChange();
+  return record;
+}
+export async function updateTicketType(id: string, patch: Partial<Omit<TicketType, "id" | "createdAt" | "quantitySold">>): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("ticket_types").update(ticketTypeToRow(patch)).eq("id", id).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapTicketTypeRow(data);
+  ticketTypesCache = ticketTypesCache.map((t) => (t.id === id ? record : t));
+  emitChange();
+}
+export async function deleteTicketType(id: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("ticket_types").delete().eq("id", id);
+  if (error) throw new PersistError(error);
+  ticketTypesCache = ticketTypesCache.filter((t) => t.id !== id);
+  emitChange();
+}
+
+// ---- discount code CRUD (admin only — browser client, RLS + auto-filled organization_id) ----
+
+export async function addDiscountCode(input: Omit<DiscountCode, "id" | "createdAt" | "usesCount">): Promise<DiscountCode> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("discount_codes").insert(discountCodeToRow(input)).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapDiscountCodeRow(data);
+  discountCodesCache = [...discountCodesCache, record];
+  emitChange();
+  return record;
+}
+export async function updateDiscountCode(id: string, patch: Partial<Omit<DiscountCode, "id" | "createdAt" | "usesCount">>): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("discount_codes").update(discountCodeToRow(patch)).eq("id", id).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapDiscountCodeRow(data);
+  discountCodesCache = discountCodesCache.map((d) => (d.id === id ? record : d));
+  emitChange();
+}
+export async function deleteDiscountCode(id: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("discount_codes").delete().eq("id", id);
+  if (error) throw new PersistError(error);
+  discountCodesCache = discountCodesCache.filter((d) => d.id !== id);
+  emitChange();
+}
+
+/** On-demand, not cached like the rest of this file — a code's redemption history
+ *  is only ever looked at when an admin explicitly opens it, so there's no reason to
+ *  keep every org's full transaction history in memory alongside everything else.
+ *  Reads paystack_transactions directly (RLS already scopes it to the caller's own
+ *  org — see paystack_transactions_select_own_org) rather than a separate table,
+ *  since "who used this code" is just its own successful transactions. */
+export async function getDiscountCodeRedemptions(discountCodeId: string): Promise<DiscountRedemption[]> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from("paystack_transactions")
+    .select("amount_naira, verified_at, created_at, registrant_data")
+    .eq("discount_code_id", discountCodeId)
+    .eq("status", "success")
+    .order("verified_at", { ascending: false });
+  if (error) throw new PersistError(error);
+  return (data ?? []).map((t) => {
+    const info = t.registrant_data as { firstName?: string; lastName?: string; email?: string } | null;
+    return {
+      fullName: info ? `${info.firstName ?? ""} ${info.lastName ?? ""}`.trim() : "—",
+      email: info?.email ?? "—",
+      amountPaidNaira: Number(t.amount_naira),
+      purchasedAt: t.verified_at ?? t.created_at,
+    };
+  });
 }
 
 // ---- lead CRUD ----
@@ -597,16 +783,28 @@ export async function deleteUniversity(id: string): Promise<void> {
   emitChange();
 }
 
+/** Destinations belong to exactly one event (see the Destination type) — every
+ *  write here also keeps that event's own `destinationIds` array in sync, since a
+ *  handful of existing screens (dashboard filters, staff/rep check-in pickers,
+ *  analytics) still read "this event's destinations" via that array rather than
+ *  filtering by eventId directly, and it stays a correct, event-scoped list now
+ *  that destinations are no longer shared. */
 export async function addDestination(input: Omit<Destination, "id">): Promise<Destination> {
   const supabase = createSupabaseBrowserClient();
-  const { data, error } = await supabase.from("destinations").insert({ id: newId("dest"), name: input.name, flag: input.flag }).select().single();
+  const { data, error } = await supabase
+    .from("destinations")
+    .insert({ id: newId("dest"), event_id: input.eventId, name: input.name, flag: input.flag })
+    .select()
+    .single();
   if (error || !data) throw new PersistError(error);
   const record = mapDestinationRow(data);
   destinationsCache = [...destinationsCache, record];
+  const event = eventsCache.find((e) => e.id === input.eventId);
+  if (event) await updateEvent(input.eventId, { destinationIds: [...event.destinationIds, record.id] });
   emitChange();
   return record;
 }
-export async function updateDestination(id: string, patch: Partial<Omit<Destination, "id">>): Promise<void> {
+export async function updateDestination(id: string, patch: Partial<Pick<Destination, "name" | "flag">>): Promise<void> {
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase.from("destinations").update(patch).eq("id", id).select().single();
   if (error || !data) throw new PersistError(error);
@@ -616,9 +814,49 @@ export async function updateDestination(id: string, patch: Partial<Omit<Destinat
 }
 export async function deleteDestination(id: string): Promise<void> {
   const supabase = createSupabaseBrowserClient();
+  const target = destinationsCache.find((d) => d.id === id);
   const { error } = await supabase.from("destinations").delete().eq("id", id);
   if (error) throw new PersistError(error);
   destinationsCache = destinationsCache.filter((d) => d.id !== id);
+  universitiesCache = universitiesCache.filter((u) => u.destinationId !== id);
+  if (target) {
+    const event = eventsCache.find((e) => e.id === target.eventId);
+    if (event) await updateEvent(target.eventId, { destinationIds: event.destinationIds.filter((x) => x !== id) });
+  }
+  emitChange();
+}
+
+/** The "copy from another event" convenience — deep-copies a source event's
+ *  destinations and universities into fresh, independent rows owned by the target
+ *  event, rather than sharing/referencing the originals. */
+export async function copyDestinationsFromEvent(sourceEventId: string, targetEventId: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const sourceDests = destinationsCache.filter((d) => d.eventId === sourceEventId);
+  const newDestinationIds: string[] = [];
+  for (const dest of sourceDests) {
+    const { data: newDest, error: destErr } = await supabase
+      .from("destinations")
+      .insert({ id: newId("dest"), event_id: targetEventId, name: dest.name, flag: dest.flag })
+      .select()
+      .single();
+    if (destErr || !newDest) throw new PersistError(destErr);
+    const destRecord = mapDestinationRow(newDest);
+    destinationsCache = [...destinationsCache, destRecord];
+    newDestinationIds.push(destRecord.id);
+
+    const sourceUnis = universitiesCache.filter((u) => u.destinationId === dest.id);
+    for (const uni of sourceUnis) {
+      const { data: newUni, error: uniErr } = await supabase
+        .from("universities")
+        .insert({ id: newId("uni"), destination_id: destRecord.id, name: uni.name, short_name: uni.shortName })
+        .select()
+        .single();
+      if (uniErr || !newUni) throw new PersistError(uniErr);
+      universitiesCache = [...universitiesCache, mapUniversityRow(newUni)];
+    }
+  }
+  const targetEvent = eventsCache.find((e) => e.id === targetEventId);
+  if (targetEvent) await updateEvent(targetEventId, { destinationIds: [...targetEvent.destinationIds, ...newDestinationIds] });
   emitChange();
 }
 

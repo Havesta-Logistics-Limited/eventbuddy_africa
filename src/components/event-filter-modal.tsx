@@ -110,14 +110,14 @@ export function EventFilterModal({
 }) {
   if (!open) return null;
 
-  const accentBg = accent === "blue" ? "bg-[#1098F7] hover:bg-[#0b7dd1]" : "bg-[#610064] hover:bg-[#4c0050]";
-  const checkedBorder = accent === "blue" ? "border-[#1098F7] bg-[#1098F7]/5" : "border-[#610064] bg-[#610064]/5";
-  const checkboxClass = accent === "blue" ? "text-[#1098F7] focus:ring-[#1098F7]" : "text-[#610064] focus:ring-[#610064]";
+  const accentBg = accent === "blue" ? "bg-[#1098F7] hover:bg-[#0b7dd1]" : "bg-[#1B512D] hover:bg-[#4c0050]";
+  const checkedBorder = accent === "blue" ? "border-[#1098F7] bg-[#1098F7]/5" : "border-[#1B512D] bg-[#1B512D]/5";
+  const checkboxClass = accent === "blue" ? "text-[#1098F7] focus:ring-[#1098F7]" : "text-[#1B512D] focus:ring-[#1B512D]";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4 animate-modal-backdrop" onClick={onClose}>
       <div
-        className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[88vh] flex flex-col shadow-2xl"
+        className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[88vh] flex flex-col shadow-2xl animate-modal-panel"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 shrink-0">

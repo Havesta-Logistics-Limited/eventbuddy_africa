@@ -35,7 +35,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white relative overflow-hidden" style={{ background: "#1a0533" }}>
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white relative overflow-hidden" style={{ background: "#0b0500" }}>
         {/* Real photo behind the gradient — same source as the marketing hero. */}
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -44,8 +44,15 @@ export default function LoginPage() {
         <div
           className="absolute inset-0"
           style={{
-            background: "radial-gradient(ellipse 90% 70% at 80% -10%, rgba(155,26,159,0.8) 0%, rgba(97,0,100,0.86) 40%, rgba(26,5,51,0.93) 100%)",
+            background: "radial-gradient(ellipse 140% 160% at 15% -10%, rgba(27,81,45,0.9) 0%, rgba(14,43,24,0.93) 40%, rgba(11,5,0,0.97) 100%)",
           }}
+        />
+        {/* Extra scrim in the top-left corner, where the logo sits — the main
+            gradient's brightest point is nearly the same spot, so without this the
+            white wordmark loses contrast against the bright green/photo underneath. */}
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 32%)" }}
         />
         <div
           className="absolute inset-0 opacity-10"
@@ -55,7 +62,7 @@ export default function LoginPage() {
           }}
         />
         <div className="relative">
-          <Logo tone="white" height={32} />
+          <Logo tone="white" height={18} />
         </div>
         <div className="relative space-y-6">
           <h1 className="font-display text-4xl leading-tight">
@@ -85,7 +92,7 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <Logo height={28} />
+            <Logo height={16} />
           </div>
 
           <h2 className="text-2xl font-semibold text-slate-900 mb-1">Welcome back</h2>
@@ -144,25 +151,19 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-brand-600 hover:bg-brand-700 transition-colors disabled:opacity-60"
+              className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
             >
               {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
 
-          <div className="mt-8 p-4 rounded-xl bg-slate-100 text-xs text-slate-500 space-y-1.5">
+          <div className="mt-8 p-4 rounded-xl bg-slate-100 text-xs text-slate-500 text-center">
             <p>
               New here?{" "}
               <button type="button" onClick={() => router.push("/signup")} className="text-brand-600 font-medium hover:underline">
                 Create your organization account
               </button>
             </p>
-            <div className="mt-4 pt-4 border-t border-slate-200">
-              <p>
-                Staff or university rep? Use the check-in link your event coordinator shared with you — it&apos;s specific to
-                your organization, so it isn&apos;t listed here.
-              </p>
-            </div>
           </div>
         </div>
       </div>
