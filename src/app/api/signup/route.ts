@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { emailButton, renderEmailShell } from "@/lib/email-template";
+import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 
 /** Best-effort welcome email — the account and org already exist by the time this
  *  runs (unconfirmed), so a failure here (missing Resend key, provider error) is
@@ -15,7 +15,7 @@ async function sendWelcomeEmail(to: string, firstName: string, verifyUrl: string
   if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
 
   const bodyHtml = `
-    <p style="margin:0 0 16px;">Dear ${firstName},</p>
+    <p style="margin:0 0 16px;">Dear ${escapeHtml(firstName)},</p>
     <p style="margin:0 0 16px;">Welcome to EventBuddy.</p>
     <p style="margin:0 0 16px;">I'm Noel Amobeda, the Founder of EventBuddy.</p>
     <p style="margin:0 0 16px;">We built EventBuddy because we believe <strong>event management shouldn't be chaotic — and event day shouldn't be full of surprises.</strong></p>

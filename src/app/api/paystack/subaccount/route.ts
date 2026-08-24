@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolvePaystackAccount, createPaystackSubaccount } from "@/lib/paystack";
-import { emailButton, renderEmailShell } from "@/lib/email-template";
+import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 
 type Body = { action: "resolve" | "create" | "request-change"; bankCode: string; bankName: string; accountNumber: string };
 
@@ -16,10 +16,10 @@ async function sendPayoutsConfiguredEmail(to: string, firstName: string, bankNam
 
   const maskedAccount = `${"•".repeat(Math.max(accountNumber.length - 4, 0))}${accountNumber.slice(-4)}`;
   const bodyHtml = `
-    <p style="margin:0 0 16px;">Hi ${firstName},</p>
+    <p style="margin:0 0 16px;">Hi ${escapeHtml(firstName)},</p>
     <h1 style="font-size:19px; margin:0 0 12px;">Payouts are set up</h1>
     <p style="margin:0 0 20px; color:#666;">
-      Your bank account is connected — ${bankName} · ${maskedAccount}. Every paid ticket sold from now on settles straight into it automatically,
+      Your bank account is connected — ${escapeHtml(bankName)} · ${maskedAccount}. Every paid ticket sold from now on settles straight into it automatically,
       minus eventbuddy's transaction fee. eventbuddy never holds or forwards this money itself.
     </p>
     ${emailButton(dashboardUrl, "Go to your dashboard", "#0d7c6e")}

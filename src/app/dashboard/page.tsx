@@ -16,7 +16,6 @@ import { EventWizard, type EventWizardData } from "@/components/event-wizard";
 import { Reveal } from "@/components/reveal";
 import { EventCardSkeleton, StatTileSkeleton } from "@/components/skeleton";
 import { AuthLoading } from "@/components/auth-loading";
-import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -183,20 +182,15 @@ export default function DashboardPage() {
   };
 
   /** Best-effort — a failed notification email should never surface to the admin
-   *  who just successfully created their event. */
+   *  who just successfully created their event. The route derives recipient/name/
+   *  event details from the signed-in session and the event's own row server-side —
+   *  this only needs to point at which event. */
   async function notifyEventCreated(event: EventRecord) {
-    if (!session?.email) return;
     try {
-      const supabase = createSupabaseBrowserClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const fullName = (user?.user_metadata?.full_name as string | undefined)?.trim();
-      const firstName = fullName?.split(/\s+/)[0] || "there";
       await fetch("/api/notify/event-created", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: session.email, firstName, eventId: event.id, eventName: event.name, eventDate: event.date, orgSlug: session.orgSlug }),
+        body: JSON.stringify({ eventId: event.id }),
       });
     } catch {
       // Silent — this is a nice-to-have confirmation, not a required step.

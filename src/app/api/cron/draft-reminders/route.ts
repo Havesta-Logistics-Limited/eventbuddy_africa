@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { emailButton, renderEmailShell } from "@/lib/email-template";
+import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { formatDate } from "@/lib/utils";
 
 /** One reminder per still-unpublished event, sent to its org's admin — deliberately
@@ -13,8 +13,8 @@ async function sendDraftReminderEmail(to: string, firstName: string, eventName: 
   if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
 
   const bodyHtml = `
-    <p style="margin:0 0 16px;">Hi ${firstName},</p>
-    <h1 style="font-size:19px; margin:0 0 12px;">${eventName} is still a draft</h1>
+    <p style="margin:0 0 16px;">Hi ${escapeHtml(firstName)},</p>
+    <h1 style="font-size:19px; margin:0 0 12px;">${escapeHtml(eventName)} is still a draft</h1>
     <p style="margin:0 0 20px; color:#666;">
       This event is saved but not published — it isn't visible to attendees and registration hasn't opened yet, even though it's scheduled for ${eventDate}.
     </p>

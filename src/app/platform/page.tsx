@@ -132,7 +132,33 @@ type TransactionRow = {
   status: "pending" | "success" | "failed";
   created_at: string;
   verified_at: string | null;
+  purpose: "event_publish" | "ticket_purchase";
+  /** Paystack's own recorded split for this charge — fees_split.integration is
+   *  exactly what landed in the platform's account, ground truth straight from
+   *  Paystack rather than recomputed from the *current* fee percentage (which may
+   *  have changed since this specific subaccount was created). `domain` is
+   *  Paystack's own "test" vs "live" tag on the charge — this table has no separate
+   *  test/live split of its own (unlike Paystack itself), so transactions completed
+   *  while testing with a sk_test_ key sit permanently alongside real ones unless
+   *  filtered out here. */
+  paystack_event: { domain?: string; fees_split?: { integration?: number } } | null;
 };
+
+/** True only for a real, successful, LIVE-mode ticket purchase — excludes anything
+ *  completed while testing with a test-mode secret key, so switching to a live key
+ *  doesn't retroactively count old test transactions as real commission earned. */
+function isLiveTicketSale(t: TransactionRow): boolean {
+  return t.purpose === "ticket_purchase" && t.status === "success" && t.paystack_event?.domain === "live";
+}
+
+/** Platform commission actually taken on a successful live ticket-purchase charge,
+ *  in Naira — 0 for anything else (pending/failed, test-mode, or an event-publish
+ *  charge, which has no subaccount split at all since 100% of it is already
+ *  platform revenue, tracked separately via events.price_naira below). */
+function ticketCommissionNaira(t: TransactionRow): number {
+  if (!isLiveTicketSale(t)) return 0;
+  return Number(t.paystack_event?.fees_split?.integration ?? 0) / 100;
+}
 
 function isBillable(ev: Pick<EventRow, "event_format">) {
   return isFormatBillable(ev.event_format);
@@ -248,7 +274,7 @@ export default function PlatformDashboard() {
         .maybeSingle(),
       supabase
         .from("paystack_transactions")
-        .select("id, organization_id, event_id, reference, amount_naira, charge_currency, charge_amount_minor, status, created_at, verified_at")
+        .select("id, organization_id, event_id, reference, amount_naira, charge_currency, charge_amount_minor, status, created_at, verified_at, purpose, paystack_event")
         .order("created_at", { ascending: false }),
       supabase
         .from("managed_event_requests")
@@ -754,6 +780,34 @@ export default function PlatformDashboard() {
     .sort((a, b) => b.total - a.total)
     .slice(0, 8);
 
+  // Ticket-sale commission — a separate revenue stream from the per-event publish fee
+  // above (paid ticket checkouts split automatically via each org's Paystack
+  // subaccount; see src/lib/paystack.ts). Previously invisible anywhere on the
+  // platform: the "Revenue" figures only ever reflected events.price_naira, so every
+  // real ticket-sale transaction existed in paystack_transactions but was never
+  // reflected in a single number an admin could see.
+  const ticketPurchaseTxns = transactions.filter(isLiveTicketSale);
+  const ticketGrossRevenue = ticketPurchaseTxns.reduce((sum, t) => sum + Number(t.amount_naira), 0);
+  const ticketCommissionRevenue = ticketPurchaseTxns.reduce((sum, t) => sum + ticketCommissionNaira(t), 0);
+  const ticketCommissionThisWeek = ticketPurchaseTxns
+    .filter((t) => now - new Date(t.verified_at || t.created_at).getTime() < WEEK_MS)
+    .reduce((sum, t) => sum + ticketCommissionNaira(t), 0);
+  const totalPlatformRevenue = revenue + ticketCommissionRevenue;
+  const totalPlatformRevenueThisWeek = revenueThisWeek + ticketCommissionThisWeek;
+
+  const ticketRevenueByOrg = Array.from(
+    ticketPurchaseTxns.reduce((map, t) => {
+      const entry = map.get(t.organization_id) ?? { gross: 0, commission: 0 };
+      entry.gross += Number(t.amount_naira);
+      entry.commission += ticketCommissionNaira(t);
+      map.set(t.organization_id, entry);
+      return map;
+    }, new Map<string, { gross: number; commission: number }>())
+  )
+    .map(([orgId, totals]) => ({ org: orgById.get(orgId), ...totals }))
+    .filter((r) => r.org)
+    .sort((a, b) => b.gross - a.gross);
+
   const revenueByMonth = Array.from(
     paidBillableEvents
       .slice()
@@ -793,7 +847,7 @@ export default function PlatformDashboard() {
       delta: newRegistrationsThisWeek > 0 ? `+${newRegistrationsThisWeek} this week` : null,
     },
     { label: "Total Leads", value: leads.length, icon: Users2, delta: null },
-    { label: "Revenue to date", value: formatNaira(revenue), icon: DollarSign, delta: null },
+    { label: "Revenue to date", value: formatNaira(totalPlatformRevenue), icon: DollarSign, delta: null },
   ];
 
   const filteredOrgs = orgs.filter((org) => {
@@ -967,10 +1021,10 @@ export default function PlatformDashboard() {
                       </Reveal>
                     ))}
               </div>
-              {paidBillableEvents.length === 0 && (
+              {paidBillableEvents.length === 0 && ticketPurchaseTxns.length === 0 && (
                 <p className="text-xs text-slate-400 mb-6 -mt-2">
-                  Revenue reflects paid, physical events only — billing isn&apos;t wired up yet, so this will start moving once it is. Virtual events
-                  are always free.
+                  No paid event-publish fees or ticket sales yet — revenue shows here once an org pays to publish a physical event or sells a paid
+                  ticket. Virtual events are always free to publish.
                 </p>
               )}
 
@@ -1349,7 +1403,9 @@ export default function PlatformDashboard() {
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
                   <h1 className="font-display text-2xl text-slate-900">Billing</h1>
-                  <p className="text-slate-500 text-sm mt-0.5">Revenue across every organization, and the price charged for new events.</p>
+                  <p className="text-slate-500 text-sm mt-0.5">
+                    Revenue across every organization — event-publish fees plus your commission on ticket sales.
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -1365,9 +1421,9 @@ export default function PlatformDashboard() {
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
-                  { label: "Revenue to date", value: formatNaira(revenue), accent: "#1B512D", bg: "#e8f7ed" },
-                  { label: "Revenue this week", value: formatNaira(revenueThisWeek), accent: "#0d9488", bg: "#e7f6f0" },
-                  { label: "Pending revenue", value: formatNaira(pendingRevenue), accent: "#b45309", bg: "#fdf1e2" },
+                  { label: "Total revenue", value: formatNaira(totalPlatformRevenue), accent: "#1B512D", bg: "#e8f7ed" },
+                  { label: "Revenue this week", value: formatNaira(totalPlatformRevenueThisWeek), accent: "#0d9488", bg: "#e7f6f0" },
+                  { label: "Pending event fees", value: formatNaira(pendingRevenue), accent: "#b45309", bg: "#fdf1e2" },
                   { label: "Waived (fee-exempt)", value: formatNaira(exemptedRevenue), accent: "#64748b", bg: "#f1f5f9" },
                 ].map((tile, i) => (
                   <Reveal key={tile.label} index={i}>
@@ -1506,9 +1562,59 @@ export default function PlatformDashboard() {
                 )}
               </div>
 
+              <div className="mb-6">
+                <h2 className="font-semibold text-slate-900 mb-1">Ticket sales &amp; commission</h2>
+                <p className="text-xs text-slate-500 mb-4">
+                  Every paid ticket checkout, split automatically by Paystack between the organizer&apos;s bank account and eventbuddy&apos;s cut —
+                  separate from the per-event publish fee above.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                  {[
+                    { label: "Ticket sales (gross)", value: formatNaira(ticketGrossRevenue), accent: "#66329A", bg: "#f2e9fa" },
+                    { label: "Platform commission", value: formatNaira(ticketCommissionRevenue), accent: "#1B512D", bg: "#e8f7ed" },
+                    { label: "Commission this week", value: formatNaira(ticketCommissionThisWeek), accent: "#0d9488", bg: "#e7f6f0" },
+                  ].map((tile) => (
+                    <div key={tile.label} className="bg-white rounded-xl border border-slate-200 p-4">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: tile.bg }}>
+                        <DollarSign size={16} style={{ color: tile.accent }} />
+                      </div>
+                      <p className="text-2xl font-bold text-slate-900 tabular-nums">{tile.value}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{tile.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                  {ticketRevenueByOrg.length === 0 ? (
+                    <p className="text-sm text-slate-400 py-10 text-center">No ticket sales yet.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-slate-50 border-b border-slate-200">
+                          <tr>
+                            <th className="text-left px-5 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Organization</th>
+                            <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Gross ticket sales</th>
+                            <th className="text-left px-5 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Your commission</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {ticketRevenueByOrg.map((r) => (
+                            <tr key={r.org!.id} className="hover:bg-slate-50">
+                              <td className="px-5 py-3 font-medium text-slate-900">{r.org!.name}</td>
+                              <td className="px-4 py-3 text-slate-700 tabular-nums">{formatNaira(r.gross)}</td>
+                              <td className="px-5 py-3 text-slate-700 tabular-nums font-semibold">{formatNaira(r.commission)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="grid lg:grid-cols-2 gap-5">
                 <div className="bg-white rounded-2xl border border-slate-200 p-5">
-                  <h2 className="font-semibold text-slate-900 mb-4">Revenue by month</h2>
+                  <h2 className="font-semibold text-slate-900 mb-4">Event-publish fee revenue by month</h2>
                   {revenueByMonth.length === 0 ? (
                     <p className="text-sm text-slate-400 py-6 text-center">No paid events yet.</p>
                   ) : (
@@ -1535,7 +1641,7 @@ export default function PlatformDashboard() {
                 </div>
 
                 <div className="bg-white rounded-2xl border border-slate-200 p-5">
-                  <h2 className="font-semibold text-slate-900 mb-4">Top organizations by revenue</h2>
+                  <h2 className="font-semibold text-slate-900 mb-4">Top organizations by event-publish fees</h2>
                   {revenueByOrg.length === 0 ? (
                     <p className="text-sm text-slate-400 py-6 text-center">No paid events yet.</p>
                   ) : (

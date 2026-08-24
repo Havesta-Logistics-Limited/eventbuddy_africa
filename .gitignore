@@ -51,3 +51,6 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+# Deno lockfile generated locally by the Netlify CLI while bundling edge functions
+deno.lock

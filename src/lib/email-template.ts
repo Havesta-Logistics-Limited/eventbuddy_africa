@@ -54,3 +54,12 @@ export function renderEmailShell(banner: EmailBanner, bodyHtml: string): string 
 export function emailButton(url: string, label: string, color: string): string {
   return `<a href="${url}" style="display:inline-block; padding:12px 22px; border-radius:8px; background:${color}; color:#ffffff; font-size:14px; font-weight:600; text-decoration:none;">${label}</a>`;
 }
+
+/** Every email template interpolates user-authored strings (names, event titles,
+ *  bank names) straight into HTML — without this, a name or event title containing
+ *  markup would inject arbitrary HTML into an email sent from eventbuddy's own
+ *  domain. Apply to any interpolated value that ultimately traces back to something
+ *  a user typed, even indirectly (an org's event name, a signup's full name). */
+export function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+}
