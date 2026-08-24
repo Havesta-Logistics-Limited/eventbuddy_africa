@@ -38,10 +38,9 @@ async function sendDraftReminderEmail(to: string, firstName: string, eventName: 
 }
 
 /**
- * Vercel Cron hits this every 30 minutes (see vercel.json) to nudge org admins about
- * events they've saved as a draft but never published. Guarded by CRON_SECRET so it
- * can't be triggered by anyone who finds the URL — Vercel Cron sends it automatically
- * as a bearer token on every invocation.
+ * netlify/functions/draft-reminders-cron.mts hits this every 30 minutes to nudge org
+ * admins about events they've saved as a draft but never published. Guarded by
+ * CRON_SECRET so it can't be triggered by anyone who finds the URL.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
