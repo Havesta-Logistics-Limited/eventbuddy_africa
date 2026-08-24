@@ -2,35 +2,49 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { emailButton, renderEmailShell } from "@/lib/email-template";
 
-/** Best-effort verification email — the account and org already exist by the time this
+/** Best-effort welcome email — the account and org already exist by the time this
  *  runs (unconfirmed), so a failure here (missing Resend key, provider error) is
  *  swallowed rather than surfaced as a failed signup; the account just stays
- *  unverified until they request another link. Mirrors sendRegistrationEmail's
- *  shape/tone in src/app/api/orgs/[slug]/register/route.ts. */
-async function sendVerificationEmail(to: string, orgName: string, verifyUrl: string) {
+ *  unverified until they request another link. Doubles as the account's
+ *  verification step (the "Verify your email" button at the end) since this is
+ *  the one email every new signup is guaranteed to receive. */
+async function sendWelcomeEmail(to: string, firstName: string, verifyUrl: string) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
+
+  const bodyHtml = `
+    <p style="margin:0 0 16px;">Dear ${firstName},</p>
+    <p style="margin:0 0 16px;">Welcome to EventBuddy.</p>
+    <p style="margin:0 0 16px;">I'm Noel Amobeda, the Founder of EventBuddy.</p>
+    <p style="margin:0 0 16px;">We built EventBuddy because we believe <strong>event management shouldn't be chaotic — and event day shouldn't be full of surprises.</strong></p>
+    <p style="margin:0 0 16px;">Too many organizers are still juggling registrations, payments, attendees, check-ins, staff, leads, and logistics across spreadsheets, forms, WhatsApp, and different tools.</p>
+    <p style="margin:0 0 16px;">EventBuddy brings everything together in one place, helping you stay organized and know what's happening before, during, and after your event.</p>
+    <p style="margin:0 0 16px;">But we also know that great event management is more than having the software.</p>
+    <p style="margin:0 0 16px;"><strong>Sometimes, the best thing you can do as an organizer is step back and let an experienced team handle the execution.</strong></p>
+    <p style="margin:0 0 16px;">That's why EventBuddy offers dedicated on-site event support. Our team can be there with you on event day to manage check-ins, attendee flow, registrations, lead capture, staff coordination, and other operational details — so you can focus on your guests, partners, speakers, and the bigger picture.</p>
+    <p style="margin:0 0 16px;">Whether you're running an education fair, conference, job fair, corporate event, trade show, festival, or any other event, you can either use EventBuddy to manage it yourself or <strong>let our team help run it for you.</strong></p>
+    <p style="margin:0 0 4px;">Our goal is simple:</p>
+    <p style="margin:0 0 16px; font-weight:600;">Less chaos. Better events.</p>
+    <p style="margin:0 0 24px;">You're now part of what we're building, and we look forward to helping you deliver your next great event.</p>
+    <p style="margin:0 0 4px;">Warm regards,</p>
+    <p style="margin:0 0 2px; font-weight:600;">Noel Amobeda</p>
+    <p style="margin:0 0 28px; color:#666;">Founder, EventBuddy Africa</p>
+    <div style="border-top:1px solid #eee; padding-top:24px;">
+      <p style="margin:0 0 14px; color:#666; font-size:13px;">One last thing — verify your email to activate your account:</p>
+      ${emailButton(verifyUrl, "Verify email", "#1B512D")}
+    </div>
+  `;
 
   try {
     const resend = new Resend(apiKey);
     const { error } = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
       to,
-      subject: "Verify your email to activate eventbuddy",
-      text: `Welcome to eventbuddy, ${orgName}!\n\nVerify your email to activate your organization account: ${verifyUrl}\n\nYou won't be able to sign in until it's verified.`,
-      html: `
-        <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
-          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#1B512D; font-weight:600; margin:0 0 8px;">Verify your email</p>
-          <h1 style="font-size:20px; margin:0 0 12px;">One step left, ${orgName}</h1>
-          <p style="margin:0 0 20px; color:#666; font-size:14px; line-height:1.5;">
-            Verify your email to activate your organization account. You won't be able to sign in until it's verified.
-          </p>
-          <a href="${verifyUrl}" style="display:inline-block; padding:11px 20px; border-radius:8px; background:#1B512D; color:#ffffff; font-size:14px; font-weight:600; text-decoration:none;">
-            Verify email
-          </a>
-        </div>
-      `,
+      subject: "Welcome to EventBuddy",
+      text: `Welcome to EventBuddy, ${firstName}!\n\nVerify your email to activate your account: ${verifyUrl}`,
+      html: renderEmailShell({ color: "#1B512D", label: "Welcome", emoji: "👋" }, bodyHtml),
     });
     return !error;
   } catch {
@@ -115,7 +129,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: orgError.message || "Couldn't create your organization." }, { status: 500 });
   }
 
-  const emailSent = linkData.properties?.action_link ? await sendVerificationEmail(email, orgName, linkData.properties.action_link) : false;
+  const firstName = fullName.trim().split(/\s+/)[0];
+  const emailSent = linkData.properties?.action_link ? await sendWelcomeEmail(email, firstName, linkData.properties.action_link) : false;
 
   return NextResponse.json({ success: true, slug, emailSent });
 }

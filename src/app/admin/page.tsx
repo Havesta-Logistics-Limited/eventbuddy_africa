@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Plus, Users, X, Edit2, Trash2, Landmark, ShieldCheck } from "lucide-react";
+import { AlertCircle, Plus, Users, X, Edit2, Trash2, Landmark, ShieldCheck, UserCircle } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -11,16 +11,21 @@ import { Role } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
 import { Reveal } from "@/components/reveal";
 import { AuthLoading } from "@/components/auth-loading";
+import { TwoFactorSettings } from "@/components/two-factor-settings";
+import { MfaNagBanner } from "@/components/mfa-nag-banner";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
-type Tab = "staff" | "payouts";
+type Tab = "profile" | "staff" | "payouts";
+
+type PayoutChangeStatus = "none" | "requested" | "approved";
 
 type OrgPayout = {
   paystackSubaccountCode: string | null;
   payoutBankName: string | null;
   payoutAccountNumber: string | null;
   payoutAccountName: string | null;
+  payoutChangeStatus: PayoutChangeStatus;
 };
 
 const EMPTY_STAFF = { id: "", name: "", email: "", role: "staff" as const, destinationId: "", universityId: "", eventId: "" };
@@ -38,6 +43,65 @@ export default function AdminPage() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profileFullName, setProfileFullName] = useState("");
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [savingName, setSavingName] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setProfileEmail(data.user?.email || "");
+      setProfileFullName((data.user?.user_metadata?.full_name as string | undefined) || "");
+      setLoadingProfile(false);
+    });
+  }, []);
+
+  async function handleSaveName(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingName(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.updateUser({ data: { full_name: profileFullName.trim() } });
+      if (error) throw error;
+      toast.success("Name updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save your name.");
+    } finally {
+      setSavingName(false);
+    }
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPasswordError("");
+    if (newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords don't match.");
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setNewPassword("");
+      setConfirmPassword("");
+      toast.success("Password updated");
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : "Couldn't update your password.");
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
   const [orgPayout, setOrgPayout] = useState<OrgPayout | null>(null);
   const [loadingPayout, setLoadingPayout] = useState(true);
   const [banks, setBanks] = useState<{ name: string; code: string }[]>([]);
@@ -48,12 +112,13 @@ export default function AdminPage() {
   const [resolvingAccount, setResolvingAccount] = useState(false);
   const [savingPayout, setSavingPayout] = useState(false);
   const [payoutError, setPayoutError] = useState("");
+  const [requestingChange, setRequestingChange] = useState(false);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     supabase
       .from("organizations")
-      .select("paystack_subaccount_code, payout_bank_name, payout_account_number, payout_account_name")
+      .select("paystack_subaccount_code, payout_bank_name, payout_account_number, payout_account_name, payout_change_status")
       .limit(1)
       .maybeSingle()
       .then(({ data }) => {
@@ -63,11 +128,31 @@ export default function AdminPage() {
             payoutBankName: data.payout_bank_name,
             payoutAccountNumber: data.payout_account_number,
             payoutAccountName: data.payout_account_name,
+            payoutChangeStatus: (data.payout_change_status as PayoutChangeStatus) || "none",
           });
         }
         setLoadingPayout(false);
       });
   }, []);
+
+  async function handleRequestPayoutChange() {
+    setRequestingChange(true);
+    try {
+      const res = await fetch("/api/paystack/subaccount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "request-change" }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) throw new Error(json.error || "Couldn't submit that request.");
+      setOrgPayout((prev) => (prev ? { ...prev, payoutChangeStatus: "requested" } : prev));
+      toast.success("Change requested — we'll review it and let you know.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't submit that request.");
+    } finally {
+      setRequestingChange(false);
+    }
+  }
 
   useEffect(() => {
     if (tab !== "payouts" || banks.length > 0 || loadingBanks) return;
@@ -121,6 +206,7 @@ export default function AdminPage() {
         payoutBankName: bankName,
         payoutAccountNumber: payoutAccountNumber.trim(),
         payoutAccountName: json.accountName,
+        payoutChangeStatus: "none",
       });
       setPayoutBankCode("");
       setPayoutAccountNumber("");
@@ -175,6 +261,7 @@ export default function AdminPage() {
   };
 
   const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
+    { id: "profile", label: "Profile", icon: UserCircle },
     { id: "staff", label: "Staff", icon: Users },
     { id: "payouts", label: "Payouts", icon: Landmark },
   ];
@@ -184,8 +271,10 @@ export default function AdminPage() {
       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <div className="mb-6">
           <h1 className="font-display text-2xl text-slate-900">Settings</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Manage staff and ticket payouts</p>
+          <p className="text-slate-500 text-sm mt-0.5">Manage your profile, staff, and ticket payouts</p>
         </div>
+
+        <MfaNagBanner onSetup={() => setTab("profile")} />
 
         <div className="flex flex-wrap gap-1 mb-6 bg-slate-100 rounded-lg p-1 w-fit">
           {tabs.map(({ id, label, icon: Icon }) => (
@@ -201,6 +290,93 @@ export default function AdminPage() {
             </button>
           ))}
         </div>
+
+        {tab === "profile" && (
+          <div key="profile" className="animate-tab-fade space-y-8 max-w-lg">
+            <div>
+              <h2 className="font-semibold text-slate-800 mb-4">Your profile</h2>
+              {loadingProfile ? (
+                <div className="h-32 rounded-xl bg-slate-100 animate-pulse" />
+              ) : (
+                <form onSubmit={handleSaveName} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Full name</label>
+                    <input
+                      required
+                      value={profileFullName}
+                      onChange={(e) => setProfileFullName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
+                    <input
+                      disabled
+                      value={profileEmail}
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-slate-50 text-slate-500"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={savingName}
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
+                    style={{ background: "#1B512D" }}
+                  >
+                    {savingName ? "Saving…" : "Save name"}
+                  </button>
+                </form>
+              )}
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-slate-800 mb-4">Change password</h2>
+              <form onSubmit={handleChangePassword} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">New password</label>
+                  <input
+                    required
+                    type="password"
+                    minLength={8}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="At least 8 characters"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm new password</label>
+                  <input
+                    required
+                    type="password"
+                    minLength={8}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
+                  />
+                </div>
+                {passwordError && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                    <AlertCircle size={15} className="mt-0.5 shrink-0" />
+                    {passwordError}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={changingPassword}
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
+                  style={{ background: "#1B512D" }}
+                >
+                  {changingPassword ? "Updating…" : "Update password"}
+                </button>
+              </form>
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-slate-800 mb-4">Two-factor authentication</h2>
+              <TwoFactorSettings />
+            </div>
+          </div>
+        )}
 
         {tab === "staff" && (
           <div key="staff" className="animate-tab-fade">
@@ -392,20 +568,42 @@ export default function AdminPage() {
 
             {loadingPayout ? (
               <div className="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-400">Loading…</div>
-            ) : orgPayout?.paystackSubaccountCode ? (
+            ) : orgPayout?.paystackSubaccountCode && orgPayout.payoutChangeStatus !== "approved" ? (
               <div className="bg-white rounded-xl border border-slate-200 p-5 flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                   <ShieldCheck size={18} />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-medium text-slate-900">Payouts are set up</p>
                   <p className="text-sm text-slate-500 mt-0.5">
                     {orgPayout.payoutAccountName} · {orgPayout.payoutBankName} · {orgPayout.payoutAccountNumber}
                   </p>
+                  <div className="mt-3">
+                    {orgPayout.payoutChangeStatus === "requested" ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
+                        Change requested — awaiting approval
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleRequestPayoutChange}
+                        disabled={requestingChange}
+                        className="text-xs font-medium text-slate-600 hover:text-slate-900 underline underline-offset-2 disabled:opacity-60"
+                      >
+                        {requestingChange ? "Requesting…" : "Request a change to these details"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
               <div className="bg-white rounded-xl border border-slate-200 p-5 max-w-md space-y-4">
+                {orgPayout?.payoutChangeStatus === "approved" && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm">
+                    <ShieldCheck size={15} className="mt-0.5 shrink-0" />
+                    Your change request was approved — enter your new bank details below.
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Bank</label>
                   <select

@@ -77,6 +77,7 @@ export default function EventDetailPage() {
   const [filterUni, setFilterUni] = useState("");
   const [imgError, setImgError] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -160,6 +161,19 @@ export default function EventDetailPage() {
     } catch (err) {
       setDeleteError(err instanceof PersistError ? err.message : "Couldn't delete this event. Please try again.");
       setDeleting(false);
+    }
+  }
+
+  async function handlePublish() {
+    if (!event) return;
+    setPublishing(true);
+    try {
+      await updateEvent(event.id, { published: true });
+      toast.success("Event published — it's now live");
+    } catch (err) {
+      toast.error(err instanceof PersistError ? err.message : "Couldn't publish this event. Please try again.");
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -277,8 +291,12 @@ export default function EventDetailPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-6">
           <div className="flex flex-wrap items-start gap-4 justify-between">
             <div className="flex-1 min-w-0">
-              <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${statusColor}`}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+              <span
+                className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${
+                  event.published === false ? "bg-slate-100 text-slate-600" : statusColor
+                }`}
+              >
+                {event.published === false ? "Draft" : status.charAt(0).toUpperCase() + status.slice(1)}
               </span>
               <h1 className="font-display text-2xl text-slate-900 mb-3">{event.name}</h1>
               <div className="flex flex-wrap gap-4 text-sm text-slate-500">
@@ -308,9 +326,25 @@ export default function EventDetailPage() {
                 <p className="text-xs text-slate-400 mt-1">{event.virtualAccessNotes}</p>
               )}
               <p className="text-slate-600 text-sm mt-3">{event.description}</p>
+              {event.published === false && (
+                <p className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-3 w-fit">
+                  <AlertCircle size={13} className="shrink-0" />
+                  This event is saved as a draft — it isn&apos;t visible to attendees or open for registration until you publish it.
+                </p>
+              )}
             </div>
             <div className="flex flex-col items-end gap-3 shrink-0 w-full sm:w-auto">
               <div className="flex flex-wrap items-center gap-2 justify-end w-full sm:w-auto">
+                {event.published === false && (
+                  <button
+                    onClick={handlePublish}
+                    disabled={publishing}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-60"
+                    style={{ background: "#1B512D" }}
+                  >
+                    {publishing ? "Publishing…" : "Publish Event"}
+                  </button>
+                )}
                 <button
                   onClick={handleDuplicate}
                   disabled={duplicating}

@@ -31,6 +31,9 @@ import {
   ClipboardList,
   Mail,
   Phone,
+  Landmark,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
@@ -38,6 +41,8 @@ import { Reveal } from "@/components/reveal";
 import { RowSkeleton, StatTileSkeleton } from "@/components/skeleton";
 import { Logo } from "@/components/logo";
 import { AuthLoading } from "@/components/auth-loading";
+import { TwoFactorSettings } from "@/components/two-factor-settings";
+import { MfaNagBanner } from "@/components/mfa-nag-banner";
 import { downloadCsv } from "@/lib/csv";
 import {
   EVENT_PRICE_NAIRA,
@@ -59,8 +64,10 @@ const NAV = [
   { id: "events", label: "Events", icon: Calendar },
   { id: "billing", label: "Billing", icon: DollarSign },
   { id: "managed-requests", label: "Managed Events", icon: ClipboardList },
+  { id: "payouts", label: "Payouts", icon: Landmark },
   { id: "maintenance", label: "Maintenance", icon: Wrench },
   { id: "admins", label: "Team", icon: ShieldCheck },
+  { id: "security", label: "Security", icon: KeyRound },
 ] as const;
 type ViewId = (typeof NAV)[number]["id"];
 
@@ -74,6 +81,12 @@ type OrgRow = {
   is_verified: boolean;
   phone: string | null;
   email: string | null;
+  paystack_subaccount_code: string | null;
+  payout_bank_name: string | null;
+  payout_account_number: string | null;
+  payout_account_name: string | null;
+  payout_change_status: "none" | "requested" | "approved";
+  payout_change_requested_at: string | null;
 };
 type EventRow = {
   id: string;
@@ -129,6 +142,10 @@ function isBillable(ev: Pick<EventRow, "event_format">) {
  *  back to the format-based constant only for rows fetched before price_naira existed. */
 function eventPrice(ev: Pick<EventRow, "event_format" | "price_naira">) {
   return ev.price_naira ?? priceForFormat(ev.event_format);
+}
+function maskAccountNumber(num: string | null) {
+  if (!num) return "—";
+  return `${"•".repeat(Math.max(num.length - 4, 0))}${num.slice(-4)}`;
 }
 
 export default function PlatformDashboard() {
@@ -212,7 +229,9 @@ export default function PlatformDashboard() {
     const [orgsRes, eventsRes, leadsRes, registrationsRes, adminsRes, settingsRes, transactionsRes, managedRequestsRes] = await Promise.all([
       supabase
         .from("organizations")
-        .select("id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email")
+        .select(
+          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number, payout_account_name, payout_change_status, payout_change_requested_at"
+        )
         .order("created_at", { ascending: false }),
       supabase
         .from("events")
@@ -329,6 +348,22 @@ export default function PlatformDashboard() {
     if (!error) {
       setOrgs((prev) => prev.map((o) => (o.id === org.id ? { ...o, is_fee_exempt: !o.is_fee_exempt } : o)));
       toast.success(org.is_fee_exempt ? `${org.name} — fee exemption removed` : `${org.name} exempted from fees`);
+    } else {
+      toast.error(error.message);
+    }
+    setBusyOrgId(null);
+  }
+
+  async function approvePayoutChange(org: OrgRow) {
+    setBusyOrgId(org.id);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("organizations")
+      .update({ payout_change_status: "approved", payout_change_approved_at: new Date().toISOString() })
+      .eq("id", org.id);
+    if (!error) {
+      setOrgs((prev) => prev.map((o) => (o.id === org.id ? { ...o, payout_change_status: "approved" } : o)));
+      toast.success(`${org.name} can now update their payout details`);
     } else {
       toast.error(error.message);
     }
@@ -874,6 +909,7 @@ export default function PlatformDashboard() {
       {/* Main content */}
       <main className="flex-1 min-w-0 md:ml-64 min-h-screen pt-14 md:pt-0">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+          {view !== "security" && <MfaNagBanner onSetup={() => setView("security")} />}
           {loadError && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm mb-6">
               <AlertCircle size={15} className="mt-0.5 shrink-0" />
@@ -1751,6 +1787,119 @@ export default function PlatformDashboard() {
             </>
           )}
 
+          {view === "payouts" && (
+            <>
+              <div className="mb-6 flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="font-display text-2xl text-slate-900">Payouts</h1>
+                  <p className="text-slate-500 text-sm mt-0.5">Every org&apos;s bank account, and any request to change one on file.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  title="Refresh"
+                  aria-label="Refresh"
+                  className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 shrink-0"
+                >
+                  <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
+                </button>
+              </div>
+
+              {(() => {
+                const pending = orgs.filter((o) => o.payout_change_status === "requested");
+                return (
+                  <div className="mb-6">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2.5">
+                      Pending change requests {pending.length > 0 && `(${pending.length})`}
+                    </h2>
+                    {pending.length === 0 ? (
+                      <div className="text-center py-10 text-slate-400 bg-white rounded-xl border border-slate-200">
+                        <Clock size={26} className="mx-auto mb-2 opacity-40" />
+                        <p className="text-sm">No pending payout change requests.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {pending.map((org) => (
+                          <div key={org.id} className="bg-white rounded-xl border border-amber-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-900">{org.name}</p>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                Currently {org.payout_bank_name || "no bank"} · {maskAccountNumber(org.payout_account_number)} — requested{" "}
+                                {org.payout_change_requested_at
+                                  ? new Date(org.payout_change_requested_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                                  : "recently"}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => approvePayoutChange(org)}
+                              disabled={busyOrgId === org.id}
+                              className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50"
+                            >
+                              <CheckCircle2 size={14} />
+                              Approve
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2.5">All organizations</h2>
+              {orgs.length === 0 ? (
+                <div className="text-center py-16 text-slate-400 bg-white rounded-xl border border-slate-200">
+                  <Landmark size={32} className="mx-auto mb-3 opacity-40" />
+                  <p>No organizations yet</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Organization</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Bank</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Account number</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Account name</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {orgs.map((org) => {
+                          const statusPill = !org.paystack_subaccount_code
+                            ? { label: "Not set up", className: "bg-slate-100 text-slate-500" }
+                            : org.payout_change_status === "requested"
+                              ? { label: "Change requested", className: "bg-amber-100 text-amber-700" }
+                              : org.payout_change_status === "approved"
+                                ? { label: "Change approved", className: "bg-brand-100 text-brand-700" }
+                                : { label: "Connected", className: "bg-teal-100 text-teal-700" };
+                          return (
+                            <tr key={org.id} className="hover:bg-slate-50">
+                              <td className="px-4 py-3 max-w-[200px]">
+                                <p className="font-medium text-slate-900 truncate">{org.name}</p>
+                              </td>
+                              <td className="px-4 py-3 text-slate-600">{org.payout_bank_name || <span className="text-slate-300">—</span>}</td>
+                              <td className="px-4 py-3 text-slate-600 font-mono text-xs">{maskAccountNumber(org.payout_account_number)}</td>
+                              <td className="px-4 py-3 text-slate-600 truncate max-w-[180px]">
+                                {org.payout_account_name || <span className="text-slate-300">—</span>}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusPill.className}`}>{statusPill.label}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
           {view === "maintenance" && (
             <>
               <div className="mb-6">
@@ -2000,6 +2149,18 @@ export default function PlatformDashboard() {
                     ))}
                   </div>
                 )}
+              </div>
+            </>
+          )}
+
+          {view === "security" && (
+            <>
+              <div className="mb-6">
+                <h1 className="font-display text-2xl text-slate-900">Security</h1>
+                <p className="text-slate-500 text-sm mt-0.5">Manage two-factor authentication for your own platform admin account.</p>
+              </div>
+              <div className="max-w-lg">
+                <TwoFactorSettings />
               </div>
             </>
           )}

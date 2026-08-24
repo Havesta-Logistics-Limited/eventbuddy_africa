@@ -2,14 +2,24 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { emailButton, renderEmailShell } from "@/lib/email-template";
 
-/** Best-effort branded reset email — mirrors sendVerificationEmail's shape/tone in
- *  src/app/api/signup/route.ts. Failure here is swallowed, same as the other
- *  transactional emails in this app; the caller always gets a generic success
- *  response either way (see the anti-enumeration note in the route handler below). */
+/** Best-effort branded reset email — mirrors sendWelcomeEmail's shape/tone in
+ *  src/app/api/signup/route.ts, with its own dark "security" banner rather than
+ *  brand green, so it reads as distinct from every other transactional email.
+ *  Failure here is swallowed, same as the other transactional emails in this app;
+ *  the caller always gets a generic success response either way (see the
+ *  anti-enumeration note in the route handler below). */
 async function sendResetEmail(to: string, resetUrl: string) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
+
+  const bodyHtml = `
+    <h1 style="font-size:19px; margin:0 0 12px;">Reset your password</h1>
+    <p style="margin:0 0 20px; color:#666;">We got a request to reset your eventbuddy password. Click below to choose a new one — this link expires soon.</p>
+    ${emailButton(resetUrl, "Reset password", "#0f172a")}
+    <p style="margin:20px 0 0; color:#999; font-size:12px;">Didn't request this? You can safely ignore this email — your password won't change.</p>
+  `;
 
   try {
     const resend = new Resend(apiKey);
@@ -18,19 +28,7 @@ async function sendResetEmail(to: string, resetUrl: string) {
       to,
       subject: "Reset your eventbuddy password",
       text: `Reset your eventbuddy password: ${resetUrl}\n\nIf you didn't request this, you can safely ignore this email — your password won't change.`,
-      html: `
-        <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
-          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#1B512D; font-weight:600; margin:0 0 8px;">Password reset</p>
-          <h1 style="font-size:20px; margin:0 0 12px;">Reset your password</h1>
-          <p style="margin:0 0 20px; color:#666; font-size:14px; line-height:1.5;">
-            We got a request to reset your eventbuddy password. Click below to choose a new one — this link expires soon.
-          </p>
-          <a href="${resetUrl}" style="display:inline-block; padding:11px 20px; border-radius:8px; background:#1B512D; color:#ffffff; font-size:14px; font-weight:600; text-decoration:none;">
-            Reset password
-          </a>
-          <p style="margin:20px 0 0; color:#999; font-size:12px;">Didn't request this? You can safely ignore this email — your password won't change.</p>
-        </div>
-      `,
+      html: renderEmailShell({ color: "#0f172a", label: "Password reset", emoji: "🔒" }, bodyHtml),
     });
     return !error;
   } catch {

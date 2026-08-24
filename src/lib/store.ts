@@ -862,11 +862,49 @@ export async function copyDestinationsFromEvent(sourceEventId: string, targetEve
 
 // ---- auth / session ----
 
+/** Shared by the no-MFA path and the post-step-up path — resolves the signed-in
+ *  Supabase Auth user to its organization and bridges into the local sessionCache
+ *  shape the rest of the app reads via useSession(). Only ever called once the
+ *  Supabase session is actually at full strength (aal2 if the account has 2FA on). */
+async function finishAdminLogin(
+  supabase: ReturnType<typeof createSupabaseBrowserClient>,
+  user: { id: string; email?: string }
+): Promise<{ success: boolean; error?: string }> {
+  const { data: org } = await supabase.from("organizations").select("id, name, slug, is_suspended").eq("owner_user_id", user.id).maybeSingle();
+
+  if (!org) {
+    await supabase.auth.signOut();
+    return { success: false, error: "This organization no longer exists. Contact support for help." };
+  }
+  if (org.is_suspended) {
+    await supabase.auth.signOut();
+    return { success: false, error: "This account has been suspended. Contact support for help." };
+  }
+
+  hydrateSession();
+  sessionCache = {
+    id: user.id,
+    name: org.name || user.email || "Admin",
+    email: user.email || "",
+    role: "admin",
+    orgSlug: org.slug ?? undefined,
+  };
+  persistSession();
+  return { success: true };
+}
+
 /**
  * Real admin/org-owner login via Supabase Auth. On success this bridges into the same
- * local sessionCache shape the rest of the app reads via useSession().
+ * local sessionCache shape the rest of the app reads via useSession(). If the account
+ * has 2FA enabled, this stops short of that bridge and returns mfaRequired instead —
+ * sessionCache only gets set once completeMfaLogin verifies the code, so a password-only
+ * sign-in (Supabase's own aal1 session) never counts as "signed in" from this app's
+ * point of view until the step-up is satisfied.
  */
-export async function login(email: string, password: string): Promise<{ success: boolean; error?: string }> {
+export async function login(
+  email: string,
+  password: string
+): Promise<{ success: boolean; error?: string; mfaRequired?: boolean; factorId?: string }> {
   if (!supabaseConfigured()) {
     return { success: false, error: "Sign-in isn't configured yet. Add real Supabase keys to .env.local and restart the dev server." };
   }
@@ -880,31 +918,35 @@ export async function login(email: string, password: string): Promise<{ success:
     return { success: false, error: error?.message || "Invalid email or password." };
   }
 
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("id, name, slug, is_suspended")
-    .eq("owner_user_id", data.user.id)
-    .maybeSingle();
-
-  if (!org) {
-    await supabase.auth.signOut();
-    return { success: false, error: "This organization no longer exists. Contact support for help." };
-  }
-  if (org.is_suspended) {
-    await supabase.auth.signOut();
-    return { success: false, error: "This account has been suspended. Contact support for help." };
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal && aal.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    const factor = factors?.totp.find((f) => f.status === "verified");
+    if (factor) return { success: false, mfaRequired: true, factorId: factor.id };
   }
 
-  hydrateSession();
-  sessionCache = {
-    id: data.user.id,
-    name: org.name || data.user.email || "Admin",
-    email: data.user.email || email,
-    role: "admin",
-    orgSlug: org.slug ?? undefined,
-  };
-  persistSession();
-  return { success: true };
+  return finishAdminLogin(supabase, data.user);
+}
+
+/** Completes a login that stopped at the 2FA step — verifies the code against the
+ *  factor login() already identified, then runs the same session-bridge login()
+ *  would have run directly if 2FA weren't enabled. */
+export async function completeMfaLogin(factorId: string, code: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = createSupabaseBrowserClient();
+  try {
+    const { data: challenge, error: challengeErr } = await supabase.auth.mfa.challenge({ factorId });
+    if (challengeErr || !challenge) throw new Error(challengeErr?.message || "Couldn't verify that code. Please try again.");
+    const { error: verifyErr } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code: code.trim() });
+    if (verifyErr) throw new Error("Invalid code. Please try again.");
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Invalid code. Please try again." };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Session expired — please sign in again." };
+  return finishAdminLogin(supabase, user);
 }
 
 /** Staff check-in — validates the access code server-side (see /api/orgs/[slug]/staff-checkin)

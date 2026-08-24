@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
-import { login, useSession } from "@/lib/store";
+import { completeMfaLogin, login, useSession } from "@/lib/store";
 import { Logo } from "@/components/logo";
 
 export default function LoginPage() {
@@ -14,6 +14,8 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
 
   useEffect(() => {
     if (session) {
@@ -27,8 +29,24 @@ export default function LoginPage() {
     setLoading(true);
     const result = await login(email, password);
     setLoading(false);
+    if (result.mfaRequired && result.factorId) {
+      setMfaFactorId(result.factorId);
+      return;
+    }
     if (!result.success) {
       setError(result.error || "Invalid email or password. Please try again.");
+    }
+  };
+
+  const handleVerifyMfa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaFactorId) return;
+    setError("");
+    setLoading(true);
+    const result = await completeMfaLogin(mfaFactorId, mfaCode);
+    setLoading(false);
+    if (!result.success) {
+      setError(result.error || "Invalid code. Please try again.");
     }
   };
 
@@ -95,76 +113,128 @@ export default function LoginPage() {
             <Logo height={16} />
           </div>
 
-          <h2 className="text-2xl font-semibold text-slate-900 mb-1">Welcome back</h2>
-          <p className="text-slate-500 text-sm mb-8">Sign in to your account to continue</p>
+          {mfaFactorId ? (
+            <>
+              <h2 className="text-2xl font-semibold text-slate-900 mb-1">Enter your 2FA code</h2>
+              <p className="text-slate-500 text-sm mb-8">Open your authenticator app and enter the current 6-digit code.</p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@eventbuddy.africa"
-                required
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white"
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-slate-700">Password</label>
+              <form onSubmit={handleVerifyMfa} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Verification code</label>
+                  <input
+                    required
+                    autoFocus
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="123456"
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white"
+                  />
+                </div>
+
+                {error && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                    <AlertCircle size={15} className="mt-0.5 shrink-0" />
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading || mfaCode.length !== 6}
+                  className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
+                >
+                  {loading ? "Verifying…" : "Verify & sign in"}
+                </button>
                 <button
                   type="button"
-                  onClick={() => router.push("/forgot-password")}
-                  className="text-xs font-medium text-brand-600 hover:underline"
+                  onClick={() => {
+                    setMfaFactorId(null);
+                    setMfaCode("");
+                    setError("");
+                  }}
+                  className="w-full text-center text-xs text-slate-500 hover:text-slate-700"
                 >
-                  Forgot password?
+                  Back to sign in
                 </button>
-              </div>
-              <div className="relative">
-                <input
-                  type={showPw ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white pr-10"
-                />
+              </form>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-semibold text-slate-900 mb-1">Welcome back</h2>
+              <p className="text-slate-500 text-sm mb-8">Sign in to your account to continue</p>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@eventbuddy.africa"
+                    required
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-sm font-medium text-slate-700">Password</label>
+                    <button
+                      type="button"
+                      onClick={() => router.push("/forgot-password")}
+                      className="text-xs font-medium text-brand-600 hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showPw ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPw((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      aria-label={showPw ? "Hide password" : "Show password"}
+                    >
+                      {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                    <AlertCircle size={15} className="mt-0.5 shrink-0" />
+                    {error}
+                  </div>
+                )}
+
                 <button
-                  type="button"
-                  onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  aria-label={showPw ? "Hide password" : "Show password"}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
                 >
-                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {loading ? "Signing in…" : "Sign in"}
                 </button>
+              </form>
+
+              <div className="mt-8 p-4 rounded-xl bg-slate-100 text-xs text-slate-500 text-center">
+                <p>
+                  New here?{" "}
+                  <button type="button" onClick={() => router.push("/signup")} className="text-brand-600 font-medium hover:underline">
+                    Create your organization account
+                  </button>
+                </p>
               </div>
-            </div>
-
-            {error && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
-                <AlertCircle size={15} className="mt-0.5 shrink-0" />
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
-            >
-              {loading ? "Signing in…" : "Sign in"}
-            </button>
-          </form>
-
-          <div className="mt-8 p-4 rounded-xl bg-slate-100 text-xs text-slate-500 text-center">
-            <p>
-              New here?{" "}
-              <button type="button" onClick={() => router.push("/signup")} className="text-brand-600 font-medium hover:underline">
-                Create your organization account
-              </button>
-            </p>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>

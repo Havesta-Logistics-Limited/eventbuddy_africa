@@ -16,6 +16,7 @@ import { EventWizard, type EventWizardData } from "@/components/event-wizard";
 import { Reveal } from "@/components/reveal";
 import { EventCardSkeleton, StatTileSkeleton } from "@/components/skeleton";
 import { AuthLoading } from "@/components/auth-loading";
+import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -50,10 +51,17 @@ function EventCard({ event }: { event: EventRecord }) {
           <div className="w-full h-full bg-gradient-to-tr from-slate-200 to-slate-100" />
         )}
         <div className="absolute top-3 left-3">
-          <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${cfg.color} shadow-sm bg-white/90 backdrop-blur-sm`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-            {cfg.label}
-          </span>
+          {event.published === false ? (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 shadow-sm bg-white/90 backdrop-blur-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+              Draft
+            </span>
+          ) : (
+            <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${cfg.color} shadow-sm bg-white/90 backdrop-blur-sm`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+              {cfg.label}
+            </span>
+          )}
         </div>
       </div>
       <div className="p-5 flex flex-col flex-1">
@@ -159,15 +167,41 @@ export default function DashboardPage() {
     { label: "Total Leads", value: leads.length },
   ];
 
-  const handleCreate = async (data: EventWizardData) => {
+  const handleCreate = async (data: EventWizardData, intent: "draft" | "publish") => {
     try {
-      await addEvent({ ...data, published: true });
+      const created = await addEvent({ ...data, published: intent === "publish" });
       setShowWizard(false);
-      toast.success("Event created");
+      if (intent === "publish") {
+        toast.success("Event created");
+        notifyEventCreated(created);
+      } else {
+        toast.success("Saved as draft — publish it from the event page when you're ready");
+      }
     } catch (err) {
       throw err instanceof PersistError ? new Error(err.message) : err instanceof Error ? err : new Error("Couldn't create that event. Please try again.");
     }
   };
+
+  /** Best-effort — a failed notification email should never surface to the admin
+   *  who just successfully created their event. */
+  async function notifyEventCreated(event: EventRecord) {
+    if (!session?.email) return;
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const fullName = (user?.user_metadata?.full_name as string | undefined)?.trim();
+      const firstName = fullName?.split(/\s+/)[0] || "there";
+      await fetch("/api/notify/event-created", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: session.email, firstName, eventId: event.id, eventName: event.name, eventDate: event.date, orgSlug: session.orgSlug }),
+      });
+    } catch {
+      // Silent — this is a nice-to-have confirmation, not a required step.
+    }
+  }
 
   return (
     <Shell>

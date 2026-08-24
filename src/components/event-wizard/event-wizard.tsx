@@ -178,19 +178,48 @@ export function EventWizard(props: {
         </div>
 
         <div className="flex gap-3 p-6 pt-4 border-t border-slate-100 shrink-0">
-          <button type="button" onClick={back} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
+          <button
+            type="button"
+            onClick={back}
+            className={`py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 ${
+              step === "review" && mode === "create" ? "px-4 shrink-0" : "flex-1"
+            }`}
+          >
             {stepIndex === 0 ? "Cancel" : "Back"}
           </button>
           {step === "review" ? (
-            <button
-              type="button"
-              onClick={() => handleSubmit(mode === "create" ? "publish" : "draft")}
-              disabled={submitting !== null}
-              className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-              style={{ background: "#1B512D" }}
-            >
-              {submitting !== null ? "Saving…" : mode === "create" ? "Create Event" : "Save Changes"}
-            </button>
+            mode === "create" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSubmit("draft")}
+                  disabled={submitting !== null}
+                  title="Keep working on this later — it won't be visible or open for registration until you publish it"
+                  className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                >
+                  {submitting === "draft" ? "Saving…" : "Save as Draft"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmit("publish")}
+                  disabled={submitting !== null}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
+                  style={{ background: "#1B512D" }}
+                >
+                  {submitting === "publish" ? "Publishing…" : "Publish Event"}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleSubmit("draft")}
+                disabled={submitting !== null}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
+                style={{ background: "#1B512D" }}
+              >
+                {submitting !== null ? "Saving…" : "Save Changes"}
+              </button>
+            )
           ) : (
             <button
               type="button"
