@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 /** Best-effort welcome email — the account and org already exist by the time this
  *  runs (unconfirmed), so a failure here (missing Resend key, provider error) is
@@ -95,6 +96,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid input." }, { status: 400 });
   }
   const { fullName, orgName, email, password, phone } = parsed.data;
+
+  // IP-only — a duplicate email already fails at the DB layer, so this exists to
+  // stop one source from mass-creating fake accounts/orgs with different emails.
+  if (!(await checkRateLimit(`signup:ip:${clientIp(request)}`, 5, 60 * 60))) {
+    return rateLimitedResponse();
+  }
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY === "paste_your_supabase_service_role_key_here") {
     return NextResponse.json(

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
 import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail } from "@/lib/registration-email";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 async function incrementTicketQuantitySold(supabase: SupabaseClient, ticketTypeId: string) {
@@ -41,6 +42,13 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   if (!eventId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  // Generous enough for a real rush of attendees registering for the same popular
+  // event from behind one shared IP (a campus, an office), but stops a script from
+  // mass-registering fake attendees to exhaust a limited-capacity free ticket.
+  if (!(await checkRateLimit(`register:ip:${clientIp(request)}`, 20, 10 * 60))) {
+    return rateLimitedResponse();
   }
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

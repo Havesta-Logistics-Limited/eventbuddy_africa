@@ -4,6 +4,7 @@ import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
 import { applyDiscount } from "@/lib/billing";
 import { nairaToChargeAmount, paystackInitialize } from "@/lib/paystack";
 import { newId } from "@/lib/utils";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 type InitializeBody = {
   eventId: string;
@@ -30,6 +31,12 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   if (!eventId || !ticketTypeId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  // Each call creates a paystack_transactions row and a real Paystack checkout
+  // session even before the buyer pays — unlimited requests would spam both.
+  if (!(await checkRateLimit(`ticket-purchase:ip:${clientIp(request)}`, 10, 10 * 60))) {
+    return rateLimitedResponse();
   }
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

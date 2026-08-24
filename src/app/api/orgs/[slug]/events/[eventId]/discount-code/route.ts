@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAnonClient } from "@/lib/supabase/anon";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 type ValidateBody = { code: string; ticketTypeId: string; email?: string };
 
@@ -24,6 +25,13 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const code = body.code?.trim();
   const ticketTypeId = body.ticketTypeId;
   if (!code || !ticketTypeId) return NextResponse.json({ error: "Enter a code." }, { status: 400 });
+
+  // Codes are short, org-chosen strings, not random tokens — without a limit here
+  // this endpoint is a live oracle for brute-forcing one, since it echoes back
+  // exactly whether a guess was valid.
+  if (!(await checkRateLimit(`discount-code:ip:${clientIp(request)}`, 15, 5 * 60))) {
+    return rateLimitedResponse();
+  }
 
   const supabase = createAnonClient();
   const { data, error } = await supabase

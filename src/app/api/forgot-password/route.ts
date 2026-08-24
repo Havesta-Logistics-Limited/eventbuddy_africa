@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailButton, renderEmailShell } from "@/lib/email-template";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 /** Best-effort branded reset email — mirrors sendWelcomeEmail's shape/tone in
  *  src/app/api/signup/route.ts, with its own dark "security" banner rather than
@@ -51,6 +52,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message || "Enter a valid email address." }, { status: 400 });
   }
   const { email } = parsed.data;
+
+  // Two independent limits: per-email stops one inbox from being bombed regardless
+  // of how many IPs the requests come from; per-IP stops one source from probing
+  // many different addresses. Neither reveals whether the email actually has an
+  // account — the count is keyed on the request, not on generateLink's result.
+  const [emailOk, ipOk] = await Promise.all([
+    checkRateLimit(`forgot-password:email:${email.toLowerCase()}`, 3, 15 * 60),
+    checkRateLimit(`forgot-password:ip:${clientIp(request)}`, 10, 15 * 60),
+  ]);
+  if (!emailOk || !ipOk) return rateLimitedResponse();
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY === "paste_your_supabase_service_role_key_here") {
     return NextResponse.json({ error: "Not configured yet." }, { status: 500 });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 type LeadBody = {
   staffId: string;
@@ -30,6 +31,14 @@ export async function POST(request: Request) {
 
   if (!staffId || !firstName || !lastName || !email || !phone) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  // Keyed by staffId, not IP — a busy booth's staff devices often share one venue
+  // WiFi/NAT, and a person scanning attendees can plausibly submit many leads in a
+  // burst. This only guards against a single leaked/compromised staffId being used
+  // to flood leads far beyond any realistic single-person data-entry rate.
+  if (!(await checkRateLimit(`leads:staff:${staffId}`, 60, 10 * 60))) {
+    return rateLimitedResponse();
   }
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
