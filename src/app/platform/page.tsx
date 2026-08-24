@@ -369,13 +369,23 @@ export default function PlatformDashboard() {
 
   async function toggleFeeExempt(org: OrgRow) {
     setBusyOrgId(org.id);
-    const supabase = createClient();
-    const { error } = await supabase.from("organizations").update({ is_fee_exempt: !org.is_fee_exempt }).eq("id", org.id);
-    if (!error) {
-      setOrgs((prev) => prev.map((o) => (o.id === org.id ? { ...o, is_fee_exempt: !o.is_fee_exempt } : o)));
-      toast.success(org.is_fee_exempt ? `${org.name} — fee exemption removed` : `${org.name} exempted from fees`);
-    } else {
-      toast.error(error.message);
+    const nextExempt = !org.is_fee_exempt;
+    try {
+      const res = await fetch("/api/platform/toggle-fee-exempt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId: org.id, exempt: nextExempt }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Couldn't update fee exemption.");
+      setOrgs((prev) => prev.map((o) => (o.id === org.id ? { ...o, is_fee_exempt: nextExempt } : o)));
+      if (json.warning) {
+        toast.warning(json.warning);
+      } else {
+        toast.success(nextExempt ? `${org.name} exempted from fees (event-publish and ticket commission)` : `${org.name} — fee exemption removed`);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't update fee exemption.");
     }
     setBusyOrgId(null);
   }

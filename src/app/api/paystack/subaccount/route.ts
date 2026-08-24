@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, name, paystack_subaccount_code, payout_change_status")
+    .select("id, name, paystack_subaccount_code, payout_change_status, is_fee_exempt")
     .eq("owner_user_id", user.id)
     .maybeSingle();
   if (!org) return NextResponse.json({ error: "No organization found for this account." }, { status: 404 });
@@ -101,8 +101,14 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { data: settings } = await admin.from("platform_settings").select("ticket_fee_percentage").eq("id", true).maybeSingle();
-  const percentageCharge = Number(settings?.ticket_fee_percentage ?? 5);
+  // A fee-exempt org pays 0% commission on ticket sales too, not just the flat
+  // per-event publish fee — otherwise "exempt" would be misleading for any org
+  // that also sells paid tickets.
+  let percentageCharge = 0;
+  if (!org.is_fee_exempt) {
+    const { data: settings } = await admin.from("platform_settings").select("ticket_fee_percentage").eq("id", true).maybeSingle();
+    percentageCharge = Number(settings?.ticket_fee_percentage ?? 5);
+  }
 
   let subaccountCode: string;
   try {

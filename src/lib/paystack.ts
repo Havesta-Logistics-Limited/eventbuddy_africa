@@ -134,6 +134,37 @@ export async function createPaystackSubaccount(params: {
   return { subaccountCode: json.data.subaccount_code };
 }
 
+/** Changes an existing subaccount's platform fee percentage — needed because
+ *  percentage_charge is otherwise fixed at creation time (e.g. when an org's
+ *  fee-exempt status changes after they already have payouts set up). Paystack's
+ *  update endpoint expects the subaccount's other fields resent alongside the one
+ *  actually changing; callers pass the values already on file in `organizations`
+ *  (bank code, account number, business name) rather than round-tripping through
+ *  a GET first, since Paystack's read shape for settlement_bank (a name) doesn't
+ *  match what the write shape expects (a code). */
+export async function updatePaystackSubaccountPercentage(params: {
+  subaccountCode: string;
+  businessName: string;
+  bankCode: string;
+  accountNumber: string;
+  percentageCharge: number;
+}): Promise<void> {
+  const res = await fetch(`${PAYSTACK_BASE}/subaccount/${encodeURIComponent(params.subaccountCode)}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${paystackKey()}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      business_name: params.businessName,
+      settlement_bank: params.bankCode,
+      account_number: params.accountNumber,
+      percentage_charge: params.percentageCharge,
+    }),
+  });
+  const json = (await res.json()) as { status: boolean; message: string };
+  if (!res.ok || !json.status) {
+    throw new Error(json.message || "Couldn't update this organization's commission rate.");
+  }
+}
+
 type PaystackVerifyResponse = {
   status: boolean;
   message: string;
