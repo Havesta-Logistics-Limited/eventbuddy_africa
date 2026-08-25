@@ -18,6 +18,9 @@ import {
   Check,
   X,
   Ticket,
+  Mic2,
+  Send,
+  Megaphone,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { TICKET_FEE_PERCENTAGE, fetchCurrentTicketFeePercentage } from "@/lib/billing";
@@ -44,6 +47,7 @@ const STEPS = [
 function getFeatures(feeLabel: string) {
   return [
     { icon: Ticket, title: "Registration & ticketing, built in", body: `Free or paid tickets with QR codes, for virtual and in-person events alike. Ticket revenue splits straight to your own bank account — you only pay ${feeLabel} on what actually sells.` },
+    { icon: Mic2, title: "A live hub for every event", body: "Schedule, speakers, moderated Q&A, and live polls — every attendee gets their own hub automatically the moment they register." },
     { icon: Users2, title: "Role-based access", body: "Admins run the show, staff capture leads for their event, and — for multi-destination events — reps see only their own university's leads." },
     { icon: KeyRound, title: "Access codes per event", body: "Gate staff and rep check-in behind a code you set — or leave it open for smaller, trusted teams." },
     { icon: BarChart3, title: "Live analytics", body: "Registration, ticket sales, and check-in numbers updated live, with destination and course breakdowns for education fairs and custom-question breakdowns for everything else." },
@@ -187,8 +191,8 @@ export default function MarketingHomePage() {
               <em>One operating system.</em>
             </h1>
             <p className="mt-5 text-white/70 text-base sm:text-lg max-w-lg">
-              Registration, ticketing, and check-in for education fairs, job fairs, conferences, or anything else —
-              set it up yourself, or bring eventbuddy&apos;s own team on-site to run the day for you.
+              Registration, ticketing, check-in, and a live event hub for education fairs, job fairs, conferences, or
+              anything else — set it up yourself, or bring eventbuddy&apos;s own team on-site to run the day for you.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
@@ -388,7 +392,7 @@ export default function MarketingHomePage() {
                 {[
                   "On-site staff running your check-in desk",
                   "Devices and QR badge printing, handled for you",
-                  "Registration, ticketing & check-in, end-to-end",
+                  "Registration, ticketing, check-in & live event hub, end-to-end",
                   "Enterprise scales the same team across every event",
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-2 text-sm text-white/85">
@@ -461,6 +465,85 @@ export default function MarketingHomePage() {
           Get Started
           <ArrowRight size={16} />
         </Link>
+      </section>
+
+      {/* Event Hub — the attendee-facing continuation of "run the day," so the page's
+          own journey (set up → open registration → run the day) doesn't stop the
+          instant someone's scanned in. Mockup mirrors the real Hub UI's own visual
+          language (the green header band, the tab bar) rather than a generic
+          illustration, matching how the hero mockup mirrors the real dashboard. */}
+      <section className="bg-white border-y border-slate-200">
+        <div className="max-w-5xl mx-auto px-6 py-20 grid lg:grid-cols-[1.05fr_0.95fr] gap-14 items-center">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-600 mb-3">The Event Hub</p>
+            <h2 className="font-display text-3xl sm:text-4xl text-slate-900 leading-tight mb-4">
+              Check-in isn&apos;t the finish line.
+              <br />
+              <em>Neither is your event page.</em>
+            </h2>
+            <p className="text-slate-500 leading-relaxed max-w-md mb-10">
+              The moment someone registers, they get their own event hub — schedule, speakers, live Q&amp;A, and
+              updates, all in one place. You stay in control of what goes live; they stay engaged from the first
+              session to the last.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-7">
+              {[
+                { icon: Calendar, title: "Full schedule & speakers", body: "Every session, time, and speaker — searchable in seconds, so nobody's asking where they need to be." },
+                { icon: Send, title: "Live, moderated Q&A", body: "Attendees ask questions aimed at a specific speaker or session. Nothing reaches the room until you approve it." },
+                { icon: BarChart3, title: "Live polls", body: "Push a question to everyone at once and watch the results update as votes come in." },
+                { icon: QrCode, title: "Access, no extra effort", body: "A link on their confirmation gets them in automatically — or scan one QR code posted at the venue." },
+              ].map(({ icon: Icon, title, body }) => (
+                <div key={title} className="flex gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
+                    <Icon size={16} className="text-brand-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 text-sm mb-1">{title}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Real Hub visual language — same green header, same tab bar, same card
+              rhythm as src/app/[orgSlug]/events/[eventId]/hub/page.tsx. */}
+          <div className="relative mx-auto w-full max-w-[300px] animate-idle-float hover-bounce">
+            <div className="absolute -inset-5 rounded-[2.5rem] bg-brand-50 hidden lg:block" />
+            <div className="relative bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200">
+              <div className="pt-7 pb-9 px-5" style={{ background: "#1B512D" }}>
+                <p className="text-[10px] uppercase tracking-wider text-white/60 mb-1.5">Event Hub</p>
+                <p className="font-display text-white text-base leading-tight mb-1.5">Global Career Expo</p>
+                <span className="flex items-center gap-1.5 text-[11px] text-white/75">
+                  <Calendar size={11} />
+                  21 August · 9:00 AM
+                </span>
+              </div>
+              <div className="relative -mt-4 mx-3 bg-white rounded-2xl shadow-sm border border-slate-100">
+                <div className="flex border-b border-slate-100">
+                  {[Calendar, Mic2, Send, BarChart3, Megaphone].map((Icon, i) => (
+                    <div key={i} className={`flex-1 flex justify-center py-2.5 border-b-2 ${i === 0 ? "border-brand-600" : "border-transparent"}`}>
+                      <Icon size={13} className={i === 0 ? "text-brand-700" : "text-slate-300"} />
+                    </div>
+                  ))}
+                </div>
+                <div className="p-3 space-y-2">
+                  <div className="border border-slate-100 rounded-lg p-2.5">
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-brand-700 bg-brand-50 px-1.5 py-0.5 rounded-full">Keynote</span>
+                    <p className="text-xs font-semibold text-slate-900 mt-1.5">Opening Remarks</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">9:00 AM · Amaka Obi</p>
+                  </div>
+                  <div className="border border-slate-100 rounded-lg p-2.5">
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-accent-purple-600 bg-accent-purple-50 px-1.5 py-0.5 rounded-full">Panel</span>
+                    <p className="text-xs font-semibold text-slate-900 mt-1.5">Careers in Tech</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">10:30 AM · 3 speakers</p>
+                  </div>
+                </div>
+              </div>
+              <div className="h-4" />
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Features — one wide featured tile plus a plain editorial list beneath it,
@@ -622,7 +705,7 @@ export default function MarketingHomePage() {
           <div>
             <Logo tone="white" variant="full" height={16} />
             <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">
-              Registration, ticketing, and check-in for any event — education fairs, job fairs, conferences, and more — never lose a lead.
+              Registration, ticketing, check-in, and a live event hub for any event — education fairs, job fairs, conferences, and more — never lose a lead.
             </p>
           </div>
           <div>
