@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { AlertCircle, Calendar, Loader2, Megaphone, Mic2, Pin, Send } from "lucide-react";
+import { AlertCircle, BarChart3, Bookmark, BookmarkCheck, Calendar, Loader2, Megaphone, Mic2, Pin, Send, ThumbsUp } from "lucide-react";
 import { formatDate, formatTime } from "@/lib/utils";
 
 type HubSession = {
@@ -16,10 +16,23 @@ type HubSession = {
   sessionType: string;
   qaOpen: boolean;
   speakers: { assignmentId: string; speakerId: string; name: string; photoUrl: string | null; role: string }[];
+  bookmarked: boolean;
 };
 type HubSpeaker = { id: string; name: string; title: string | null; company: string | null; bio: string | null; photoUrl: string | null };
-type HubQuestion = { id: string; sessionId: string | null; speakerId: string | null; askedByName: string; questionText: string; status: string; createdAt: string };
+type HubQuestion = {
+  id: string;
+  sessionId: string | null;
+  speakerId: string | null;
+  askedByName: string;
+  questionText: string;
+  status: string;
+  upvoteCount: number;
+  hasUpvoted: boolean;
+  createdAt: string;
+};
 type HubAnnouncement = { id: string; body: string; pinned: boolean; createdAt: string };
+type HubPollOption = { id: string; label: string; voteCount: number };
+type HubPoll = { id: string; question: string; status: string; myOptionId: string | null; options: HubPollOption[] };
 type HubData = {
   event: { id: string; name: string; date: string; eventFormat: string };
   attendeeName: string;
@@ -27,9 +40,10 @@ type HubData = {
   speakers: HubSpeaker[];
   questions: HubQuestion[];
   announcements: HubAnnouncement[];
+  polls: HubPoll[];
 };
 
-type Section = "schedule" | "speakers" | "qa" | "announcements";
+type Section = "schedule" | "speakers" | "qa" | "polls" | "announcements";
 
 /** Public, no-session Event Hub — reached only via the link mailed at registration
  *  (the ?token query param is the whole trust boundary, same as a reference_id).
@@ -45,12 +59,14 @@ export default function EventHubPage() {
   const [loadError, setLoadError] = useState("");
   const [data, setData] = useState<HubData | null>(null);
   const [section, setSection] = useState<Section>("schedule");
+  const [myAgendaOnly, setMyAgendaOnly] = useState(false);
 
   const [questionText, setQuestionText] = useState("");
   const [targetSessionId, setTargetSessionId] = useState("");
   const [targetSpeakerId, setTargetSpeakerId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   async function refresh(showSpinner: boolean) {
     if (!token) {
@@ -114,6 +130,69 @@ export default function EventHubPage() {
     }
   }
 
+  async function handleUpvote(questionId: string) {
+    setBusyId(questionId);
+    try {
+      const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/hub/questions/${questionId}/upvote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        toast.error(json.error || "Couldn't record your vote.");
+        return;
+      }
+      refresh(false);
+    } catch {
+      toast.error("Couldn't record your vote.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handlePollVote(pollId: string, optionId: string) {
+    setBusyId(pollId);
+    try {
+      const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/hub/polls/${pollId}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, optionId }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        toast.error(json.error || "Couldn't submit your vote.");
+        return;
+      }
+      refresh(false);
+    } catch {
+      toast.error("Couldn't submit your vote.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleBookmark(sessionId: string) {
+    setBusyId(sessionId);
+    try {
+      const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/hub/sessions/${sessionId}/bookmark`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        toast.error(json.error || "Couldn't update your agenda.");
+        return;
+      }
+      refresh(false);
+    } catch {
+      toast.error("Couldn't update your agenda.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -132,16 +211,19 @@ export default function EventHubPage() {
     );
   }
 
-  const { event, sessions, speakers, questions, announcements } = data;
+  const { event, sessions, speakers, questions, announcements, polls } = data;
   const speakerById = new Map(speakers.map((s) => [s.id, s]));
   const openSessions = sessions.filter((s) => s.qaOpen);
   const qaAvailable = openSessions.length > 0;
   const sessionSpeakerOptions = targetSessionId ? sessions.find((s) => s.id === targetSessionId)?.speakers ?? [] : [];
+  const visibleSessions = myAgendaOnly ? sessions.filter((s) => s.bookmarked) : sessions;
+  const openPolls = polls.filter((p) => p.status === "open" || p.myOptionId);
 
   const SECTIONS: { id: Section; label: string; icon: typeof Calendar }[] = [
     { id: "schedule", label: "Schedule", icon: Calendar },
     { id: "speakers", label: "Speakers", icon: Mic2 },
     { id: "qa", label: "Q&A", icon: Send },
+    { id: "polls", label: "Polls", icon: BarChart3 },
     { id: "announcements", label: "Updates", icon: Megaphone },
   ];
 
@@ -160,12 +242,12 @@ export default function EventHubPage() {
 
       <div className="max-w-2xl mx-auto px-4 -mt-8">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="flex border-b border-slate-100">
+          <div className="flex border-b border-slate-100 overflow-x-auto">
             {SECTIONS.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setSection(s.id)}
-                className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium border-b-2 transition-colors ${
+                className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium border-b-2 transition-colors shrink-0 min-w-[64px] ${
                   section === s.id ? "border-brand-600 text-brand-700" : "border-transparent text-slate-400 hover:text-slate-600"
                 }`}
               >
@@ -176,36 +258,58 @@ export default function EventHubPage() {
           </div>
 
           <div className="p-5">
-            {section === "schedule" &&
-              (sessions.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-10">The schedule isn&apos;t published yet — check back soon.</p>
-              ) : (
-                <div className="space-y-3">
-                  {sessions.map((s) => (
-                    <div key={s.id} className="border border-slate-100 rounded-xl p-3.5">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">{s.sessionType}</span>
-                        {s.track && <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{s.track}</span>}
-                      </div>
-                      <p className="font-semibold text-slate-900 text-sm">{s.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {formatTime(new Date(s.startTime).toTimeString().slice(0, 5))}
-                        {s.endTime && ` – ${formatTime(new Date(s.endTime).toTimeString().slice(0, 5))}`}
-                      </p>
-                      {s.description && <p className="text-sm text-slate-600 mt-2">{s.description}</p>}
-                      {s.speakers.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {s.speakers.map((sp) => (
-                            <span key={sp.assignmentId} className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
-                              {sp.name} · {sp.role}
-                            </span>
-                          ))}
+            {section === "schedule" && (
+              <div>
+                {sessions.some((s) => s.bookmarked) || myAgendaOnly ? (
+                  <button
+                    onClick={() => setMyAgendaOnly((v) => !v)}
+                    className={`mb-4 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                      myAgendaOnly ? "bg-brand-600 text-white border-brand-600" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <BookmarkCheck size={13} />
+                    My agenda
+                  </button>
+                ) : null}
+
+                {sessions.length === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-10">The schedule isn&apos;t published yet — check back soon.</p>
+                ) : visibleSessions.length === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-10">No sessions bookmarked yet — tap the bookmark icon on a session to add it here.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {visibleSessions.map((s) => (
+                      <div key={s.id} className="border border-slate-100 rounded-xl p-3.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">{s.sessionType}</span>
+                            {s.track && <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{s.track}</span>}
+                          </div>
+                          <button onClick={() => handleBookmark(s.id)} disabled={busyId === s.id} className="text-slate-400 hover:text-brand-600 disabled:opacity-50 shrink-0">
+                            {s.bookmarked ? <BookmarkCheck size={16} className="text-brand-600" /> : <Bookmark size={16} />}
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ))}
+                        <p className="font-semibold text-slate-900 text-sm">{s.title}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {formatTime(new Date(s.startTime).toTimeString().slice(0, 5))}
+                          {s.endTime && ` – ${formatTime(new Date(s.endTime).toTimeString().slice(0, 5))}`}
+                        </p>
+                        {s.description && <p className="text-sm text-slate-600 mt-2">{s.description}</p>}
+                        {s.speakers.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {s.speakers.map((sp) => (
+                              <span key={sp.assignmentId} className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
+                                {sp.name} · {sp.role}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {section === "speakers" &&
               (speakers.length === 0 ? (
@@ -296,19 +400,80 @@ export default function EventHubPage() {
                 ) : (
                   <div className="space-y-3">
                     {questions.map((q) => (
-                      <div key={q.id} className="border border-slate-100 rounded-xl p-3">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-xs font-medium text-slate-900">{q.askedByName}</span>
-                          {q.status === "answered" && <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">Answered</span>}
-                          {q.speakerId && speakerById.get(q.speakerId) && <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">for {speakerById.get(q.speakerId)!.name}</span>}
+                      <div key={q.id} className="border border-slate-100 rounded-xl p-3 flex items-start gap-3">
+                        <button
+                          onClick={() => handleUpvote(q.id)}
+                          disabled={busyId === q.id}
+                          className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg border shrink-0 transition-colors disabled:opacity-50 ${
+                            q.hasUpvoted ? "border-brand-600 bg-brand-50 text-brand-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                          }`}
+                        >
+                          <ThumbsUp size={13} />
+                          <span className="text-[11px] font-semibold tabular-nums">{q.upvoteCount}</span>
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="text-xs font-medium text-slate-900">{q.askedByName}</span>
+                            {q.status === "answered" && <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">Answered</span>}
+                            {q.speakerId && speakerById.get(q.speakerId) && (
+                              <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">for {speakerById.get(q.speakerId)!.name}</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-700">{q.questionText}</p>
                         </div>
-                        <p className="text-sm text-slate-700">{q.questionText}</p>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
             )}
+
+            {section === "polls" &&
+              (openPolls.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-10">No polls right now — check back during the event.</p>
+              ) : (
+                <div className="space-y-4">
+                  {openPolls.map((p) => {
+                    const total = p.options.reduce((sum, o) => sum + o.voteCount, 0);
+                    const showResults = !!p.myOptionId || p.status === "closed";
+                    return (
+                      <div key={p.id} className="border border-slate-100 rounded-xl p-3.5">
+                        <p className="font-medium text-slate-900 text-sm mb-3">{p.question}</p>
+                        <div className="space-y-2">
+                          {p.options.map((o) => {
+                            const pct = total > 0 ? Math.round((o.voteCount / total) * 100) : 0;
+                            const isMine = p.myOptionId === o.id;
+                            return showResults ? (
+                              <div key={o.id}>
+                                <div className="flex items-center justify-between text-xs mb-1">
+                                  <span className={isMine ? "font-semibold text-brand-700" : "text-slate-600"}>
+                                    {o.label}
+                                    {isMine ? " ✓" : ""}
+                                  </span>
+                                  <span className="text-slate-500 tabular-nums">{pct}%</span>
+                                </div>
+                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                  <div className={`h-full rounded-full transition-all duration-500 ${isMine ? "bg-brand-600" : "bg-slate-300"}`} style={{ width: `${pct}%` }} />
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                key={o.id}
+                                onClick={() => handlePollVote(p.id, o.id)}
+                                disabled={busyId === p.id || p.status !== "open"}
+                                className="w-full text-left text-sm px-3 py-2 rounded-lg border border-slate-200 hover:border-brand-600 hover:bg-brand-50/40 disabled:opacity-50 transition-colors"
+                              >
+                                {o.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {p.status === "closed" && <p className="text-[11px] text-slate-400 mt-2">This poll is closed.</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
 
             {section === "announcements" &&
               (announcements.length === 0 ? (

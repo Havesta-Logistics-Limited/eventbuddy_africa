@@ -49,6 +49,7 @@ import { TicketsTab } from "@/components/tickets-tab";
 import { ScheduleTab } from "@/components/event-schedule-tab";
 import { SpeakersTab } from "@/components/event-speakers-tab";
 import { QaTab } from "@/components/event-qa-tab";
+import { PollsTab } from "@/components/event-polls-tab";
 import { AnnouncementsTab } from "@/components/event-announcements-tab";
 import { RowSkeleton } from "@/components/skeleton";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -67,6 +68,7 @@ type TabId =
   | "schedule"
   | "speakers"
   | "qa"
+  | "polls"
   | "announcements";
 
 export default function EventDetailPage() {
@@ -304,6 +306,7 @@ export default function EventDetailPage() {
     { id: "schedule", label: "Schedule" },
     { id: "speakers", label: "Speakers" },
     { id: "qa", label: "Q&A" },
+    { id: "polls", label: "Polls" },
     { id: "announcements", label: "Announcements" },
   ];
 
@@ -583,6 +586,12 @@ export default function EventDetailPage() {
         {activeTab === "qa" && (
           <div key="qa" className="animate-tab-fade">
             <QaTab eventId={event.id} sessions={sessions} speakers={speakers} />
+          </div>
+        )}
+
+        {activeTab === "polls" && (
+          <div key="polls" className="animate-tab-fade">
+            <PollsTab eventId={event.id} />
           </div>
         )}
 

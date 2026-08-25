@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyHubMember } from "@/lib/event-hub";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 type SubmitBody = { token: string; questionText: string; sessionId?: string; speakerId?: string };
@@ -28,17 +29,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   const admin = createAdminClient();
-
-  const { data: org } = await admin.from("organizations").select("id").ilike("slug", slug).maybeSingle();
-  if (!org) return NextResponse.json({ error: "No organization found for that link." }, { status: 404 });
-
-  const { data: member } = await admin
-    .from("event_hub_members")
-    .select("id, full_name")
-    .eq("event_id", eventId)
-    .eq("organization_id", org.id)
-    .eq("hub_token", token)
-    .maybeSingle();
+  const member = await verifyHubMember(admin, { slug, eventId, token });
   if (!member) return NextResponse.json({ error: "This link isn't valid — check your confirmation email for the right one." }, { status: 403 });
 
   if (sessionId) {
@@ -48,12 +39,12 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   const { error: insertError } = await admin.from("event_questions").insert({
-    organization_id: org.id,
+    organization_id: member.organizationId,
     event_id: eventId,
     session_id: sessionId || null,
     speaker_id: speakerId || null,
-    asked_by_member_id: member.id,
-    asked_by_name: member.full_name,
+    asked_by_member_id: member.memberId,
+    asked_by_name: member.fullName,
     question_text: questionText.trim(),
   });
   if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });

@@ -319,3 +319,24 @@ export interface EventAnnouncement {
   pinned: boolean;
   createdAt: string;
 }
+
+export type PollStatus = "draft" | "open" | "closed";
+
+/** A live poll pushed to the room — voteCount on each option is kept in sync by a
+ *  database trigger on event_poll_votes (see 0036_event_hub_engagement.sql), never
+ *  incremented from application code, so it can't drift from the actual votes. */
+export interface EventPoll {
+  id: string;
+  eventId: string;
+  sessionId?: string;
+  question: string;
+  status: PollStatus;
+  options: EventPollOption[];
+  createdAt: string;
+}
+
+export interface EventPollOption {
+  id: string;
+  label: string;
+  voteCount: number;
+}

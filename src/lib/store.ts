@@ -6,12 +6,14 @@ import {
   DiscountCode,
   DiscountRedemption,
   EventAnnouncement,
+  EventPoll,
   EventQuestion,
   EventRecord,
   EventSession,
   EventSpeaker,
   FieldDef,
   LeadRecord,
+  PollStatus,
   RegistrationRecord,
   Session,
   SessionSpeaker,
@@ -969,6 +971,66 @@ export async function listEventQuestions(eventId: string): Promise<EventQuestion
 export async function moderateQuestion(id: string, status: EventQuestion["status"]): Promise<void> {
   const supabase = createSupabaseBrowserClient();
   const { error } = await supabase.from("event_questions").update({ status, moderated_at: new Date().toISOString() }).eq("id", id);
+  if (error) throw new PersistError(error);
+}
+
+// ---- live polls (admin only) — same on-demand, not-globally-cached treatment as
+//      Q&A above, for the same reason (needs its own frequent polling anyway). ----
+
+function mapEventPollRow(
+  p: { id: string; event_id: string; session_id: string | null; question: string; status: string; created_at: string },
+  options: { id: string; label: string; vote_count: number }[]
+): EventPoll {
+  return {
+    id: p.id,
+    eventId: p.event_id,
+    sessionId: p.session_id ?? undefined,
+    question: p.question,
+    status: p.status as PollStatus,
+    options: options.map((o) => ({ id: o.id, label: o.label, voteCount: o.vote_count })),
+    createdAt: p.created_at,
+  };
+}
+
+export async function listEventPolls(eventId: string): Promise<EventPoll[]> {
+  const supabase = createSupabaseBrowserClient();
+  const [pollRes, optionRes] = await Promise.all([
+    supabase.from("event_polls").select("*").eq("event_id", eventId).order("created_at", { ascending: false }),
+    supabase.from("event_poll_options").select("*").order("position", { ascending: true }),
+  ]);
+  if (pollRes.error) throw new PersistError(pollRes.error);
+  const optionsByPoll = new Map<string, { id: string; label: string; vote_count: number }[]>();
+  for (const o of (optionRes.data ?? []) as { id: string; poll_id: string; label: string; vote_count: number }[]) {
+    const arr = optionsByPoll.get(o.poll_id) ?? [];
+    arr.push(o);
+    optionsByPoll.set(o.poll_id, arr);
+  }
+  return (pollRes.data ?? []).map((p) => mapEventPollRow(p, optionsByPoll.get(p.id) ?? []));
+}
+
+export async function createPoll(input: { eventId: string; sessionId?: string; question: string; options: string[] }): Promise<EventPoll> {
+  const supabase = createSupabaseBrowserClient();
+  const { data: poll, error: pollError } = await supabase
+    .from("event_polls")
+    .insert({ event_id: input.eventId, session_id: input.sessionId || null, question: input.question, status: "draft" })
+    .select()
+    .single();
+  if (pollError || !poll) throw new PersistError(pollError);
+  const { data: options, error: optionError } = await supabase
+    .from("event_poll_options")
+    .insert(input.options.map((label, i) => ({ poll_id: poll.id, label, position: i })))
+    .select();
+  if (optionError) throw new PersistError(optionError);
+  return mapEventPollRow(poll, (options ?? []).map((o) => ({ ...o, vote_count: 0 })));
+}
+export async function updatePollStatus(id: string, status: PollStatus): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("event_polls").update({ status }).eq("id", id);
+  if (error) throw new PersistError(error);
+}
+export async function deletePoll(id: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("event_polls").delete().eq("id", id);
   if (error) throw new PersistError(error);
 }
 
