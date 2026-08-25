@@ -92,6 +92,7 @@ function persistSession() {
   }
   // Any session change invalidates the org-scoped cache — different user, different org.
   orgDataFetched = false;
+  myOrgId = null;
   emitChange();
 }
 
@@ -452,12 +453,49 @@ function eventAnnouncementToRow(input: Partial<Omit<EventAnnouncement, "id" | "c
 
 let orgDataFetched = false;
 let orgDataFetching = false;
+/** The signed-in admin's own organization id — resolved once per session and used
+ *  to explicitly scope every org-admin query below, rather than trusting RLS alone
+ *  to narrow results. RLS's is_platform_admin() clause is legitimately needed for
+ *  the platform portal to read across every org, but it means an account that is
+ *  BOTH an org owner and a platform admin would otherwise see every organization's
+ *  data inside what should be their own isolated org-admin dashboard — exactly
+ *  this collision surfaced a real cross-tenant leak in production. */
+let myOrgId: string | null = null;
+async function resolveMyOrgId(supabase: ReturnType<typeof createSupabaseBrowserClient>): Promise<string | null> {
+  if (myOrgId) return myOrgId;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from("organizations").select("id").eq("owner_user_id", user.id).maybeSingle();
+  myOrgId = data?.id ?? null;
+  return myOrgId;
+}
 
 async function fetchAdminData() {
   if (!supabaseConfigured()) return;
   orgDataFetching = true;
   try {
     const supabase = createSupabaseBrowserClient();
+    const orgId = await resolveMyOrgId(supabase);
+    if (!orgId) {
+      // No owned organization for this user — nothing to show, and critically,
+      // never fall through to an unfiltered query that RLS might widen for a
+      // platform admin.
+      destinationsCache = [];
+      universitiesCache = [];
+      eventsCache = [];
+      staffCache = [];
+      leadsCache = [];
+      registrationsCache = [];
+      ticketTypesCache = [];
+      discountCodesCache = [];
+      eventSessionsCache = [];
+      eventSpeakersCache = [];
+      eventAnnouncementsCache = [];
+      orgDataFetched = true;
+      return;
+    }
     const [
       destRes,
       uniRes,
@@ -472,18 +510,20 @@ async function fetchAdminData() {
       sessionSpeakerRes,
       announcementRes,
     ] = await Promise.all([
-      supabase.from("destinations").select("*"),
-      supabase.from("universities").select("*"),
-      supabase.from("events").select("*"),
-      supabase.from("staff").select("*"),
-      supabase.from("leads").select("*"),
-      supabase.from("registrations").select("*"),
-      supabase.from("ticket_types").select("*"),
-      supabase.from("discount_codes").select("*"),
-      supabase.from("event_sessions").select("*"),
-      supabase.from("event_speakers").select("*"),
+      supabase.from("destinations").select("*").eq("organization_id", orgId),
+      supabase.from("universities").select("*").eq("organization_id", orgId),
+      supabase.from("events").select("*").eq("organization_id", orgId),
+      supabase.from("staff").select("*").eq("organization_id", orgId),
+      supabase.from("leads").select("*").eq("organization_id", orgId),
+      supabase.from("registrations").select("*").eq("organization_id", orgId),
+      supabase.from("ticket_types").select("*").eq("organization_id", orgId),
+      supabase.from("discount_codes").select("*").eq("organization_id", orgId),
+      supabase.from("event_sessions").select("*").eq("organization_id", orgId),
+      supabase.from("event_speakers").select("*").eq("organization_id", orgId),
+      // No organization_id column on this join table — scoped below via the
+      // (already org-filtered) session ids instead.
       supabase.from("event_session_speakers").select("*"),
-      supabase.from("event_announcements").select("*"),
+      supabase.from("event_announcements").select("*").eq("organization_id", orgId),
     ]);
     destinationsCache = (destRes.data ?? []).map(mapDestinationRow);
     universitiesCache = (uniRes.data ?? []).map(mapUniversityRow);
@@ -495,8 +535,10 @@ async function fetchAdminData() {
     discountCodesCache = (discountCodeRes.data ?? []).map(mapDiscountCodeRow);
     eventSpeakersCache = (speakerRes.data ?? []).map(mapEventSpeakerRow);
     const speakersById = new Map(eventSpeakersCache.map((s) => [s.id, s]));
+    const ownSessionIds = new Set((sessionRes.data ?? []).map((s: { id: string }) => s.id));
     const sessionSpeakersById = new Map<string, SessionSpeaker[]>();
     for (const link of (sessionSpeakerRes.data ?? []) as { id: string; session_id: string; speaker_id: string; role: string }[]) {
+      if (!ownSessionIds.has(link.session_id)) continue;
       const speaker = speakersById.get(link.speaker_id);
       if (!speaker) continue;
       const arr = sessionSpeakersById.get(link.session_id) ?? [];
@@ -826,15 +868,19 @@ export async function deleteDiscountCode(id: string): Promise<void> {
  *  and cheap since these tables are small and bounded per event. */
 async function refetchSessionsAndSpeakers(): Promise<void> {
   const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) return;
   const [sessionRes, speakerRes, sessionSpeakerRes] = await Promise.all([
-    supabase.from("event_sessions").select("*"),
-    supabase.from("event_speakers").select("*"),
+    supabase.from("event_sessions").select("*").eq("organization_id", orgId),
+    supabase.from("event_speakers").select("*").eq("organization_id", orgId),
     supabase.from("event_session_speakers").select("*"),
   ]);
   eventSpeakersCache = (speakerRes.data ?? []).map(mapEventSpeakerRow);
   const speakersById = new Map(eventSpeakersCache.map((s) => [s.id, s]));
+  const ownSessionIds = new Set((sessionRes.data ?? []).map((s: { id: string }) => s.id));
   const sessionSpeakersById = new Map<string, SessionSpeaker[]>();
   for (const link of (sessionSpeakerRes.data ?? []) as { id: string; session_id: string; speaker_id: string; role: string }[]) {
+    if (!ownSessionIds.has(link.session_id)) continue;
     const speaker = speakersById.get(link.speaker_id);
     if (!speaker) continue;
     const arr = sessionSpeakersById.get(link.session_id) ?? [];
