@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import QRCode from "qrcode";
-import { AlertCircle, Calendar, Check, Copy, Loader2, MapPin, MapPinCheckInside, Tag, Ticket, Video, X } from "lucide-react";
+import { AlertCircle, Calendar, Check, Copy, ExternalLink, Loader2, MapPin, MapPinCheckInside, Tag, Ticket, Video, X } from "lucide-react";
 import { EventRecord, TicketType } from "@/lib/types";
 import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/components/dynamic-registration-form";
 import { formatDate, formatTime } from "@/lib/utils";
@@ -18,6 +18,9 @@ type Confirmation = {
    *  the registration is captured straight as a lead instead. */
   referenceId?: string;
   emailSent: boolean;
+  /** Undefined only if Hub provisioning failed server-side (best-effort, never
+   *  blocks registration itself) — the button is simply omitted in that case. */
+  hubUrl?: string;
   event: {
     name: string;
     date: string;
@@ -113,6 +116,7 @@ export default function RegisterPage() {
           setConfirmation({
             referenceId: json.referenceId ?? undefined,
             emailSent: true,
+            hubUrl: json.hubUrl ?? undefined,
             event: {
               name: event.name,
               date: event.date,
@@ -206,7 +210,7 @@ export default function RegisterPage() {
         setSubmitError(json.error || "Couldn't complete your registration. Please try again.");
         return;
       }
-      setConfirmation({ referenceId: json.referenceId, emailSent: !!json.emailSent, event: json.event });
+      setConfirmation({ referenceId: json.referenceId, emailSent: !!json.emailSent, hubUrl: json.hubUrl ?? undefined, event: json.event });
     } catch {
       setSubmitError("Couldn't complete your registration. Please try again.");
     } finally {
@@ -328,6 +332,17 @@ export default function RegisterPage() {
                   {copied ? <Check size={15} className="text-teal-600" /> : <Copy size={15} className="text-slate-400" />}
                 </button>
               </>
+            )}
+
+            {confirmation.hubUrl && (
+              <a
+                href={confirmation.hubUrl}
+                className="mt-4 inline-flex items-center gap-2 mx-auto px-4 py-2.5 rounded-lg text-sm font-medium text-white hover:opacity-90"
+                style={{ background: "#1B512D" }}
+              >
+                <ExternalLink size={14} />
+                Open event hub
+              </a>
             )}
 
             {confirmation.event.eventFormat === "virtual" ? (

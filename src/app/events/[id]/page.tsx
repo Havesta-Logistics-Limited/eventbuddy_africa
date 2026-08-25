@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { AlertCircle, ArrowLeft, Calendar, Copy, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, RefreshCw, Trash2, Video, X, Search } from "lucide-react";
+import { AlertCircle, ArrowLeft, Calendar, Copy, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, QrCode, RefreshCw, Trash2, Video, X, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import {
@@ -51,6 +51,7 @@ import { SpeakersTab } from "@/components/event-speakers-tab";
 import { QaTab } from "@/components/event-qa-tab";
 import { PollsTab } from "@/components/event-polls-tab";
 import { AnnouncementsTab } from "@/components/event-announcements-tab";
+import { EventHubQrModal } from "@/components/event-hub-qr-modal";
 import { RowSkeleton } from "@/components/skeleton";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AuthLoading } from "@/components/auth-loading";
@@ -107,6 +108,7 @@ export default function EventDetailPage() {
   const [imgError, setImgError] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [showHubQr, setShowHubQr] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -379,6 +381,13 @@ export default function EventDetailPage() {
                     {publishing ? "Publishing…" : "Publish Event"}
                   </button>
                 )}
+                <button
+                  onClick={() => setShowHubQr(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <QrCode size={14} />
+                  Event Hub QR
+                </button>
                 <button
                   onClick={handleDuplicate}
                   disabled={duplicating}
@@ -754,6 +763,14 @@ export default function EventDetailPage() {
 
         {isEditing && (
           <EventWizard mode="edit" initialEvent={event} onSubmit={handleEditSubmit} onCancel={() => setIsEditing(false)} />
+        )}
+
+        {showHubQr && typeof window !== "undefined" && (
+          <EventHubQrModal
+            eventName={event.name}
+            hubUrl={`${window.location.origin}/${session.orgSlug}/events/${event.id}/hub`}
+            onClose={() => setShowHubQr(false)}
+          />
         )}
 
         {showDeleteConfirm && (

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { AlertCircle, BarChart3, Bookmark, BookmarkCheck, Calendar, Loader2, Megaphone, Mic2, Pin, Send, ThumbsUp } from "lucide-react";
+import { BarChart3, Bookmark, BookmarkCheck, Calendar, KeyRound, Loader2, Megaphone, Mic2, Pin, Send, ThumbsUp } from "lucide-react";
 import { formatDate, formatTime } from "@/lib/utils";
 
 type HubSession = {
@@ -52,6 +52,7 @@ type Section = "schedule" | "speakers" | "qa" | "polls" | "announcements";
 export default function EventHubPage() {
   const params = useParams<{ orgSlug: string; eventId: string }>();
   const { orgSlug, eventId } = params;
+  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
@@ -68,9 +69,18 @@ export default function EventHubPage() {
   const [submitError, setSubmitError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  // Reached with no token when opened via the generic per-event QR/link the
+  // organizer shares (see the dashboard's "Event Hub QR" button) rather than the
+  // personal link mailed at registration — this lets someone find their own
+  // hub_token from something they'd actually remember instead of hitting a dead
+  // end if they forgot to check their email.
+  const [lookupEmail, setLookupEmail] = useState("");
+  const [lookupRefId, setLookupRefId] = useState("");
+  const [lookupError, setLookupError] = useState("");
+  const [lookingUp, setLookingUp] = useState(false);
+
   async function refresh(showSpinner: boolean) {
     if (!token) {
-      setLoadError("Missing access link — check your confirmation email for the right one.");
       setLoading(false);
       return;
     }
@@ -88,6 +98,33 @@ export default function EventHubPage() {
       setLoadError("Couldn't load this event's hub. Check your connection and try again.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleLookup(e: React.FormEvent) {
+    e.preventDefault();
+    if (!lookupEmail.trim() && !lookupRefId.trim()) {
+      setLookupError("Enter your email or reference ID.");
+      return;
+    }
+    setLookupError("");
+    setLookingUp(true);
+    try {
+      const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/hub/lookup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: lookupEmail.trim() || undefined, referenceId: lookupRefId.trim() || undefined }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.token) {
+        setLookupError(json.error || "Couldn't find your registration.");
+        return;
+      }
+      router.replace(`/${orgSlug}/events/${eventId}/hub?token=${encodeURIComponent(json.token)}`);
+    } catch {
+      setLookupError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setLookingUp(false);
     }
   }
 
@@ -203,9 +240,44 @@ export default function EventHubPage() {
   if (loadError || !data) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="text-center text-slate-500 max-w-sm">
-          <AlertCircle size={28} className="mx-auto mb-3 text-slate-300" />
-          <p>{loadError || "Couldn't load this event's hub."}</p>
+        <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <KeyRound size={24} className="mx-auto mb-3 text-slate-300" />
+          <h2 className="text-lg font-semibold text-slate-900 text-center mb-1">Find your event hub</h2>
+          <p className="text-sm text-slate-500 text-center mb-5">
+            {loadError && token
+              ? "That link isn't valid anymore. "
+              : "Opened without your personal link? "}
+            Enter the email or reference ID you registered with.
+          </p>
+          <form onSubmit={handleLookup} className="space-y-3">
+            <input
+              type="email"
+              value={lookupEmail}
+              onChange={(e) => setLookupEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+            />
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <div className="flex-1 h-px bg-slate-100" />
+              or
+              <div className="flex-1 h-px bg-slate-100" />
+            </div>
+            <input
+              value={lookupRefId}
+              onChange={(e) => setLookupRefId(e.target.value)}
+              placeholder="Reference ID, e.g. AB12-CD34"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-600"
+            />
+            {lookupError && <p className="text-sm text-rose-600">{lookupError}</p>}
+            <button
+              type="submit"
+              disabled={lookingUp}
+              className="w-full py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
+              style={{ background: "#1B512D" }}
+            >
+              {lookingUp ? "Looking up…" : "Continue"}
+            </button>
+          </form>
         </div>
       </div>
     );

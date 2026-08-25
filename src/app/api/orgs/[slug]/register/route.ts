@@ -158,7 +158,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
     const hub = await tryHubUrl(lead.email, `${firstName.trim()} ${lastName.trim()}`);
     const emailSent = await sendVirtualConfirmationEmail(lead.email, event, hub);
-    return NextResponse.json({ success: true, emailSent, event: responseEvent });
+    return NextResponse.json({ success: true, emailSent, hubUrl: hub, event: responseEvent });
   }
 
   let registration = null;
@@ -190,5 +190,5 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const hub = await tryHubUrl(registration.email, registration.full_name);
   const emailSent = await sendRegistrationEmail(registration.email, registration.reference_id, event, hub);
 
-  return NextResponse.json({ success: true, referenceId: registration.reference_id, emailSent, event: responseEvent });
+  return NextResponse.json({ success: true, referenceId: registration.reference_id, emailSent, hubUrl: hub, event: responseEvent });
 }

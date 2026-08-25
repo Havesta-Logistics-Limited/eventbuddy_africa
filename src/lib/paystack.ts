@@ -187,8 +187,32 @@ export async function paystackVerify(reference: string): Promise<PaystackVerific
 
 export type FinalizeResult =
   | { ok: true; purpose: "event_publish"; eventId: string; alreadyProcessed: boolean }
-  | { ok: true; purpose: "ticket_purchase"; eventId: string; referenceId: string | null; alreadyProcessed: boolean }
+  | { ok: true; purpose: "ticket_purchase"; eventId: string; referenceId: string | null; hubUrl?: string; alreadyProcessed: boolean }
   | { ok: false; reason: "unknown_reference" | "payment_failed" | "amount_mismatch" | "verify_error" };
+
+/** Best-effort — resolves the same Hub link a fresh fulfillment would have emailed,
+ *  for the "already processed" replay paths (a page reload, or the webhook and the
+ *  callback page racing) where fulfillment itself doesn't run again. The member row
+ *  already exists from the original successful run, so this is a lookup in
+ *  practice; ensureHubMember's insert-or-fetch shape handles that safely either way. */
+async function resolveHubUrlForTxn(supabase: SupabaseClient, txn: PendingTicketTxn): Promise<string | undefined> {
+  const info = txn.registrant_data;
+  if (!info) return undefined;
+  try {
+    const { data: org } = await supabase.from("organizations").select("slug").eq("id", txn.organization_id).maybeSingle();
+    if (!org?.slug) return undefined;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://eventbuddy.africa";
+    const { hubToken } = await ensureHubMember(supabase, {
+      organizationId: txn.organization_id,
+      eventId: txn.event_id,
+      email: info.email,
+      fullName: `${info.firstName} ${info.lastName}`,
+    });
+    return buildHubUrl(siteUrl, org.slug, txn.event_id, hubToken);
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * The single place both the webhook and the post-checkout callback page call to
@@ -215,7 +239,8 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
         .eq("email", (txn.registrant_data as { email?: string } | null)?.email ?? "")
         .eq("ticket_type_id", txn.ticket_type_id)
         .maybeSingle();
-      return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId: existing?.reference_id ?? null, alreadyProcessed: true };
+      const hubUrl = await resolveHubUrlForTxn(supabase, txn);
+      return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId: existing?.reference_id ?? null, hubUrl, alreadyProcessed: true };
     }
     return { ok: true, purpose: "event_publish", eventId: txn.event_id, alreadyProcessed: true };
   }
@@ -255,14 +280,15 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
 
   if (!updated) {
     if (txn.purpose === "ticket_purchase") {
-      return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId: null, alreadyProcessed: true };
+      const hubUrl = await resolveHubUrlForTxn(supabase, txn);
+      return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId: null, hubUrl, alreadyProcessed: true };
     }
     return { ok: true, purpose: "event_publish", eventId: txn.event_id, alreadyProcessed: true };
   }
 
   if (txn.purpose === "ticket_purchase") {
-    const referenceId = await createTicketPurchaseRegistration(supabase, txn);
-    return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId, alreadyProcessed: false };
+    const { referenceId, hubUrl } = await createTicketPurchaseRegistration(supabase, txn);
+    return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId, hubUrl, alreadyProcessed: false };
   }
 
   await supabase.from("events").update({ published: true, payment_status: "paid" }).eq("id", txn.event_id);
@@ -280,7 +306,7 @@ type PendingTicketTxn = {
 /** Materializes a paid ticket into a real registration (physical) or lead (virtual) —
  *  only ever reached once per transaction, right after the idempotency boundary above
  *  flips it to 'success', so this never double-books a ticket sale. */
-async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: PendingTicketTxn): Promise<string | null> {
+async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: PendingTicketTxn): Promise<{ referenceId: string | null; hubUrl?: string }> {
   // Every early return past this point means a payment already succeeded but
   // fulfillment didn't — there is no user-facing retry for that (the transaction is
   // already 'success', so a caller retry short-circuits to alreadyProcessed and never
@@ -289,7 +315,7 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
   const info = txn.registrant_data;
   if (!info) {
     console.error(`[ticket-purchase] no registrant_data on transaction for event ${txn.event_id} — cannot create registration.`);
-    return null;
+    return { referenceId: null };
   }
 
   const { data: event, error: eventErr } = await supabase
@@ -299,7 +325,7 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
     .maybeSingle();
   if (!event) {
     console.error(`[ticket-purchase] couldn't load event ${txn.event_id} to fulfill a paid ticket for ${info.email}:`, eventErr?.message);
-    return null;
+    return { referenceId: null };
   }
 
   /** Best-effort — a Hub-provisioning failure should never block ticket
@@ -358,11 +384,11 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
     });
     if (leadErr) {
       console.error(`[ticket-purchase] paid ticket for ${info.email} on event ${txn.event_id} succeeded but no lead could be created:`, leadErr.message);
-      return null;
+      return { referenceId: null };
     }
     const virtualHub = await tryHubUrl(info.email, `${info.firstName} ${info.lastName}`);
     await sendVirtualConfirmationEmail(info.email, event, virtualHub);
-    return null;
+    return { referenceId: null, hubUrl: virtualHub };
   }
 
   let referenceId: string | null = null;
@@ -391,10 +417,10 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
   }
   if (!referenceId) {
     console.error(`[ticket-purchase] paid ticket for ${info.email} on event ${txn.event_id} succeeded but no registration could be created:`, lastError?.message);
-    return null;
+    return { referenceId: null };
   }
 
   const physicalHub = await tryHubUrl(info.email, `${info.firstName} ${info.lastName}`);
   await sendRegistrationEmail(info.email, referenceId, event, physicalHub);
-  return referenceId;
+  return { referenceId, hubUrl: physicalHub };
 }

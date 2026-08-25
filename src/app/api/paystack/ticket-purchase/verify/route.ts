@@ -34,5 +34,9 @@ export async function GET(request: Request) {
   if (!result.ok) {
     return NextResponse.json({ success: false, error: ERROR_MESSAGES[result.reason] || "Couldn't verify payment." });
   }
-  return NextResponse.json({ success: true, referenceId: result.purpose === "ticket_purchase" ? result.referenceId : null });
+  return NextResponse.json({
+    success: true,
+    referenceId: result.purpose === "ticket_purchase" ? result.referenceId : null,
+    hubUrl: result.purpose === "ticket_purchase" ? result.hubUrl : undefined,
+  });
 }
