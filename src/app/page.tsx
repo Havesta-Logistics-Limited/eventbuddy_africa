@@ -107,18 +107,25 @@ export default function MarketingHomePage() {
   const FEATURES = getFeatures(feeLabel);
   const homeFaqs = faqs(feeLabel).filter((f) => HOME_FAQ_QUESTIONS.includes(f.q));
 
-  // Real event names, fetched live from the featured org's own public event list —
+  // Real event names, fetched live from the featured org's own hosted-events list
+  // (any published event, past or upcoming — see 0037_marquee_hosted_events.sql) —
   // never hardcoded copy, so this can never drift into showing a stale or made-up
   // name. Deduped since the same event name can recur across an org's history.
-  const [eventNames, setEventNames] = useState<string[]>([]);
+  // Falls back to generic category labels if the featured org has no events at
+  // all yet — this strip must never render empty and disappear (it did once,
+  // when it borrowed the upcoming-only query the staff/rep pickers use, and the
+  // featured org's events all finished at the same time).
+  const [eventNames, setEventNames] = useState<string[]>(MARQUEE_EVENT_TYPES.slice(0, 6));
   useEffect(() => {
-    fetch(`/api/orgs/${FEATURED_ORG_SLUG}/events`)
+    fetch(`/api/orgs/${FEATURED_ORG_SLUG}/hosted-events`)
       .then((res) => res.json())
       .then((data) => {
-        const names: string[] = (data.events || []).map((e: { name: string }) => e.name);
-        setEventNames(Array.from(new Set(names)));
+        const names: string[] = data.names || [];
+        if (names.length > 0) setEventNames(names);
       })
-      .catch(() => setEventNames([]));
+      .catch(() => {
+        /* keep the fallback names already set */
+      });
   }, []);
 
   // The scrolling effect is confined to a centered box, not the full width of the
@@ -305,36 +312,37 @@ export default function MarketingHomePage() {
         </div>
       </section>
 
-      {/* Events powered — real, live event names from the featured org's own public
-          listing, not invented case studies. Hidden entirely if there's nothing to
-          show yet rather than rendering an empty marquee. */}
-      {eventNames.length > 0 && (
-        <div className="relative bg-white border-b border-slate-200 py-6">
-          <p className="text-center text-xs font-medium text-slate-400 mb-4">Events powered by eventbuddy</p>
-          <div
-            className="relative overflow-hidden mx-auto"
-            style={{
-              width: eventBoxWidth,
-              maxWidth: "92vw",
-              maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
-              WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
-            }}
-          >
-            <div className="flex w-max mx-auto animate-marquee-reverse">
-              {[0, 1].map((copy) => (
-                <div key={copy} className="flex items-center gap-10 pr-10" aria-hidden={copy === 1}>
-                  {eventNames.map((name) => (
-                    <span key={name} className="flex items-center gap-2 text-base font-semibold text-slate-400 whitespace-nowrap">
-                      <Calendar size={15} className="text-slate-300 shrink-0" />
-                      {name}
-                    </span>
-                  ))}
-                </div>
-              ))}
-            </div>
+      {/* Events powered — real, live event names from the featured org's hosted-
+          events list (any published event ever, past or upcoming — see
+          0037_marquee_hosted_events.sql), growing forever as new events are
+          created. Unconditionally rendered — eventNames starts seeded with
+          generic category labels and only ever gets replaced once real names
+          load, so this strip can never go empty and disappear. */}
+      <div className="relative bg-white border-b border-slate-200 py-6">
+        <p className="text-center text-xs font-medium text-slate-400 mb-4">Events powered by eventbuddy</p>
+        <div
+          className="relative overflow-hidden mx-auto"
+          style={{
+            width: eventBoxWidth,
+            maxWidth: "92vw",
+            maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+            WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+          }}
+        >
+          <div className="flex w-max mx-auto animate-marquee-reverse">
+            {[0, 1].map((copy) => (
+              <div key={copy} className="flex items-center gap-10 pr-10" aria-hidden={copy === 1}>
+                {eventNames.map((name) => (
+                  <span key={name} className="flex items-center gap-2 text-base font-semibold text-slate-400 whitespace-nowrap">
+                    <Calendar size={15} className="text-slate-300 shrink-0" />
+                    {name}
+                  </span>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Two ways to work with us — deliberately unequal weight: Self-Serve is a
           quiet, plain-text option; Full-Service & Enterprise gets the featured

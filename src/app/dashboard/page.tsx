@@ -42,7 +42,7 @@ function EventCard({ event }: { event: EventRecord }) {
       href={`/events/${event.id}`}
       className="h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md hover:border-brand-600/30 transition-all flex flex-col"
     >
-      <div className="h-32 bg-slate-100 relative">
+      <div className="aspect-video bg-slate-100 relative">
         {event.coverImage && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={event.coverImage} alt={event.name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
@@ -118,7 +118,7 @@ export default function DashboardPage() {
   const events = useEvents();
   const destinations = useDestinations();
   const leads = useLeads();
-  const [filter, setFilter] = useState<"all" | EventStatus>("all");
+  const [filter, setFilter] = useState<"all" | EventStatus | "draft">("all");
   const [search, setSearch] = useState("");
   const [destFilter, setDestFilter] = useState<string[]>([]);
   const [monthFilter, setMonthFilter] = useState<string[]>([]);
@@ -140,7 +140,11 @@ export default function DashboardPage() {
 
   const query = search.trim().toLowerCase();
   const filtered = events
-    .filter((e) => filter === "all" || getEventStatus(e) === filter)
+    .filter((e) => {
+      if (filter === "all") return true;
+      if (filter === "draft") return e.published === false;
+      return e.published !== false && getEventStatus(e) === filter;
+    })
     .filter((e) => destFilter.length === 0 || e.destinationIds.some((id) => destFilter.includes(id)))
     .filter((e) => monthFilter.length === 0 || monthFilter.includes(getEventMonthLabel(e)))
     .filter((e) => locationFilter.length === 0 || locationFilter.includes(getEventCity(e)))
@@ -159,10 +163,16 @@ export default function DashboardPage() {
   const availableLocations = Array.from(new Set(events.map((e) => getEventCity(e)))).sort();
   const activeFilterCount = destFilter.length + monthFilter.length + locationFilter.length;
 
+  // A draft event is never "active" or "upcoming", no matter what its date says —
+  // published status overrides the purely time-based getEventStatus for stats/
+  // filtering purposes, since a draft isn't actually live for anyone to attend.
+  const publishedEvents = events.filter((e) => e.published !== false);
+  const draftEvents = events.filter((e) => e.published === false);
   const stats = [
     { label: "Total Events", value: events.length },
-    { label: "Active", value: events.filter((e) => getEventStatus(e) === "active").length },
-    { label: "Upcoming", value: events.filter((e) => getEventStatus(e) === "upcoming").length },
+    { label: "Active", value: publishedEvents.filter((e) => getEventStatus(e) === "active").length },
+    { label: "Upcoming", value: publishedEvents.filter((e) => getEventStatus(e) === "upcoming").length },
+    { label: "Draft", value: draftEvents.length },
     { label: "Total Leads", value: leads.length },
   ];
 
@@ -214,9 +224,9 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           {!dataReady
-            ? Array.from({ length: 4 }).map((_, i) => <StatTileSkeleton key={i} />)
+            ? Array.from({ length: 5 }).map((_, i) => <StatTileSkeleton key={i} />)
             : stats.map((s, i) => (
                 <Reveal key={s.label} index={i}>
                   <div className="rounded-xl bg-slate-50 p-4">
@@ -229,7 +239,7 @@ export default function DashboardPage() {
 
         <div className="flex flex-wrap items-center gap-3 mb-5">
           <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
-            {(["all", "active", "upcoming", "completed"] as const).map((f) => (
+            {(["all", "draft", "active", "upcoming", "completed"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}

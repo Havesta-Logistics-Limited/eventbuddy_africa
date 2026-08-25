@@ -209,7 +209,7 @@ export function EventPicker({
                       onClick={() => onSelect(evt.id)}
                       className={`group flex h-full flex-col text-left bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-all ${theme.cardHoverBorder}`}
                     >
-                      <div className="relative h-36 bg-slate-100 shrink-0">
+                      <div className="relative aspect-video bg-slate-100 shrink-0">
                         <EventCover event={evt} flag={primaryFlag} gradient={theme.gradient} />
                         <div className="absolute top-3 left-3">
                           <span className={`inline-flex items-center text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full shadow-sm ${statusStyles[status]}`}>

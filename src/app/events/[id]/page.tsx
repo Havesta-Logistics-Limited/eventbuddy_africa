@@ -413,7 +413,7 @@ export default function EventDetailPage() {
           </div>
 
           {event.coverImage && !imgError && (
-            <div className="mt-5 w-full h-48 rounded-xl overflow-hidden">
+            <div className="mt-5 w-full aspect-video rounded-xl overflow-hidden bg-slate-100">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={event.coverImage} alt={event.name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
             </div>

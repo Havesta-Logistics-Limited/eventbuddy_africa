@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Crop, Loader2 } from "lucide-react";
 import { compressImageFile } from "@/lib/utils";
+import { ImageCropperModal } from "@/components/image-cropper-modal";
 import type { EventWizardData } from "../types";
 
 const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]";
@@ -11,6 +12,7 @@ const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
 export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange: (patch: Partial<EventWizardData>) => void }) {
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState("");
+  const [cropSource, setCropSource] = useState<string | null>(null);
 
   const isVirtual = data.eventFormat === "virtual";
 
@@ -137,9 +139,17 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
         <label className={labelClass}>Cover Image</label>
         <div className="space-y-3">
           {data.coverImage && (
-            <div className="w-full h-32 rounded-lg overflow-hidden bg-slate-100">
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-100">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={data.coverImage} alt="Cover preview" className="w-full h-full object-cover" />
+              <img src={data.coverImage} alt="Cover preview" className="w-full h-full object-contain" />
+              <button
+                type="button"
+                onClick={() => setCropSource(data.coverImage!)}
+                className="absolute bottom-2 right-2 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-black/60 text-white hover:bg-black/75 backdrop-blur-sm"
+              >
+                <Crop size={12} />
+                Adjust crop
+              </button>
             </div>
           )}
           <input
@@ -158,7 +168,7 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
               {imageUploading ? (
                 <span className="inline-flex items-center gap-1.5 justify-center">
                   <Loader2 size={14} className="animate-spin" />
-                  Compressing image…
+                  Loading image…
                 </span>
               ) : (
                 "Upload from device"
@@ -175,8 +185,12 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
                   setImageUploadError("");
                   setImageUploading(true);
                   try {
-                    const dataUrl = await compressImageFile(file);
-                    onChange({ coverImage: dataUrl });
+                    // A generously-sized, lightly-compressed source for the cropper —
+                    // the crop step below does the final resize/compression once the
+                    // organizer picks the visible area, so this only needs to be big
+                    // enough to crop from without looking blocky.
+                    const dataUrl = await compressImageFile(file, 2000, 0.92);
+                    setCropSource(dataUrl);
                   } catch (err) {
                     setImageUploadError(err instanceof Error ? err.message : "Couldn't process that image.");
                   } finally {
@@ -186,11 +200,22 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
               />
             </label>
           </div>
+          <p className="text-xs text-slate-400">Cards show this at a wide 16:9 crop — pasted URLs are shown as-is; uploads let you pick the visible area.</p>
           {imageUploadError && (
             <p className="flex items-start gap-1.5 text-xs text-rose-600">
               <AlertCircle size={13} className="mt-0.5 shrink-0" />
               {imageUploadError}
             </p>
+          )}
+          {cropSource && (
+            <ImageCropperModal
+              imageSrc={cropSource}
+              onCancel={() => setCropSource(null)}
+              onSave={(croppedDataUrl) => {
+                onChange({ coverImage: croppedDataUrl });
+                setCropSource(null);
+              }}
+            />
           )}
         </div>
       </div>
