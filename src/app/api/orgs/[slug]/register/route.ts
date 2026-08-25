@@ -4,6 +4,7 @@ import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
 import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail } from "@/lib/registration-email";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
+import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 async function incrementTicketQuantitySold(supabase: SupabaseClient, ticketTypeId: string) {
@@ -97,6 +98,27 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     ticketTypeIdForRegistration = ticket.id;
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
+  const resolvedOrgId = org.id;
+  const resolvedEventId = event.id;
+
+  /** Best-effort — a Hub-provisioning failure should never block registration
+   *  itself; the confirmation email still sends everything the attendee actually
+   *  needs (QR/reference or join link) even if this comes back undefined. */
+  async function tryHubUrl(attendeeEmail: string, attendeeName: string): Promise<string | undefined> {
+    try {
+      const { hubToken } = await ensureHubMember(supabase, {
+        organizationId: resolvedOrgId,
+        eventId: resolvedEventId,
+        email: attendeeEmail,
+        fullName: attendeeName,
+      });
+      return buildHubUrl(siteUrl, slug, resolvedEventId, hubToken);
+    } catch {
+      return undefined;
+    }
+  }
+
   const responseEvent = {
     name: event.name,
     date: event.date,
@@ -134,7 +156,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
     if (ticketTypeIdForRegistration) await incrementTicketQuantitySold(supabase, ticketTypeIdForRegistration);
 
-    const emailSent = await sendVirtualConfirmationEmail(lead.email, event);
+    const hub = await tryHubUrl(lead.email, `${firstName.trim()} ${lastName.trim()}`);
+    const emailSent = await sendVirtualConfirmationEmail(lead.email, event, hub);
     return NextResponse.json({ success: true, emailSent, event: responseEvent });
   }
 
@@ -164,7 +187,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   if (ticketTypeIdForRegistration) await incrementTicketQuantitySold(supabase, ticketTypeIdForRegistration);
 
-  const emailSent = await sendRegistrationEmail(registration.email, registration.reference_id, event);
+  const hub = await tryHubUrl(registration.email, registration.full_name);
+  const emailSent = await sendRegistrationEmail(registration.email, registration.reference_id, event, hub);
 
   return NextResponse.json({ success: true, referenceId: registration.reference_id, emailSent, event: responseEvent });
 }

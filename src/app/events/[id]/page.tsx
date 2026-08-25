@@ -11,15 +11,21 @@ import {
   PersistError,
   deleteEvent,
   duplicateEvent,
+  getAnnouncementsForEvent,
   getDiscountCodesForEvent,
   getEventById,
+  getSessionsForEvent,
+  getSpeakersForEvent,
   getTicketTypesForEvent,
   refreshData,
   updateEvent,
   useDataReady,
   useDestinations,
   useDiscountCodes,
+  useEventAnnouncements,
   useEvents,
+  useEventSessions,
+  useEventSpeakers,
   useLeads,
   useRegistrations,
   useStaff,
@@ -40,13 +46,28 @@ import { ProspectsTab } from "@/components/prospects-tab";
 import { StaffRosterTab } from "@/components/staff-roster-tab";
 import { RepsManagement } from "@/components/reps-management";
 import { TicketsTab } from "@/components/tickets-tab";
+import { ScheduleTab } from "@/components/event-schedule-tab";
+import { SpeakersTab } from "@/components/event-speakers-tab";
+import { QaTab } from "@/components/event-qa-tab";
+import { AnnouncementsTab } from "@/components/event-announcements-tab";
 import { RowSkeleton } from "@/components/skeleton";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AuthLoading } from "@/components/auth-loading";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
-type TabId = "dashboard" | "universities" | "prospects" | "tickets" | "leads" | "checkin-staff" | "representatives";
+type TabId =
+  | "dashboard"
+  | "universities"
+  | "prospects"
+  | "tickets"
+  | "leads"
+  | "checkin-staff"
+  | "representatives"
+  | "schedule"
+  | "speakers"
+  | "qa"
+  | "announcements";
 
 export default function EventDetailPage() {
   const session = useRequireRole(ADMIN_ONLY);
@@ -65,6 +86,12 @@ export default function EventDetailPage() {
   const ticketTypes = getTicketTypesForEvent(params.id);
   useDiscountCodes(); // subscribe so discount-code edits refresh this view
   const discountCodes = getDiscountCodesForEvent(params.id);
+  useEventSessions(); // subscribe so schedule edits refresh this view
+  const sessions = getSessionsForEvent(params.id);
+  useEventSpeakers(); // subscribe so speaker edits refresh this view
+  const speakers = getSpeakersForEvent(params.id);
+  useEventAnnouncements(); // subscribe so announcement edits refresh this view
+  const announcements = getAnnouncementsForEvent(params.id);
   const [hasPayoutsConfigured, setHasPayoutsConfigured] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -274,6 +301,10 @@ export default function EventDetailPage() {
     // all), not allowRepAccess, since "this specific event doesn't let reps check
     // in" shouldn't also block managing the org's rep roster from ever being reached.
     ...(usesDestinations ? ([{ id: "representatives", label: "Representatives" }] as const) : []),
+    { id: "schedule", label: "Schedule" },
+    { id: "speakers", label: "Speakers" },
+    { id: "qa", label: "Q&A" },
+    { id: "announcements", label: "Announcements" },
   ];
 
   // Other Education Fair events this org has created, for the "copy destinations
@@ -534,6 +565,30 @@ export default function EventDetailPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === "schedule" && (
+          <div key="schedule" className="animate-tab-fade">
+            <ScheduleTab eventId={event.id} sessions={sessions} speakers={speakers} />
+          </div>
+        )}
+
+        {activeTab === "speakers" && (
+          <div key="speakers" className="animate-tab-fade">
+            <SpeakersTab eventId={event.id} speakers={speakers} />
+          </div>
+        )}
+
+        {activeTab === "qa" && (
+          <div key="qa" className="animate-tab-fade">
+            <QaTab eventId={event.id} sessions={sessions} speakers={speakers} />
+          </div>
+        )}
+
+        {activeTab === "announcements" && (
+          <div key="announcements" className="animate-tab-fade">
+            <AnnouncementsTab eventId={event.id} announcements={announcements} />
           </div>
         )}
 

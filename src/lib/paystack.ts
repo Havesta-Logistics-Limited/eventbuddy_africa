@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail } from "@/lib/registration-email";
+import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
 
 /**
  * Server-only — imports nothing that can't run in a Route Handler. Never import this
@@ -301,6 +302,21 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
     return null;
   }
 
+  /** Best-effort — a Hub-provisioning failure should never block ticket
+   *  fulfillment; the confirmation email still sends everything the attendee
+   *  actually needs (QR/reference or join link) even if this comes back undefined. */
+  async function tryHubUrl(attendeeEmail: string, attendeeName: string): Promise<string | undefined> {
+    try {
+      const { data: org } = await supabase.from("organizations").select("slug").eq("id", txn.organization_id).maybeSingle();
+      if (!org?.slug) return undefined;
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://eventbuddy.africa";
+      const { hubToken } = await ensureHubMember(supabase, { organizationId: txn.organization_id, eventId: txn.event_id, email: attendeeEmail, fullName: attendeeName });
+      return buildHubUrl(siteUrl, org.slug, txn.event_id, hubToken);
+    } catch {
+      return undefined;
+    }
+  }
+
   if (txn.ticket_type_id) {
     const { data: ticket, error: ticketErr } = await supabase.from("ticket_types").select("quantity_sold").eq("id", txn.ticket_type_id).maybeSingle();
     if (ticket) {
@@ -344,7 +360,8 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
       console.error(`[ticket-purchase] paid ticket for ${info.email} on event ${txn.event_id} succeeded but no lead could be created:`, leadErr.message);
       return null;
     }
-    await sendVirtualConfirmationEmail(info.email, event);
+    const virtualHub = await tryHubUrl(info.email, `${info.firstName} ${info.lastName}`);
+    await sendVirtualConfirmationEmail(info.email, event, virtualHub);
     return null;
   }
 
@@ -377,6 +394,7 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
     return null;
   }
 
-  await sendRegistrationEmail(info.email, referenceId, event);
+  const physicalHub = await tryHubUrl(info.email, `${info.firstName} ${info.lastName}`);
+  await sendRegistrationEmail(info.email, referenceId, event, physicalHub);
   return referenceId;
 }

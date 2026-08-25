@@ -1,7 +1,24 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { Destination, DiscountCode, DiscountRedemption, EventRecord, FieldDef, LeadRecord, RegistrationRecord, Session, StaffRecord, TicketType, University } from "./types";
+import {
+  Destination,
+  DiscountCode,
+  DiscountRedemption,
+  EventAnnouncement,
+  EventQuestion,
+  EventRecord,
+  EventSession,
+  EventSpeaker,
+  FieldDef,
+  LeadRecord,
+  RegistrationRecord,
+  Session,
+  SessionSpeaker,
+  StaffRecord,
+  TicketType,
+  University,
+} from "./types";
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { newId } from "./utils";
 
@@ -34,6 +51,9 @@ let leadsCache: LeadRecord[] = [];
 let registrationsCache: RegistrationRecord[] = [];
 let ticketTypesCache: TicketType[] = [];
 let discountCodesCache: DiscountCode[] = [];
+let eventSessionsCache: EventSession[] = [];
+let eventSpeakersCache: EventSpeaker[] = [];
+let eventAnnouncementsCache: EventAnnouncement[] = [];
 let sessionCache: Session | null = null;
 let sessionHydrated = false;
 
@@ -343,6 +363,89 @@ function discountCodeToRow(input: Partial<Omit<DiscountCode, "id" | "createdAt" 
   return row;
 }
 
+function mapEventSessionRow(
+  s: {
+    id: string;
+    event_id: string;
+    title: string;
+    description: string | null;
+    start_time: string;
+    end_time: string | null;
+    track: string | null;
+    session_type: string;
+    qa_open: boolean;
+    created_at: string;
+  },
+  speakers: SessionSpeaker[]
+): EventSession {
+  return {
+    id: s.id,
+    eventId: s.event_id,
+    title: s.title,
+    description: s.description ?? undefined,
+    startTime: s.start_time,
+    endTime: s.end_time ?? undefined,
+    track: s.track ?? undefined,
+    sessionType: s.session_type as EventSession["sessionType"],
+    qaOpen: s.qa_open,
+    speakers,
+    createdAt: s.created_at,
+  };
+}
+function eventSessionToRow(input: Partial<Omit<EventSession, "id" | "createdAt" | "speakers">>) {
+  const row: Record<string, unknown> = {};
+  if (input.eventId !== undefined) row.event_id = input.eventId;
+  if (input.title !== undefined) row.title = input.title;
+  if (input.description !== undefined) row.description = input.description || null;
+  if (input.startTime !== undefined) row.start_time = input.startTime;
+  if (input.endTime !== undefined) row.end_time = input.endTime || null;
+  if (input.track !== undefined) row.track = input.track || null;
+  if (input.sessionType !== undefined) row.session_type = input.sessionType;
+  if (input.qaOpen !== undefined) row.qa_open = input.qaOpen;
+  return row;
+}
+function mapEventSpeakerRow(s: {
+  id: string;
+  event_id: string;
+  name: string;
+  title: string | null;
+  company: string | null;
+  bio: string | null;
+  photo_url: string | null;
+  created_at: string;
+}): EventSpeaker {
+  return {
+    id: s.id,
+    eventId: s.event_id,
+    name: s.name,
+    title: s.title ?? undefined,
+    company: s.company ?? undefined,
+    bio: s.bio ?? undefined,
+    photoUrl: s.photo_url ?? undefined,
+    createdAt: s.created_at,
+  };
+}
+function eventSpeakerToRow(input: Partial<Omit<EventSpeaker, "id" | "createdAt">>) {
+  const row: Record<string, unknown> = {};
+  if (input.eventId !== undefined) row.event_id = input.eventId;
+  if (input.name !== undefined) row.name = input.name;
+  if (input.title !== undefined) row.title = input.title || null;
+  if (input.company !== undefined) row.company = input.company || null;
+  if (input.bio !== undefined) row.bio = input.bio || null;
+  if (input.photoUrl !== undefined) row.photo_url = input.photoUrl || null;
+  return row;
+}
+function mapEventAnnouncementRow(a: { id: string; event_id: string; body: string; pinned: boolean; created_at: string }): EventAnnouncement {
+  return { id: a.id, eventId: a.event_id, body: a.body, pinned: a.pinned, createdAt: a.created_at };
+}
+function eventAnnouncementToRow(input: Partial<Omit<EventAnnouncement, "id" | "createdAt">>) {
+  const row: Record<string, unknown> = {};
+  if (input.eventId !== undefined) row.event_id = input.eventId;
+  if (input.body !== undefined) row.body = input.body;
+  if (input.pinned !== undefined) row.pinned = input.pinned;
+  return row;
+}
+
 // ---- org-scoped data fetch (admin via RLS-protected browser client, staff/rep via API) ----
 
 let orgDataFetched = false;
@@ -353,7 +456,20 @@ async function fetchAdminData() {
   orgDataFetching = true;
   try {
     const supabase = createSupabaseBrowserClient();
-    const [destRes, uniRes, eventRes, staffRes, leadRes, registrationRes, ticketTypeRes, discountCodeRes] = await Promise.all([
+    const [
+      destRes,
+      uniRes,
+      eventRes,
+      staffRes,
+      leadRes,
+      registrationRes,
+      ticketTypeRes,
+      discountCodeRes,
+      sessionRes,
+      speakerRes,
+      sessionSpeakerRes,
+      announcementRes,
+    ] = await Promise.all([
       supabase.from("destinations").select("*"),
       supabase.from("universities").select("*"),
       supabase.from("events").select("*"),
@@ -362,6 +478,10 @@ async function fetchAdminData() {
       supabase.from("registrations").select("*"),
       supabase.from("ticket_types").select("*"),
       supabase.from("discount_codes").select("*"),
+      supabase.from("event_sessions").select("*"),
+      supabase.from("event_speakers").select("*"),
+      supabase.from("event_session_speakers").select("*"),
+      supabase.from("event_announcements").select("*"),
     ]);
     destinationsCache = (destRes.data ?? []).map(mapDestinationRow);
     universitiesCache = (uniRes.data ?? []).map(mapUniversityRow);
@@ -371,6 +491,18 @@ async function fetchAdminData() {
     registrationsCache = (registrationRes.data ?? []).map(mapRegistrationRow);
     ticketTypesCache = (ticketTypeRes.data ?? []).map(mapTicketTypeRow);
     discountCodesCache = (discountCodeRes.data ?? []).map(mapDiscountCodeRow);
+    eventSpeakersCache = (speakerRes.data ?? []).map(mapEventSpeakerRow);
+    const speakersById = new Map(eventSpeakersCache.map((s) => [s.id, s]));
+    const sessionSpeakersById = new Map<string, SessionSpeaker[]>();
+    for (const link of (sessionSpeakerRes.data ?? []) as { id: string; session_id: string; speaker_id: string; role: string }[]) {
+      const speaker = speakersById.get(link.speaker_id);
+      if (!speaker) continue;
+      const arr = sessionSpeakersById.get(link.session_id) ?? [];
+      arr.push({ assignmentId: link.id, speakerId: link.speaker_id, name: speaker.name, photoUrl: speaker.photoUrl, role: link.role as SessionSpeaker["role"] });
+      sessionSpeakersById.set(link.session_id, arr);
+    }
+    eventSessionsCache = (sessionRes.data ?? []).map((s) => mapEventSessionRow(s, sessionSpeakersById.get(s.id) ?? []));
+    eventAnnouncementsCache = (announcementRes.data ?? []).map(mapEventAnnouncementRow);
     orgDataFetched = true;
   } finally {
     orgDataFetching = false;
@@ -465,6 +597,9 @@ const leadsSnap = snap(() => leadsCache, [] as LeadRecord[]);
 const registrationsSnap = snap(() => registrationsCache, [] as RegistrationRecord[]);
 const ticketTypesSnap = snap(() => ticketTypesCache, [] as TicketType[]);
 const discountCodesSnap = snap(() => discountCodesCache, [] as DiscountCode[]);
+const eventSessionsSnap = snap(() => eventSessionsCache, [] as EventSession[]);
+const eventSpeakersSnap = snap(() => eventSpeakersCache, [] as EventSpeaker[]);
+const eventAnnouncementsSnap = snap(() => eventAnnouncementsCache, [] as EventAnnouncement[]);
 const sessionSnap = snap<Session | null>(() => sessionCache, null);
 
 export function useDestinations() {
@@ -502,6 +637,18 @@ export function useDiscountCodes() {
   useEnsureDataFetched();
   return useSyncExternalStore(subscribe, discountCodesSnap.client, discountCodesSnap.server);
 }
+export function useEventSessions() {
+  useEnsureDataFetched();
+  return useSyncExternalStore(subscribe, eventSessionsSnap.client, eventSessionsSnap.server);
+}
+export function useEventSpeakers() {
+  useEnsureDataFetched();
+  return useSyncExternalStore(subscribe, eventSpeakersSnap.client, eventSpeakersSnap.server);
+}
+export function useEventAnnouncements() {
+  useEnsureDataFetched();
+  return useSyncExternalStore(subscribe, eventAnnouncementsSnap.client, eventAnnouncementsSnap.server);
+}
 
 // ---- getters (read the in-memory cache; components should prefer the hooks above so
 //      they re-render on change — these are for one-off lookups inside handlers) ----
@@ -529,6 +676,15 @@ export function getTicketTypesForEvent(eventId: string): TicketType[] {
 }
 export function getDiscountCodesForEvent(eventId: string): DiscountCode[] {
   return discountCodesCache.filter((d) => d.eventId === eventId);
+}
+export function getSessionsForEvent(eventId: string): EventSession[] {
+  return eventSessionsCache.filter((s) => s.eventId === eventId).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+}
+export function getSpeakersForEvent(eventId: string): EventSpeaker[] {
+  return eventSpeakersCache.filter((s) => s.eventId === eventId);
+}
+export function getAnnouncementsForEvent(eventId: string): EventAnnouncement[] {
+  return eventAnnouncementsCache.filter((a) => a.eventId === eventId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 /** Admin-side manual check-in/undo, direct via the RLS-scoped browser client — the
@@ -599,6 +755,9 @@ export async function deleteEvent(id: string): Promise<void> {
   registrationsCache = registrationsCache.filter((r) => r.eventId !== id);
   ticketTypesCache = ticketTypesCache.filter((t) => t.eventId !== id);
   discountCodesCache = discountCodesCache.filter((d) => d.eventId !== id);
+  eventSessionsCache = eventSessionsCache.filter((s) => s.eventId !== id);
+  eventSpeakersCache = eventSpeakersCache.filter((s) => s.eventId !== id);
+  eventAnnouncementsCache = eventAnnouncementsCache.filter((a) => a.eventId !== id);
   emitChange();
 }
 
@@ -654,6 +813,163 @@ export async function deleteDiscountCode(id: string): Promise<void> {
   if (error) throw new PersistError(error);
   discountCodesCache = discountCodesCache.filter((d) => d.id !== id);
   emitChange();
+}
+
+// ---- event sessions / speakers / announcements CRUD (admin only — browser client,
+//      RLS + auto-filled organization_id; see 0035_event_hub.sql) ----
+
+/** Re-reads sessions, the speaker roster, and the session<->speaker links together and
+ *  rebuilds both caches — simpler and less error-prone than hand-patching the
+ *  denormalized speaker name/photo copied onto each EventSession's speakers array,
+ *  and cheap since these tables are small and bounded per event. */
+async function refetchSessionsAndSpeakers(): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const [sessionRes, speakerRes, sessionSpeakerRes] = await Promise.all([
+    supabase.from("event_sessions").select("*"),
+    supabase.from("event_speakers").select("*"),
+    supabase.from("event_session_speakers").select("*"),
+  ]);
+  eventSpeakersCache = (speakerRes.data ?? []).map(mapEventSpeakerRow);
+  const speakersById = new Map(eventSpeakersCache.map((s) => [s.id, s]));
+  const sessionSpeakersById = new Map<string, SessionSpeaker[]>();
+  for (const link of (sessionSpeakerRes.data ?? []) as { id: string; session_id: string; speaker_id: string; role: string }[]) {
+    const speaker = speakersById.get(link.speaker_id);
+    if (!speaker) continue;
+    const arr = sessionSpeakersById.get(link.session_id) ?? [];
+    arr.push({ assignmentId: link.id, speakerId: link.speaker_id, name: speaker.name, photoUrl: speaker.photoUrl, role: link.role as SessionSpeaker["role"] });
+    sessionSpeakersById.set(link.session_id, arr);
+  }
+  eventSessionsCache = (sessionRes.data ?? []).map((s) => mapEventSessionRow(s, sessionSpeakersById.get(s.id) ?? []));
+  emitChange();
+}
+
+export async function addEventSession(input: Omit<EventSession, "id" | "createdAt" | "speakers">): Promise<EventSession> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("event_sessions").insert(eventSessionToRow(input)).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapEventSessionRow(data, []);
+  eventSessionsCache = [...eventSessionsCache, record];
+  emitChange();
+  return record;
+}
+export async function updateEventSession(id: string, patch: Partial<Omit<EventSession, "id" | "createdAt" | "speakers">>): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("event_sessions").update(eventSessionToRow(patch)).eq("id", id).select().single();
+  if (error || !data) throw new PersistError(error);
+  const existingSpeakers = eventSessionsCache.find((s) => s.id === id)?.speakers ?? [];
+  const record = mapEventSessionRow(data, existingSpeakers);
+  eventSessionsCache = eventSessionsCache.map((s) => (s.id === id ? record : s));
+  emitChange();
+}
+export async function deleteEventSession(id: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("event_sessions").delete().eq("id", id);
+  if (error) throw new PersistError(error);
+  eventSessionsCache = eventSessionsCache.filter((s) => s.id !== id);
+  emitChange();
+}
+
+export async function addEventSpeaker(input: Omit<EventSpeaker, "id" | "createdAt">): Promise<EventSpeaker> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("event_speakers").insert(eventSpeakerToRow(input)).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapEventSpeakerRow(data);
+  eventSpeakersCache = [...eventSpeakersCache, record];
+  emitChange();
+  return record;
+}
+export async function updateEventSpeaker(id: string, patch: Partial<Omit<EventSpeaker, "id" | "createdAt">>): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("event_speakers").update(eventSpeakerToRow(patch)).eq("id", id);
+  if (error) throw new PersistError(error);
+  // A speaker's name/photo is denormalized onto every session they're assigned to —
+  // refetch rather than hand-patch every affected EventSession.speakers entry.
+  await refetchSessionsAndSpeakers();
+}
+export async function deleteEventSpeaker(id: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("event_speakers").delete().eq("id", id);
+  if (error) throw new PersistError(error);
+  await refetchSessionsAndSpeakers();
+}
+
+export async function assignSpeakerToSession(sessionId: string, speakerId: string, role: SessionSpeaker["role"]): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("event_session_speakers").insert({ session_id: sessionId, speaker_id: speakerId, role });
+  if (error) throw new PersistError(error);
+  await refetchSessionsAndSpeakers();
+}
+export async function removeSpeakerFromSession(assignmentId: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("event_session_speakers").delete().eq("id", assignmentId);
+  if (error) throw new PersistError(error);
+  await refetchSessionsAndSpeakers();
+}
+
+export async function addAnnouncement(input: Omit<EventAnnouncement, "id" | "createdAt">): Promise<EventAnnouncement> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("event_announcements").insert(eventAnnouncementToRow(input)).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapEventAnnouncementRow(data);
+  eventAnnouncementsCache = [...eventAnnouncementsCache, record];
+  emitChange();
+  return record;
+}
+export async function updateAnnouncement(id: string, patch: Partial<Omit<EventAnnouncement, "id" | "createdAt">>): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("event_announcements").update(eventAnnouncementToRow(patch)).eq("id", id).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapEventAnnouncementRow(data);
+  eventAnnouncementsCache = eventAnnouncementsCache.map((a) => (a.id === id ? record : a));
+  emitChange();
+}
+export async function deleteAnnouncement(id: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("event_announcements").delete().eq("id", id);
+  if (error) throw new PersistError(error);
+  eventAnnouncementsCache = eventAnnouncementsCache.filter((a) => a.id !== id);
+  emitChange();
+}
+
+// ---- Q&A moderation (admin only) — deliberately NOT part of the cached/reactive
+//      store above: question volume is unbounded (unlike sessions/speakers), and the
+//      moderation queue needs its own frequent polling for freshness anyway, so a
+//      component-local fetch is simpler than keeping a global cache current. ----
+
+function mapEventQuestionRow(q: {
+  id: string;
+  event_id: string;
+  session_id: string | null;
+  speaker_id: string | null;
+  asked_by_name: string;
+  question_text: string;
+  status: string;
+  upvote_count: number;
+  created_at: string;
+}): EventQuestion {
+  return {
+    id: q.id,
+    eventId: q.event_id,
+    sessionId: q.session_id ?? undefined,
+    speakerId: q.speaker_id ?? undefined,
+    askedByName: q.asked_by_name,
+    questionText: q.question_text,
+    status: q.status as EventQuestion["status"],
+    upvoteCount: q.upvote_count,
+    createdAt: q.created_at,
+  };
+}
+
+export async function listEventQuestions(eventId: string): Promise<EventQuestion[]> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("event_questions").select("*").eq("event_id", eventId).order("created_at", { ascending: false });
+  if (error) throw new PersistError(error);
+  return (data ?? []).map(mapEventQuestionRow);
+}
+export async function moderateQuestion(id: string, status: EventQuestion["status"]): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("event_questions").update({ status, moderated_at: new Date().toISOString() }).eq("id", id);
+  if (error) throw new PersistError(error);
 }
 
 /** On-demand, not cached like the rest of this file — a code's redemption history

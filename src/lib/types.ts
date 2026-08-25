@@ -248,3 +248,74 @@ export interface RegistrationRecord {
   checkedInBy?: string;
   createdAt: string;
 }
+
+export type SessionType = "session" | "keynote" | "panel" | "break" | "networking";
+export type SpeakerRole = "speaker" | "moderator" | "panelist" | "keynote";
+export type QuestionStatus = "pending" | "approved" | "answered" | "hidden";
+
+/** One item on an event's schedule/itinerary — shown on the attendee-facing Event
+ *  Hub and managed from the event's Schedule tab. qaOpen is the organizer's live
+ *  on/off switch for whether attendees can currently submit questions targeting
+ *  this session — off by default so Q&A doesn't open before a moderator means it to. */
+export interface EventSession {
+  id: string;
+  eventId: string;
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime?: string;
+  track?: string;
+  sessionType: SessionType;
+  qaOpen: boolean;
+  speakers: SessionSpeaker[];
+  createdAt: string;
+}
+
+/** A speaker as assigned to one particular session, with their role on that
+ *  session specifically — the same person can be a "keynote" on one session and a
+ *  "panelist" on another, so role lives on the assignment, not the speaker. */
+export interface SessionSpeaker {
+  assignmentId: string;
+  speakerId: string;
+  name: string;
+  photoUrl?: string;
+  role: SpeakerRole;
+}
+
+/** A member of an event's speaker roster — independent of any one session; see
+ *  SessionSpeaker for how a speaker is attached to specific sessions. */
+export interface EventSpeaker {
+  id: string;
+  eventId: string;
+  name: string;
+  title?: string;
+  company?: string;
+  bio?: string;
+  photoUrl?: string;
+  createdAt: string;
+}
+
+/** A question submitted by an attendee through the Event Hub — pending until an
+ *  organizer moderates it (see QuestionStatus), optionally targeted at a session
+ *  and/or a specific speaker on that session's panel. */
+export interface EventQuestion {
+  id: string;
+  eventId: string;
+  sessionId?: string;
+  speakerId?: string;
+  askedByName: string;
+  questionText: string;
+  status: QuestionStatus;
+  upvoteCount: number;
+  createdAt: string;
+}
+
+/** An organizer-authored broadcast on the Event Hub — one-way, not attendee-
+ *  posted, so it carries no moderation status of its own. */
+export interface EventAnnouncement {
+  id: string;
+  eventId: string;
+  body: string;
+  pinned: boolean;
+  createdAt: string;
+}
