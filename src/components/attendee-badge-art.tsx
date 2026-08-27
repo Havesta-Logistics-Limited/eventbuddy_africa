@@ -44,7 +44,7 @@ export function AttendeeBadgeArt({ compact = false }: { compact?: boolean }) {
         className={`absolute left-0 top-0 ${compact ? "w-48" : "w-56"} rounded-2xl bg-[#FFFDF9] shadow-2xl shadow-black/30 overflow-hidden animate-badge-settle-front`}
       >
         <div className="px-4 pt-3.5 pb-2.5">
-          <p className="text-[9px] font-semibold tracking-[0.16em] uppercase" style={{ color: "#D4A039" }}>
+          <p className="text-[9px] font-semibold tracking-[0.16em] uppercase" style={{ color: "#DB6B1F" }}>
             Attendee
           </p>
           <p className="text-[13px] font-semibold text-[#221726] mt-1 truncate">Global Careers Expo</p>

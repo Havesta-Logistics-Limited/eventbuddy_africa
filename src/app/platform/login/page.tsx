@@ -83,7 +83,7 @@ export default function PlatformLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#0d2615" }}>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#22103A" }}>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-2 mb-8 text-center">
           <Logo tone="white" height={18} />
@@ -107,7 +107,7 @@ export default function PlatformLoginPage() {
                 value={mfaCode}
                 onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
                 placeholder="123456"
-                className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white tracking-widest placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#a5e9bc] focus:border-transparent"
+                className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white tracking-widest placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent"
               />
             </div>
 
@@ -121,7 +121,7 @@ export default function PlatformLoginPage() {
             <button
               type="submit"
               disabled={loading || mfaCode.length !== 6}
-              className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
+              className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#C21FAF] hover:bg-[#93147D] transition-colors disabled:opacity-60"
             >
               {loading ? "Verifying…" : "Verify & sign in"}
             </button>
@@ -148,7 +148,7 @@ export default function PlatformLoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@eventbuddy.africa"
                   required
-                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#a5e9bc] focus:border-transparent"
+                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent"
                 />
               </div>
               <div>
@@ -160,7 +160,7 @@ export default function PlatformLoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#a5e9bc] focus:border-transparent pr-10"
+                    className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent pr-10"
                   />
                   <button
                     type="button"
@@ -183,7 +183,7 @@ export default function PlatformLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
+                className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#C21FAF] hover:bg-[#93147D] transition-colors disabled:opacity-60"
               >
                 {loading ? "Signing in…" : "Sign in"}
               </button>

@@ -53,7 +53,7 @@ export default function PricingContent() {
             <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
               Sign in
             </Link>
-            <Link href="/signup" className="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors">
+            <Link href="/signup" className="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#C21FAF] hover:bg-[#93147D] transition-colors">
               Get Started
             </Link>
           </nav>
@@ -77,7 +77,7 @@ export default function PricingContent() {
             treatment since it's the product most visitors will actually start on. */}
         <div
           className="relative rounded-3xl p-8 sm:p-10 text-white overflow-hidden mb-6"
-          style={{ background: "radial-gradient(ellipse 150% 130% at 20% -10%, var(--color-brand-500) 0%, var(--color-brand-600) 60%, #0b0500 140%)" }}
+          style={{ background: "radial-gradient(ellipse 150% 130% at 20% -10%, var(--color-brand-500) 0%, var(--color-brand-600) 60%, #170821 140%)" }}
         >
           <div
             className="absolute inset-0 opacity-10"
@@ -179,7 +179,7 @@ export default function PricingContent() {
         </div>
       </section>
 
-      <footer className="text-white" style={{ background: "#0B0500" }}>
+      <footer className="text-white" style={{ background: "#170821" }}>
         <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
             <Logo tone="white" variant="full" height={16} />
@@ -214,10 +214,10 @@ export default function PricingContent() {
           </div>
         </div>
         <div className="h-1 w-full flex">
-          <div className="flex-1" style={{ background: "#1B512D" }} />
-          <div className="flex-1" style={{ background: "#66329A" }} />
-          <div className="flex-1" style={{ background: "#F7C326" }} />
-          <div className="flex-1" style={{ background: "#1A744F" }} />
+          <div className="flex-1" style={{ background: "#C21FAF" }} />
+          <div className="flex-1" style={{ background: "#6D28D9" }} />
+          <div className="flex-1" style={{ background: "#E85D0A" }} />
+          <div className="flex-1" style={{ background: "#B8119C" }} />
         </div>
         <div className="border-t border-white/10">
           <div className="max-w-5xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/40">

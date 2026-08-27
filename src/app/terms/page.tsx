@@ -128,7 +128,7 @@ export default function TermsPage() {
         </div>
       </section>
 
-      <footer className="text-white" style={{ background: "#0B0500" }}>
+      <footer className="text-white" style={{ background: "#170821" }}>
         <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
             <Logo tone="white" variant="full" height={16} />
@@ -163,10 +163,10 @@ export default function TermsPage() {
           </div>
         </div>
         <div className="h-1 w-full flex">
-          <div className="flex-1" style={{ background: "#1B512D" }} />
-          <div className="flex-1" style={{ background: "#66329A" }} />
-          <div className="flex-1" style={{ background: "#F7C326" }} />
-          <div className="flex-1" style={{ background: "#1A744F" }} />
+          <div className="flex-1" style={{ background: "#C21FAF" }} />
+          <div className="flex-1" style={{ background: "#6D28D9" }} />
+          <div className="flex-1" style={{ background: "#E85D0A" }} />
+          <div className="flex-1" style={{ background: "#B8119C" }} />
         </div>
         <div className="border-t border-white/10">
           <div className="max-w-5xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/40">

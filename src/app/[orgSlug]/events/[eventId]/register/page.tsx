@@ -229,7 +229,7 @@ export default function RegisterPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <MapPinCheckInside size={26} className="text-[#1B512D]/40 animate-pulse" />
+        <MapPinCheckInside size={26} className="text-[#C21FAF]/40 animate-pulse" />
       </div>
     );
   }
@@ -249,7 +249,7 @@ export default function RegisterPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <div className="text-center text-slate-500">
-          <Loader2 size={26} className="animate-spin text-[#1B512D] mx-auto mb-3" />
+          <Loader2 size={26} className="animate-spin text-[#C21FAF] mx-auto mb-3" />
           <p className="font-medium text-slate-700">Verifying your payment…</p>
         </div>
       </div>
@@ -273,7 +273,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
-      <div className="pt-12 pb-8 px-4" style={{ background: "#1B512D" }}>
+      <div className="pt-12 pb-8 px-4" style={{ background: "#C21FAF" }}>
         <div className="max-w-xl mx-auto text-white">
           <p className="text-xs uppercase tracking-wider text-white/60 mb-2">Event registration</p>
           <h1 className="font-display text-2xl mb-3">{event.name}</h1>
@@ -338,7 +338,7 @@ export default function RegisterPage() {
               <a
                 href={confirmation.hubUrl}
                 className="mt-4 inline-flex items-center gap-2 mx-auto px-4 py-2.5 rounded-lg text-sm font-medium text-white hover:opacity-90"
-                style={{ background: "#1B512D" }}
+                style={{ background: "#C21FAF" }}
               >
                 <ExternalLink size={14} />
                 Open event hub
@@ -349,7 +349,7 @@ export default function RegisterPage() {
               <div className="mt-6 pt-5 border-t border-slate-100 text-left">
                 <h3 className="text-sm font-semibold text-slate-800 mb-2">Joining details</h3>
                 {confirmation.event.virtualJoinUrl && (
-                  <a href={confirmation.event.virtualJoinUrl} target="_blank" rel="noreferrer" className="block text-sm text-[#1B512D] hover:underline break-all">
+                  <a href={confirmation.event.virtualJoinUrl} target="_blank" rel="noreferrer" className="block text-sm text-[#C21FAF] hover:underline break-all">
                     {confirmation.event.virtualJoinUrl}
                   </a>
                 )}
@@ -371,7 +371,7 @@ export default function RegisterPage() {
             {ticketTypes.length === 1 && ticketTypes[0].priceNaira > 0 && (
               <div className="flex items-center justify-between gap-3 p-3.5 mb-5 rounded-xl bg-slate-50 border border-slate-200">
                 <p className="text-sm text-slate-700 flex items-center gap-2">
-                  <Ticket size={14} className="text-[#1B512D]" />
+                  <Ticket size={14} className="text-[#C21FAF]" />
                   {ticketTypes[0].name}
                 </p>
                 {discountedPrice != null ? (
@@ -402,12 +402,12 @@ export default function RegisterPage() {
                           handleRemoveDiscount();
                         }}
                         className={`w-full text-left p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                          selected ? "border-[#1B512D] bg-[#1B512D]/5" : "border-slate-200 hover:border-slate-300"
+                          selected ? "border-[#C21FAF] bg-[#C21FAF]/5" : "border-slate-200 hover:border-slate-300"
                         }`}
                       >
                         <div className="min-w-0">
                           <p className="font-medium text-slate-900 flex items-center gap-2">
-                            <Ticket size={14} className={selected ? "text-[#1B512D]" : "text-slate-400"} />
+                            <Ticket size={14} className={selected ? "text-[#C21FAF]" : "text-slate-400"} />
                             {t.name}
                           </p>
                           {t.description && <p className="text-xs text-slate-500 mt-0.5">{t.description}</p>}
@@ -440,7 +440,7 @@ export default function RegisterPage() {
                         value={discountCodeInput}
                         onChange={(e) => setDiscountCodeInput(e.target.value)}
                         placeholder="Discount code"
-                        className="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
+                        className="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                       />
                       <button
                         type="button"

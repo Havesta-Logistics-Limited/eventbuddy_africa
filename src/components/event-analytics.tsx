@@ -16,7 +16,7 @@ const NO_DATA_COLOR = "#cbd5e1";
 const NO_DATA_COLOR_VERTICAL = "#cbd5e1";
 
 const REGISTRATION_STATUS_COLORS: Record<RegistrationRecord["status"], string> = {
-  registered: "#f7c326",
+  registered: "#E85D0A",
   checked_in: "#0d7c6e",
   cancelled: "#94a3b8",
 };
@@ -129,7 +129,7 @@ export function EventAnalytics({
   const byEducationAll = (["Undergraduate", "BSc", "MSc", "PhD"] as const).map((level) => ({
     label: level as string,
     value: leads.filter((l) => l.highestEducation === level).length,
-    color: "#1B512D",
+    color: "#C21FAF",
   }));
   const byEducation = byEducationAll.filter((x) => x.value > 0);
   const educationMissing = leads.length - byEducationAll.reduce((sum, x) => sum + x.value, 0);
@@ -190,8 +190,8 @@ export function EventAnalytics({
   }
 
   const stats = [
-    { label: "Total Leads", value: leads.length, icon: Users, accent: "#1B512D", bg: "#e8f7ed" },
-    { label: "Registrations", value: registrations.length, icon: Ticket, accent: "#9b1fa0", bg: "#f7ecf8" },
+    { label: "Total Leads", value: leads.length, icon: Users, accent: "#C21FAF", bg: "#FFF3FD" },
+    { label: "Registrations", value: registrations.length, icon: Ticket, accent: "#ED1CDC", bg: "#FDECFB" },
     ...(registrations.length > 0 ? [{ label: "Participants", value: participants.length, icon: UserCheck, accent: "#0d9488", bg: "#e7f6f0" }] : []),
     ...(isEducationFair
       ? [
@@ -230,7 +230,7 @@ export function EventAnalytics({
             </div>
             <VerticalBars
               items={[
-                { label: "Registrations", value: registrations.length, color: "#66329A" },
+                { label: "Registrations", value: registrations.length, color: "#6D28D9" },
                 { label: `Participants (${conversion}%)`, value: participants.length, color: "#0d7c6e" },
               ]}
             />
@@ -245,7 +245,7 @@ export function EventAnalytics({
               <BarList
                 rows={registrationStatusRows.map((r) => ({ key: r.key, label: r.label, count: r.count, color: r.color }))}
                 total={registrations.length}
-                color="#66329A"
+                color="#6D28D9"
               />
             </div>
           )}
@@ -282,7 +282,7 @@ export function EventAnalytics({
                 ...(destMissing > 0 ? [{ key: "no-data", count: destMissing, label: "No Data", color: NO_DATA_COLOR }] : []),
               ]}
               total={leads.length}
-              color="#66329A"
+              color="#6D28D9"
             />
           </div>
 
@@ -297,7 +297,7 @@ export function EventAnalytics({
                 ...(levelMissing > 0 ? [{ key: "no-data", count: levelMissing, label: "No Data", color: NO_DATA_COLOR }] : []),
               ]}
               total={leads.length}
-              color="#f7c326"
+              color="#E85D0A"
             />
 
             <div className="flex items-center gap-2 mb-4 mt-6">
@@ -333,7 +333,7 @@ export function EventAnalytics({
               <h3 className="font-semibold text-slate-800">Leads by University</h3>
             </div>
             {byUniversity.length > 0 ? (
-              <BarList rows={byUniversity.map(({ uni, count }) => ({ key: uni.id, count, label: uni.name }))} total={leads.length} color="#0B0500" />
+              <BarList rows={byUniversity.map(({ uni, count }) => ({ key: uni.id, count, label: uni.name }))} total={leads.length} color="#170821" />
             ) : (
               <p className="text-sm text-slate-400 py-6">No leads have a university recorded yet.</p>
             )}
@@ -353,7 +353,7 @@ export function EventAnalytics({
               ...(courseMissing > 0 ? [{ key: "no-data", count: courseMissing, label: "No Data", color: NO_DATA_COLOR }] : []),
             ]}
             total={leads.length}
-            color="#66329A"
+            color="#6D28D9"
           />
         </div>
       )}
@@ -372,7 +372,7 @@ export function EventAnalytics({
                   <BarList
                     rows={options.map((o) => ({ key: o.label, count: o.count, label: o.label }))}
                     total={total}
-                    color="#1B512D"
+                    color="#C21FAF"
                   />
                 </div>
               </Reveal>

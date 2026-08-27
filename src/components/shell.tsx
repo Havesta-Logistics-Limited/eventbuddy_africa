@@ -60,11 +60,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   // Brand green is the app-wide identity; Staff gets its own distinct blue
   // identity so it's never mistaken for the Admin/Rep experience.
-  const sidebarBg = isStaff ? "#04223d" : "#0d2615";
+  const sidebarBg = isStaff ? "#04223d" : "#22103A";
   const activeNavAccent = isStaff ? "#1098F7" : "var(--color-brand-600)";
-  const sessionAccentColor = isStaff ? "text-sky-300" : "text-[#a5e9bc]";
+  const sessionAccentColor = isStaff ? "text-sky-300" : "text-[#FF8AF5]";
   const avatarBg = isStaff ? "bg-[#1098F7]/20" : "bg-brand-600/25";
-  const avatarText = isStaff ? "text-sky-300" : "text-[#a5e9bc]";
+  const avatarText = isStaff ? "text-sky-300" : "text-[#FF8AF5]";
 
   async function handleLogout() {
     await logout();

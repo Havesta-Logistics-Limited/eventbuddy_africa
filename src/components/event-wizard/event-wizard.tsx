@@ -204,7 +204,7 @@ export function EventWizard(props: {
                   onClick={() => handleSubmit("publish")}
                   disabled={submitting !== null}
                   className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-                  style={{ background: "#1B512D" }}
+                  style={{ background: "#C21FAF" }}
                 >
                   {submitting === "publish" ? "Publishing…" : "Publish Event"}
                 </button>
@@ -215,7 +215,7 @@ export function EventWizard(props: {
                 onClick={() => handleSubmit("draft")}
                 disabled={submitting !== null}
                 className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-                style={{ background: "#1B512D" }}
+                style={{ background: "#C21FAF" }}
               >
                 {submitting !== null ? "Saving…" : "Save Changes"}
               </button>
@@ -226,7 +226,7 @@ export function EventWizard(props: {
               onClick={next}
               disabled={!isStepValid}
               className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-              style={{ background: "#1B512D" }}
+              style={{ background: "#C21FAF" }}
             >
               Next
             </button>

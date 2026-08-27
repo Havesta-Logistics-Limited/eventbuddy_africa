@@ -167,7 +167,7 @@ export default function MarketingHomePage() {
 
       {/* Hero — the headline carries the positioning itself now; no separate label
           floating above it. */}
-      <section className="relative overflow-hidden text-white" style={{ background: "#0B0500" }}>
+      <section className="relative overflow-hidden text-white" style={{ background: "#170821" }}>
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: "url(https://images.unsplash.com/photo-1531058020387-3be344556be6?w=1600&h=900&fit=crop&q=75&auto=format)" }}
@@ -176,7 +176,7 @@ export default function MarketingHomePage() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 130% 100% at 25% -10%, rgba(40,119,66,0.9) 0%, rgba(27,81,45,0.85) 45%, rgba(11,5,0,0.65) 75%, rgba(11,5,0,0.75) 100%)",
+              "radial-gradient(ellipse 130% 100% at 25% -10%, rgba(255,138,245,0.9) 0%, rgba(194,31,175,0.85) 45%, rgba(23,8,33,0.65) 75%, rgba(23,8,33,0.75) 100%)",
           }}
         />
         <div
@@ -268,11 +268,11 @@ export default function MarketingHomePage() {
       </section>
 
       <div className="h-1.5 w-full flex">
-        <div className="flex-1" style={{ background: "#1B512D" }} />
-        <div className="flex-1" style={{ background: "#66329A" }} />
-        <div className="flex-1" style={{ background: "#F7C326" }} />
-        <div className="flex-1" style={{ background: "#1A744F" }} />
-        <div className="flex-1" style={{ background: "#0B0500" }} />
+        <div className="flex-1" style={{ background: "#C21FAF" }} />
+        <div className="flex-1" style={{ background: "#6D28D9" }} />
+        <div className="flex-1" style={{ background: "#E85D0A" }} />
+        <div className="flex-1" style={{ background: "#B8119C" }} />
+        <div className="flex-1" style={{ background: "#170821" }} />
       </div>
 
       {/* Continuous event-type marquee — the track is the list rendered twice back
@@ -373,7 +373,7 @@ export default function MarketingHomePage() {
 
           <div
             className="relative overflow-hidden rounded-3xl p-8 sm:p-10 text-white flex flex-col"
-            style={{ background: "radial-gradient(ellipse 150% 130% at 85% -10%, #287742 0%, #1B512D 60%, #0B0500 140%)" }}
+            style={{ background: "radial-gradient(ellipse 150% 130% at 85% -10%, #FF8AF5 0%, #C21FAF 60%, #170821 140%)" }}
           >
             <div
               className="absolute inset-0 opacity-[0.07]"
@@ -511,7 +511,7 @@ export default function MarketingHomePage() {
           <div className="relative mx-auto w-full max-w-[300px] animate-idle-float hover-bounce">
             <div className="absolute -inset-5 rounded-[2.5rem] bg-brand-50 hidden lg:block" />
             <div className="relative bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200">
-              <div className="pt-7 pb-9 px-5" style={{ background: "#1B512D" }}>
+              <div className="pt-7 pb-9 px-5" style={{ background: "#C21FAF" }}>
                 <p className="text-[10px] uppercase tracking-wider text-white/60 mb-1.5">Event Hub</p>
                 <p className="font-display text-white text-base leading-tight mb-1.5">Global Career Expo</p>
                 <span className="flex items-center gap-1.5 text-[11px] text-white/75">
@@ -554,7 +554,7 @@ export default function MarketingHomePage() {
 
           <div
             className="rounded-2xl p-8 flex flex-col sm:flex-row gap-6 sm:items-start text-white mb-10"
-            style={{ background: "radial-gradient(ellipse 150% 130% at 15% -10%, #287742 0%, #1B512D 60%, #0B0500 140%)" }}
+            style={{ background: "radial-gradient(ellipse 150% 130% at 15% -10%, #FF8AF5 0%, #C21FAF 60%, #170821 140%)" }}
           >
             <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
               {(() => {
@@ -636,7 +636,7 @@ export default function MarketingHomePage() {
       <section className="max-w-3xl mx-auto px-6 py-20">
         <div
           className="relative overflow-hidden rounded-3xl px-6 sm:px-10 py-14 text-white text-center"
-          style={{ background: "radial-gradient(ellipse 150% 130% at 80% -10%, #287742 0%, #1B512D 60%, #0B0500 140%)" }}
+          style={{ background: "radial-gradient(ellipse 150% 130% at 80% -10%, #FF8AF5 0%, #C21FAF 60%, #170821 140%)" }}
         >
           <h2 className="font-display text-3xl mb-3">Simple, honest pricing</h2>
           <p className="text-white/70 max-w-md mx-auto mb-8">No subscription, no per-seat fees, no upfront cost.</p>
@@ -662,7 +662,7 @@ export default function MarketingHomePage() {
       <section className="max-w-5xl mx-auto px-6 pb-20">
         <div
           className="relative overflow-hidden rounded-3xl px-6 sm:px-12 py-16 text-white text-center"
-          style={{ background: "radial-gradient(ellipse 150% 130% at 20% -10%, #287742 0%, #1B512D 60%, #0B0500 140%)" }}
+          style={{ background: "radial-gradient(ellipse 150% 130% at 20% -10%, #FF8AF5 0%, #C21FAF 60%, #170821 140%)" }}
         >
           <div
             className="absolute inset-0 opacity-[0.07]"
@@ -700,7 +700,7 @@ export default function MarketingHomePage() {
 
       {/* Footer — brand + two real link columns, nothing invented (no blog, no
           "company" page, no fake contact address that doesn't exist yet). */}
-      <footer className="text-white" style={{ background: "#0B0500" }}>
+      <footer className="text-white" style={{ background: "#170821" }}>
         <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
             <Logo tone="white" variant="full" height={16} />
@@ -735,10 +735,10 @@ export default function MarketingHomePage() {
           </div>
         </div>
         <div className="h-1 w-full flex">
-          <div className="flex-1" style={{ background: "#1B512D" }} />
-          <div className="flex-1" style={{ background: "#66329A" }} />
-          <div className="flex-1" style={{ background: "#F7C326" }} />
-          <div className="flex-1" style={{ background: "#1A744F" }} />
+          <div className="flex-1" style={{ background: "#C21FAF" }} />
+          <div className="flex-1" style={{ background: "#6D28D9" }} />
+          <div className="flex-1" style={{ background: "#E85D0A" }} />
+          <div className="flex-1" style={{ background: "#B8119C" }} />
         </div>
         <div className="border-t border-white/10">
           <div className="max-w-5xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/40">

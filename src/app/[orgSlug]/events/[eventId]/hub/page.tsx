@@ -273,7 +273,7 @@ export default function EventHubPage() {
               type="submit"
               disabled={lookingUp}
               className="w-full py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-              style={{ background: "#1B512D" }}
+              style={{ background: "#C21FAF" }}
             >
               {lookingUp ? "Looking up…" : "Continue"}
             </button>
@@ -301,7 +301,7 @@ export default function EventHubPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
-      <div className="pt-10 pb-16 px-4" style={{ background: "#1B512D" }}>
+      <div className="pt-10 pb-16 px-4" style={{ background: "#C21FAF" }}>
         <div className="max-w-2xl mx-auto text-white">
           <p className="text-xs uppercase tracking-wider text-white/60 mb-2">Event Hub</p>
           <h1 className="font-display text-2xl mb-2">{event.name}</h1>

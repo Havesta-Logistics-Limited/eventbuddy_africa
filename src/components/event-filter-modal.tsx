@@ -110,9 +110,9 @@ export function EventFilterModal({
 }) {
   if (!open) return null;
 
-  const accentBg = accent === "blue" ? "bg-[#1098F7] hover:bg-[#0b7dd1]" : "bg-[#1B512D] hover:bg-[#4c0050]";
-  const checkedBorder = accent === "blue" ? "border-[#1098F7] bg-[#1098F7]/5" : "border-[#1B512D] bg-[#1B512D]/5";
-  const checkboxClass = accent === "blue" ? "text-[#1098F7] focus:ring-[#1098F7]" : "text-[#1B512D] focus:ring-[#1B512D]";
+  const accentBg = accent === "blue" ? "bg-[#1098F7] hover:bg-[#0b7dd1]" : "bg-[#C21FAF] hover:bg-[#93147D]";
+  const checkedBorder = accent === "blue" ? "border-[#1098F7] bg-[#1098F7]/5" : "border-[#C21FAF] bg-[#C21FAF]/5";
+  const checkboxClass = accent === "blue" ? "text-[#1098F7] focus:ring-[#1098F7]" : "text-[#C21FAF] focus:ring-[#C21FAF]";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4 animate-modal-backdrop" onClick={onClose}>

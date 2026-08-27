@@ -1,13 +1,13 @@
 import Link from "next/link";
 
-const FULL_ASPECT = 3940 / 559;
+const FULL_ASPECT = 4195 / 671;
 
-/** `tone="white"` swaps in a recolored export for dark surfaces (sidebars, dark
- *  hero panels) — the source "full" lockup's wordmark is brand-purple-on-transparent,
- *  which disappears against a dark background. The "mark" badge already sits on its
- *  own white circle, so it reads fine on dark surfaces at either tone. */
+/** `tone` is kept for call-site compatibility but both tones resolve to the same
+ *  source now — the current mark's orchid-pink wordmark has strong contrast on
+ *  both light and dark surfaces, unlike the old lockup's purple-on-transparent
+ *  wordmark, which needed a separate white export to survive dark sidebars. */
 const SOURCES = {
-  full: { brand: "/logo-full.png", white: "/logo-full-white.png" },
+  full: { brand: "/logo-full.png", white: "/logo-full.png" },
   mark: { brand: "/logo-mark.png", white: "/logo-mark.png" },
 } as const;
 

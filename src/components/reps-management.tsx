@@ -58,7 +58,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
             setShowRepForm(true);
           }}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
-          style={{ background: "#1B512D" }}
+          style={{ background: "#C21FAF" }}
         >
           <Plus size={14} />
           Add Rep
@@ -76,8 +76,8 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
             const uni = s.universityId ? universities.find((u) => u.id === s.universityId) : null;
             return (
               <Reveal key={s.id} index={i}>
-                <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#1B512D]/30 hover:shadow-sm transition-all">
-                  <div className="w-10 h-10 rounded-full bg-[#1B512D]/10 flex items-center justify-center text-[#1B512D] font-semibold shrink-0">{s.name.charAt(0)}</div>
+                <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#C21FAF]/30 hover:shadow-sm transition-all">
+                  <div className="w-10 h-10 rounded-full bg-[#C21FAF]/10 flex items-center justify-center text-[#C21FAF] font-semibold shrink-0">{s.name.charAt(0)}</div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-slate-900 flex items-center gap-2">
                       {s.name}
@@ -92,7 +92,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs">
                     <span className="px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700">Rep</span>
-                    {dest && <span className="px-2 py-0.5 rounded-full bg-[#1B512D]/10 text-[#1B512D] hidden sm:inline-block">{dest.name}</span>}
+                    {dest && <span className="px-2 py-0.5 rounded-full bg-[#C21FAF]/10 text-[#C21FAF] hidden sm:inline-block">{dest.name}</span>}
                     {uni && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hidden sm:inline-block">{uni.name}</span>}
                   </div>
                   <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
@@ -106,7 +106,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                         setRepForm({ id: s.id, name: s.name, email: s.email, destinationId: s.destinationId || "", universityId: s.universityId || "", eventId });
                         setShowRepForm(true);
                       }}
-                      className="p-1.5 text-slate-400 hover:text-[#1B512D] rounded-md hover:bg-slate-100"
+                      className="p-1.5 text-slate-400 hover:text-[#C21FAF] rounded-md hover:bg-slate-100"
                     >
                       <Edit2 size={16} />
                     </button>
@@ -137,7 +137,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                   required
                   value={repForm.name}
                   onChange={(e) => setRepForm({ ...repForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                 />
               </div>
               <div>
@@ -147,7 +147,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                   type="email"
                   value={repForm.email}
                   onChange={(e) => setRepForm({ ...repForm, email: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                 />
               </div>
               <div>
@@ -156,7 +156,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                   required
                   value={repForm.destinationId}
                   onChange={(e) => setRepForm({ ...repForm, destinationId: e.target.value, universityId: "" })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D] bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-white"
                 >
                   <option value="">Select destination</option>
                   {destinations.map((d) => (
@@ -173,7 +173,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                   value={repForm.universityId}
                   onChange={(e) => setRepForm({ ...repForm, universityId: e.target.value })}
                   disabled={!repForm.destinationId}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D] bg-white disabled:opacity-50"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-white disabled:opacity-50"
                 >
                   <option value="">Select university</option>
                   {repUnis.map((u) => (
@@ -197,7 +197,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                   type="submit"
                   disabled={saving}
                   className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                  style={{ background: "#1B512D" }}
+                  style={{ background: "#C21FAF" }}
                 >
                   {saving ? "Saving…" : "Save Rep"}
                 </button>

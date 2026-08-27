@@ -71,7 +71,7 @@ export default function SignupPage() {
       {/* Left panel — same structure/rhythm as the login page's (hidden below lg,
           justify-between 3-section layout, p-12), with the product's own artifact
           (QR + reference ID) as the supporting visual instead of a generic one. */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white relative overflow-hidden" style={{ background: "#2B0130" }}>
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white relative overflow-hidden" style={{ background: "#22103A" }}>
         {/* Real photo behind the gradient — same source as the marketing hero. */}
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -79,7 +79,7 @@ export default function SignupPage() {
         />
         <div
           className="absolute inset-0"
-          style={{ background: "radial-gradient(ellipse 140% 160% at 15% -10%, rgba(27,81,45,0.9) 0%, rgba(14,43,24,0.93) 40%, rgba(11,5,0,0.97) 100%)" }}
+          style={{ background: "radial-gradient(ellipse 140% 160% at 15% -10%, rgba(194,31,175,0.9) 0%, rgba(147,20,125,0.93) 40%, rgba(23,8,33,0.97) 100%)" }}
         />
         {/* Extra scrim in the top-left corner, where the logo sits — the main
             gradient's brightest point is nearly the same spot, so without this the
@@ -184,7 +184,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
+              className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#C21FAF] hover:bg-[#93147D] transition-colors disabled:opacity-60"
             >
               {loading ? "Creating account…" : "Create account"}
             </button>

@@ -137,7 +137,7 @@ function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => router.push("/forgot-password")}
-              className="text-sm font-medium text-[#1B512D] hover:underline"
+              className="text-sm font-medium text-[#C21FAF] hover:underline"
             >
               Request a new link
             </button>
@@ -166,7 +166,7 @@ function ResetPasswordForm() {
                   value={mfaCode}
                   onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
                   placeholder="123456"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1B512D] focus:border-transparent bg-white"
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent bg-white"
                 />
               </div>
 
@@ -180,7 +180,7 @@ function ResetPasswordForm() {
               <button
                 type="submit"
                 disabled={loading || mfaCode.length !== 6}
-                className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
+                className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#C21FAF] hover:bg-[#93147D] transition-colors disabled:opacity-60"
               >
                 {loading ? "Verifying…" : "Verify"}
               </button>
@@ -202,7 +202,7 @@ function ResetPasswordForm() {
                     placeholder="At least 8 characters"
                     required
                     minLength={8}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D] focus:border-transparent bg-white pr-10"
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent bg-white pr-10"
                   />
                   <button
                     type="button"
@@ -226,7 +226,7 @@ function ResetPasswordForm() {
                 type="submit"
                 disabled={loading}
                 className="w-full py-2.5 rounded-lg font-medium text-sm text-white transition-colors disabled:opacity-60"
-                style={{ background: loading ? "#0e2b18" : "#1B512D" }}
+                style={{ background: loading ? "#93147D" : "#C21FAF" }}
               >
                 {loading ? "Updating…" : "Update password"}
               </button>

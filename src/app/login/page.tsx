@@ -53,7 +53,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white relative overflow-hidden" style={{ background: "#0b0500" }}>
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white relative overflow-hidden" style={{ background: "#170821" }}>
         {/* Real photo behind the gradient — same source as the marketing hero. */}
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -62,7 +62,7 @@ export default function LoginPage() {
         <div
           className="absolute inset-0"
           style={{
-            background: "radial-gradient(ellipse 140% 160% at 15% -10%, rgba(27,81,45,0.9) 0%, rgba(14,43,24,0.93) 40%, rgba(11,5,0,0.97) 100%)",
+            background: "radial-gradient(ellipse 140% 160% at 15% -10%, rgba(194,31,175,0.9) 0%, rgba(147,20,125,0.93) 40%, rgba(23,8,33,0.97) 100%)",
           }}
         />
         {/* Extra scrim in the top-left corner, where the logo sits — the main
@@ -144,7 +144,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading || mfaCode.length !== 6}
-                  className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
+                  className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#C21FAF] hover:bg-[#93147D] transition-colors disabled:opacity-60"
                 >
                   {loading ? "Verifying…" : "Verify & sign in"}
                 </button>
@@ -219,7 +219,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-colors disabled:opacity-60"
+                  className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#C21FAF] hover:bg-[#93147D] transition-colors disabled:opacity-60"
                 >
                   {loading ? "Signing in…" : "Sign in"}
                 </button>

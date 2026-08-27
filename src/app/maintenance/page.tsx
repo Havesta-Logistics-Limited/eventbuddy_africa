@@ -20,7 +20,7 @@ export default async function MaintenancePage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center text-white p-6 relative overflow-hidden"
-      style={{ background: "radial-gradient(ellipse 140% 110% at 50% 0%, #287742 0%, #1B512D 55%, #0b0500 130%)" }}
+      style={{ background: "radial-gradient(ellipse 140% 110% at 50% 0%, #FF8AF5 0%, #C21FAF 55%, #170821 130%)" }}
     >
       {/* Faint grid texture — the same "quiet detail" as the dashboard's empty
           states, keeps the huge flat gradient from feeling like an inert slide. */}
@@ -40,7 +40,7 @@ export default async function MaintenancePage() {
         </div>
 
         <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center mx-auto mb-6 animate-idle-float">
-          <Wrench size={26} className="text-[#a5e9bc]" />
+          <Wrench size={26} className="text-[#FF8AF5]" />
         </div>
 
         <h1 className="font-display text-3xl sm:text-4xl leading-tight mb-3">{title}</h1>

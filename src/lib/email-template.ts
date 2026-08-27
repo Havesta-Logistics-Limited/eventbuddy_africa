@@ -25,7 +25,7 @@ export type EmailBanner = {
  *  built by each calling route instead, since those need to point wherever the app
  *  that sent the email is actually running (localhost while testing, production once
  *  deployed) — unlike this static asset, which is the same file either way. */
-const LOGO_URL = "https://eventbuddy.africa/logo-full-white.png";
+const LOGO_URL = "https://eventbuddy.africa/logo-full.png";
 
 export function renderEmailShell(banner: EmailBanner, bodyHtml: string): string {
   return `
@@ -34,7 +34,7 @@ export function renderEmailShell(banner: EmailBanner, bodyHtml: string): string 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${banner.color};">
       <tr>
         <td style="padding:28px 32px; text-align:center;">
-          <img src="${LOGO_URL}" alt="eventbuddy" width="150" height="21" style="display:inline-block; width:150px; height:21px; border:0;" />
+          <img src="${LOGO_URL}" alt="eventbuddy" width="150" height="24" style="display:inline-block; width:150px; height:24px; border:0;" />
           <p style="color:#ffffff; font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; opacity:0.75; margin:12px 0 0;">
             ${banner.emoji} ${banner.label}
           </p>

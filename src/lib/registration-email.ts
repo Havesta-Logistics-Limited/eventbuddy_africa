@@ -53,7 +53,7 @@ export async function sendRegistrationEmail(to: string, referenceId: string, eve
       text: `You're registered for ${event.name} on ${eventDate}${eventTime ? ` at ${eventTime}` : ""}.\n\nYour reference ID: ${referenceId}\n\nKeep this — you'll need it at check-in.${hubUrl ? `\n\nEvent hub (schedule, speakers, Q&A): ${hubUrl}` : ""}`,
       html: `
         <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
-          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#1B512D; font-weight:600; margin:0 0 8px;">Registration confirmed</p>
+          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#C21FAF; font-weight:600; margin:0 0 8px;">Registration confirmed</p>
           <h1 style="font-size:20px; margin:0 0 12px;">${safeName}</h1>
           <p style="margin:0 0 4px; color:#666; font-size:13px;">${eventDate}${eventTime ? ` · ${eventTime}` : ""}</p>
           <p style="margin:0;">${escapeHtml(event.venue)}, ${escapeHtml(event.location)}</p>
@@ -62,7 +62,7 @@ export async function sendRegistrationEmail(to: string, referenceId: string, eve
             <p style="font-family: monospace; font-size:20px; font-weight:700; letter-spacing:0.08em; margin:16px 0 0;">${referenceId}</p>
           </div>
           <p style="color:#888; font-size:12px; margin:0 0 20px;">Keep this email — show the QR code (or your reference ID) at check-in.</p>
-          ${hubUrl ? `<div style="text-align:center;">${emailButton(hubUrl, "Open event hub", "#1B512D")}</div><p style="color:#aaa; font-size:11px; text-align:center; margin-top:10px;">Schedule, speakers, and live Q&A for this event.</p>` : ""}
+          ${hubUrl ? `<div style="text-align:center;">${emailButton(hubUrl, "Open event hub", "#C21FAF")}</div><p style="color:#aaa; font-size:11px; text-align:center; margin-top:10px;">Schedule, speakers, and live Q&A for this event.</p>` : ""}
         </div>
       `,
       attachments: [{ filename: `${referenceId}-qr-code.png`, content: qrBase64, contentId: "qr-code" }],
@@ -95,12 +95,12 @@ export async function sendVirtualConfirmationEmail(to: string, event: Registered
       text: `You're registered for ${event.name} on ${eventDate}${eventTime ? ` at ${eventTime}` : ""}.\n\nJoin here: ${event.virtual_join_url}${hubUrl ? `\n\nEvent hub (schedule, speakers, Q&A): ${hubUrl}` : ""}`,
       html: `
         <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
-          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#1B512D; font-weight:600; margin:0 0 8px;">Registration confirmed</p>
+          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#C21FAF; font-weight:600; margin:0 0 8px;">Registration confirmed</p>
           <h1 style="font-size:20px; margin:0 0 12px;">${safeName}</h1>
           <p style="margin:0 0 12px; color:#666; font-size:13px;">${eventDate}${eventTime ? ` · ${eventTime}` : ""}</p>
           ${joinInfoHtml}
           <p style="color:#888; font-size:12px; margin:20px 0;">This is a virtual event — no check-in required, just join at the time above.</p>
-          ${hubUrl ? `<div style="text-align:center;">${emailButton(hubUrl, "Open event hub", "#1B512D")}</div><p style="color:#aaa; font-size:11px; text-align:center; margin-top:10px;">Schedule, speakers, and live Q&A for this event.</p>` : ""}
+          ${hubUrl ? `<div style="text-align:center;">${emailButton(hubUrl, "Open event hub", "#C21FAF")}</div><p style="color:#aaa; font-size:11px; text-align:center; margin-top:10px;">Schedule, speakers, and live Q&A for this event.</p>` : ""}
         </div>
       `,
     });

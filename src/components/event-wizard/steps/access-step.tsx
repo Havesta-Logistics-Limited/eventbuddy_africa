@@ -3,7 +3,7 @@
 import { KeyRound } from "lucide-react";
 import type { EventWizardData } from "../types";
 
-const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]";
+const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]";
 
 export function AccessStep({
   data,

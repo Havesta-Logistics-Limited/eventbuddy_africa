@@ -217,7 +217,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={() => setShowWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#1B512D] hover:bg-[#0e2b18] transition-[transform,background-color] active:scale-[0.97] shrink-0 whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#C21FAF] hover:bg-[#93147D] transition-[transform,background-color] active:scale-[0.97] shrink-0 whitespace-nowrap"
           >
             <Plus size={16} />
             New Event

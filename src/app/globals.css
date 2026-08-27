@@ -4,35 +4,42 @@
   --font-display: var(--font-dm-serif), Georgia, serif;
   --font-sans: var(--font-inter), system-ui, sans-serif;
 
-  /* Brand palette v4 (preview) — primary swapped from orange to deep green
-     #1B512D; every brand-colored utility class cascades to every existing usage
-     across the app automatically. Purple/yellow/green(accent)/near-black remain
-     as-is. */
-  --color-brand-50: #e8f7ed;
-  --color-brand-100: #c9edd5;
-  --color-brand-500: #287742;
-  --color-brand-600: #1b512d;
-  --color-brand-700: #0e2b18;
+  /* Brand palette v5 — full rebrand to the new "eventbuddy" flower mark: primary
+     is the orchid pink #FF8AF5 the mark's wordmark and pale petal use, with
+     secondary/tertiary accents drawn straight from the mark's other three
+     circles (violet, magenta, orange) so every accent in the app traces back to
+     a color that's actually in the logo. Every brand-colored utility class
+     cascades to every existing usage across the app automatically. 500 is each
+     ramp's true logo hue (used for glows, fills, decorative surfaces — light
+     enough to want dark text on top); 600/700 are deepened for solid buttons
+     and text needing white-on-color contrast. Staff blue and the teal
+     success/status color are a deliberately separate functional palette (see
+     shell.tsx) and are untouched by this rebrand. */
+  --color-brand-50: #fff3fd;
+  --color-brand-100: #ffd6f7;
+  --color-brand-500: #ff8af5;
+  --color-brand-600: #c21faf;
+  --color-brand-700: #93147d;
 
-  --color-accent-purple-50: #f3ecf8;
-  --color-accent-purple-100: #e2cdf0;
-  --color-accent-purple-500: #8a4cb8;
-  --color-accent-purple-600: #66329a;
-  --color-accent-purple-700: #4e2578;
+  --color-accent-purple-50: #f1ebfe;
+  --color-accent-purple-100: #e1d3fc;
+  --color-accent-purple-500: #8b5cf6;
+  --color-accent-purple-600: #6d28d9;
+  --color-accent-purple-700: #4c1d95;
 
-  --color-accent-yellow-50: #fef8e5;
-  --color-accent-yellow-100: #fceec0;
-  --color-accent-yellow-500: #f9d158;
-  --color-accent-yellow-600: #f7c326;
-  --color-accent-yellow-700: #c99b13;
+  --color-accent-yellow-50: #fff1e6;
+  --color-accent-yellow-100: #ffdab8;
+  --color-accent-yellow-500: #ff7d2d;
+  --color-accent-yellow-600: #e85d0a;
+  --color-accent-yellow-700: #b8460a;
 
-  --color-accent-green-50: #e8f4ee;
-  --color-accent-green-100: #c3e3d3;
-  --color-accent-green-500: #22935f;
-  --color-accent-green-600: #1a744f;
-  --color-accent-green-700: #14573b;
+  --color-accent-green-50: #fdecfb;
+  --color-accent-green-100: #fbd0f7;
+  --color-accent-green-500: #ed1cdc;
+  --color-accent-green-600: #b8119c;
+  --color-accent-green-700: #8a0d74;
 
-  --color-ink-900: #0b0500;
+  --color-ink-900: #170821;
 
   /* Staff's distinct blue identity (kept separate from the purple admin/rep
      brand — see shell.tsx). Same value as the existing #1098F7 literals. */

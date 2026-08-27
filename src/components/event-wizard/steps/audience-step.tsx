@@ -37,10 +37,10 @@ export function AudienceStep({ allowRepAccess, onChange }: { allowRepAccess: boo
               type="button"
               onClick={() => onChange(opt.value)}
               className={`flex items-start gap-3 text-left p-4 rounded-xl border transition-colors ${
-                selected ? "border-[#1B512D] bg-[#1B512D]/5" : "border-slate-200 hover:border-slate-300"
+                selected ? "border-[#C21FAF] bg-[#C21FAF]/5" : "border-slate-200 hover:border-slate-300"
               }`}
             >
-              <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${selected ? "bg-[#1B512D] text-white" : "bg-slate-100 text-slate-500"}`}>
+              <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${selected ? "bg-[#C21FAF] text-white" : "bg-slate-100 text-slate-500"}`}>
                 <Icon size={17} />
               </div>
               <div>

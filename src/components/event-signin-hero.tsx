@@ -11,7 +11,7 @@ const VARIANTS = {
     eyebrow: "text-sky-300",
   },
   rep: {
-    gradient: "linear-gradient(145deg, #0b0500 0%, #1B512D 100%)",
+    gradient: "linear-gradient(145deg, #170821 0%, #C21FAF 100%)",
     eyebrow: "text-fuchsia-300",
   },
 };

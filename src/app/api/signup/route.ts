@@ -34,7 +34,7 @@ async function sendWelcomeEmail(to: string, firstName: string, verifyUrl: string
     <p style="margin:0 0 28px; color:#666;">Founder, EventBuddy Africa</p>
     <div style="border-top:1px solid #eee; padding-top:24px;">
       <p style="margin:0 0 14px; color:#666; font-size:13px;">One last thing — verify your email to activate your account:</p>
-      ${emailButton(verifyUrl, "Verify email", "#1B512D")}
+      ${emailButton(verifyUrl, "Verify email", "#C21FAF")}
     </div>
   `;
 
@@ -45,7 +45,7 @@ async function sendWelcomeEmail(to: string, firstName: string, verifyUrl: string
       to,
       subject: "Welcome to EventBuddy",
       text: `Welcome to EventBuddy, ${firstName}!\n\nVerify your email to activate your account: ${verifyUrl}`,
-      html: renderEmailShell({ color: "#1B512D", label: "Welcome", emoji: "👋" }, bodyHtml),
+      html: renderEmailShell({ color: "#C21FAF", label: "Welcome", emoji: "👋" }, bodyHtml),
     });
     return !error;
   } catch {

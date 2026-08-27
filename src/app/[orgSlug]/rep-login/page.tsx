@@ -79,7 +79,7 @@ export default function RepLoginPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <MapPinCheckInside size={26} className="text-[#1B512D]/40 animate-pulse" />
+        <MapPinCheckInside size={26} className="text-[#C21FAF]/40 animate-pulse" />
       </div>
     );
   }
@@ -165,7 +165,7 @@ export default function RepLoginPage() {
                   setError("");
                 }}
                 placeholder="Enter the code provided by your event coordinator"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D]"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
               />
             </section>
           )}
@@ -184,7 +184,7 @@ export default function RepLoginPage() {
                     }}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-colors ${
                       selectedDestId === d.id
-                        ? "border-[#1B512D] bg-[#1B512D] text-white"
+                        ? "border-[#C21FAF] bg-[#C21FAF] text-white"
                         : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                     }`}
                   >
@@ -203,7 +203,7 @@ export default function RepLoginPage() {
                 setError("");
               }}
               disabled={!selectedDestId}
-              className={`w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#1B512D] bg-white ${
+              className={`w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-white ${
                 !selectedDestId ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed border-dashed" : "border-slate-200 text-slate-800"
               }`}
             >
@@ -231,7 +231,7 @@ export default function RepLoginPage() {
             onClick={handleStart}
             disabled={!isFormValid || submitting}
             className={`w-full py-4 rounded-xl font-medium text-base transition-colors ${
-              isFormValid && !submitting ? "bg-[#1B512D] text-white hover:bg-[#4c0050]" : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              isFormValid && !submitting ? "bg-[#C21FAF] text-white hover:bg-[#93147D]" : "bg-slate-200 text-slate-400 cursor-not-allowed"
             }`}
           >
             {submitting ? "Checking in…" : "Check-In"}

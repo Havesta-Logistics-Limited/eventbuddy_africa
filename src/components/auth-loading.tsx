@@ -6,7 +6,7 @@ import { Logo } from "@/components/logo";
  *  auth check, now shared across every role-gated page. */
 export function AuthLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "#0d2615" }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#22103A" }}>
       <Logo tone="white" height={18} className="opacity-70 animate-pulse" />
     </div>
   );

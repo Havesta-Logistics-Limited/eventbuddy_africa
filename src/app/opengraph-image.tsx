@@ -23,7 +23,7 @@ export default function Image() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(145deg, #0b0500 0%, #1B512D 100%)",
+          background: "linear-gradient(145deg, #170821 0%, #C21FAF 100%)",
         }}
       >
         <div
@@ -36,7 +36,7 @@ export default function Image() {
           <img src={markSrc} width={84} height={84} alt="" style={{ objectFit: "contain" }} />
           <div style={{ display: "flex", color: "white", fontSize: 88, fontWeight: 700 }}>eventbuddy</div>
         </div>
-        <div style={{ display: "flex", color: "#f9d158", fontSize: 30, marginTop: 20, letterSpacing: 2, textTransform: "uppercase" }}>
+        <div style={{ display: "flex", color: "#FF7D2D", fontSize: 30, marginTop: 20, letterSpacing: 2, textTransform: "uppercase" }}>
           Never Lose a Lead
         </div>
       </div>

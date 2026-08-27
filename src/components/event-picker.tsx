@@ -26,11 +26,11 @@ const VARIANTS = {
     accent: "blue" as const,
   },
   rep: {
-    gradient: "linear-gradient(145deg, #0b0500 0%, #1B512D 100%)",
+    gradient: "linear-gradient(145deg, #170821 0%, #C21FAF 100%)",
     eyebrow: "text-fuchsia-300",
-    focusRing: "focus:ring-[#1B512D]",
-    cardHoverBorder: "hover:border-[#1B512D]",
-    ctaHover: "group-hover:border-[#1B512D] group-hover:text-[#1B512D] group-hover:bg-[#1B512D]/5",
+    focusRing: "focus:ring-[#C21FAF]",
+    cardHoverBorder: "hover:border-[#C21FAF]",
+    ctaHover: "group-hover:border-[#C21FAF] group-hover:text-[#C21FAF] group-hover:bg-[#C21FAF]/5",
     accent: "purple" as const,
   },
 };
@@ -154,7 +154,7 @@ export function EventPicker({
                 className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-sm font-medium shadow-sm transition-colors ${
                   activeFilterCount > 0
                     ? variant === "rep"
-                      ? "border-[#1B512D]/30 bg-[#1B512D]/5 text-[#1B512D]"
+                      ? "border-[#C21FAF]/30 bg-[#C21FAF]/5 text-[#C21FAF]"
                       : "border-[#1098F7]/30 bg-[#1098F7]/5 text-[#1098F7]"
                     : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                 }`}
@@ -164,7 +164,7 @@ export function EventPicker({
                 {activeFilterCount > 0 && (
                   <span
                     className="flex items-center justify-center w-4 h-4 rounded-full text-white text-[10px] font-semibold"
-                    style={{ background: variant === "rep" ? "#1B512D" : "#1098F7" }}
+                    style={{ background: variant === "rep" ? "#C21FAF" : "#1098F7" }}
                   >
                     {activeFilterCount}
                   </span>

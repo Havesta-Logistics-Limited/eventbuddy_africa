@@ -100,7 +100,7 @@ export default function StaffSetupPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <MapPinCheckInside size={26} className="text-[#1B512D]/40 animate-pulse" />
+        <MapPinCheckInside size={26} className="text-[#C21FAF]/40 animate-pulse" />
       </div>
     );
   }

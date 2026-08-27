@@ -66,7 +66,7 @@ export function FieldBuilderStep({
       <button
         type="button"
         onClick={addField}
-        className="mt-3 flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-dashed border-slate-300 text-sm font-medium text-slate-600 hover:border-[#1B512D] hover:text-[#1B512D] transition-colors"
+        className="mt-3 flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-dashed border-slate-300 text-sm font-medium text-slate-600 hover:border-[#C21FAF] hover:text-[#C21FAF] transition-colors"
       >
         <Plus size={14} />
         Add question

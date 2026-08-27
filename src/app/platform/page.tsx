@@ -56,7 +56,7 @@ import {
 import { DEFAULT_MAINTENANCE_MESSAGE, DEFAULT_MAINTENANCE_TITLE, updateMaintenanceState } from "@/lib/maintenance";
 import { getTemplate } from "@/lib/event-templates";
 
-const SIDEBAR_BG = "#0d2615";
+const SIDEBAR_BG = "#22103A";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 const NAV = [
@@ -756,7 +756,7 @@ export default function PlatformDashboard() {
           <Logo tone="white" height={18} className="mx-auto mb-6 opacity-90" />
           <p className="font-display text-xl text-white mb-2">Not authorized</p>
           <p className="text-sm text-white/40 mb-6">This account doesn&apos;t have platform admin access.</p>
-          <button type="button" onClick={handleSignOut} className="text-sm font-medium text-[#a5e9bc] hover:underline">
+          <button type="button" onClick={handleSignOut} className="text-sm font-medium text-[#FF8AF5] hover:underline">
             Sign out and try a different account
           </button>
         </div>
@@ -900,7 +900,7 @@ export default function PlatformDashboard() {
               active ? "text-white font-medium" : "text-white/60 hover:text-white hover:bg-white/8"
             }`}
           >
-            <Icon size={17} className={active ? "text-[#a5e9bc]" : undefined} />
+            <Icon size={17} className={active ? "text-[#FF8AF5]" : undefined} />
             {label}
           </button>
         );
@@ -911,7 +911,7 @@ export default function PlatformDashboard() {
   const sidebarFooter = (
     <div className="px-3 pb-5 border-t border-white/10 pt-4">
       <div className="flex items-center gap-3 px-3 mb-3">
-        <div className="w-8 h-8 rounded-full bg-[#a5e9bc]/15 flex items-center justify-center text-[#a5e9bc] font-semibold text-sm shrink-0">
+        <div className="w-8 h-8 rounded-full bg-[#FF8AF5]/15 flex items-center justify-center text-[#FF8AF5] font-semibold text-sm shrink-0">
           {currentUserEmail.charAt(0).toUpperCase() || "?"}
         </div>
         <div className="flex-1 min-w-0">
@@ -1018,8 +1018,8 @@ export default function PlatformDashboard() {
                       <Reveal key={s.label} index={i}>
                         <div className="bg-white rounded-xl border border-slate-200 p-4">
                           <div className="flex items-start justify-between mb-2">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#e8f7ed" }}>
-                              <s.icon size={16} style={{ color: "#1B512D" }} />
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#FFF3FD" }}>
+                              <s.icon size={16} style={{ color: "#C21FAF" }} />
                             </div>
                             {s.delta && (
                               <span className="text-[10px] font-semibold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded-full">{s.delta}</span>
@@ -1431,7 +1431,7 @@ export default function PlatformDashboard() {
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
-                  { label: "Total revenue", value: formatNaira(totalPlatformRevenue), accent: "#1B512D", bg: "#e8f7ed" },
+                  { label: "Total revenue", value: formatNaira(totalPlatformRevenue), accent: "#C21FAF", bg: "#FFF3FD" },
                   { label: "Revenue this week", value: formatNaira(totalPlatformRevenueThisWeek), accent: "#0d9488", bg: "#e7f6f0" },
                   { label: "Pending event fees", value: formatNaira(pendingRevenue), accent: "#b45309", bg: "#fdf1e2" },
                   { label: "Waived (fee-exempt)", value: formatNaira(exemptedRevenue), accent: "#64748b", bg: "#f1f5f9" },
@@ -1580,8 +1580,8 @@ export default function PlatformDashboard() {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                   {[
-                    { label: "Ticket sales (gross)", value: formatNaira(ticketGrossRevenue), accent: "#66329A", bg: "#f2e9fa" },
-                    { label: "Platform commission", value: formatNaira(ticketCommissionRevenue), accent: "#1B512D", bg: "#e8f7ed" },
+                    { label: "Ticket sales (gross)", value: formatNaira(ticketGrossRevenue), accent: "#6D28D9", bg: "#F1EBFE" },
+                    { label: "Platform commission", value: formatNaira(ticketCommissionRevenue), accent: "#C21FAF", bg: "#FFF3FD" },
                     { label: "Commission this week", value: formatNaira(ticketCommissionThisWeek), accent: "#0d9488", bg: "#e7f6f0" },
                   ].map((tile) => (
                     <div key={tile.label} className="bg-white rounded-xl border border-slate-200 p-4">
@@ -1640,7 +1640,7 @@ export default function PlatformDashboard() {
                             <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full transition-all duration-500"
-                                style={{ width: `${(m.total / max) * 100}%`, background: "#1B512D" }}
+                                style={{ width: `${(m.total / max) * 100}%`, background: "#C21FAF" }}
                               />
                             </div>
                           </Reveal>
@@ -1669,7 +1669,7 @@ export default function PlatformDashboard() {
                             <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full transition-all duration-500"
-                                style={{ width: `${(r.total / max) * 100}%`, background: "#66329A" }}
+                                style={{ width: `${(r.total / max) * 100}%`, background: "#6D28D9" }}
                               />
                             </div>
                           </Reveal>

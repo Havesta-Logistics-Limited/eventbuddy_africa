@@ -82,7 +82,7 @@ const structuredData = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#1B512D",
+  themeColor: "#C21FAF",
 };
 
 export default function RootLayout({
