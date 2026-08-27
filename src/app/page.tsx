@@ -699,7 +699,7 @@ export default function MarketingHomePage() {
       </section>
 
       {/* Footer — brand + two real link columns, nothing invented (no blog, no
-          "company" page, no fake contact address that doesn't exist yet). */}
+          "company" page). */}
       <footer className="text-white" style={{ background: "#170821" }}>
         <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
@@ -730,6 +730,9 @@ export default function MarketingHomePage() {
               </Link>
               <Link href="/terms" className="text-white/70 hover:text-white">
                 Terms &amp; Conditions
+              </Link>
+              <Link href="/contact" className="text-white/70 hover:text-white">
+                Contact
               </Link>
             </div>
           </div>

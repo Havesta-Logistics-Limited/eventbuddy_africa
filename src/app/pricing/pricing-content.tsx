@@ -210,6 +210,9 @@ export default function PricingContent() {
               <Link href="/terms" className="text-white/70 hover:text-white">
                 Terms &amp; Conditions
               </Link>
+              <Link href="/contact" className="text-white/70 hover:text-white">
+                Contact
+              </Link>
             </div>
           </div>
         </div>
