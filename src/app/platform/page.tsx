@@ -441,7 +441,7 @@ export default function PlatformDashboard() {
    *  registration gets cancelled and any ticket/discount capacity it used is
    *  restored exactly as if the webhook itself had fired. */
   async function manualRefund(reference: string) {
-    if (!confirm("Mark this transaction as refunded? This cancels the attendee's registration and restores any ticket/discount-code capacity it used.")) return;
+    if (!confirm("Mark this transaction as refunded in our records? This does NOT process a real Paystack refund or move any money — it only cancels the attendee's registration and restores any ticket/discount-code capacity it used. If the money hasn't actually been refunded yet, do that separately in the Paystack dashboard first.")) return;
     setRefundingTxnRef(reference);
     try {
       const res = await fetch("/api/platform/manual-refund", {
@@ -1849,10 +1849,10 @@ export default function PlatformDashboard() {
                                       type="button"
                                       onClick={() => manualRefund(t.reference)}
                                       disabled={refundingTxnRef === t.reference}
-                                      title="Mark as refunded — cancels the registration and restores any ticket/discount capacity it used"
+                                      title="Records-only: cancels the registration and restores capacity. Does not call Paystack — refund the money separately in the Paystack dashboard."
                                       className="text-[11px] font-medium text-slate-400 hover:text-rose-600 disabled:opacity-50"
                                     >
-                                      {refundingTxnRef === t.reference ? "…" : "Refund"}
+                                      {refundingTxnRef === t.reference ? "…" : "Mark refunded"}
                                     </button>
                                   )}
                                 </div>

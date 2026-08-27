@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 const Schema = z.object({ orgId: z.string().uuid() });
 
@@ -23,6 +24,10 @@ export async function POST(request: Request) {
   if (!caller) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   const { data: membership } = await supabase.from("platform_admins").select("user_id").eq("user_id", caller.id).maybeSingle();
   if (!membership) return NextResponse.json({ error: "Only platform admins can do this." }, { status: 403 });
+
+  if (!(await checkRateLimit(`reveal-payout:user:${caller.id}`, 30, 10 * 60))) {
+    return rateLimitedResponse();
+  }
 
   const { data: org, error } = await supabase.from("organizations").select("payout_account_number").eq("id", parsed.data.orgId).maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

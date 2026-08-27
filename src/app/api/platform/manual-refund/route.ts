@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { handleRefundOrDispute } from "@/lib/paystack";
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 const Schema = z.object({ reference: z.string().min(1) });
 
@@ -27,6 +28,10 @@ export async function POST(request: Request) {
   if (!caller) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   const { data: membership } = await supabase.from("platform_admins").select("user_id").eq("user_id", caller.id).maybeSingle();
   if (!membership) return NextResponse.json({ error: "Only platform admins can do this." }, { status: 403 });
+
+  if (!(await checkRateLimit(`manual-refund:user:${caller.id}`, 20, 10 * 60))) {
+    return rateLimitedResponse();
+  }
 
   const admin = createAdminClient();
   const result = await handleRefundOrDispute(admin, parsed.data.reference, "refunded");

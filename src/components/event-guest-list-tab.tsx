@@ -122,22 +122,44 @@ export function GuestListTab({ eventId, orgSlug, guests }: { eventId: string; or
     });
   }
 
+  // The API caps a single request at 50 guest IDs (both a schema limit and a
+  // cumulative email-volume throttle) — chunk larger sends client-side rather
+  // than let a big "invite everyone" click fail outright on a large list.
+  const INVITE_BATCH_SIZE = 50;
+
   async function sendInvites(guestIds: string[]) {
     if (guestIds.length === 0) return;
     setSendingInvites(true);
+    let sentCount = 0;
+    let totalCount = 0;
+    let lastError: string | null = null;
     try {
-      const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/guests/invite`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ guestIds }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        toast.error(json.error || "Couldn't send invites.");
-        return;
+      for (let i = 0; i < guestIds.length; i += INVITE_BATCH_SIZE) {
+        const batch = guestIds.slice(i, i + INVITE_BATCH_SIZE);
+        const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/guests/invite`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ guestIds: batch }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          lastError = json.error || "Couldn't send invites.";
+          break;
+        }
+        sentCount += json.sentCount;
+        totalCount += json.totalCount;
+        markGuestsInvited(batch);
+        if (json.error) {
+          // Server-side volume throttle kicked in mid-batch — stop sending
+          // further batches rather than hammering a limit we know is hit.
+          lastError = json.error;
+          break;
+        }
       }
-      markGuestsInvited(guestIds);
-      toast.success(`Sent ${json.sentCount} of ${json.totalCount} invite${json.totalCount !== 1 ? "s" : ""}`);
+      if (lastError) toast.error(lastError);
+      if (sentCount > 0) {
+        toast.success(`Sent ${sentCount} of ${totalCount || guestIds.length} invite${(totalCount || guestIds.length) !== 1 ? "s" : ""}`);
+      }
       setSelected(new Set());
     } catch {
       toast.error("Couldn't reach the server. Please try again.");

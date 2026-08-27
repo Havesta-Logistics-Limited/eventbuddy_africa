@@ -5,7 +5,7 @@ import { sendGuestInviteEmail } from "@/lib/guest-invite-email";
 import { guestRsvpUrl } from "@/lib/event-guest";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
-const BodySchema = z.object({ guestIds: z.array(z.string().uuid()).min(1).max(500) });
+const BodySchema = z.object({ guestIds: z.array(z.string().uuid()).min(1).max(50) });
 
 /**
  * Sends (or resends) the RSVP invite email to specific guests on this event.
@@ -49,7 +49,15 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   const sentIds: string[] = [];
+  let throttled = false;
   for (const guest of guests) {
+    // Cumulative send-volume cap, separate from the request-count limit above —
+    // caps total email volume per admin rather than just how often they can call
+    // this route, since the per-request cap alone still allows a large batch.
+    if (!(await checkRateLimit(`guest-invite-email:user:${user.id}`, 150, 10 * 60))) {
+      throttled = true;
+      break;
+    }
     const rsvpUrl = guestRsvpUrl(siteUrl, org.slug, eventId, guest.invite_token);
     const sent = await sendGuestInviteEmail(guest.email, guest.full_name, event, rsvpUrl);
     if (sent) sentIds.push(guest.id);
@@ -59,5 +67,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     await supabase.from("event_guests").update({ invited_at: new Date().toISOString() }).in("id", sentIds);
   }
 
-  return NextResponse.json({ success: true, sentCount: sentIds.length, totalCount: guests.length });
+  return NextResponse.json({
+    success: true,
+    sentCount: sentIds.length,
+    totalCount: guests.length,
+    ...(throttled ? { error: "Sent as many invites as we could for now — you've hit the email volume limit. Try the rest again shortly." } : {}),
+  });
 }

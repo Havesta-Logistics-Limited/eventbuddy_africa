@@ -476,15 +476,25 @@ async function sendRefundNoticeEmail(to: string, eventName: string, kind: "refun
  * Handles a Paystack refund.processed or charge.dispute.create webhook event —
  * previously these were silently acknowledged and dropped, leaving a refunded/
  * disputed ticket permanently valid with no record the money came back out.
- * Idempotent on txn.status, same guard style as finalizePaystackTransaction, so
- * a redelivered webhook can't double-cancel or double-restore capacity.
+ * The status-transition UPDATE itself is the concurrency guard (same pattern as
+ * finalizePaystackTransaction's `.eq("status", "pending")`): it only fires when
+ * the row's status still matches what we just read, so of two concurrent calls
+ * (a redelivered webhook racing a manual-refund click, say) only one actually
+ * flips the row and runs the capacity-restoring side effects.
  */
 export async function handleRefundOrDispute(supabase: SupabaseClient, reference: string, kind: "refunded" | "disputed"): Promise<{ handled: boolean }> {
   const { data: txn } = await supabase.from("paystack_transactions").select("*").eq("reference", reference).maybeSingle();
   if (!txn) return { handled: false };
   if (txn.status === kind) return { handled: true };
 
-  await supabase.from("paystack_transactions").update({ status: kind }).eq("id", txn.id);
+  const { data: updated } = await supabase
+    .from("paystack_transactions")
+    .update({ status: kind })
+    .eq("id", txn.id)
+    .eq("status", txn.status)
+    .select()
+    .maybeSingle();
+  if (!updated) return { handled: true };
 
   if (txn.purpose === "ticket_purchase") {
     if (txn.registration_id) {
