@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { finalizePaystackTransaction } from "@/lib/paystack";
+import { finalizePaystackTransaction, handleRefundOrDispute } from "@/lib/paystack";
 
 /**
  * Paystack calls this directly, server-to-server — no user session, so the signature
@@ -27,19 +27,38 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
   }
 
-  let event: { event?: string; data?: { reference?: string } };
+  let event: {
+    event?: string;
+    data?: {
+      reference?: string;
+      transaction_reference?: string;
+      transaction?: { reference?: string };
+    };
+  };
   try {
     event = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
   }
 
-  if (event.event === "charge.success" && event.data?.reference) {
+  // Paystack's dispute/refund payloads have been observed nesting the original
+  // charge's reference under different keys depending on API version
+  // (data.reference, data.transaction_reference, data.transaction.reference) —
+  // checked in priority order rather than assuming one fixed shape.
+  const reference = event.data?.reference || event.data?.transaction_reference || event.data?.transaction?.reference;
+
+  if (event.event === "charge.success" && reference) {
     const admin = createAdminClient();
     // Idempotent — see finalizePaystackTransaction. Paystack redelivers webhooks on
     // timeout/non-2xx, and the browser callback (verify/route.ts) may already have
     // finalized this same reference; either order is safe.
-    await finalizePaystackTransaction(admin, event.data.reference);
+    await finalizePaystackTransaction(admin, reference);
+  } else if (event.event === "refund.processed" && reference) {
+    const admin = createAdminClient();
+    await handleRefundOrDispute(admin, reference, "refunded");
+  } else if (event.event === "charge.dispute.create" && reference) {
+    const admin = createAdminClient();
+    await handleRefundOrDispute(admin, reference, "disputed");
   }
 
   // Always acknowledge with 200 once the signature is valid, even for event types this

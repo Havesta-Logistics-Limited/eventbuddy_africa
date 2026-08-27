@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { Resend } from "resend";
 import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail } from "@/lib/registration-email";
 import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
+import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
+import { formatNaira } from "@/lib/billing";
 
 /**
  * Server-only — imports nothing that can't run in a Route Handler. Never import this
@@ -296,6 +299,7 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
 }
 
 type PendingTicketTxn = {
+  id: string;
   organization_id: string;
   event_id: string;
   ticket_type_id: string | null;
@@ -391,6 +395,7 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
   }
 
   let referenceId: string | null = null;
+  let registrationId: string | null = null;
   let lastError: { message: string; code?: string } | null = null;
   for (let attempt = 0; attempt < 5 && !referenceId; attempt++) {
     const candidate = generateReferenceId();
@@ -408,8 +413,10 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
       })
       .select()
       .single();
-    if (data) referenceId = candidate;
-    else {
+    if (data) {
+      referenceId = candidate;
+      registrationId = data.id;
+    } else {
       lastError = error;
       if (error?.code !== "23505") break;
     }
@@ -419,7 +426,94 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
     return { referenceId: null };
   }
 
+  // Links the transaction back to the exact registration it created, so a later
+  // refund/dispute (see handleRefundOrDispute) can find and cancel this specific
+  // row instead of guessing by email/ticket-type match.
+  await supabase.from("paystack_transactions").update({ registration_id: registrationId }).eq("id", txn.id);
+
   const physicalHub = await tryHubUrl(info.email, `${info.firstName} ${info.lastName}`);
   await sendRegistrationEmail(info.email, referenceId, event, physicalHub);
   return { referenceId, hubUrl: physicalHub };
+}
+
+/** Best-effort — the refund/dispute itself is already recorded by the time this
+ *  runs, so a Resend hiccup shouldn't be treated as a failure of the whole
+ *  webhook. Deliberately a plain notice, not an action button: reversing a
+ *  charge is something the organizer follows up on manually (deny entry, chase
+ *  a chargeback response), not something this app can undo for them. */
+async function sendRefundNoticeEmail(to: string, eventName: string, kind: "refunded" | "disputed", amountNaira: number) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
+
+  const safeEvent = escapeHtml(eventName);
+  const verb = kind === "refunded" ? "refunded" : "disputed (chargeback filed)";
+  const bodyHtml = `
+    <h1 style="font-size:19px; margin:0 0 12px;">A payment for ${safeEvent} was ${verb}</h1>
+    <p style="margin:0 0 20px; color:#666;">
+      A ticket purchase worth ${escapeHtml(formatNaira(amountNaira))} for <strong>${safeEvent}</strong> has been ${verb} on Paystack.
+      The attendee's registration has been marked cancelled and any ticket/discount-code capacity it used has been restored automatically.
+      You may want to follow up directly if this affects who should be let in at check-in.
+    </p>
+    ${emailButton(`${process.env.NEXT_PUBLIC_SITE_URL || "https://eventbuddy.africa"}/dashboard`, "View your dashboard", "#9a3412")}
+  `;
+
+  try {
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
+      to,
+      subject: `Payment ${kind} — ${eventName}`,
+      text: `A ticket purchase for ${eventName} (${formatNaira(amountNaira)}) has been ${verb}. The registration has been cancelled and capacity restored automatically.`,
+      html: renderEmailShell({ color: "#9a3412", label: kind === "refunded" ? "Refund" : "Dispute", emoji: "⚠️" }, bodyHtml),
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Handles a Paystack refund.processed or charge.dispute.create webhook event —
+ * previously these were silently acknowledged and dropped, leaving a refunded/
+ * disputed ticket permanently valid with no record the money came back out.
+ * Idempotent on txn.status, same guard style as finalizePaystackTransaction, so
+ * a redelivered webhook can't double-cancel or double-restore capacity.
+ */
+export async function handleRefundOrDispute(supabase: SupabaseClient, reference: string, kind: "refunded" | "disputed"): Promise<{ handled: boolean }> {
+  const { data: txn } = await supabase.from("paystack_transactions").select("*").eq("reference", reference).maybeSingle();
+  if (!txn) return { handled: false };
+  if (txn.status === kind) return { handled: true };
+
+  await supabase.from("paystack_transactions").update({ status: kind }).eq("id", txn.id);
+
+  if (txn.purpose === "ticket_purchase") {
+    if (txn.registration_id) {
+      await supabase.from("registrations").update({ status: "cancelled" }).eq("id", txn.registration_id);
+    }
+    if (txn.ticket_type_id) {
+      await supabase.rpc("decrement_ticket_sold", { p_ticket_type_id: txn.ticket_type_id });
+    }
+    if (txn.discount_code_id) {
+      await supabase.rpc("decrement_discount_uses", { p_discount_code_id: txn.discount_code_id });
+    }
+  } else {
+    // event_publish refunded/disputed — the event was only live on the strength
+    // of this payment; pull it back to an unpaid draft rather than leave it
+    // published for free. Bypasses protect_event_payment_fields since this runs
+    // through the service-role client (see 0024_paystack_payments.sql).
+    await supabase.from("events").update({ published: false, payment_status: "pending" }).eq("id", txn.event_id);
+  }
+
+  try {
+    const { data: org } = await supabase.from("organizations").select("email").eq("id", txn.organization_id).maybeSingle();
+    if (org?.email) {
+      const { data: event } = await supabase.from("events").select("name").eq("id", txn.event_id).maybeSingle();
+      await sendRefundNoticeEmail(org.email, event?.name || "your event", kind, Number(txn.amount_naira));
+    }
+  } catch {
+    // Swallowed — the refund/dispute is already recorded regardless of whether
+    // the notice email goes out.
+  }
+
+  return { handled: true };
 }

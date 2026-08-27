@@ -83,7 +83,10 @@ type OrgRow = {
   email: string | null;
   paystack_subaccount_code: string | null;
   payout_bank_name: string | null;
-  payout_account_number: string | null;
+  /** Pre-masked server-side by organizations_payout_masked (see 0042) — the real
+   *  value never reaches the browser in the bulk list. Fetched on demand, per org,
+   *  via /api/platform/reveal-payout only when an admin explicitly asks. */
+  payout_account_number_masked: string | null;
   payout_account_name: string | null;
   payout_change_status: "none" | "requested" | "approved";
   payout_change_requested_at: string | null;
@@ -129,7 +132,7 @@ type TransactionRow = {
   amount_naira: number;
   charge_currency: string;
   charge_amount_minor: number;
-  status: "pending" | "success" | "failed";
+  status: "pending" | "success" | "failed" | "refunded" | "disputed";
   created_at: string;
   verified_at: string | null;
   purpose: "event_publish" | "ticket_purchase";
@@ -169,10 +172,6 @@ function isBillable(ev: Pick<EventRow, "event_format">) {
 function eventPrice(ev: Pick<EventRow, "event_format" | "price_naira">) {
   return ev.price_naira ?? priceForFormat(ev.event_format);
 }
-function maskAccountNumber(num: string | null) {
-  if (!num) return "—";
-  return `${"•".repeat(Math.max(num.length - 4, 0))}${num.slice(-4)}`;
-}
 
 export default function PlatformDashboard() {
   const router = useRouter();
@@ -193,7 +192,8 @@ export default function PlatformDashboard() {
   const [registrations, setRegistrations] = useState<RegistrationRow[]>([]);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [txnSearch, setTxnSearch] = useState("");
-  const [txnStatusFilter, setTxnStatusFilter] = useState<"all" | "pending" | "success" | "failed">("all");
+  const [txnStatusFilter, setTxnStatusFilter] = useState<"all" | "pending" | "success" | "failed" | "refunded" | "disputed">("all");
+  const [refundingTxnRef, setRefundingTxnRef] = useState<string | null>(null);
   const [managedRequests, setManagedRequests] = useState<ManagedRequestRow[]>([]);
   const [managedStatusFilter, setManagedStatusFilter] = useState<"all" | "new" | "contacted" | "quoted" | "closed">("all");
   const [busyManagedRequestId, setBusyManagedRequestId] = useState<string | null>(null);
@@ -205,6 +205,8 @@ export default function PlatformDashboard() {
   const [exportingEventId, setExportingEventId] = useState<string | null>(null);
   const [exportError, setExportError] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [revealedAccountNumbers, setRevealedAccountNumbers] = useState<Record<string, string>>({});
+  const [revealingOrgId, setRevealingOrgId] = useState<string | null>(null);
 
   const [orgPendingDelete, setOrgPendingDelete] = useState<OrgRow | null>(null);
   const [deletingOrgId, setDeletingOrgId] = useState<string | null>(null);
@@ -253,10 +255,13 @@ export default function PlatformDashboard() {
   async function fetchPlatformData() {
     const supabase = createClient();
     const [orgsRes, eventsRes, leadsRes, registrationsRes, adminsRes, settingsRes, transactionsRes, managedRequestsRes] = await Promise.all([
+      // organizations_payout_masked (see 0042_refunds_and_payout_masking.sql), not
+      // the raw table — the account number arrives pre-masked, so the real value
+      // never reaches the browser for the bulk list.
       supabase
-        .from("organizations")
+        .from("organizations_payout_masked")
         .select(
-          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number, payout_account_name, payout_change_status, payout_change_requested_at"
+          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number_masked, payout_account_name, payout_change_status, payout_change_requested_at"
         )
         .order("created_at", { ascending: false }),
       supabase
@@ -404,6 +409,58 @@ export default function PlatformDashboard() {
       toast.error(error.message);
     }
     setBusyOrgId(null);
+  }
+
+  /** Fetches the real, unmasked account number for exactly one org, on demand —
+   *  the bulk list never carries it (see organizations_payout_masked). Kept in
+   *  its own bit of state, not merged into `orgs`, so it's never accidentally
+   *  refetched/broadened by a general refresh. */
+  async function revealAccountNumber(orgId: string) {
+    setRevealingOrgId(orgId);
+    try {
+      const res = await fetch("/api/platform/reveal-payout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error || "Couldn't reveal this account number.");
+        return;
+      }
+      setRevealedAccountNumbers((prev) => ({ ...prev, [orgId]: json.accountNumber || "—" }));
+    } catch {
+      toast.error("Couldn't reach the server. Please try again.");
+    } finally {
+      setRevealingOrgId(null);
+    }
+  }
+
+  /** Manual reconciliation for a refund processed outside the automated webhook
+   *  path — calls the same handleRefundOrDispute logic the webhook uses, so a
+   *  registration gets cancelled and any ticket/discount capacity it used is
+   *  restored exactly as if the webhook itself had fired. */
+  async function manualRefund(reference: string) {
+    if (!confirm("Mark this transaction as refunded? This cancels the attendee's registration and restores any ticket/discount-code capacity it used.")) return;
+    setRefundingTxnRef(reference);
+    try {
+      const res = await fetch("/api/platform/manual-refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reference }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error || "Couldn't process this refund.");
+        return;
+      }
+      setTransactions((prev) => prev.map((t) => (t.reference === reference ? { ...t, status: "refunded" } : t)));
+      toast.success("Marked as refunded");
+    } catch {
+      toast.error("Couldn't reach the server. Please try again.");
+    } finally {
+      setRefundingTxnRef(null);
+    }
   }
 
   async function updateManagedRequestStatus(req: ManagedRequestRow, status: ManagedRequestRow["status"]) {
@@ -771,7 +828,17 @@ export default function PlatformDashboard() {
   // Fee-exempt orgs never owe money, regardless of how an individual event's
   // payment_status happens to be set — exclude them from every revenue figure below.
   const chargeableBillableEvents = billableEvents.filter((e) => !orgById.get(e.organization_id)?.is_fee_exempt);
-  const paidBillableEvents = chargeableBillableEvents.filter((e) => e.payment_status === "paid");
+  // A test-mode event-publish payment (made with a sk_test_ key) still flips
+  // events.payment_status to 'paid' — this excludes it from counting as real
+  // platform revenue, same protection ticket-sale revenue already has via
+  // isLiveTicketSale. An event with no matching transaction row at all (created
+  // before payment tracking existed) is treated as real, matching
+  // payment_status='paid' being the only signal available for those.
+  const isLiveEventPublishPayment = (eventId: string) => {
+    const txn = transactions.find((t) => t.event_id === eventId && t.purpose === "event_publish" && t.status === "success");
+    return !txn || txn.paystack_event?.domain === "live";
+  };
+  const paidBillableEvents = chargeableBillableEvents.filter((e) => e.payment_status === "paid" && isLiveEventPublishPayment(e.id));
   const pendingBillableEvents = chargeableBillableEvents.filter((e) => e.payment_status !== "paid");
   const exemptBillableEvents = billableEvents.filter((e) => orgById.get(e.organization_id)?.is_fee_exempt);
   const revenue = paidBillableEvents.reduce((sum, e) => sum + eventPrice(e), 0);
@@ -1716,6 +1783,8 @@ export default function PlatformDashboard() {
                     <option value="success">Success</option>
                     <option value="pending">Pending</option>
                     <option value="failed">Failed</option>
+                    <option value="refunded">Refunded</option>
+                    <option value="disputed">Disputed</option>
                   </select>
                 </div>
 
@@ -1744,6 +1813,8 @@ export default function PlatformDashboard() {
                             success: "bg-emerald-100 text-emerald-700",
                             pending: "bg-amber-100 text-amber-700",
                             failed: "bg-rose-100 text-rose-700",
+                            refunded: "bg-slate-100 text-slate-500",
+                            disputed: "bg-orange-100 text-orange-700",
                           }[t.status];
                           return (
                             <tr key={t.id} className="hover:bg-slate-50/60">
@@ -1771,7 +1842,20 @@ export default function PlatformDashboard() {
                                 </button>
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap">
-                                <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize ${statusPill}`}>{t.status}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize ${statusPill}`}>{t.status}</span>
+                                  {t.status === "success" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => manualRefund(t.reference)}
+                                      disabled={refundingTxnRef === t.reference}
+                                      title="Mark as refunded — cancels the registration and restores any ticket/discount capacity it used"
+                                      className="text-[11px] font-medium text-slate-400 hover:text-rose-600 disabled:opacity-50"
+                                    >
+                                      {refundingTxnRef === t.reference ? "…" : "Refund"}
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(t.created_at).toLocaleString("en-GB")}</td>
                             </tr>
@@ -1941,7 +2025,7 @@ export default function PlatformDashboard() {
                             <div className="min-w-0">
                               <p className="font-semibold text-slate-900">{org.name}</p>
                               <p className="text-xs text-slate-500 mt-0.5">
-                                Currently {org.payout_bank_name || "no bank"} · {maskAccountNumber(org.payout_account_number)} — requested{" "}
+                                Currently {org.payout_bank_name || "no bank"} · {revealedAccountNumbers[org.id] || org.payout_account_number_masked || "—"} — requested{" "}
                                 {org.payout_change_requested_at
                                   ? new Date(org.payout_change_requested_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
                                   : "recently"}
@@ -1998,7 +2082,25 @@ export default function PlatformDashboard() {
                                 <p className="font-medium text-slate-900 truncate">{org.name}</p>
                               </td>
                               <td className="px-4 py-3 text-slate-600">{org.payout_bank_name || <span className="text-slate-300">—</span>}</td>
-                              <td className="px-4 py-3 text-slate-600 font-mono text-xs">{maskAccountNumber(org.payout_account_number)}</td>
+                              <td className="px-4 py-3 text-slate-600 font-mono text-xs">
+                                {revealedAccountNumbers[org.id] ? (
+                                  revealedAccountNumbers[org.id]
+                                ) : org.payout_account_number_masked ? (
+                                  <span className="inline-flex items-center gap-1.5">
+                                    {org.payout_account_number_masked}
+                                    <button
+                                      type="button"
+                                      onClick={() => revealAccountNumber(org.id)}
+                                      disabled={revealingOrgId === org.id}
+                                      className="font-sans text-[11px] font-medium text-brand-600 hover:underline disabled:opacity-50"
+                                    >
+                                      {revealingOrgId === org.id ? "…" : "Reveal"}
+                                    </button>
+                                  </span>
+                                ) : (
+                                  "—"
+                                )}
+                              </td>
                               <td className="px-4 py-3 text-slate-600 truncate max-w-[180px]">
                                 {org.payout_account_name || <span className="text-slate-300">—</span>}
                               </td>
