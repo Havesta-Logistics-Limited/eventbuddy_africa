@@ -6,6 +6,7 @@ import {
   DiscountCode,
   DiscountRedemption,
   EventAnnouncement,
+  EventGuest,
   EventPoll,
   EventQuestion,
   EventRecord,
@@ -56,6 +57,7 @@ let discountCodesCache: DiscountCode[] = [];
 let eventSessionsCache: EventSession[] = [];
 let eventSpeakersCache: EventSpeaker[] = [];
 let eventAnnouncementsCache: EventAnnouncement[] = [];
+let eventGuestsCache: EventGuest[] = [];
 let sessionCache: Session | null = null;
 let sessionHydrated = false;
 
@@ -120,6 +122,7 @@ function mapEventRow(e: {
   rep_access_code: string | null;
   allow_rep_access: boolean | null;
   self_registration_enabled: boolean | null;
+  is_invite_only: boolean | null;
   published: boolean | null;
   price_naira: number | null;
   template_id: string | null;
@@ -148,6 +151,7 @@ function mapEventRow(e: {
     repAccessCode: e.rep_access_code ?? undefined,
     allowRepAccess: e.allow_rep_access ?? true,
     selfRegistrationEnabled: e.self_registration_enabled ?? true,
+    isInviteOnly: e.is_invite_only ?? false,
     published: e.published ?? true,
     priceNaira: e.price_naira !== null && e.price_naira !== undefined ? Number(e.price_naira) : undefined,
     templateId: e.template_id ?? "education-fair",
@@ -177,6 +181,7 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.repAccessCode !== undefined) row.rep_access_code = input.repAccessCode || null;
   if (input.allowRepAccess !== undefined) row.allow_rep_access = input.allowRepAccess;
   if (input.selfRegistrationEnabled !== undefined) row.self_registration_enabled = input.selfRegistrationEnabled;
+  if (input.isInviteOnly !== undefined) row.is_invite_only = input.isInviteOnly;
   if (input.published !== undefined) row.published = input.published;
   if (input.templateId !== undefined) row.template_id = input.templateId;
   if (input.customFields !== undefined) row.custom_fields = input.customFields;
@@ -448,6 +453,44 @@ function eventAnnouncementToRow(input: Partial<Omit<EventAnnouncement, "id" | "c
   if (input.pinned !== undefined) row.pinned = input.pinned;
   return row;
 }
+function mapEventGuestRow(g: {
+  id: string;
+  event_id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  plus_ones_allowed: number;
+  plus_ones_confirmed: number | null;
+  status: string;
+  registration_id: string | null;
+  invited_at: string | null;
+  responded_at: string | null;
+  created_at: string;
+}): EventGuest {
+  return {
+    id: g.id,
+    eventId: g.event_id,
+    fullName: g.full_name,
+    email: g.email,
+    phone: g.phone ?? undefined,
+    plusOnesAllowed: g.plus_ones_allowed,
+    plusOnesConfirmed: g.plus_ones_confirmed ?? undefined,
+    status: g.status as EventGuest["status"],
+    registrationId: g.registration_id ?? undefined,
+    invitedAt: g.invited_at ?? undefined,
+    respondedAt: g.responded_at ?? undefined,
+    createdAt: g.created_at,
+  };
+}
+function eventGuestToRow(input: Partial<Omit<EventGuest, "id" | "createdAt" | "status" | "registrationId" | "respondedAt">>) {
+  const row: Record<string, unknown> = {};
+  if (input.eventId !== undefined) row.event_id = input.eventId;
+  if (input.fullName !== undefined) row.full_name = input.fullName;
+  if (input.email !== undefined) row.email = input.email;
+  if (input.phone !== undefined) row.phone = input.phone || null;
+  if (input.plusOnesAllowed !== undefined) row.plus_ones_allowed = input.plusOnesAllowed;
+  return row;
+}
 
 // ---- org-scoped data fetch (admin via RLS-protected browser client, staff/rep via API) ----
 
@@ -496,6 +539,7 @@ async function fetchAdminData() {
       eventSessionsCache = [];
       eventSpeakersCache = [];
       eventAnnouncementsCache = [];
+      eventGuestsCache = [];
       orgDataFetched = true;
       return;
     }
@@ -512,6 +556,7 @@ async function fetchAdminData() {
       speakerRes,
       sessionSpeakerRes,
       announcementRes,
+      guestRes,
     ] = await Promise.all([
       supabase.from("destinations").select("*").eq("organization_id", orgId),
       supabase.from("universities").select("*").eq("organization_id", orgId),
@@ -527,6 +572,7 @@ async function fetchAdminData() {
       // (already org-filtered) session ids instead.
       supabase.from("event_session_speakers").select("*"),
       supabase.from("event_announcements").select("*").eq("organization_id", orgId),
+      supabase.from("event_guests").select("*").eq("organization_id", orgId),
     ]);
     destinationsCache = (destRes.data ?? []).map(mapDestinationRow);
     universitiesCache = (uniRes.data ?? []).map(mapUniversityRow);
@@ -550,6 +596,7 @@ async function fetchAdminData() {
     }
     eventSessionsCache = (sessionRes.data ?? []).map((s) => mapEventSessionRow(s, sessionSpeakersById.get(s.id) ?? []));
     eventAnnouncementsCache = (announcementRes.data ?? []).map(mapEventAnnouncementRow);
+    eventGuestsCache = (guestRes.data ?? []).map(mapEventGuestRow);
     orgDataFetched = true;
   } finally {
     orgDataFetching = false;
@@ -654,6 +701,7 @@ const discountCodesSnap = snap(() => discountCodesCache, [] as DiscountCode[]);
 const eventSessionsSnap = snap(() => eventSessionsCache, [] as EventSession[]);
 const eventSpeakersSnap = snap(() => eventSpeakersCache, [] as EventSpeaker[]);
 const eventAnnouncementsSnap = snap(() => eventAnnouncementsCache, [] as EventAnnouncement[]);
+const eventGuestsSnap = snap(() => eventGuestsCache, [] as EventGuest[]);
 const sessionSnap = snap<Session | null>(() => sessionCache, null);
 
 export function useDestinations() {
@@ -703,6 +751,10 @@ export function useEventAnnouncements() {
   useEnsureDataFetched();
   return useSyncExternalStore(subscribe, eventAnnouncementsSnap.client, eventAnnouncementsSnap.server);
 }
+export function useEventGuests() {
+  useEnsureDataFetched();
+  return useSyncExternalStore(subscribe, eventGuestsSnap.client, eventGuestsSnap.server);
+}
 
 // ---- getters (read the in-memory cache; components should prefer the hooks above so
 //      they re-render on change — these are for one-off lookups inside handlers) ----
@@ -739,6 +791,9 @@ export function getSpeakersForEvent(eventId: string): EventSpeaker[] {
 }
 export function getAnnouncementsForEvent(eventId: string): EventAnnouncement[] {
   return eventAnnouncementsCache.filter((a) => a.eventId === eventId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+export function getGuestsForEvent(eventId: string): EventGuest[] {
+  return eventGuestsCache.filter((g) => g.eventId === eventId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 /** Admin-side manual check-in/undo, direct via the RLS-scoped browser client — the
@@ -986,6 +1041,44 @@ export async function deleteAnnouncement(id: string): Promise<void> {
   const { error } = await supabase.from("event_announcements").delete().eq("id", id);
   if (error) throw new PersistError(error);
   eventAnnouncementsCache = eventAnnouncementsCache.filter((a) => a.id !== id);
+  emitChange();
+}
+
+export async function addEventGuest(input: Omit<EventGuest, "id" | "createdAt" | "status" | "registrationId" | "invitedAt" | "respondedAt">): Promise<EventGuest> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("event_guests").insert(eventGuestToRow(input)).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapEventGuestRow(data);
+  eventGuestsCache = [record, ...eventGuestsCache];
+  emitChange();
+  return record;
+}
+/** CSV/bulk-paste import — same shape as a single add, just N rows in one insert
+ *  so a 200-guest list doesn't fire 200 round trips. */
+export async function bulkAddEventGuests(eventId: string, guests: { fullName: string; email: string; phone?: string; plusOnesAllowed?: number }[]): Promise<EventGuest[]> {
+  const supabase = createSupabaseBrowserClient();
+  const rows = guests.map((g) => eventGuestToRow({ eventId, fullName: g.fullName, email: g.email, phone: g.phone, plusOnesAllowed: g.plusOnesAllowed ?? 0 }));
+  const { data, error } = await supabase.from("event_guests").insert(rows).select();
+  if (error) throw new PersistError(error);
+  const records = (data ?? []).map(mapEventGuestRow);
+  eventGuestsCache = [...records, ...eventGuestsCache];
+  emitChange();
+  return records;
+}
+export async function deleteEventGuest(id: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("event_guests").delete().eq("id", id);
+  if (error) throw new PersistError(error);
+  eventGuestsCache = eventGuestsCache.filter((g) => g.id !== id);
+  emitChange();
+}
+/** Patches invitedAt locally after /guests/invite succeeds — that route runs
+ *  server-side (it sends real email via Resend) and returns which guest ids it
+ *  actually sent to, so the UI reflects "invited" without a full refetch. */
+export function markGuestsInvited(guestIds: string[]): void {
+  const now = new Date().toISOString();
+  const ids = new Set(guestIds);
+  eventGuestsCache = eventGuestsCache.map((g) => (ids.has(g.id) ? { ...g, invitedAt: now } : g));
   emitChange();
 }
 

@@ -19,7 +19,10 @@ export function ReviewStep({ data, template }: { data: EventWizardData; template
         ) : (
           <>
             <Row label="Venue" value={`${data.venue || "—"}, ${data.location || "—"}`} />
-            <Row label="Self-service registration" value={data.selfRegistrationEnabled === false ? "Off — booth capture only" : "On"} />
+            <Row
+              label="Who can attend"
+              value={data.isInviteOnly ? "Invite-only guest list" : data.selfRegistrationEnabled === false ? "Off — booth capture only" : "Anyone with the link"}
+            />
           </>
         )}
         {template.usesDestinations && <Row label="Audience" value={data.allowRepAccess === false ? "Students only" : "Students & reps"} />}

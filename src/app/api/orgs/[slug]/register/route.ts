@@ -7,9 +7,17 @@ import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit"
 import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/** Atomic, capacity-guarded increment (see 0038_atomic_ticket_discount_counters.sql)
+ *  — a plain read-then-write here would let two concurrent free registrations for
+ *  the last unit of a capacity-limited ticket both pass the availability check and
+ *  both succeed, the same race already fixed on the paid path in paystack.ts. */
 async function incrementTicketQuantitySold(supabase: SupabaseClient, ticketTypeId: string) {
-  const { data: ticket } = await supabase.from("ticket_types").select("quantity_sold").eq("id", ticketTypeId).maybeSingle();
-  if (ticket) await supabase.from("ticket_types").update({ quantity_sold: ticket.quantity_sold + 1 }).eq("id", ticketTypeId);
+  const { data: incremented, error } = await supabase.rpc("increment_ticket_sold", { p_ticket_type_id: ticketTypeId });
+  if (error) {
+    console.error(`[register] couldn't increment quantity_sold for ticket ${ticketTypeId}:`, error.message);
+  } else if (!incremented) {
+    console.error(`[register] OVERSOLD: ticket type ${ticketTypeId} was already at capacity for a free registration — needs manual review.`);
+  }
 }
 
 type RegisterBody = {

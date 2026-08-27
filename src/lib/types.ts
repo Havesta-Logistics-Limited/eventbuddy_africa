@@ -72,6 +72,13 @@ export interface EventRecord {
    *  QR code involved). Always true for virtual events, where self-service registration
    *  IS the only way attendees get captured — see /api/orgs/[slug]/register. */
   selfRegistrationEnabled?: boolean;
+  /** A third, independent attendee-acquisition mode for private/corporate events with
+   *  a known guest list — separate from selfRegistrationEnabled, which keeps meaning
+   *  exactly what it always meant. When true, there's no public sign-up link at all;
+   *  attendees only get in by accepting a personal invite (see event_guests / the
+   *  Guests tab / /rsvp). Mutually exclusive with self-service registration in the
+   *  wizard's UI, though the two flags are independently stored. */
+  isInviteOnly?: boolean;
   /** false = a physical event awaiting Paystack payment — it exists but is inert (no
    *  check-in, no lead capture, not listed for self-service registration) until payment
    *  succeeds. Always true for virtual events and every event created before this
@@ -317,6 +324,27 @@ export interface EventAnnouncement {
   eventId: string;
   body: string;
   pinned: boolean;
+  createdAt: string;
+}
+
+export type GuestStatus = "pending" | "accepted" | "declined" | "maybe";
+
+/** A named invite for an invite-only (RSVP) event — see events.isInviteOnly.
+ *  registrationId is set the moment a guest accepts: that's the real
+ *  registrations/leads row check-in and the Event Hub actually run on, this
+ *  is just the invite/response record layered on top of it. */
+export interface EventGuest {
+  id: string;
+  eventId: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  plusOnesAllowed: number;
+  plusOnesConfirmed?: number;
+  status: GuestStatus;
+  registrationId?: string;
+  invitedAt?: string;
+  respondedAt?: string;
   createdAt: string;
 }
 

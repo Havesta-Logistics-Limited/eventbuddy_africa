@@ -14,6 +14,7 @@ import {
   getAnnouncementsForEvent,
   getDiscountCodesForEvent,
   getEventById,
+  getGuestsForEvent,
   getSessionsForEvent,
   getSpeakersForEvent,
   getTicketTypesForEvent,
@@ -24,6 +25,7 @@ import {
   useDestinations,
   useDiscountCodes,
   useEventAnnouncements,
+  useEventGuests,
   useEvents,
   useEventSessions,
   useEventSpeakers,
@@ -52,6 +54,7 @@ import { SpeakersTab } from "@/components/event-speakers-tab";
 import { QaTab } from "@/components/event-qa-tab";
 import { PollsTab } from "@/components/event-polls-tab";
 import { AnnouncementsTab } from "@/components/event-announcements-tab";
+import { GuestListTab } from "@/components/event-guest-list-tab";
 import { EventHubQrModal } from "@/components/event-hub-qr-modal";
 import { RowSkeleton } from "@/components/skeleton";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -71,7 +74,8 @@ type TabId =
   | "speakers"
   | "qa"
   | "polls"
-  | "announcements";
+  | "announcements"
+  | "guests";
 
 export default function EventDetailPage() {
   const session = useRequireRole(ADMIN_ONLY);
@@ -96,6 +100,8 @@ export default function EventDetailPage() {
   const speakers = getSpeakersForEvent(params.id);
   useEventAnnouncements(); // subscribe so announcement edits refresh this view
   const announcements = getAnnouncementsForEvent(params.id);
+  useEventGuests(); // subscribe so guest-list edits refresh this view
+  const guests = getGuestsForEvent(params.id);
   const [hasPayoutsConfigured, setHasPayoutsConfigured] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -312,6 +318,7 @@ export default function EventDetailPage() {
     // all), not allowRepAccess, since "this specific event doesn't let reps check
     // in" shouldn't also block managing the org's rep roster from ever being reached.
     ...(usesDestinations ? ([{ id: "representatives", label: "Representatives" }] as const) : []),
+    ...(event.isInviteOnly ? ([{ id: "guests", label: "Guests" }] as const) : []),
     { id: "schedule", label: "Schedule" },
     { id: "speakers", label: "Speakers" },
     { id: "qa", label: "Q&A" },
@@ -618,6 +625,12 @@ export default function EventDetailPage() {
         {activeTab === "announcements" && (
           <div key="announcements" className="animate-tab-fade">
             <AnnouncementsTab eventId={event.id} announcements={announcements} />
+          </div>
+        )}
+
+        {activeTab === "guests" && (
+          <div key="guests" className="animate-tab-fade">
+            <GuestListTab eventId={event.id} orgSlug={session.orgSlug!} guests={guests} />
           </div>
         )}
 
