@@ -7,7 +7,7 @@ import QRCode from "qrcode";
 import { AlertCircle, Calendar, Check, Copy, ExternalLink, Loader2, MapPin, MapPinCheckInside, Tag, Ticket, Video, X } from "lucide-react";
 import { EventRecord, TicketType } from "@/lib/types";
 import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/components/dynamic-registration-form";
-import { formatDate, formatTime } from "@/lib/utils";
+import { formatDate, formatTime, safeHttpUrl } from "@/lib/utils";
 import { applyDiscount, formatNaira } from "@/lib/billing";
 
 type PublicEvent = EventRecord & { hasStaffCode: boolean; hasRepCode: boolean };
@@ -348,8 +348,8 @@ export default function RegisterPage() {
             {confirmation.event.eventFormat === "virtual" ? (
               <div className="mt-6 pt-5 border-t border-slate-100 text-left">
                 <h3 className="text-sm font-semibold text-slate-800 mb-2">Joining details</h3>
-                {confirmation.event.virtualJoinUrl && (
-                  <a href={confirmation.event.virtualJoinUrl} target="_blank" rel="noreferrer" className="block text-sm text-[#C21FAF] hover:underline break-all">
+                {safeHttpUrl(confirmation.event.virtualJoinUrl) && (
+                  <a href={safeHttpUrl(confirmation.event.virtualJoinUrl)} target="_blank" rel="noreferrer" className="block text-sm text-[#C21FAF] hover:underline break-all">
                     {confirmation.event.virtualJoinUrl}
                   </a>
                 )}

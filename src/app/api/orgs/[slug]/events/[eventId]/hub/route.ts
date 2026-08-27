@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyHubMember } from "@/lib/event-hub";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 /**
  * Attendee-facing read for the Event Hub — no session, the unguessable hub_token
@@ -14,6 +15,15 @@ export async function GET(request: Request, ctx: RouteContext<"/api/orgs/[slug]/
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
   if (!token) return NextResponse.json({ error: "Missing access token." }, { status: 400 });
+
+  // The page polls this every few seconds while open — generous enough for that,
+  // but still bounded, matching every sibling hub route's per-token throttle.
+  if (!(await checkRateLimit(`hub-get:token:${token}`, 120, 10 * 60))) {
+    return rateLimitedResponse();
+  }
+  if (!(await checkRateLimit(`hub-get:ip:${clientIp(request)}`, 300, 10 * 60))) {
+    return rateLimitedResponse();
+  }
 
   const admin = createAdminClient();
   const member = await verifyHubMember(admin, { slug, eventId, token });

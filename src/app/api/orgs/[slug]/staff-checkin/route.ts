@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTemplate } from "@/lib/event-templates";
 import { accessCodeMatches } from "@/lib/access-code";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 type StaffCheckinBody = {
   eventId: string;
@@ -28,6 +29,13 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   if (!eventId || !name?.trim()) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  // The access code is a short, org-chosen string — without this, an unlimited
+  // number of guesses is just as brute-forceable as the discount-code oracle this
+  // same pattern already guards against.
+  if (!(await checkRateLimit(`staff-checkin:ip:${clientIp(request)}`, 20, 10 * 60))) {
+    return rateLimitedResponse();
   }
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

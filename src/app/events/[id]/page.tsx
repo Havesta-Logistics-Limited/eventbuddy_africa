@@ -18,6 +18,7 @@ import {
   getSpeakersForEvent,
   getTicketTypesForEvent,
   refreshData,
+  resolveMyOrgId,
   updateEvent,
   useDataReady,
   useDestinations,
@@ -34,7 +35,7 @@ import {
 } from "@/lib/store";
 import { Role } from "@/lib/types";
 import { downloadCsv, eventLeadsToCsv, leadsToCsv } from "@/lib/csv";
-import { formatTime } from "@/lib/utils";
+import { formatTime, safeHttpUrl } from "@/lib/utils";
 import { getCaptureGate, getEventStatus, windowFromEvent } from "@/lib/capture-window";
 import { getTemplate } from "@/lib/event-templates";
 import { EventWizard, type EventWizardData } from "@/components/event-wizard";
@@ -157,12 +158,18 @@ export default function EventDetailPage() {
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
-    supabase
-      .from("organizations")
-      .select("paystack_subaccount_code")
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => setHasPayoutsConfigured(!!data?.paystack_subaccount_code));
+    // Scoped to the caller's own org — see the identical fix in admin/page.tsx for
+    // why an unfiltered `.limit(1)` here would leak an arbitrary organization's
+    // payout-configured status to a dual-role (org owner + platform admin) account.
+    resolveMyOrgId(supabase).then((orgId) => {
+      if (!orgId) return;
+      supabase
+        .from("organizations")
+        .select("paystack_subaccount_code")
+        .eq("id", orgId)
+        .maybeSingle()
+        .then(({ data }) => setHasPayoutsConfigured(!!data?.paystack_subaccount_code));
+    });
   }, []);
 
   async function handleDuplicate() {
@@ -347,9 +354,13 @@ export default function EventDetailPage() {
                   <span className="flex items-center gap-1.5">
                     <Video size={14} />
                     {event.virtualPlatform ? `${event.virtualPlatform} — ` : ""}
-                    <a href={event.virtualJoinUrl} target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">
-                      Join link
-                    </a>
+                    {safeHttpUrl(event.virtualJoinUrl) ? (
+                      <a href={safeHttpUrl(event.virtualJoinUrl)} target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">
+                        Join link
+                      </a>
+                    ) : (
+                      <span className="text-slate-400">No join link set</span>
+                    )}
                   </span>
                 ) : (
                   <span className="flex items-center gap-1.5">

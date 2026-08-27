@@ -461,7 +461,10 @@ let orgDataFetching = false;
  *  data inside what should be their own isolated org-admin dashboard — exactly
  *  this collision surfaced a real cross-tenant leak in production. */
 let myOrgId: string | null = null;
-async function resolveMyOrgId(supabase: ReturnType<typeof createSupabaseBrowserClient>): Promise<string | null> {
+/** Exported so any client-side query against a table that carries an
+ *  `is_platform_admin()` OR-clause can scope itself explicitly instead of
+ *  trusting RLS alone — see the file-level comment above for why that matters. */
+export async function resolveMyOrgId(supabase: ReturnType<typeof createSupabaseBrowserClient>): Promise<string | null> {
   if (myOrgId) return myOrgId;
   const {
     data: { user },
@@ -558,7 +561,14 @@ async function fetchSessionData() {
   if (!sessionCache || !supabaseConfigured()) return;
   orgDataFetching = true;
   try {
-    const res = await fetch(`/api/session-data?staffId=${encodeURIComponent(sessionCache.id)}`);
+    // POST, not GET+query-string — staffId is a long-lived bearer credential (see
+    // session-data/route.ts) and a query string is the one place it would otherwise
+    // land in server access logs, CDN logs, and browser history.
+    const res = await fetch("/api/session-data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ staffId: sessionCache.id }),
+    });
     const json = await res.json();
     if (res.ok) {
       destinationsCache = json.destinations ?? [];
@@ -1010,7 +1020,14 @@ function mapEventQuestionRow(q: {
 
 export async function listEventQuestions(eventId: string): Promise<EventQuestion[]> {
   const supabase = createSupabaseBrowserClient();
-  const { data, error } = await supabase.from("event_questions").select("*").eq("event_id", eventId).order("created_at", { ascending: false });
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) return [];
+  const { data, error } = await supabase
+    .from("event_questions")
+    .select("*")
+    .eq("event_id", eventId)
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false });
   if (error) throw new PersistError(error);
   return (data ?? []).map(mapEventQuestionRow);
 }
@@ -1040,11 +1057,23 @@ function mapEventPollRow(
 
 export async function listEventPolls(eventId: string): Promise<EventPoll[]> {
   const supabase = createSupabaseBrowserClient();
-  const [pollRes, optionRes] = await Promise.all([
-    supabase.from("event_polls").select("*").eq("event_id", eventId).order("created_at", { ascending: false }),
-    supabase.from("event_poll_options").select("*").order("position", { ascending: true }),
-  ]);
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) return [];
+  const pollRes = await supabase
+    .from("event_polls")
+    .select("*")
+    .eq("event_id", eventId)
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false });
   if (pollRes.error) throw new PersistError(pollRes.error);
+  const pollIds = (pollRes.data ?? []).map((p) => p.id);
+  // Scoped via the already org-verified poll ids above, rather than a bare
+  // unfiltered select — event_poll_options has no organization_id column of its
+  // own to filter by directly.
+  const optionRes = pollIds.length
+    ? await supabase.from("event_poll_options").select("*").in("poll_id", pollIds).order("position", { ascending: true })
+    : { data: [], error: null };
+  if (optionRes.error) throw new PersistError(optionRes.error);
   const optionsByPoll = new Map<string, { id: string; label: string; vote_count: number }[]>();
   for (const o of (optionRes.data ?? []) as { id: string; poll_id: string; label: string; vote_count: number }[]) {
     const arr = optionsByPoll.get(o.poll_id) ?? [];
@@ -1088,10 +1117,13 @@ export async function deletePoll(id: string): Promise<void> {
  *  since "who used this code" is just its own successful transactions. */
 export async function getDiscountCodeRedemptions(discountCodeId: string): Promise<DiscountRedemption[]> {
   const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) return [];
   const { data, error } = await supabase
     .from("paystack_transactions")
     .select("amount_naira, verified_at, created_at, registrant_data")
     .eq("discount_code_id", discountCodeId)
+    .eq("organization_id", orgId)
     .eq("status", "success")
     .order("verified_at", { ascending: false });
   if (error) throw new PersistError(error);

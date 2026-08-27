@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { finalizePaystackTransaction } from "@/lib/paystack";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 const ERROR_MESSAGES: Record<string, string> = {
   unknown_reference: "We couldn't find that payment.",
@@ -22,6 +23,16 @@ export async function GET(request: Request) {
   const reference = searchParams.get("reference");
   if (!reference) {
     return NextResponse.json({ error: "Missing reference." }, { status: 400 });
+  }
+
+  // Bounded per-reference and per-IP — this can trigger a real Paystack API call
+  // while a transaction is still pending, and is otherwise the one Paystack-facing
+  // route in the app with no throttle at all.
+  if (!(await checkRateLimit(`ticket-verify:ref:${reference}`, 20, 10 * 60))) {
+    return rateLimitedResponse();
+  }
+  if (!(await checkRateLimit(`ticket-verify:ip:${clientIp(request)}`, 60, 10 * 60))) {
+    return rateLimitedResponse();
   }
 
   const admin = createAdminClient();

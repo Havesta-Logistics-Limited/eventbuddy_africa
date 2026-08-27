@@ -6,7 +6,7 @@ import { AlertCircle, Plus, Users, X, Edit2, Trash2, Landmark, ShieldCheck, User
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { PersistError, addStaff, deleteStaff, updateStaff, useDestinations, useEvents, useStaff, useUniversities } from "@/lib/store";
+import { PersistError, addStaff, deleteStaff, updateStaff, resolveMyOrgId, useDestinations, useEvents, useStaff, useUniversities } from "@/lib/store";
 import { Role } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
 import { Reveal } from "@/components/reveal";
@@ -47,6 +47,7 @@ export default function AdminPage() {
   const [profileFullName, setProfileFullName] = useState("");
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [savingName, setSavingName] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -79,6 +80,10 @@ export default function AdminPage() {
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     setPasswordError("");
+    if (!currentPassword) {
+      setPasswordError("Enter your current password.");
+      return;
+    }
     if (newPassword.length < 8) {
       setPasswordError("Password must be at least 8 characters.");
       return;
@@ -90,8 +95,20 @@ export default function AdminPage() {
     setChangingPassword(true);
     try {
       const supabase = createSupabaseBrowserClient();
+      // Reauthenticate with the current password first — a hijacked/stale session
+      // (XSS, a shared/unlocked device) shouldn't be enough on its own to change the
+      // password and lock the real owner out. Mirrors the intent of reset-password's
+      // MFA step-up, for the one destructive account action that previously had no
+      // reauthentication barrier at all.
+      const { error: reauthError } = await supabase.auth.signInWithPassword({ email: profileEmail, password: currentPassword });
+      if (reauthError) {
+        setPasswordError("Current password is incorrect.");
+        setChangingPassword(false);
+        return;
+      }
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       toast.success("Password updated");
@@ -116,23 +133,34 @@ export default function AdminPage() {
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
-    supabase
-      .from("organizations")
-      .select("paystack_subaccount_code, payout_bank_name, payout_account_number, payout_account_name, payout_change_status")
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setOrgPayout({
-            paystackSubaccountCode: data.paystack_subaccount_code,
-            payoutBankName: data.payout_bank_name,
-            payoutAccountNumber: data.payout_account_number,
-            payoutAccountName: data.payout_account_name,
-            payoutChangeStatus: (data.payout_change_status as PayoutChangeStatus) || "none",
-          });
-        }
+    // Explicitly scoped to the caller's own org — an account that is BOTH an org
+    // owner and a platform admin would otherwise have this unfiltered `.limit(1)`
+    // resolve to an arbitrary organization's real, unmasked bank details (RLS lets
+    // platform admins read every org's row here; only an explicit filter, not
+    // .limit(1), guarantees it's this org).
+    resolveMyOrgId(supabase).then((orgId) => {
+      if (!orgId) {
         setLoadingPayout(false);
-      });
+        return;
+      }
+      supabase
+        .from("organizations")
+        .select("paystack_subaccount_code, payout_bank_name, payout_account_number, payout_account_name, payout_change_status")
+        .eq("id", orgId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setOrgPayout({
+              paystackSubaccountCode: data.paystack_subaccount_code,
+              payoutBankName: data.payout_bank_name,
+              payoutAccountNumber: data.payout_account_number,
+              payoutAccountName: data.payout_account_name,
+              payoutChangeStatus: (data.payout_change_status as PayoutChangeStatus) || "none",
+            });
+          }
+          setLoadingPayout(false);
+        });
+    });
   }, []);
 
   async function handleRequestPayoutChange() {
@@ -331,6 +359,16 @@ export default function AdminPage() {
             <div>
               <h2 className="font-semibold text-slate-800 mb-4">Change password</h2>
               <form onSubmit={handleChangePassword} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Current password</label>
+                  <input
+                    required
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">New password</label>
                   <input

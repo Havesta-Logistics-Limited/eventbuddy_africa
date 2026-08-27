@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { z } from "zod";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
-type SendLeadEmailBody = {
-  to: string;
-  subject: string;
-  message: string;
-  csv: string;
-  filename: string;
-};
+const BodySchema = z.object({
+  to: z.string().trim().email(),
+  subject: z.string().trim().max(200).optional(),
+  message: z.string().trim().max(4000).optional(),
+  csv: z.string().min(1),
+  filename: z.string().trim().max(120).optional(),
+});
 
 /**
  * Sends a CSV of leads by email — reachable only by a signed-in org admin. This route
@@ -27,14 +29,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  const body = (await request.json()) as Partial<SendLeadEmailBody>;
-  const { to, subject, message, csv, filename } = body;
-
-  if (!to || typeof to !== "string") {
-    return NextResponse.json({ error: "A recipient email is required." }, { status: 400 });
+  const rawBody = await request.json().catch(() => null);
+  const parsed = BodySchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message || "Check the request and try again." }, { status: 400 });
   }
-  if (!csv) {
-    return NextResponse.json({ error: "Nothing to attach — there are no leads to send." }, { status: 400 });
+  const { to, subject, message, csv, filename } = parsed.data;
+
+  if (!(await checkRateLimit(`send-lead-email:user:${caller.id}`, 20, 10 * 60))) {
+    return rateLimitedResponse();
   }
 
   const apiKey = process.env.RESEND_API_KEY;

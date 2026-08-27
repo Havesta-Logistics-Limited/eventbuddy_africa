@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 /**
  * Everything a staff/rep device session needs after check-in: their org's destinations,
@@ -7,11 +8,23 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * (own leads for staff, their university's leads for rep — matching the pre-Phase-2
  * filter logic in leads/page.tsx). Staff/rep aren't Supabase Auth users, so this runs
  * through the service-role client rather than relying on RLS.
+ *
+ * POST, not GET+query-string: staffId is a long-lived bearer credential (see
+ * staff-checkin/route.ts), and a query string would otherwise land in server access
+ * logs, CDN logs, and browser history — the one place among the staff-session routes
+ * this credential wasn't already kept out of.
  */
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const staffId = searchParams.get("staffId");
+export async function POST(request: Request) {
+  const body = (await request.json().catch(() => null)) as { staffId?: string } | null;
+  const staffId = body?.staffId;
   if (!staffId) return NextResponse.json({ error: "Missing staffId." }, { status: 400 });
+
+  if (!(await checkRateLimit(`session-data:staff:${staffId}`, 60, 10 * 60))) {
+    return rateLimitedResponse();
+  }
+  if (!(await checkRateLimit(`session-data:ip:${clientIp(request)}`, 120, 10 * 60))) {
+    return rateLimitedResponse();
+  }
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!apiKey || apiKey === "paste_your_supabase_service_role_key_here") {

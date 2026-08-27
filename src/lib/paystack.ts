@@ -344,25 +344,24 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
   }
 
   if (txn.ticket_type_id) {
-    const { data: ticket, error: ticketErr } = await supabase.from("ticket_types").select("quantity_sold").eq("id", txn.ticket_type_id).maybeSingle();
-    if (ticket) {
-      const { error: incrementErr } = await supabase
-        .from("ticket_types")
-        .update({ quantity_sold: ticket.quantity_sold + 1 })
-        .eq("id", txn.ticket_type_id);
-      if (incrementErr) console.error(`[ticket-purchase] couldn't increment quantity_sold for ticket ${txn.ticket_type_id}:`, incrementErr.message);
-    } else if (ticketErr) {
-      console.error(`[ticket-purchase] couldn't load ticket type ${txn.ticket_type_id} to increment quantity_sold:`, ticketErr.message);
+    // Atomic guarded UPDATE (see 0038_atomic_ticket_discount_counters.sql), not a
+    // read-then-write — the payment is already taken at this point, so a `false`
+    // result means the event sold out from under this buyer in a race and needs
+    // manual reconciliation (refund or a seat added), not a silent failure.
+    const { data: incremented, error: incrementErr } = await supabase.rpc("increment_ticket_sold", { p_ticket_type_id: txn.ticket_type_id });
+    if (incrementErr) {
+      console.error(`[ticket-purchase] couldn't increment quantity_sold for ticket ${txn.ticket_type_id}:`, incrementErr.message);
+    } else if (!incremented) {
+      console.error(`[ticket-purchase] OVERSOLD: ticket type ${txn.ticket_type_id} was already at capacity when a paid registration for ${info.email} was fulfilled — needs manual review.`);
     }
   }
 
   if (txn.discount_code_id) {
-    const { data: code, error: codeErr } = await supabase.from("discount_codes").select("uses_count").eq("id", txn.discount_code_id).maybeSingle();
-    if (code) {
-      const { error: incrementErr } = await supabase.from("discount_codes").update({ uses_count: code.uses_count + 1 }).eq("id", txn.discount_code_id);
-      if (incrementErr) console.error(`[ticket-purchase] couldn't increment uses_count for discount code ${txn.discount_code_id}:`, incrementErr.message);
-    } else if (codeErr) {
-      console.error(`[ticket-purchase] couldn't load discount code ${txn.discount_code_id} to increment uses_count:`, codeErr.message);
+    const { data: incremented, error: incrementErr } = await supabase.rpc("increment_discount_uses", { p_discount_code_id: txn.discount_code_id });
+    if (incrementErr) {
+      console.error(`[ticket-purchase] couldn't increment uses_count for discount code ${txn.discount_code_id}:`, incrementErr.message);
+    } else if (!incremented) {
+      console.error(`[ticket-purchase] discount code ${txn.discount_code_id} was already at its use limit when a paid registration for ${info.email} was fulfilled — needs manual review.`);
     }
   }
 

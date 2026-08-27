@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { formatDate } from "@/lib/utils";
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 /** Fire-and-forget confirmation for a freshly created event — called from the
  *  dashboard right after addEvent succeeds. Best-effort like every other
@@ -64,6 +65,10 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user?.email) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+
+  if (!(await checkRateLimit(`notify-event-created:user:${user.id}`, 20, 10 * 60))) {
+    return rateLimitedResponse();
+  }
 
   // RLS-scoped select — only ever matches an event belonging to an org this user
   // owns, same trust boundary as every other admin-triggered mutation.

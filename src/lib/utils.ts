@@ -8,6 +8,21 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Guards any admin-authored free-text URL (currently: an event's virtual join
+ * link) before it's ever used as an `href`. React doesn't sanitize `href`
+ * values, so an unvalidated `javascript:`/`data:` URI pasted into a text input
+ * would render as a live, clickable link on both the organizer's own dashboard
+ * and the public registration confirmation page. Checked again here at render
+ * time (not just at the wizard's input) so it also covers any value already
+ * stored before this check existed.
+ */
+export function safeHttpUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  const trimmed = url.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : undefined;
+}
+
+/**
  * Orders events so the ones happening soonest lead: any event in progress
  * right now comes first, then upcoming events nearest their start date,
  * then completed events with the most recently finished on top.

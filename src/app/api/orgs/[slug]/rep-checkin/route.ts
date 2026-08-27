@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { accessCodeMatches } from "@/lib/access-code";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 type RepCheckinBody = {
   eventId: string;
@@ -21,6 +22,11 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   if (!eventId || !destinationId || !universityId) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  // Same brute-force exposure as staff-checkin's access code — guard it the same way.
+  if (!(await checkRateLimit(`rep-checkin:ip:${clientIp(request)}`, 20, 10 * 60))) {
+    return rateLimitedResponse();
   }
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

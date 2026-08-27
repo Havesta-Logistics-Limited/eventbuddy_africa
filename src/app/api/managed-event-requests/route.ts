@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 type RequestBody = {
   contactName?: string;
@@ -13,6 +15,18 @@ type RequestBody = {
   city?: string;
   message?: string;
 };
+
+const RequestSchema = z.object({
+  contactName: z.string().trim().min(1).max(120),
+  contactEmail: z.string().trim().email(),
+  contactPhone: z.string().trim().max(40).optional(),
+  organizationName: z.string().trim().max(160).optional(),
+  eventName: z.string().trim().min(1).max(160),
+  eventDate: z.string().trim().max(40).optional(),
+  expectedAttendees: z.string().trim().max(40).optional(),
+  city: z.string().trim().min(1).max(120),
+  message: z.string().trim().max(4000).optional(),
+});
 
 /** Best-effort — the lead is already saved by the time this runs, so an email
  *  provider hiccup shouldn't turn into a failed submission for the visitor. The
@@ -47,38 +61,33 @@ async function notifyBusiness(body: Required<Pick<RequestBody, "contactName" | "
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as RequestBody | null;
-  if (!body) {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  const body = await request.json().catch(() => null);
+  const parsed = RequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message || "Name, email, event name, and city are required." }, { status: 400 });
   }
+  const { contactName, contactEmail, eventName, city } = parsed.data;
 
-  const contactName = body.contactName?.trim();
-  const contactEmail = body.contactEmail?.trim();
-  const eventName = body.eventName?.trim();
-  const city = body.city?.trim();
-  if (!contactName || !contactEmail || !eventName || !city) {
-    return NextResponse.json({ error: "Name, email, event name, and city are required." }, { status: 400 });
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
-    return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+  if (!(await checkRateLimit(`managed-event-requests:ip:${clientIp(request)}`, 5, 10 * 60))) {
+    return rateLimitedResponse();
   }
 
   const admin = createAdminClient();
   const { error } = await admin.from("managed_event_requests").insert({
     contact_name: contactName,
     contact_email: contactEmail,
-    contact_phone: body.contactPhone?.trim() || null,
-    organization_name: body.organizationName?.trim() || null,
+    contact_phone: parsed.data.contactPhone || null,
+    organization_name: parsed.data.organizationName || null,
     event_name: eventName,
-    event_date: body.eventDate?.trim() || null,
-    expected_attendees: body.expectedAttendees?.trim() || null,
+    event_date: parsed.data.eventDate || null,
+    expected_attendees: parsed.data.expectedAttendees || null,
     city,
-    message: body.message?.trim() || null,
+    message: parsed.data.message || null,
   });
   if (error) {
     return NextResponse.json({ error: "Couldn't submit your request. Please try again." }, { status: 500 });
   }
 
-  await notifyBusiness({ contactName, contactEmail, eventName, city, ...body });
+  await notifyBusiness(parsed.data);
   return NextResponse.json({ ok: true });
 }

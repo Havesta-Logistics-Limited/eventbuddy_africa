@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
 import { Resend } from "resend";
-import { formatTime } from "@/lib/utils";
+import { formatTime, safeHttpUrl } from "@/lib/utils";
 import { emailButton, escapeHtml } from "@/lib/email-template";
 
 /** Shared between the free self-registration route and the paid ticket-purchase
@@ -82,8 +82,11 @@ export async function sendVirtualConfirmationEmail(to: string, event: Registered
   try {
     const { eventDate, eventTime } = eventDateTimeLine(event);
     const safeName = escapeHtml(event.name);
-    const safeJoinUrl = event.virtual_join_url ? escapeHtml(event.virtual_join_url) : "";
-    const joinInfoHtml = `<p style="margin:0 0 4px;">${event.virtual_platform ? `${escapeHtml(event.virtual_platform)} — ` : ""}<a href="${safeJoinUrl}">${safeJoinUrl}</a></p>${
+    // Scheme-checked, not just HTML-escaped — escapeHtml alone still lets a
+    // javascript:/data: URI through as a live href.
+    const validJoinUrl = safeHttpUrl(event.virtual_join_url);
+    const safeJoinUrl = validJoinUrl ? escapeHtml(validJoinUrl) : "";
+    const joinInfoHtml = `<p style="margin:0 0 4px;">${event.virtual_platform ? `${escapeHtml(event.virtual_platform)} — ` : ""}${safeJoinUrl ? `<a href="${safeJoinUrl}">${safeJoinUrl}</a>` : ""}</p>${
       event.virtual_access_notes ? `<p style="margin:0; color:#666; font-size:13px; white-space:pre-line;">${escapeHtml(event.virtual_access_notes)}</p>` : ""
     }`;
 

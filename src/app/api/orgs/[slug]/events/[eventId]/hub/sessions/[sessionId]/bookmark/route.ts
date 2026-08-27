@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyHubMember } from "@/lib/event-hub";
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 type Body = { token: string };
 
@@ -10,6 +11,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const { slug, eventId, sessionId } = await ctx.params;
   const body = (await request.json()) as Partial<Body>;
   if (!body.token) return NextResponse.json({ error: "Missing access token." }, { status: 400 });
+
+  if (!(await checkRateLimit(`hub-bookmark:token:${body.token}`, 30, 10 * 60))) {
+    return rateLimitedResponse();
+  }
 
   const admin = createAdminClient();
   const member = await verifyHubMember(admin, { slug, eventId, token: body.token });

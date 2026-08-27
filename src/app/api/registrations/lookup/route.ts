@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 type LookupBody = {
   staffId: string;
@@ -21,6 +22,13 @@ export async function POST(request: Request) {
 
   if (!staffId || !referenceId?.trim()) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  // This returns attendee PII (name/email/phone) per guessed reference ID — mirrors
+  // /api/leads's per-staffId throttle so a self-minted staffId (see staff-checkin's
+  // own rate limit above) can't be used to script a scraping run.
+  if (!(await checkRateLimit(`registrations-lookup:staff:${staffId}`, 60, 10 * 60))) {
+    return rateLimitedResponse();
   }
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
