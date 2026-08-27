@@ -20,6 +20,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate route types
+        # tsc needs .next/types/routes.d.ts (RouteContext, typed route strings)
+        # to exist first — Next only writes it during a build or this command,
+        # and a fresh CI checkout has no .next/ directory yet. Locally this is
+        # easy to miss since .next/ is usually already sitting there from a
+        # previous dev/build run.
+        run: npx next typegen
+
       - name: Type check
         run: npx tsc --noEmit
 
