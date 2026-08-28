@@ -20,6 +20,20 @@ const DIRECT_LINES = [
     label: "@eventbuddy_africa",
     caption: "DMs open",
   },
+  {
+    key: "tiktok",
+    href: "https://tiktok.com/@eventbuddy_africa",
+    icon: "/icons/tiktok.svg",
+    label: "@eventbuddy_africa",
+    caption: "TikTok",
+  },
+  {
+    key: "linkedin",
+    href: "https://linkedin.com/company/eventbuddyafrica",
+    icon: "/icons/linkedin.svg",
+    label: "eventbuddyafrica",
+    caption: "LinkedIn",
+  },
 ] as const;
 
 export default function ContactContent() {
