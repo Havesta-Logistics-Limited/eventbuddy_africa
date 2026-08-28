@@ -76,7 +76,7 @@ const SECTIONS = [
   {
     heading: "Contact us",
     body: [
-      "Questions about these terms can be sent to legal@eventbuddy.example.",
+      "Questions about these terms can be sent to info@eventbuddy.africa.",
     ],
   },
 ];
