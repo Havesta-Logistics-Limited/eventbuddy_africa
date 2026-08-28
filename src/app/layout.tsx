@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Serif_Display, Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import "./globals.css";
 
 const dmSerif = DM_Serif_Display({
@@ -98,6 +99,7 @@ export default function RootLayout({
       <body>
         {/* Static, hardcoded JSON — no user input ever flows into this, safe to inject as-is. */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+        <GoogleAnalytics />
         {children}
         <Toaster richColors position="top-right" closeButton />
       </body>

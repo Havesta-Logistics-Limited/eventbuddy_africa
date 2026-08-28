@@ -29,6 +29,7 @@ Live at [eventbuddy.africa](https://eventbuddy.africa). See `PRODUCT.md` for pro
    | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally, the real domain in production |
    | `CRON_SECRET` | Any random string — bearer-auth for the scheduled cron routes below |
    | `CONTACT_INBOX_EMAIL` | Optional — where the `/contact` form's notifications go. Defaults to `info@eventbuddy.africa` |
+   | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Optional — Google Analytics 4 measurement ID (`G-...`). Only set in production; leaving it unset skips loading `gtag.js` entirely, so local/dev traffic never reaches real analytics |
 
 3. Run the migrations in `supabase/migrations/` **in order** against your Supabase project (SQL Editor, or the Supabase CLI). They're cumulative and idempotent (`if not exists` throughout) — there's no separate seed step.
 4. `npm run dev`

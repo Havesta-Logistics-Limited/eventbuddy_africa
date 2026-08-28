@@ -44,6 +44,7 @@ const SECTIONS = [
     heading: "Sharing and disclosure",
     body: [
       "We share data with service providers who help us run the platform — for example, our database and email-delivery providers — solely to provide the service, under obligations to protect it.",
+      "We use Google Analytics to understand how visitors use our marketing site (pages visited, general location, device type) — it doesn't collect the event, lead, or registration data described above.",
       "We may disclose information if required by law, or to protect the rights, safety, or property of eventbuddy, our users, or the public.",
     ],
   },
@@ -114,7 +115,7 @@ export default function PrivacyPolicyPage() {
       <section className="max-w-3xl mx-auto px-6 pt-12 pb-4">
         <p className="font-mono text-xs font-semibold uppercase tracking-widest text-brand-600 mb-3">Legal</p>
         <h1 className="font-display text-4xl text-slate-900 mb-2">Privacy Policy</h1>
-        <p className="text-sm text-slate-400">Last updated August 20, 2026</p>
+        <p className="text-sm text-slate-400">Last updated August 28, 2026</p>
       </section>
 
       <section className="max-w-3xl mx-auto px-6 pb-20">
