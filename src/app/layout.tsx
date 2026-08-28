@@ -28,13 +28,13 @@ const inter = Inter({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-const title = "eventbuddy — Never Lose a Lead";
+const title = "eventbuddy — Less Chaos, Better Events";
 // Keyword-bearing but factually accurate — every phrase here names something the
-// product actually does (registration, ticketing, check-in, lead capture) rather
-// than generic marketing filler, since that's what both Google and a reader
-// scanning a search snippet actually need to see.
+// product actually does (registration, ticketing, RSVPs, virtual events, check-in,
+// a live event hub) rather than generic marketing filler, since that's what both
+// Google and a reader scanning a search snippet actually need to see.
 const description =
-  "Registration, ticketing, and check-in software for education fairs, job fairs, conferences, and any other event across Africa. Free to start — only pay a transaction fee when a ticket sells.";
+  "Africa's event digital infrastructure — registration, ticketing, RSVPs, virtual events, and a live event hub. Free to start, pay only when tickets sell.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -45,6 +45,9 @@ export const metadata: Metadata = {
     "event ticketing software",
     "event check-in app",
     "event lead capture software",
+    "RSVP software",
+    "invite-only event platform",
+    "virtual event platform",
     "education fair software",
     "job fair lead management",
     "conference ticketing",
@@ -74,7 +77,7 @@ const structuredData = {
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   description,
-  keywords: "event registration software, event ticketing software, event check-in app, education fair software, job fair lead management, conference ticketing, Africa",
+  keywords: "event registration software, event ticketing software, RSVP software, invite-only event platform, virtual event platform, event check-in app, education fair software, job fair lead management, conference ticketing, Africa",
   url: siteUrl,
   offers: { "@type": "Offer", priceCurrency: "NGN", price: "0", description: "Free to start on Self-Serve — pay only a transaction fee on tickets sold" },
 };

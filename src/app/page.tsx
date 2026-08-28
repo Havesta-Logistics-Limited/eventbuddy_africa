@@ -47,6 +47,7 @@ const STEPS = [
 function getFeatures(feeLabel: string) {
   return [
     { icon: Ticket, title: "Registration & ticketing, built in", body: `Free or paid tickets with QR codes, for virtual and in-person events alike. Ticket revenue splits straight to your own bank account — you only pay ${feeLabel} on what actually sells.` },
+    { icon: Send, title: "Invite-only guest lists & RSVPs", body: "Build a private guest list for a corporate or invite-only event, track who's accepted, maybe, or declined, let guests bring named plus-ones, and send reminder nudges automatically." },
     { icon: Mic2, title: "A live hub for every event", body: "Schedule, speakers, moderated Q&A, and live polls — every attendee gets their own hub automatically the moment they register." },
     { icon: Users2, title: "Role-based access", body: "Admins run the show, staff capture leads for their event, and — for multi-destination events — reps see only their own university's leads." },
     { icon: KeyRound, title: "Access codes per event", body: "Gate staff and rep check-in behind a code you set — or leave it open for smaller, trusted teams." },
@@ -76,11 +77,15 @@ const MARQUEE_EVENT_TYPES = [
 
 // Every capability check here is real and verifiable against the actual product —
 // nothing implies a fabricated usage stat or customer count, only what the software
-// and a shared spreadsheet actually do or don't do.
+// and the patchwork of tools it replaces actually do or don't do. "Spreadsheet +
+// forms" stands in for the real starting point: a shared sheet, a Google Form for
+// sign-ups, a separate ticketing link, and a WhatsApp group for RSVPs.
 const COMPARISON_ROWS = [
+  { label: "Sell tickets, revenue split straight to your bank", spreadsheet: false, eventbuddy: true },
+  { label: "Invite-only guest lists with RSVP tracking & plus-ones", spreadsheet: false, eventbuddy: true },
+  { label: "A live hub for schedule, Q&A, and polls on the day", spreadsheet: false, eventbuddy: true },
+  { label: "Self-service registration with instant QR check-in", spreadsheet: false, eventbuddy: true },
   { label: "Multiple staff capturing at once, no conflicts", spreadsheet: false, eventbuddy: true },
-  { label: "Live view of the day as it happens", spreadsheet: false, eventbuddy: true },
-  { label: "Separate staff vs. rep access, per event", spreadsheet: false, eventbuddy: true },
   { label: "One-click CSV export or email", spreadsheet: false, eventbuddy: true },
   { label: "Works from any staff member's own phone", spreadsheet: true, eventbuddy: true },
 ];
@@ -185,14 +190,15 @@ export default function MarketingHomePage() {
         />
         <div className="relative max-w-6xl mx-auto px-6 pt-16 sm:pt-20 pb-16 lg:pb-28 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
           <div>
-            <h1 className="font-display text-4xl sm:text-5xl leading-tight">
-              Run any event, start to finish.
+            <h1 className="font-display text-4xl sm:text-5xl leading-tight text-balance">
+              Africa&apos;s #1 event digital infrastructure.
               <br />
-              <em>One operating system.</em>
+              <em>Less chaos, better events.</em>
             </h1>
             <p className="mt-5 text-white/70 text-base sm:text-lg max-w-lg">
-              Registration, ticketing, check-in, and a live event hub for education fairs, job fairs, conferences, or
-              anything else — set it up yourself, or bring eventbuddy&apos;s own team on-site to run the day for you.
+              Registration, ticketing, RSVPs, virtual events, and a live event hub — for education fairs, job fairs,
+              conferences, or anything else. Set it up yourself, or bring eventbuddy&apos;s own team on-site to run
+              the day for you.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
@@ -603,9 +609,10 @@ export default function MarketingHomePage() {
           no real customers to quote, so every row here is a verifiable capability
           check, not a fabricated testimonial or usage number. */}
       <section className="max-w-3xl mx-auto px-6 py-20">
-        <h2 className="font-display text-3xl text-slate-900 text-center mb-2">Why teams move off a shared spreadsheet</h2>
+        <h2 className="font-display text-3xl text-slate-900 text-center mb-2 text-balance">Why teams move off a patchwork of tools</h2>
         <p className="text-slate-500 text-center max-w-lg mx-auto mb-12">
-          A spreadsheet and a Google Form work fine for one person. They stop working the moment your event does.
+          A spreadsheet, a Google Form, and a separate ticketing link work fine for one small event. They stop
+          working the moment yours grows.
         </p>
         <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white">
           <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-5 sm:px-6 py-4 bg-slate-50 border-b border-slate-200">
