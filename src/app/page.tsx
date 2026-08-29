@@ -429,9 +429,9 @@ export default function MarketingHomePage() {
           style={{ position: "relative", boxSizing: "content-box", maxHeight: "80vh", width: "100%", aspectRatio: "1.6", padding: "40px 0" }}
         >
           <iframe
-            src="https://app.supademo.com/embed/cmt6dyx5a3nhaqm83tvkc22mg?embed_v=2&utm_source=embed"
+            src="https://app.supademo.com/embed/cmtebm42w0px8qmia3af4jrix?embed_v=2&utm_source=embed"
             loading="lazy"
-            title="Create and Manage Events in EventBuddy"
+            title="Create Virtual Events and Manage Attendees on EventBuddy"
             allow="clipboard-write"
             allowFullScreen
             style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
