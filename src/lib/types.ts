@@ -231,6 +231,20 @@ export interface DiscountRedemption {
   purchasedAt: string;
 }
 
+/** One paid-ticket checkout attempt for an event, successful or not — read from
+ *  paystack_transactions directly, same source as DiscountRedemption. Powers both
+ *  the sales-overview totals (status === "success") and the abandoned-checkout
+ *  list (status === "pending") on the event's Tickets tab. */
+export interface TicketPurchaseAttempt {
+  ticketTypeId: string | null;
+  discountCodeId: string | null;
+  amountNaira: number;
+  status: "pending" | "success" | "failed" | "refunded" | "disputed";
+  fullName: string;
+  email: string;
+  createdAt: string;
+}
+
 export type RegistrationStatus = "registered" | "checked_in" | "cancelled";
 
 /** A self-service attendee sign-up via an event's public registration link — distinct

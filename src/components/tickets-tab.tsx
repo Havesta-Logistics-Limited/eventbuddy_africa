@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, DollarSign, Edit2, Percent, Plus, Tag, Ticket, Trash2, Users, X } from "lucide-react";
-import { DiscountCode, DiscountRedemption, EventRecord, TicketType } from "@/lib/types";
+import { AlertCircle, Clock, Copy, DollarSign, Edit2, Percent, Plus, Tag, Ticket, TrendingUp, Trash2, Users, X } from "lucide-react";
+import { DiscountCode, DiscountRedemption, EventRecord, TicketPurchaseAttempt, TicketType } from "@/lib/types";
 import {
   PersistError,
   addDiscountCode,
@@ -11,10 +11,24 @@ import {
   deleteDiscountCode,
   deleteTicketType,
   getDiscountCodeRedemptions,
+  getEventTicketTransactions,
   updateDiscountCode,
   updateTicketType,
 } from "@/lib/store";
 import { formatNaira } from "@/lib/billing";
+
+/** "3 hours ago" / "2 days ago" — coarse enough for an abandoned-checkout list,
+ *  no need to pull in a date library for one label. */
+function timeAgo(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 const EMPTY_FORM = { id: "", name: "", description: "", priceNaira: "0", quantityAvailable: "" };
 const EMPTY_CODE_FORM = {
@@ -126,6 +140,50 @@ export function TicketsTab({
   const [redemptions, setRedemptions] = useState<DiscountRedemption[]>([]);
   const [loadingRedemptions, setLoadingRedemptions] = useState(false);
 
+  const [transactions, setTransactions] = useState<TicketPurchaseAttempt[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    getEventTicketTransactions(event.id)
+      .then((rows) => {
+        if (!cancelled) setTransactions(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setTransactions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingTransactions(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [event.id]);
+
+  const successfulTxns = transactions.filter((t) => t.status === "success");
+  const abandonedTxns = transactions.filter((t) => t.status === "pending");
+  const totalRevenueNaira = successfulTxns.reduce((sum, t) => sum + t.amountNaira, 0);
+  const revenueByTicketType = new Map<string, number>();
+  for (const t of successfulTxns) {
+    if (!t.ticketTypeId) continue;
+    revenueByTicketType.set(t.ticketTypeId, (revenueByTicketType.get(t.ticketTypeId) ?? 0) + t.amountNaira);
+  }
+  const discountGivenByCode = new Map<string, number>();
+  for (const t of successfulTxns) {
+    if (!t.discountCodeId || !t.ticketTypeId) continue;
+    const listedPrice = ticketTypes.find((tt) => tt.id === t.ticketTypeId)?.priceNaira ?? 0;
+    const savedNaira = Math.max(0, listedPrice - t.amountNaira);
+    discountGivenByCode.set(t.discountCodeId, (discountGivenByCode.get(t.discountCodeId) ?? 0) + savedNaira);
+  }
+  const totalDiscountGiven = Array.from(discountGivenByCode.values()).reduce((sum, v) => sum + v, 0);
+  const hasPaidTicketTypes = ticketTypes.some((t) => t.priceNaira > 0);
+
+  function copyAbandonedEmails() {
+    const emails = Array.from(new Set(abandonedTxns.map((t) => t.email).filter((e) => e && e !== "—")));
+    navigator.clipboard.writeText(emails.join(", "));
+    toast.success(`Copied ${emails.length} email${emails.length !== 1 ? "s" : ""}`);
+  }
+
   async function handleViewUsage(code: DiscountCode) {
     setUsageCode(code);
     setLoadingRedemptions(true);
@@ -183,6 +241,81 @@ export function TicketsTab({
           <AlertCircle size={15} className="mt-0.5 shrink-0" />
           Payouts aren&apos;t set up for this organization yet — free tickets still work, but a paid ticket type can&apos;t be created until you add
           a payout bank account in Settings → Payouts.
+        </div>
+      )}
+
+      {hasPaidTicketTypes && !loadingTransactions && (
+        <div className="mb-6">
+          <h2 className="font-semibold text-slate-800 mb-3">Sales overview</h2>
+          <div className="grid sm:grid-cols-2 gap-3 mb-3">
+            <div className="bg-white rounded-xl border border-slate-200 p-4">
+              <p className="text-xs text-slate-500 flex items-center gap-1.5 mb-1">
+                <TrendingUp size={13} />
+                Total revenue
+              </p>
+              <p className="text-xl font-semibold text-slate-900">{formatNaira(totalRevenueNaira)}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{successfulTxns.length} paid ticket{successfulTxns.length !== 1 ? "s" : ""}</p>
+            </div>
+            <div className="bg-white rounded-xl border border-slate-200 p-4">
+              <p className="text-xs text-slate-500 flex items-center gap-1.5 mb-1">
+                <Tag size={13} />
+                Discounts given
+              </p>
+              <p className="text-xl font-semibold text-slate-900">{formatNaira(totalDiscountGiven)}</p>
+              <p className="text-xs text-slate-400 mt-0.5">across {discountGivenByCode.size} code{discountGivenByCode.size !== 1 ? "s" : ""}</p>
+            </div>
+          </div>
+          {revenueByTicketType.size > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
+              <p className="text-xs font-medium text-slate-500 mb-1">Revenue by ticket type</p>
+              {ticketTypes
+                .filter((t) => revenueByTicketType.has(t.id))
+                .map((t) => (
+                  <div key={t.id} className="flex items-center justify-between text-sm">
+                    <span className="text-slate-700">{t.name}</span>
+                    <span className="font-medium text-slate-900">{formatNaira(revenueByTicketType.get(t.id) ?? 0)}</span>
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {abandonedTxns.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-4 mt-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <p className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
+                  <Clock size={14} className="text-amber-500" />
+                  Started checkout, never paid ({abandonedTxns.length})
+                </p>
+                <button
+                  onClick={copyAbandonedEmails}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50"
+                >
+                  <Copy size={13} />
+                  Copy emails
+                </button>
+              </div>
+              <p className="text-xs text-slate-400 mb-3">
+                Good candidates for a follow-up email — especially if you add a discount code after they dropped off.
+              </p>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {abandonedTxns.map((t, i) => {
+                  const ticketName = ticketTypes.find((tt) => tt.id === t.ticketTypeId)?.name ?? "Ticket";
+                  return (
+                    <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-slate-100 first:border-t-0 first:pt-0">
+                      <div className="min-w-0">
+                        <p className="text-slate-800 truncate">{t.email}</p>
+                        <p className="text-xs text-slate-400">
+                          {ticketName} · {formatNaira(t.amountNaira)}
+                          {t.discountCodeId && " · tried a discount code"}
+                        </p>
+                      </div>
+                      <span className="text-xs text-slate-400 shrink-0">{timeAgo(t.createdAt)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -286,6 +419,7 @@ export function TicketsTab({
                   {d.maxDiscountNaira != null && ` (up to ${formatNaira(d.maxDiscountNaira)})`} · {d.usesCount} used
                   {d.maxUses != null && ` of ${d.maxUses}`}
                   {d.perCustomerLimit === "single" && " · once per customer"}
+                  {(discountGivenByCode.get(d.id) ?? 0) > 0 && ` · ${formatNaira(discountGivenByCode.get(d.id) ?? 0)} given`}
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {d.ticketTypeIds && d.ticketTypeIds.length > 0

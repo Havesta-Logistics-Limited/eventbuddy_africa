@@ -19,6 +19,7 @@ import {
   Session,
   SessionSpeaker,
   StaffRecord,
+  TicketPurchaseAttempt,
   TicketType,
   University,
 } from "./types";
@@ -1227,6 +1228,37 @@ export async function getDiscountCodeRedemptions(discountCodeId: string): Promis
       email: info?.email ?? "—",
       amountPaidNaira: Number(t.amount_naira),
       purchasedAt: t.verified_at ?? t.created_at,
+    };
+  });
+}
+
+/** On-demand, not cached — every paid-ticket checkout attempt for one event,
+ *  successful or not. Feeds both the Tickets tab's sales-overview totals
+ *  (filter to status === "success") and its abandoned-checkout list (filter to
+ *  status === "pending") from a single query, same RLS-scoped read pattern as
+ *  getDiscountCodeRedemptions above. */
+export async function getEventTicketTransactions(eventId: string): Promise<TicketPurchaseAttempt[]> {
+  const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) return [];
+  const { data, error } = await supabase
+    .from("paystack_transactions")
+    .select("ticket_type_id, discount_code_id, amount_naira, status, created_at, registrant_data")
+    .eq("event_id", eventId)
+    .eq("organization_id", orgId)
+    .eq("purpose", "ticket_purchase")
+    .order("created_at", { ascending: false });
+  if (error) throw new PersistError(error);
+  return (data ?? []).map((t) => {
+    const info = t.registrant_data as { firstName?: string; lastName?: string; email?: string } | null;
+    return {
+      ticketTypeId: t.ticket_type_id,
+      discountCodeId: t.discount_code_id,
+      amountNaira: Number(t.amount_naira),
+      status: t.status as TicketPurchaseAttempt["status"],
+      fullName: info ? `${info.firstName ?? ""} ${info.lastName ?? ""}`.trim() : "—",
+      email: info?.email ?? "—",
+      createdAt: t.created_at,
     };
   });
 }
