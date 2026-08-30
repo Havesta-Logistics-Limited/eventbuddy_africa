@@ -424,14 +424,25 @@ export default function RegisterPage() {
             {selectedTicket && selectedTicket.priceNaira > 0 && (
               <div className="mb-5">
                 {appliedDiscount ? (
-                  <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-emerald-50 text-emerald-800 text-sm">
-                    <span className="flex items-center gap-2">
-                      <Tag size={14} />
-                      <span className="font-mono font-semibold">{appliedDiscount.code}</span> applied
-                    </span>
-                    <button type="button" onClick={handleRemoveDiscount} className="text-emerald-700 hover:text-emerald-900">
-                      <X size={15} />
-                    </button>
+                  <div className="p-3 rounded-lg bg-emerald-50 text-emerald-800 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-2">
+                        <Tag size={14} />
+                        <span className="font-mono font-semibold">{appliedDiscount.code}</span> applied
+                      </span>
+                      <button type="button" onClick={handleRemoveDiscount} className="text-emerald-700 hover:text-emerald-900">
+                        <X size={15} />
+                      </button>
+                    </div>
+                    {discountedPrice != null && (
+                      <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-emerald-100">
+                        <span className="text-xs">You saved {formatNaira(selectedTicket.priceNaira - discountedPrice)}</span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-xs text-emerald-600 line-through">{formatNaira(selectedTicket.priceNaira)}</span>
+                          <span className="font-semibold">{formatNaira(discountedPrice)} to pay</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <>
