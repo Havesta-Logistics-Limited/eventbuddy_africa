@@ -180,6 +180,17 @@ export default function RegisterPage() {
     setDiscountError("");
   }
 
+  /** Fire-and-forget — lets the event's dashboard see who started the form
+   *  without ever submitting it. Never awaited, and a failure here must never
+   *  surface to the visitor or affect the actual registration flow. */
+  function handleFormProgress(values: { firstName: string; lastName: string; email: string }) {
+    fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/registration-form-start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...values, ticketTypeId: selectedTicketId ?? undefined }),
+    }).catch(() => {});
+  }
+
   async function handleSubmit(values: DynamicRegistrationFormValues) {
     const selectedTicket = ticketTypes.find((t) => t.id === selectedTicketId);
     setSubmitError("");
@@ -480,7 +491,7 @@ export default function RegisterPage() {
             ) : ticketTypes.length === 1 && !isTicketAvailable(ticketTypes[0]) ? (
               <p className="text-sm text-slate-400 text-center py-4">This event&apos;s ticket is sold out or unavailable.</p>
             ) : (
-              <DynamicRegistrationForm fields={event.customFields || []} onSubmit={handleSubmit} submitting={submitting} submitError="" />
+              <DynamicRegistrationForm fields={event.customFields || []} onSubmit={handleSubmit} submitting={submitting} submitError="" onProgress={handleFormProgress} />
             )}
           </div>
         )}

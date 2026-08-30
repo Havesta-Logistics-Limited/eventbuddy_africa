@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { z } from "zod";
-import { useForm, type UseFormRegister, type FieldErrors, type Resolver } from "react-hook-form";
+import { useForm, useWatch, type UseFormRegister, type FieldErrors, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FieldDef } from "@/lib/types";
 import { buildCustomFieldsSchema } from "@/lib/dynamic-form-schema";
@@ -12,6 +13,8 @@ const baseSchema = z.object({
   email: z.string().email("Enter a valid email address."),
   phone: z.string().optional(),
 });
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type CustomAnswers = Record<string, string | string[] | undefined>;
 
@@ -95,13 +98,18 @@ export function DynamicRegistrationForm(props: {
   onSubmit: (values: DynamicRegistrationFormValues) => Promise<void>;
   submitting: boolean;
   submitError: string;
+  /** Best-effort, debounced — reports a plausible email (plus whatever name is
+   *  filled in) so the event's dashboard can see who started the form without
+   *  ever submitting it. Never awaited, never blocks typing or submission. */
+  onProgress?: (values: { firstName: string; lastName: string; email: string }) => void;
 }) {
-  const { fields, onSubmit, submitting, submitError } = props;
+  const { fields, onSubmit, submitting, submitError, onProgress } = props;
   const schema = baseSchema.extend({ custom: buildCustomFieldsSchema(fields) });
 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
@@ -113,6 +121,21 @@ export function DynamicRegistrationForm(props: {
       custom: Object.fromEntries(fields.map((f) => [f.id, f.type === "checkboxes" ? [] : ""])),
     },
   });
+
+  const watchedEmail = useWatch({ control, name: "email" });
+  const watchedFirstName = useWatch({ control, name: "firstName" });
+  const watchedLastName = useWatch({ control, name: "lastName" });
+  const lastReportedEmail = useRef("");
+  useEffect(() => {
+    if (!onProgress) return;
+    const email = watchedEmail.trim().toLowerCase();
+    if (!EMAIL_RE.test(email) || email === lastReportedEmail.current) return;
+    const timer = setTimeout(() => {
+      lastReportedEmail.current = email;
+      onProgress({ firstName: watchedFirstName.trim(), lastName: watchedLastName.trim(), email });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [watchedEmail, watchedFirstName, watchedLastName, onProgress]);
 
   const submit = handleSubmit(async (values) => {
     const customAnswers: Record<string, string | string[]> = {};

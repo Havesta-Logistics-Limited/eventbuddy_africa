@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Clock, Copy, DollarSign, Edit2, Percent, Plus, Tag, Ticket, TrendingUp, Trash2, Users, X } from "lucide-react";
-import { DiscountCode, DiscountRedemption, EventRecord, TicketPurchaseAttempt, TicketType } from "@/lib/types";
+import { AlertCircle, Clock, Copy, DollarSign, Edit2, FileEdit, Percent, Plus, Tag, Ticket, TrendingUp, Trash2, Users, X } from "lucide-react";
+import { DiscountCode, DiscountRedemption, EventRecord, RegistrationFormStart, TicketPurchaseAttempt, TicketType } from "@/lib/types";
 import {
   PersistError,
   addDiscountCode,
@@ -11,9 +11,11 @@ import {
   deleteDiscountCode,
   deleteTicketType,
   getDiscountCodeRedemptions,
+  getEventFormStarts,
   getEventTicketTransactions,
   updateDiscountCode,
   updateTicketType,
+  useRegistrations,
 } from "@/lib/store";
 import { formatNaira } from "@/lib/billing";
 
@@ -184,6 +186,39 @@ export function TicketsTab({
     toast.success(`Copied ${emails.length} email${emails.length !== 1 ? "s" : ""}`);
   }
 
+  const [formStarts, setFormStarts] = useState<RegistrationFormStart[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    getEventFormStarts(event.id)
+      .then((rows) => {
+        if (!cancelled) setFormStarts(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setFormStarts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [event.id]);
+
+  // A form-start row means "typed an email" — not "never went any further."
+  // Excluding anyone who already has a real registration or ANY paystack
+  // transaction (any status, since even "pending" means they reached
+  // checkout, a further stage the section below already covers) keeps this
+  // list to genuine never-submitted drop-offs, not double-counted ones.
+  const allRegistrations = useRegistrations();
+  const completedOrCheckedOutEmails = new Set<string>([
+    ...allRegistrations.filter((r) => r.eventId === event.id).map((r) => r.email.toLowerCase()),
+    ...transactions.map((t) => t.email.toLowerCase()),
+  ]);
+  const neverSubmitted = formStarts.filter((f) => !completedOrCheckedOutEmails.has(f.email.toLowerCase()));
+
+  function copyFormStartEmails() {
+    const emails = Array.from(new Set(neverSubmitted.map((f) => f.email)));
+    navigator.clipboard.writeText(emails.join(", "));
+    toast.success(`Copied ${emails.length} email${emails.length !== 1 ? "s" : ""}`);
+  }
+
   async function handleViewUsage(code: DiscountCode) {
     setUsageCode(code);
     setLoadingRedemptions(true);
@@ -316,6 +351,47 @@ export function TicketsTab({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {neverSubmitted.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <p className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
+              <FileEdit size={14} className="text-amber-500" />
+              Started the form, never submitted ({neverSubmitted.length})
+            </p>
+            <button
+              onClick={copyFormStartEmails}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50"
+            >
+              <Copy size={13} />
+              Copy emails
+            </button>
+          </div>
+          <p className="text-xs text-slate-400 mb-3">
+            They typed an email into this event&apos;s registration form but never hit submit — didn&apos;t even reach checkout.
+          </p>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {neverSubmitted.map((f, i) => {
+              const ticketName = f.ticketTypeId ? ticketTypes.find((tt) => tt.id === f.ticketTypeId)?.name : null;
+              return (
+                <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-slate-100 first:border-t-0 first:pt-0">
+                  <div className="min-w-0">
+                    <p className="text-slate-800 truncate">{f.email}</p>
+                    {(f.fullName || ticketName) && (
+                      <p className="text-xs text-slate-400">
+                        {f.fullName}
+                        {f.fullName && ticketName && " · "}
+                        {ticketName && `was looking at ${ticketName}`}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-xs text-slate-400 shrink-0">{timeAgo(f.updatedAt)}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

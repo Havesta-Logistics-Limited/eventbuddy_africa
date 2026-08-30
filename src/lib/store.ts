@@ -18,6 +18,7 @@ import {
   RegistrationRecord,
   Session,
   SessionSpeaker,
+  RegistrationFormStart,
   StaffRecord,
   TicketPurchaseAttempt,
   TicketType,
@@ -1261,6 +1262,30 @@ export async function getEventTicketTransactions(eventId: string): Promise<Ticke
       createdAt: t.created_at,
     };
   });
+}
+
+/** On-demand, not cached — every visitor who typed a plausible email into this
+ *  event's registration form, whether or not they ever submitted it. The
+ *  caller is expected to exclude anyone who already appears in this event's
+ *  registrations or paystack_transactions (getEventTicketTransactions) — this
+ *  function only reports raw form-start rows, not "true" abandonment. */
+export async function getEventFormStarts(eventId: string): Promise<RegistrationFormStart[]> {
+  const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) return [];
+  const { data, error } = await supabase
+    .from("registration_form_starts")
+    .select("email, full_name, ticket_type_id, updated_at")
+    .eq("event_id", eventId)
+    .eq("organization_id", orgId)
+    .order("updated_at", { ascending: false });
+  if (error) throw new PersistError(error);
+  return (data ?? []).map((r) => ({
+    email: r.email,
+    fullName: r.full_name,
+    ticketTypeId: r.ticket_type_id,
+    updatedAt: r.updated_at,
+  }));
 }
 
 // ---- lead CRUD ----

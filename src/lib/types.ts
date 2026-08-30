@@ -231,6 +231,16 @@ export interface DiscountRedemption {
   purchasedAt: string;
 }
 
+/** A visitor who typed a plausible email into an event's registration form but
+ *  hasn't (yet, as of this read) completed a registration or reached checkout
+ *  for it — see registration_form_starts and getEventFormStarts. */
+export interface RegistrationFormStart {
+  email: string;
+  fullName: string | null;
+  ticketTypeId: string | null;
+  updatedAt: string;
+}
+
 /** One paid-ticket checkout attempt for an event, successful or not — read from
  *  paystack_transactions directly, same source as DiscountRedemption. Powers both
  *  the sales-overview totals (status === "success") and the abandoned-checkout
