@@ -76,7 +76,9 @@ export function PlatformDocumentsTab() {
       setFormError("Enter the client's name.");
       return;
     }
-    const cleanedItems = form.lineItems.filter((item) => item.description.trim());
+    const cleanedItems = form.lineItems
+      .filter((item) => item.description.trim())
+      .map((item) => ({ ...item, quantity: item.quantity || 1, unitPriceNaira: item.unitPriceNaira || 0 }));
     if (cleanedItems.length === 0) {
       setFormError("Add at least one line item.");
       return;
@@ -293,16 +295,22 @@ export function PlatformDocumentsTab() {
                         type="number"
                         min="1"
                         placeholder="Qty"
-                        value={item.quantity}
-                        onChange={(e) => updateLineItem(i, { quantity: Number(e.target.value) || 1 })}
+                        value={Number.isNaN(item.quantity) ? "" : item.quantity}
+                        onChange={(e) => updateLineItem(i, { quantity: Number(e.target.value) })}
+                        onBlur={(e) => {
+                          if (e.target.value === "") updateLineItem(i, { quantity: 1 });
+                        }}
                         className="w-16 px-2 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                       />
                       <input
                         type="number"
                         min="0"
                         placeholder="Unit price"
-                        value={item.unitPriceNaira}
-                        onChange={(e) => updateLineItem(i, { unitPriceNaira: Number(e.target.value) || 0 })}
+                        value={Number.isNaN(item.unitPriceNaira) ? "" : item.unitPriceNaira}
+                        onChange={(e) => updateLineItem(i, { unitPriceNaira: Number(e.target.value) })}
+                        onBlur={(e) => {
+                          if (e.target.value === "") updateLineItem(i, { unitPriceNaira: 0 });
+                        }}
                         className="w-28 px-2 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                       />
                       <button
@@ -321,7 +329,7 @@ export function PlatformDocumentsTab() {
                   Add line item
                 </button>
                 <p className="text-right text-sm font-semibold text-slate-900 mt-3">
-                  Total: {formatNaira(form.lineItems.reduce((sum, item) => sum + item.quantity * item.unitPriceNaira, 0))}
+                  Total: {formatNaira(form.lineItems.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPriceNaira || 0), 0))}
                 </p>
               </div>
 
