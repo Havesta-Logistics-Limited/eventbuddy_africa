@@ -77,6 +77,41 @@ export default function AdminPage() {
     }
   }
 
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [orgName, setOrgName] = useState("");
+  const [loadingOrgName, setLoadingOrgName] = useState(true);
+  const [savingOrgName, setSavingOrgName] = useState(false);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    resolveMyOrgId(supabase).then(async (id) => {
+      if (!id) {
+        setLoadingOrgName(false);
+        return;
+      }
+      setOrgId(id);
+      const { data } = await supabase.from("organizations").select("name").eq("id", id).maybeSingle();
+      setOrgName(data?.name || "");
+      setLoadingOrgName(false);
+    });
+  }, []);
+
+  async function handleSaveOrgName(e: React.FormEvent) {
+    e.preventDefault();
+    if (!orgId) return;
+    setSavingOrgName(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.from("organizations").update({ name: orgName.trim() }).eq("id", orgId);
+      if (error) throw error;
+      toast.success("Organization name updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save the organization name.");
+    } finally {
+      setSavingOrgName(false);
+    }
+  }
+
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     setPasswordError("");
@@ -351,6 +386,34 @@ export default function AdminPage() {
                     style={{ background: "#C21FAF" }}
                   >
                     {savingName ? "Saving…" : "Save name"}
+                  </button>
+                </form>
+              )}
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-slate-800 mb-4">Your organization</h2>
+              {loadingOrgName ? (
+                <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+              ) : (
+                <form onSubmit={handleSaveOrgName} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Organization name</label>
+                    <input
+                      required
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                    />
+                    <p className="text-xs text-slate-400 mt-1.5">Shown on your registration pages, receipts, and anywhere else attendees see your organization&apos;s name.</p>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={savingOrgName}
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
+                    style={{ background: "#C21FAF" }}
+                  >
+                    {savingOrgName ? "Saving…" : "Save name"}
                   </button>
                 </form>
               )}
