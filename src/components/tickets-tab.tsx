@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Clock, Copy, DollarSign, Edit2, FileEdit, Percent, Plus, Tag, Ticket, TrendingUp, Trash2, Users, X } from "lucide-react";
+import { AlertCircle, ChevronDown, Clock, Copy, DollarSign, Edit2, FileEdit, Percent, Plus, Tag, Ticket, TrendingUp, Trash2, Users, X } from "lucide-react";
 import { DiscountCode, DiscountRedemption, EventRecord, RegistrationFormStart, TicketPurchaseAttempt, TicketType } from "@/lib/types";
 import {
   PersistError,
@@ -213,6 +213,9 @@ export function TicketsTab({
   ]);
   const neverSubmitted = formStarts.filter((f) => !completedOrCheckedOutEmails.has(f.email.toLowerCase()));
 
+  const [showAbandonedCheckouts, setShowAbandonedCheckouts] = useState(false);
+  const [showFormStarts, setShowFormStarts] = useState(false);
+
   function copyFormStartEmails() {
     const emails = Array.from(new Set(neverSubmitted.map((f) => f.email)));
     navigator.clipboard.writeText(emails.join(", "));
@@ -316,11 +319,15 @@ export function TicketsTab({
 
           {abandonedTxns.length > 0 && (
             <div className="bg-white rounded-xl border border-slate-200 p-4 mt-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <p className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <button
+                  onClick={() => setShowAbandonedCheckouts((v) => !v)}
+                  className="flex items-center gap-1.5 text-sm font-medium text-slate-800"
+                >
+                  <ChevronDown size={15} className={`text-slate-400 transition-transform ${showAbandonedCheckouts ? "" : "-rotate-90"}`} />
                   <Clock size={14} className="text-amber-500" />
                   Started checkout, never paid ({abandonedTxns.length})
-                </p>
+                </button>
                 <button
                   onClick={copyAbandonedEmails}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50"
@@ -329,26 +336,30 @@ export function TicketsTab({
                   Copy emails
                 </button>
               </div>
-              <p className="text-xs text-slate-400 mb-3">
-                Good candidates for a follow-up email — especially if you add a discount code after they dropped off.
-              </p>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {abandonedTxns.map((t, i) => {
-                  const ticketName = ticketTypes.find((tt) => tt.id === t.ticketTypeId)?.name ?? "Ticket";
-                  return (
-                    <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-slate-100 first:border-t-0 first:pt-0">
-                      <div className="min-w-0">
-                        <p className="text-slate-800 truncate">{t.email}</p>
-                        <p className="text-xs text-slate-400">
-                          {ticketName} · {formatNaira(t.amountNaira)}
-                          {t.discountCodeId && " · tried a discount code"}
-                        </p>
-                      </div>
-                      <span className="text-xs text-slate-400 shrink-0">{timeAgo(t.createdAt)}</span>
-                    </div>
-                  );
-                })}
-              </div>
+              {showAbandonedCheckouts && (
+                <>
+                  <p className="text-xs text-slate-400 mt-3 mb-3">
+                    Good candidates for a follow-up email — especially if you add a discount code after they dropped off.
+                  </p>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {abandonedTxns.map((t, i) => {
+                      const ticketName = ticketTypes.find((tt) => tt.id === t.ticketTypeId)?.name ?? "Ticket";
+                      return (
+                        <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-slate-100 first:border-t-0 first:pt-0">
+                          <div className="min-w-0">
+                            <p className="text-slate-800 truncate">{t.email}</p>
+                            <p className="text-xs text-slate-400">
+                              {ticketName} · {formatNaira(t.amountNaira)}
+                              {t.discountCodeId && " · tried a discount code"}
+                            </p>
+                          </div>
+                          <span className="text-xs text-slate-400 shrink-0">{timeAgo(t.createdAt)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -356,11 +367,15 @@ export function TicketsTab({
 
       {neverSubmitted.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <p className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <button
+              onClick={() => setShowFormStarts((v) => !v)}
+              className="flex items-center gap-1.5 text-sm font-medium text-slate-800"
+            >
+              <ChevronDown size={15} className={`text-slate-400 transition-transform ${showFormStarts ? "" : "-rotate-90"}`} />
               <FileEdit size={14} className="text-amber-500" />
               Started the form, never submitted ({neverSubmitted.length})
-            </p>
+            </button>
             <button
               onClick={copyFormStartEmails}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50"
@@ -369,29 +384,33 @@ export function TicketsTab({
               Copy emails
             </button>
           </div>
-          <p className="text-xs text-slate-400 mb-3">
-            They typed an email into this event&apos;s registration form but never hit submit — didn&apos;t even reach checkout.
-          </p>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {neverSubmitted.map((f, i) => {
-              const ticketName = f.ticketTypeId ? ticketTypes.find((tt) => tt.id === f.ticketTypeId)?.name : null;
-              return (
-                <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-slate-100 first:border-t-0 first:pt-0">
-                  <div className="min-w-0">
-                    <p className="text-slate-800 truncate">{f.email}</p>
-                    {(f.fullName || ticketName) && (
-                      <p className="text-xs text-slate-400">
-                        {f.fullName}
-                        {f.fullName && ticketName && " · "}
-                        {ticketName && `was looking at ${ticketName}`}
-                      </p>
-                    )}
-                  </div>
-                  <span className="text-xs text-slate-400 shrink-0">{timeAgo(f.updatedAt)}</span>
-                </div>
-              );
-            })}
-          </div>
+          {showFormStarts && (
+            <>
+              <p className="text-xs text-slate-400 mt-3 mb-3">
+                They typed an email into this event&apos;s registration form but never hit submit — didn&apos;t even reach checkout.
+              </p>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {neverSubmitted.map((f, i) => {
+                  const ticketName = f.ticketTypeId ? ticketTypes.find((tt) => tt.id === f.ticketTypeId)?.name : null;
+                  return (
+                    <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-slate-100 first:border-t-0 first:pt-0">
+                      <div className="min-w-0">
+                        <p className="text-slate-800 truncate">{f.email}</p>
+                        {(f.fullName || ticketName) && (
+                          <p className="text-xs text-slate-400">
+                            {f.fullName}
+                            {f.fullName && ticketName && " · "}
+                            {ticketName && `was looking at ${ticketName}`}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-xs text-slate-400 shrink-0">{timeAgo(f.updatedAt)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
 
