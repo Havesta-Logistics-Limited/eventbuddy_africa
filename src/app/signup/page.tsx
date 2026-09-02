@@ -10,7 +10,6 @@ import { Logo } from "@/components/logo";
 export default function SignupPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
-  const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +26,7 @@ export default function SignupPage() {
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, orgName, email, phone, password }),
+        body: JSON.stringify({ fullName, email, phone, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -128,17 +127,6 @@ export default function SignupPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="e.g. Amaka Obi"
-                required
-                className={fieldClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Organization name</label>
-              <input
-                type="text"
-                value={orgName}
-                onChange={(e) => setOrgName(e.target.value)}
-                placeholder="e.g. Bright Futures Events"
                 required
                 className={fieldClass}
               />
