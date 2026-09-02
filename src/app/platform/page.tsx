@@ -85,6 +85,9 @@ type OrgRow = {
   payout_account_name: string | null;
   payout_change_status: "none" | "requested" | "approved";
   payout_change_requested_at: string | null;
+  pending_name: string | null;
+  name_change_status: "none" | "requested";
+  name_change_requested_at: string | null;
 };
 type EventRow = {
   id: string;
@@ -239,7 +242,7 @@ export default function PlatformDashboard() {
       supabase
         .from("organizations_payout_masked")
         .select(
-          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number_masked, payout_account_name, payout_change_status, payout_change_requested_at"
+          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number_masked, payout_account_name, payout_change_status, payout_change_requested_at, pending_name, name_change_status, name_change_requested_at"
         )
         .order("created_at", { ascending: false }),
       supabase
@@ -382,6 +385,27 @@ export default function PlatformDashboard() {
     if (!error) {
       setOrgs((prev) => prev.map((o) => (o.id === org.id ? { ...o, payout_change_status: "approved" } : o)));
       toast.success(`${org.name} can now update their payout details`);
+    } else {
+      toast.error(error.message);
+    }
+    setBusyOrgId(null);
+  }
+
+  // Unlike a payout change, the requested value itself is already visible up
+  // front (see the pending-requests card), so approving applies it directly
+  // in one step rather than just unlocking a resubmission — there's nothing
+  // secret about a display name that would call for the extra round trip.
+  async function approveNameChange(org: OrgRow) {
+    if (!org.pending_name) return;
+    setBusyOrgId(org.id);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("organizations")
+      .update({ name: org.pending_name, pending_name: null, name_change_status: "none" })
+      .eq("id", org.id);
+    if (!error) {
+      setOrgs((prev) => prev.map((o) => (o.id === org.id ? { ...o, name: org.pending_name!, pending_name: null, name_change_status: "none" } : o)));
+      toast.success(`${org.name} renamed to ${org.pending_name}`);
     } else {
       toast.error(error.message);
     }
@@ -1010,6 +1034,43 @@ export default function PlatformDashboard() {
                   virtual.
                 </p>
               )}
+
+              {(() => {
+                const pendingNameChanges = orgs.filter((o) => o.name_change_status === "requested" && o.pending_name);
+                if (pendingNameChanges.length === 0) return null;
+                return (
+                  <div className="mb-6">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2.5">Pending name change requests ({pendingNameChanges.length})</h2>
+                    <div className="space-y-3">
+                      {pendingNameChanges.map((org) => (
+                        <div key={org.id} className="bg-white rounded-xl border border-amber-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm text-slate-500">
+                              <span className="font-medium text-slate-900">{org.name}</span> wants to rename to{" "}
+                              <span className="font-medium text-amber-700">{org.pending_name}</span>
+                            </p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              Requested{" "}
+                              {org.name_change_requested_at
+                                ? new Date(org.name_change_requested_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                                : "recently"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => approveNameChange(org)}
+                            disabled={busyOrgId === org.id}
+                            className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50"
+                          >
+                            <CheckCircle2 size={14} />
+                            Approve
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
                 <div className="relative flex-1 max-w-sm">
