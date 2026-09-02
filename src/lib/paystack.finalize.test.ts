@@ -46,7 +46,7 @@ describe("finalizePaystackTransaction", () => {
     mockPaystackVerify({ status: "abandoned", amount: CHARGE_AMOUNT_MINOR, currency: "NGN" });
     const supabase = createFakeSupabase({
       paystack_transactions: [
-        { id: "t1", reference: "ref-1", status: "pending", purpose: "event_publish", event_id: "e1", organization_id: "o1", charge_currency: "NGN", charge_amount_minor: CHARGE_AMOUNT_MINOR },
+        { id: "t1", reference: "ref-1", status: "pending", purpose: "ticket_purchase", event_id: "e1", organization_id: "o1", charge_currency: "NGN", charge_amount_minor: CHARGE_AMOUNT_MINOR },
       ],
     });
     const result = await finalizePaystackTransaction(supabase, "ref-1");
@@ -58,7 +58,7 @@ describe("finalizePaystackTransaction", () => {
     mockPaystackVerify({ status: "success", amount: CHARGE_AMOUNT_MINOR - 1, currency: "NGN" });
     const supabase = createFakeSupabase({
       paystack_transactions: [
-        { id: "t1", reference: "ref-1", status: "pending", purpose: "event_publish", event_id: "e1", organization_id: "o1", charge_currency: "NGN", charge_amount_minor: CHARGE_AMOUNT_MINOR },
+        { id: "t1", reference: "ref-1", status: "pending", purpose: "ticket_purchase", event_id: "e1", organization_id: "o1", charge_currency: "NGN", charge_amount_minor: CHARGE_AMOUNT_MINOR },
       ],
     });
     const result = await finalizePaystackTransaction(supabase, "ref-1");
@@ -66,8 +66,7 @@ describe("finalizePaystackTransaction", () => {
     expect(supabase.db.paystack_transactions[0].status).toBe("failed");
   });
 
-  it("publishes the event on a successful event_publish payment", async () => {
-    mockPaystackVerify({ status: "success", amount: CHARGE_AMOUNT_MINOR, currency: "NGN" });
+  it("treats a non-ticket_purchase transaction (a historical event-publish row) as an inert, already-settled record", async () => {
     const supabase = createFakeSupabase({
       paystack_transactions: [
         { id: "t1", reference: "ref-1", status: "pending", purpose: "event_publish", event_id: "e1", organization_id: "o1", charge_currency: "NGN", charge_amount_minor: CHARGE_AMOUNT_MINOR },
@@ -75,9 +74,11 @@ describe("finalizePaystackTransaction", () => {
       events: [{ id: "e1", published: false, payment_status: "pending" }],
     });
     const result = await finalizePaystackTransaction(supabase, "ref-1");
-    expect(result).toEqual({ ok: true, purpose: "event_publish", eventId: "e1", alreadyProcessed: false });
-    expect(supabase.db.events[0].published).toBe(true);
-    expect(supabase.db.events[0].payment_status).toBe("paid");
+    expect(result).toEqual({ ok: true, purpose: "other", eventId: "e1", alreadyProcessed: true });
+    // The flat event-publish fee was scrapped (migration 0045) — this must never
+    // touch the events table anymore, regardless of the transaction's status.
+    expect(supabase.db.events[0].published).toBe(false);
+    expect(supabase.db.events[0].payment_status).toBe("pending");
   });
 
   it("creates a real registration (with a reference ID) for a successful physical ticket purchase", async () => {

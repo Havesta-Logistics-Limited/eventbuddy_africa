@@ -11,12 +11,11 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 /**
- * Public counterpart to /api/paystack/verify — that route requires a signed-in org
- * admin (it's for the event-publish flow), but a ticket buyer has no session at all.
- * The unguessable `reference` itself is the trust boundary here, same as a
- * registration's reference_id: knowing it is proof enough, and it's never brute-
- * forceable (newId's random suffix). Scoped to purpose = 'ticket_purchase' so this
- * can never be used to finalize an event-publish transaction instead.
+ * Public — a ticket buyer has no session at all, unlike an org admin. The
+ * unguessable `reference` itself is the trust boundary here, same as a
+ * registration's reference_id: knowing it is proof enough, and it's never
+ * brute-forceable (newId's random suffix). Scoped to purpose = 'ticket_purchase'
+ * (the only purpose finalizePaystackTransaction ever actively processes).
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

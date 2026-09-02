@@ -119,7 +119,7 @@ describe("handleRefundOrDispute", () => {
     expect(decrementTicketCalls).toBe(0);
   });
 
-  it("unpublishes the event and resets payment_status on an event_publish refund", async () => {
+  it("marks a historical event-publish transaction disputed but leaves the event untouched", async () => {
     const supabase = createFakeSupabase({
       paystack_transactions: [{ id: "t1", reference: "ref-2", status: "success", purpose: "event_publish", organization_id: "o1", event_id: "e1", amount_naira: 5000 }],
       events: [{ id: "e1", published: true, payment_status: "paid" }],
@@ -128,8 +128,11 @@ describe("handleRefundOrDispute", () => {
     const result = await handleRefundOrDispute(supabase, "ref-2", "disputed");
 
     expect(result).toEqual({ handled: true });
-    expect(supabase.db.events[0].published).toBe(false);
-    expect(supabase.db.events[0].payment_status).toBe("pending");
+    // The flat event-publish fee was scrapped (migration 0045) — a physical
+    // event's published state no longer depends on payment at all, so a
+    // dispute on an old event-publish transaction must not unpublish it.
+    expect(supabase.db.events[0].published).toBe(true);
+    expect(supabase.db.events[0].payment_status).toBe("paid");
     expect(supabase.db.paystack_transactions[0].status).toBe("disputed");
   });
 });

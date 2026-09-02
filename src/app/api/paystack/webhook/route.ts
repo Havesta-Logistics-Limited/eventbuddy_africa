@@ -6,9 +6,9 @@ import { finalizePaystackTransaction, handleRefundOrDispute } from "@/lib/paysta
 /**
  * Paystack calls this directly, server-to-server — no user session, so the signature
  * check below IS the entire trust boundary. Without it, anyone who found this URL
- * could POST a fake "charge.success" event and publish an event for free. Configure
- * this URL (yourdomain.com/api/paystack/webhook) in the Paystack dashboard under
- * Settings → API Keys & Webhooks.
+ * could POST a fake "charge.success" event and fabricate a paid ticket registration.
+ * Configure this URL (yourdomain.com/api/paystack/webhook) in the Paystack dashboard
+ * under Settings → API Keys & Webhooks.
  */
 export async function POST(request: Request) {
   const secret = process.env.PAYSTACK_SECRET_KEY;

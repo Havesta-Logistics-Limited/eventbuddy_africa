@@ -46,10 +46,11 @@ export async function paystackInitialize(params: {
   callbackUrl: string;
   currency: string;
   metadata: Record<string, unknown>;
-  /** A Paystack subaccount code — when set, this charge is a split payment: the
-   *  subaccount's registered bank account gets the sale minus its own
-   *  percentage_charge (eventbuddy's cut), settled automatically by Paystack. Omit
-   *  for charges that go entirely to the platform's own account (event-publish fees). */
+  /** A Paystack subaccount code — every real caller sets this: the subaccount's
+   *  registered bank account gets the sale minus its own percentage_charge
+   *  (eventbuddy's cut), settled automatically by Paystack. Optional only because
+   *  that's the shape of a split payment in general, not because any current
+   *  caller omits it. */
   subaccount?: string;
 }): Promise<{ authorizationUrl: string; accessCode: string }> {
   const res = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
@@ -189,8 +190,8 @@ export async function paystackVerify(reference: string): Promise<PaystackVerific
 }
 
 export type FinalizeResult =
-  | { ok: true; purpose: "event_publish"; eventId: string; alreadyProcessed: boolean }
   | { ok: true; purpose: "ticket_purchase"; eventId: string; referenceId: string | null; hubUrl?: string; alreadyProcessed: boolean }
+  | { ok: true; purpose: "other"; eventId: string; alreadyProcessed: true }
   | { ok: false; reason: "unknown_reference" | "payment_failed" | "amount_mismatch" | "verify_error" };
 
 /** Best-effort — resolves the same Hub link a fresh fulfillment would have emailed,
@@ -225,27 +226,31 @@ async function resolveHubUrlForTxn(supabase: SupabaseClient, txn: PendingTicketT
  * the first caller to see status still 'pending' does anything; every other caller
  * (including a genuine retry) gets alreadyProcessed: true and touches nothing.
  *
- * Branches on `purpose`: 'event_publish' (original behavior — flips the event to
- * published) or 'ticket_purchase' (creates the attendee's registration/lead row from
- * the pending `registrant_data` and emails their confirmation — mirrors why a paid
- * event isn't published until paid: a paid ticket must not exist until it's paid for).
+ * 'ticket_purchase' is the only purpose ever created going forward (the flat
+ * event-publish fee was scrapped — see migration 0045): creates the attendee's
+ * registration/lead row from the pending `registrant_data` and emails their
+ * confirmation. Any other purpose can only be a historical row from before
+ * that change; it's treated as an inert, already-settled record rather than
+ * acted on.
  */
 export async function finalizePaystackTransaction(supabase: SupabaseClient, reference: string): Promise<FinalizeResult> {
   const { data: txn } = await supabase.from("paystack_transactions").select("*").eq("reference", reference).maybeSingle();
   if (!txn) return { ok: false, reason: "unknown_reference" };
+
+  if (txn.purpose !== "ticket_purchase") {
+    return { ok: true, purpose: "other", eventId: txn.event_id, alreadyProcessed: true };
+  }
+
   if (txn.status === "success") {
-    if (txn.purpose === "ticket_purchase") {
-      const { data: existing } = await supabase
-        .from("registrations")
-        .select("reference_id")
-        .eq("event_id", txn.event_id)
-        .eq("email", (txn.registrant_data as { email?: string } | null)?.email ?? "")
-        .eq("ticket_type_id", txn.ticket_type_id)
-        .maybeSingle();
-      const hubUrl = await resolveHubUrlForTxn(supabase, txn);
-      return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId: existing?.reference_id ?? null, hubUrl, alreadyProcessed: true };
-    }
-    return { ok: true, purpose: "event_publish", eventId: txn.event_id, alreadyProcessed: true };
+    const { data: existing } = await supabase
+      .from("registrations")
+      .select("reference_id")
+      .eq("event_id", txn.event_id)
+      .eq("email", (txn.registrant_data as { email?: string } | null)?.email ?? "")
+      .eq("ticket_type_id", txn.ticket_type_id)
+      .maybeSingle();
+    const hubUrl = await resolveHubUrlForTxn(supabase, txn);
+    return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId: existing?.reference_id ?? null, hubUrl, alreadyProcessed: true };
   }
 
   let verified: PaystackVerification;
@@ -282,20 +287,12 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
     .maybeSingle();
 
   if (!updated) {
-    if (txn.purpose === "ticket_purchase") {
-      const hubUrl = await resolveHubUrlForTxn(supabase, txn);
-      return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId: null, hubUrl, alreadyProcessed: true };
-    }
-    return { ok: true, purpose: "event_publish", eventId: txn.event_id, alreadyProcessed: true };
+    const hubUrl = await resolveHubUrlForTxn(supabase, txn);
+    return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId: null, hubUrl, alreadyProcessed: true };
   }
 
-  if (txn.purpose === "ticket_purchase") {
-    const { referenceId, hubUrl } = await createTicketPurchaseRegistration(supabase, txn);
-    return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId, hubUrl, alreadyProcessed: false };
-  }
-
-  await supabase.from("events").update({ published: true, payment_status: "paid" }).eq("id", txn.event_id);
-  return { ok: true, purpose: "event_publish", eventId: txn.event_id, alreadyProcessed: false };
+  const { referenceId, hubUrl } = await createTicketPurchaseRegistration(supabase, txn);
+  return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId, hubUrl, alreadyProcessed: false };
 }
 
 type PendingTicketTxn = {
@@ -506,13 +503,10 @@ export async function handleRefundOrDispute(supabase: SupabaseClient, reference:
     if (txn.discount_code_id) {
       await supabase.rpc("decrement_discount_uses", { p_discount_code_id: txn.discount_code_id });
     }
-  } else {
-    // event_publish refunded/disputed — the event was only live on the strength
-    // of this payment; pull it back to an unpaid draft rather than leave it
-    // published for free. Bypasses protect_event_payment_fields since this runs
-    // through the service-role client (see 0024_paystack_payments.sql).
-    await supabase.from("events").update({ published: false, payment_status: "pending" }).eq("id", txn.event_id);
   }
+  // Any other purpose (historical event-publish transactions only — that flat
+  // fee was scrapped, see migration 0045) has nothing left to react to: a
+  // physical event's published state no longer depends on payment at all.
 
   try {
     const { data: org } = await supabase.from("organizations").select("email").eq("id", txn.organization_id).maybeSingle();

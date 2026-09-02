@@ -231,6 +231,34 @@ export interface DiscountRedemption {
   purchasedAt: string;
 }
 
+export type PlatformDocumentType = "quote" | "invoice";
+export type PlatformDocumentStatus = "draft" | "sent" | "accepted" | "declined" | "paid";
+
+export interface PlatformDocumentLineItem {
+  description: string;
+  quantity: number;
+  unitPriceNaira: number;
+}
+
+/** A branded quote or invoice a platform admin sends to a prospective or
+ *  existing client — entirely internal to eventbuddy's own business, not tied
+ *  to any organization on the platform. See platform_documents. */
+export interface PlatformDocument {
+  id: string;
+  docNumber: string;
+  docType: PlatformDocumentType;
+  status: PlatformDocumentStatus;
+  clientName: string;
+  clientCompany?: string | null;
+  clientEmail?: string | null;
+  clientAddress?: string | null;
+  lineItems: PlatformDocumentLineItem[];
+  notes?: string | null;
+  validUntil?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** A visitor who typed a plausible email into an event's registration form but
  *  hasn't (yet, as of this read) completed a registration or reached checkout
  *  for it — see registration_form_starts and getEventFormStarts. */

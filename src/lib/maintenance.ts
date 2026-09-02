@@ -28,7 +28,7 @@ export async function fetchMaintenanceState(): Promise<MaintenanceState> {
   };
 }
 
-/** Platform-admin only — RLS rejects this for anyone else, same as updateEventPrice. */
+/** Platform-admin only — RLS rejects this for anyone else, same as updateTicketFeePercentage. */
 export async function updateMaintenanceState(next: MaintenanceState): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase
