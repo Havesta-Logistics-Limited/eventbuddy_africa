@@ -135,6 +135,7 @@ function mapEventRow(e: {
   virtual_join_url: string | null;
   virtual_platform: string | null;
   virtual_access_notes: string | null;
+  registration_page_views: number | null;
   created_at: string;
 }): EventRecord {
   return {
@@ -164,6 +165,7 @@ function mapEventRow(e: {
     virtualJoinUrl: e.virtual_join_url ?? undefined,
     virtualPlatform: e.virtual_platform ?? undefined,
     virtualAccessNotes: e.virtual_access_notes ?? undefined,
+    registrationPageViews: e.registration_page_views ?? 0,
     createdAt: e.created_at,
   };
 }

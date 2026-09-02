@@ -432,9 +432,17 @@ export default function EventDetailPage() {
                   Delete
                 </button>
               </div>
-              <div className="text-right">
-                <p className="text-4xl font-bold text-slate-900 tabular-nums">{leads.length}</p>
-                <p className="text-xs text-slate-500">total leads</p>
+              <div className="flex items-start gap-6">
+                {event.selfRegistrationEnabled !== false && (
+                  <div className="text-right">
+                    <p className="text-4xl font-bold text-slate-400 tabular-nums">{event.registrationPageViews ?? 0}</p>
+                    <p className="text-xs text-slate-500">registration page views</p>
+                  </div>
+                )}
+                <div className="text-right">
+                  <p className="text-4xl font-bold text-slate-900 tabular-nums">{leads.length}</p>
+                  <p className="text-xs text-slate-500">total leads</p>
+                </div>
               </div>
             </div>
           </div>
@@ -551,7 +559,16 @@ export default function EventDetailPage() {
 
         {activeTab === "prospects" && (
           <div key="prospects" className="animate-tab-fade">
-            <ProspectsTab event={event} registrations={registrations} leads={leads} destinations={destinations} universities={universities} staff={staff} ticketTypes={ticketTypes} />
+            <ProspectsTab
+              event={event}
+              orgSlug={session.orgSlug!}
+              registrations={registrations}
+              leads={leads}
+              destinations={destinations}
+              universities={universities}
+              staff={staff}
+              ticketTypes={ticketTypes}
+            />
           </div>
         )}
 

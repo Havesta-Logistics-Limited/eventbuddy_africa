@@ -92,6 +92,13 @@ export default function RegisterPage() {
       .finally(() => setLoading(false));
   }, [orgSlug, eventId]);
 
+  // Fire-and-forget page-view counter — a raw hit count for the organizer's
+  // dashboard, not tied to whether loading the event data above succeeds.
+  useEffect(() => {
+    fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/register/view`, { method: "POST" }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!confirmation?.referenceId) return;
     QRCode.toDataURL(confirmation.referenceId, { width: 220, margin: 1, color: { dark: "#1e1b2e", light: "#ffffff" } })

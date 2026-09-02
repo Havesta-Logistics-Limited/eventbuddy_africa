@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { toast } from "sonner";
-import { X, QrCode, Mail, Phone, Calendar, CheckCircle2, MapPin, BookMarked, GraduationCap, Globe2, Building2, MessageSquare, Ticket } from "lucide-react";
+import { X, QrCode, Mail, Phone, Calendar, CheckCircle2, MapPin, BookMarked, GraduationCap, Globe2, Building2, MessageSquare, Ticket, Send } from "lucide-react";
 import { Destination, EventRecord, LeadRecord, RegistrationRecord, TicketType, University } from "@/lib/types";
 import { updateRegistrationStatus } from "@/lib/store";
 import { formatNaira } from "@/lib/billing";
@@ -26,6 +26,7 @@ const statusLabels: Record<RegistrationRecord["status"], string> = {
 export function RegistrantDetailModal({
   registration,
   event,
+  orgSlug,
   lead,
   destination,
   university,
@@ -35,6 +36,7 @@ export function RegistrantDetailModal({
 }: {
   registration: RegistrationRecord;
   event: EventRecord;
+  orgSlug: string;
   lead?: LeadRecord;
   destination?: Destination;
   university?: University;
@@ -45,7 +47,29 @@ export function RegistrantDetailModal({
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [showQr, setShowQr] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [resending, setResending] = useState(false);
   const customFields = event.customFields ?? [];
+
+  async function resendEmail() {
+    setResending(true);
+    try {
+      const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(event.id)}/registrations/resend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registrationId: registration.id }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.sentCount === 0) {
+        toast.error(json.error || "Couldn't resend the confirmation email.");
+        return;
+      }
+      toast.success(`Confirmation email resent to ${registration.email}`);
+    } catch {
+      toast.error("Couldn't reach the server. Please try again.");
+    } finally {
+      setResending(false);
+    }
+  }
 
   useEffect(() => {
     QRCode.toDataURL(registration.referenceId, { width: 220, margin: 1, color: { dark: "#1e1b2e", light: "#ffffff" } })
@@ -117,6 +141,16 @@ export function RegistrantDetailModal({
               >
                 <QrCode size={15} /> {showQr ? "Hide QR Code" : "Show QR Code"}
               </button>
+              {registration.status !== "cancelled" && (
+                <button
+                  type="button"
+                  onClick={resendEmail}
+                  disabled={resending}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                >
+                  <Send size={15} /> {resending ? "Sending…" : "Resend Email"}
+                </button>
+              )}
               {registration.status !== "cancelled" && (
                 <button
                   type="button"

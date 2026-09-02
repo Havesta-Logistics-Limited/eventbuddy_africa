@@ -79,15 +79,19 @@ export interface EventRecord {
    *  Guests tab / /rsvp). Mutually exclusive with self-service registration in the
    *  wizard's UI, though the two flags are independently stored. */
   isInviteOnly?: boolean;
-  /** false = a physical event awaiting Paystack payment — it exists but is inert (no
-   *  check-in, no lead capture, not listed for self-service registration) until payment
-   *  succeeds. Always true for virtual events and every event created before this
-   *  feature existed. Only ever flipped by the Paystack payment routes (or a platform
-   *  admin) — see protect_event_payment_fields in the paystack_payments migration. */
+  /** Whether this event is live and visible — organizers control this directly (no
+   *  payment gate; publishing is always free, physical or virtual — the flat
+   *  event-publish fee was scrapped, see migration 0045). */
   published?: boolean;
-  /** The price actually snapshotted on this event at creation time (0 for virtual) —
-   *  see events_set_price_naira in the currency_usd_to_naira migration. */
+  /** Legacy — always 0 now that the event-publish fee is gone (migration 0045).
+   *  Kept only so historical events that were actually charged before the fee was
+   *  scrapped still show what they paid. */
   priceNaira?: number;
+  /** Raw hit count for the public self-service registration page — a rough
+   *  "views vs. actual registrations" conversion signal, not deduplicated per
+   *  visitor. See migration 0047 (registration_page_views), incremented via
+   *  /api/orgs/[slug]/events/[eventId]/register/view. */
+  registrationPageViews?: number;
   /** Which event-templates.ts template this event was created from. Optional here even
    *  though the DB column is NOT NULL DEFAULT 'education-fair' — the DB default covers
    *  any call site that doesn't set it. */

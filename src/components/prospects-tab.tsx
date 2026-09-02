@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Users, UserCheck, Download, Loader2 } from "lucide-react";
+import { Users, UserCheck, Download, Loader2, Send } from "lucide-react";
 import { Destination, EventRecord, LeadRecord, RegistrationRecord, StaffRecord, TicketType, University } from "@/lib/types";
 import { downloadCsv, registrationsToCsv } from "@/lib/csv";
 import { updateRegistrationStatus } from "@/lib/store";
@@ -28,6 +28,7 @@ const statusLabels: Record<RegistrationRecord["status"], string> = {
  *  for them). */
 export function ProspectsTab({
   event,
+  orgSlug,
   registrations,
   leads,
   destinations,
@@ -36,6 +37,7 @@ export function ProspectsTab({
   ticketTypes,
 }: {
   event: EventRecord;
+  orgSlug: string;
   registrations: RegistrationRecord[];
   leads: LeadRecord[];
   destinations: Destination[];
@@ -46,7 +48,29 @@ export function ProspectsTab({
   const [view, setView] = useState<"registrations" | "participants">("registrations");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [resendingAll, setResendingAll] = useState(false);
   const customFields = event.customFields ?? [];
+
+  async function resendAll() {
+    setResendingAll(true);
+    try {
+      const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(event.id)}/registrations/resend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error || "Couldn't resend confirmation emails.");
+        return;
+      }
+      toast.success(`Resent to ${json.sentCount} of ${json.totalCount} registrant${json.totalCount !== 1 ? "s" : ""}`);
+    } catch {
+      toast.error("Couldn't reach the server. Please try again.");
+    } finally {
+      setResendingAll(false);
+    }
+  }
 
   async function toggleCheckedIn(r: RegistrationRecord) {
     if (r.status === "cancelled" || busyId) return;
@@ -124,15 +148,26 @@ export function ProspectsTab({
               {shown.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <button
-            onClick={() => {
-              downloadCsv(`${event.name.replace(/[^a-z0-9]/gi, "_")}_${view}.csv`, registrationsToCsv(shown, event));
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
-          >
-            <Download size={12} />
-            Export
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={resendAll}
+              disabled={resendingAll}
+              title="Resend the confirmation email (with QR code) to every registrant — good for a reminder a few days before the event"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <Send size={12} />
+              {resendingAll ? "Sending…" : "Resend QR Codes"}
+            </button>
+            <button
+              onClick={() => {
+                downloadCsv(`${event.name.replace(/[^a-z0-9]/gi, "_")}_${view}.csv`, registrationsToCsv(shown, event));
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
+            >
+              <Download size={12} />
+              Export
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -215,6 +250,7 @@ export function ProspectsTab({
         <RegistrantDetailModal
           registration={selected}
           event={event}
+          orgSlug={orgSlug}
           lead={selectedLead}
           destination={selectedDest}
           university={selectedUni}
