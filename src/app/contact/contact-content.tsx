@@ -79,6 +79,9 @@ export default function ContactContent() {
             <Logo height={26} />
           </span>
           <nav className="flex items-center gap-3 sm:gap-6">
+            <Link href="/discover" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
+              Events
+            </Link>
             <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
               Pricing
             </Link>

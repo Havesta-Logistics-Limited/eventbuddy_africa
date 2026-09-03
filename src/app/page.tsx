@@ -157,6 +157,9 @@ export default function MarketingHomePage() {
             <Logo height={26} />
           </span>
           <nav className="flex items-center gap-3 sm:gap-6">
+            <Link href="/discover" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
+              Events
+            </Link>
             <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
               Pricing
             </Link>
@@ -718,6 +721,9 @@ export default function MarketingHomePage() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-3">Product</p>
             <div className="flex flex-col gap-2.5 text-sm">
+              <Link href="/discover" className="text-white/70 hover:text-white">
+                Discover Events
+              </Link>
               <Link href="/pricing" className="text-white/70 hover:text-white">
                 Pricing
               </Link>
