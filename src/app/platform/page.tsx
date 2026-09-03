@@ -35,6 +35,7 @@ import {
   Clock,
   CheckCircle2,
   FileText,
+  Smartphone,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
@@ -55,6 +56,7 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 const NAV = [
   { id: "organizations", label: "Organizations", icon: Building2 },
+  { id: "mobile", label: "Mobile App", icon: Smartphone },
   { id: "events", label: "Events", icon: Calendar },
   { id: "billing", label: "Billing", icon: DollarSign },
   { id: "documents", label: "Quotes & Invoices", icon: FileText },
@@ -105,8 +107,8 @@ type EventRow = {
   capture_override: "open" | "closed" | null;
   created_at: string;
 };
-type LeadRow = { id: string; organization_id: string; event_id: string };
-type RegistrationRow = { id: string; organization_id: string; event_id: string; status: string; created_at: string };
+type LeadRow = { id: string; organization_id: string; event_id: string; source: "web" | "mobile" };
+type RegistrationRow = { id: string; organization_id: string; event_id: string; status: string; created_at: string; source: "web" | "mobile" };
 type AdminRow = { user_id: string; email: string | null; created_at: string };
 type ManagedRequestRow = {
   id: string;
@@ -178,6 +180,8 @@ export default function PlatformDashboard() {
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [registrations, setRegistrations] = useState<RegistrationRow[]>([]);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
+  const [attendeeAccounts, setAttendeeAccounts] = useState<{ id: string; email: string; fullName: string; createdAt: string }[]>([]);
+  const [devicePushTokenCount, setDevicePushTokenCount] = useState<{ ios: number; android: number }>({ ios: 0, android: 0 });
   const [txnSearch, setTxnSearch] = useState("");
   const [txnStatusFilter, setTxnStatusFilter] = useState<"all" | "pending" | "success" | "failed" | "refunded" | "disputed">("all");
   const [refundingTxnRef, setRefundingTxnRef] = useState<string | null>(null);
@@ -235,7 +239,7 @@ export default function PlatformDashboard() {
    *  silently, showing "no organizations yet" even when the data was fine. */
   async function fetchPlatformData() {
     const supabase = createClient();
-    const [orgsRes, eventsRes, leadsRes, registrationsRes, adminsRes, settingsRes, transactionsRes, managedRequestsRes] = await Promise.all([
+    const [orgsRes, eventsRes, leadsRes, registrationsRes, adminsRes, settingsRes, transactionsRes, managedRequestsRes, deviceTokensRes, attendeeAccountsRes] = await Promise.all([
       // organizations_payout_masked (see 0042_refunds_and_payout_masking.sql), not
       // the raw table — the account number arrives pre-masked, so the real value
       // never reaches the browser for the bulk list.
@@ -250,8 +254,8 @@ export default function PlatformDashboard() {
         .select(
           "id, organization_id, name, date, end_date, start_time, end_time, timezone, template_id, event_format, payment_status, price_naira, capture_override, created_at"
         ),
-      supabase.from("leads").select("id, organization_id, event_id"),
-      supabase.from("registrations").select("id, organization_id, event_id, status, created_at"),
+      supabase.from("leads").select("id, organization_id, event_id, source"),
+      supabase.from("registrations").select("id, organization_id, event_id, status, created_at, source"),
       supabase.from("platform_admins").select("user_id, email, created_at").order("created_at", { ascending: true }),
       supabase
         .from("platform_settings")
@@ -266,11 +270,16 @@ export default function PlatformDashboard() {
         .from("managed_event_requests")
         .select("id, contact_name, contact_email, contact_phone, organization_name, event_name, event_date, expected_attendees, city, message, status, created_at")
         .order("created_at", { ascending: false }),
+      supabase.from("device_push_tokens").select("platform"),
+      fetch("/api/platform/attendee-accounts").then((r) => r.json()),
     ]);
     const firstError = orgsRes.error || eventsRes.error || leadsRes.error || registrationsRes.error || adminsRes.error || transactionsRes.error || managedRequestsRes.error;
     setLoadError(firstError ? firstError.message : "");
     setOrgs((orgsRes.data as OrgRow[]) ?? []);
     setEvents((eventsRes.data as EventRow[]) ?? []);
+    const deviceTokens = (deviceTokensRes.data as { platform: "ios" | "android" }[] | null) ?? [];
+    setDevicePushTokenCount({ ios: deviceTokens.filter((t) => t.platform === "ios").length, android: deviceTokens.filter((t) => t.platform === "android").length });
+    setAttendeeAccounts(attendeeAccountsRes?.attendees ?? []);
     setLeads((leadsRes.data as LeadRow[]) ?? []);
     setRegistrations((registrationsRes.data as RegistrationRow[]) ?? []);
     setAdmins((adminsRes.data as AdminRow[]) ?? []);
@@ -1739,6 +1748,94 @@ export default function PlatformDashboard() {
                             </tr>
                           );
                         })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {view === "mobile" && (
+            <>
+              <div className="mb-6 flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="font-display text-2xl text-slate-900">Mobile App</h1>
+                  <p className="text-slate-500 text-sm mt-0.5">
+                    Attendee accounts and activity from the eventbuddy mobile app. Real app-store install counts aren&apos;t
+                    something this dashboard can show — that only exists once the app is published, and lives in App Store
+                    Connect / Play Console instead.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  title="Refresh"
+                  aria-label="Refresh"
+                  className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 shrink-0"
+                >
+                  <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
+                </button>
+              </div>
+
+              {(() => {
+                const mobileRegistrations = registrations.filter((r) => r.source === "mobile").length + leads.filter((l) => l.source === "mobile").length;
+                const totalRegistrations = registrations.length + leads.length;
+                const mobileSharePct = totalRegistrations > 0 ? Math.round((mobileRegistrations / totalRegistrations) * 100) : 0;
+                const totalDevices = devicePushTokenCount.ios + devicePushTokenCount.android;
+                const tiles = [
+                  { label: "Attendee accounts", value: attendeeAccounts.length.toLocaleString(), accent: "#C21FAF", bg: "#FFF3FD", icon: Users2 },
+                  {
+                    label: "Devices with push enabled",
+                    value: `${totalDevices.toLocaleString()} (${devicePushTokenCount.ios} iOS · ${devicePushTokenCount.android} Android)`,
+                    accent: "#6D28D9",
+                    bg: "#F1EBFE",
+                    icon: Smartphone,
+                  },
+                  { label: "Registrations via mobile", value: mobileRegistrations.toLocaleString(), accent: "#E85D0A", bg: "#FFF1E6", icon: Ticket },
+                  { label: "Mobile share of all registrations", value: `${mobileSharePct}%`, accent: "#0d9488", bg: "#e7f6f0", icon: DollarSign },
+                ];
+                return (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    {tiles.map((tile, i) => (
+                      <Reveal key={tile.label} index={i}>
+                        <div className="bg-white rounded-xl border border-slate-200 p-4">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: tile.bg }}>
+                            <tile.icon size={16} style={{ color: tile.accent }} />
+                          </div>
+                          <p className="text-2xl font-bold text-slate-900 tabular-nums">{tile.value}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{tile.label}</p>
+                        </div>
+                      </Reveal>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              <div className="bg-white rounded-2xl border border-slate-200 p-5">
+                <h2 className="font-semibold text-slate-900 mb-1">Recent attendee signups</h2>
+                <p className="text-xs text-slate-500 mb-4">The most recent accounts created in the mobile app.</p>
+                {attendeeAccounts.length === 0 ? (
+                  <p className="text-sm text-slate-400 py-6 text-center">No attendee accounts yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-xs text-slate-400 uppercase tracking-wide border-b border-slate-100">
+                          <th className="pb-2 pr-4 font-medium">Name</th>
+                          <th className="pb-2 pr-4 font-medium">Email</th>
+                          <th className="pb-2 font-medium">Signed up</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attendeeAccounts.slice(0, 25).map((a) => (
+                          <tr key={a.id} className="border-b border-slate-50 last:border-0">
+                            <td className="py-2.5 pr-4 text-slate-900">{a.fullName || "—"}</td>
+                            <td className="py-2.5 pr-4 text-slate-600">{a.email}</td>
+                            <td className="py-2.5 text-slate-500">{new Date(a.createdAt).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}</td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>

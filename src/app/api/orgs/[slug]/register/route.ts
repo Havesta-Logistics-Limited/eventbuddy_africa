@@ -33,6 +33,10 @@ type RegisterBody = {
    *  /api/orgs/[slug]/ticket-purchase/initialize, and a registration only gets created
    *  once that payment actually succeeds (see finalizePaystackTransaction). */
   ticketTypeId?: string;
+  /** Which surface this registration came from — the web register page doesn't send
+   *  this at all (defaults to "web" below), only the mobile app does. Purely for
+   *  /platform's mobile-vs-web reporting; doesn't affect any registration logic. */
+  source?: "web" | "mobile";
 };
 
 /**
@@ -48,7 +52,8 @@ type RegisterBody = {
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/register">) {
   const { slug } = await ctx.params;
   const body = (await request.json()) as Partial<RegisterBody>;
-  const { eventId, firstName, lastName, email, phone, customAnswers, ticketTypeId } = body;
+  const { eventId, firstName, lastName, email, phone, customAnswers, ticketTypeId, source } = body;
+  const resolvedSource = source === "mobile" ? "mobile" : "web";
 
   if (!eventId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -156,6 +161,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
         taken_ielts: "",
         comments: "",
         custom_answers: customAnswers || {},
+        source: resolvedSource,
       })
       .select()
       .single();
@@ -184,6 +190,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
         email: email.trim(),
         phone: phone?.trim() || null,
         custom_answers: customAnswers || {},
+        source: resolvedSource,
       })
       .select()
       .single();

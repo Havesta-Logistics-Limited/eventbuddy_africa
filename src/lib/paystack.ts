@@ -302,7 +302,14 @@ type PendingTicketTxn = {
   event_id: string;
   ticket_type_id: string | null;
   discount_code_id: string | null;
-  registrant_data: { firstName: string; lastName: string; email: string; phone: string | null; customAnswers?: Record<string, string | string[]> } | null;
+  registrant_data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+    customAnswers?: Record<string, string | string[]>;
+    source?: "web" | "mobile";
+  } | null;
 };
 
 /** Materializes a paid ticket into a real registration (physical) or lead (virtual) —
@@ -382,6 +389,7 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
       taken_ielts: "",
       comments: "",
       custom_answers: info.customAnswers || {},
+      source: info.source === "mobile" ? "mobile" : "web",
     });
     if (leadErr) {
       console.error(`[ticket-purchase] paid ticket for ${info.email} on event ${txn.event_id} succeeded but no lead could be created:`, leadErr.message);
@@ -409,6 +417,7 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
         email: info.email,
         phone: info.phone || null,
         custom_answers: info.customAnswers || {},
+        source: info.source === "mobile" ? "mobile" : "web",
       })
       .select()
       .single();

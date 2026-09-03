@@ -15,6 +15,10 @@ type InitializeBody = {
   phone?: string;
   customAnswers?: Record<string, string | string[]>;
   discountCode?: string;
+  /** See /api/orgs/[slug]/register's identical field — carried through
+   *  registrant_data so createTicketPurchaseRegistration can tag the eventual
+   *  registrations/leads row once payment succeeds. */
+  source?: "web" | "mobile";
 };
 
 /**
@@ -27,7 +31,8 @@ type InitializeBody = {
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/ticket-purchase/initialize">) {
   const { slug } = await ctx.params;
   const body = (await request.json()) as Partial<InitializeBody>;
-  const { eventId, ticketTypeId, firstName, lastName, email, phone, customAnswers, discountCode } = body;
+  const { eventId, ticketTypeId, firstName, lastName, email, phone, customAnswers, discountCode, source } = body;
+  const resolvedSource = source === "mobile" ? "mobile" : "web";
 
   if (!eventId || !ticketTypeId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -145,7 +150,14 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     ticket_type_id: ticket.id,
     discount_code_id: discountCodeId,
     subaccount_code: org.paystack_subaccount_code,
-    registrant_data: { firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), phone: phone?.trim() || null, customAnswers: customAnswers || {} },
+    registrant_data: {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      phone: phone?.trim() || null,
+      customAnswers: customAnswers || {},
+      source: resolvedSource,
+    },
   });
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
