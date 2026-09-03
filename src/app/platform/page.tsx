@@ -1787,8 +1787,8 @@ export default function PlatformDashboard() {
                 const tiles = [
                   { label: "Attendee accounts", value: attendeeAccounts.length.toLocaleString(), accent: "#C21FAF", bg: "#FFF3FD", icon: Users2 },
                   {
-                    label: "Devices with push enabled",
-                    value: `${totalDevices.toLocaleString()} (${devicePushTokenCount.ios} iOS · ${devicePushTokenCount.android} Android)`,
+                    label: `Devices with push enabled (${devicePushTokenCount.ios} iOS · ${devicePushTokenCount.android} Android)`,
+                    value: totalDevices.toLocaleString(),
                     accent: "#6D28D9",
                     bg: "#F1EBFE",
                     icon: Smartphone,
