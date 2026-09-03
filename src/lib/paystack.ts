@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail } from "@/lib/registration-email";
+import { sendPushToAttendee } from "@/lib/push";
 import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { formatNaira } from "@/lib/billing";
@@ -388,6 +389,7 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
     }
     const virtualHub = await tryHubUrl(info.email, `${info.firstName} ${info.lastName}`);
     await sendVirtualConfirmationEmail(info.email, event, virtualHub);
+    await sendPushToAttendee(supabase, info.email, "Payment confirmed! 🎉", `${event.name} — check your email for join details.`, { eventId: txn.event_id });
     return { referenceId: null, hubUrl: virtualHub };
   }
 
@@ -430,6 +432,7 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
 
   const physicalHub = await tryHubUrl(info.email, `${info.firstName} ${info.lastName}`);
   await sendRegistrationEmail(info.email, referenceId, event, physicalHub);
+  await sendPushToAttendee(supabase, info.email, "Payment confirmed! 🎉", `${event.name} — your ticket is ready.`, { eventId: txn.event_id, referenceId });
   return { referenceId, hubUrl: physicalHub };
 }
 

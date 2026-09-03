@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
 import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail } from "@/lib/registration-email";
+import { sendPushToAttendee } from "@/lib/push";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -166,6 +167,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
     const hub = await tryHubUrl(lead.email, `${firstName.trim()} ${lastName.trim()}`);
     const emailSent = await sendVirtualConfirmationEmail(lead.email, event, hub);
+    await sendPushToAttendee(supabase, lead.email, "You're registered! 🎉", `${event.name} — check your email for join details.`, { eventId: event.id });
     return NextResponse.json({ success: true, emailSent, hubUrl: hub, event: responseEvent });
   }
 
@@ -197,6 +199,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const hub = await tryHubUrl(registration.email, registration.full_name);
   const emailSent = await sendRegistrationEmail(registration.email, registration.reference_id, event, hub);
+  await sendPushToAttendee(supabase, registration.email, "You're registered! 🎉", `${event.name} — your ticket is ready.`, {
+    eventId: event.id,
+    referenceId: registration.reference_id,
+  });
 
   return NextResponse.json({ success: true, referenceId: registration.reference_id, emailSent, hubUrl: hub, event: responseEvent });
 }
