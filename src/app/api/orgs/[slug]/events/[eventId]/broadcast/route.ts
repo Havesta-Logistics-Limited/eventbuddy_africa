@@ -3,6 +3,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBroadcastEmail, BROADCAST_RECIPIENT_CAP } from "@/lib/broadcast-email";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
+import { stripHtml } from "@/lib/rich-text";
 
 type Body = { subject?: string; body?: string };
 
@@ -20,7 +21,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const body = (await request.json().catch(() => null)) as Body | null;
   const subject = body?.subject?.trim();
   const message = body?.body?.trim();
-  if (!message) return NextResponse.json({ error: "Write something to send." }, { status: 400 });
+  if (!message || !stripHtml(message).trim()) return NextResponse.json({ error: "Write something to send." }, { status: 400 });
 
   const supabase = await createServerClient();
   const {
@@ -64,7 +65,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     recipients: finalRecipients,
     eventName: event.name,
     subject: subject || `Update from ${event.name}`,
-    bodyText: message,
+    bodyHtml: message,
   });
 
   return NextResponse.json({ success: true, sentCount, totalCount, truncated });

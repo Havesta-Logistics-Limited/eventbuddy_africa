@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { renderEmailShell, escapeHtml } from "@/lib/email-template";
+import { sanitizeRichTextHtml, stripHtml } from "@/lib/rich-text";
 
 /** Resend's batch endpoint accepts at most 100 emails per call — see
  *  https://resend.com/docs/dashboard/emails/batch-sending#limitations. */
@@ -23,7 +24,11 @@ export async function sendBroadcastEmail(params: {
   recipients: string[];
   eventName: string;
   subject: string;
-  bodyText: string;
+  /** HTML from RichTextEditor (or, for anything predating it, plain text —
+   *  sanitizeRichTextHtml is a no-op on plain text since it contains no tags to
+   *  strip). Never trust-as-is: this can in principle reach here via a direct API
+   *  call, not just the editor's own schema-constrained output. */
+  bodyHtml: string;
 }): Promise<{ sentCount: number; totalCount: number }> {
   const apiKey = process.env.RESEND_API_KEY;
   const totalCount = params.recipients.length;
@@ -33,10 +38,11 @@ export async function sendBroadcastEmail(params: {
 
   const from = process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>";
   const safeEvent = escapeHtml(params.eventName);
-  const safeBody = escapeHtml(params.bodyText).replace(/\n/g, "<br>");
+  const bodyText = stripHtml(params.bodyHtml);
+  const safeBody = sanitizeRichTextHtml(params.bodyHtml);
   const html = renderEmailShell(
     { color: "#C21FAF", label: "Event update", emoji: "📣" },
-    `<h1 style="font-size:19px; margin:0 0 4px;">${safeEvent}</h1><p style="margin:16px 0 0; white-space:pre-line;">${safeBody}</p>`
+    `<h1 style="font-size:19px; margin:0 0 4px;">${safeEvent}</h1><div style="margin:16px 0 0;">${safeBody}</div>`
   );
 
   const resend = new Resend(apiKey);
@@ -44,9 +50,7 @@ export async function sendBroadcastEmail(params: {
   for (let i = 0; i < params.recipients.length; i += BATCH_SIZE) {
     const chunk = params.recipients.slice(i, i + BATCH_SIZE);
     try {
-      const { data, error } = await resend.batch.send(
-        chunk.map((to) => ({ from, to, subject: params.subject, text: params.bodyText, html }))
-      );
+      const { data, error } = await resend.batch.send(chunk.map((to) => ({ from, to, subject: params.subject, text: bodyText, html })));
       if (error) {
         console.error(`[broadcast] batch send failed for ${chunk.length} recipients:`, error.message);
         continue;

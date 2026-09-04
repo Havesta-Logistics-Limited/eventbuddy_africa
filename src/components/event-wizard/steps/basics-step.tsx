@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertCircle, Crop, Loader2 } from "lucide-react";
 import { compressImageFile } from "@/lib/utils";
 import { ImageCropperModal } from "@/components/image-cropper-modal";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import type { EventWizardData } from "../types";
 
 const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]";
@@ -192,7 +193,12 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
       </div>
       <div>
         <label className={labelClass}>Description</label>
-        <textarea rows={2} value={data.description} onChange={(e) => onChange({ description: e.target.value })} className={`${fieldClass} resize-none`} />
+        <RichTextEditor
+          value={data.description}
+          onChange={(html) => onChange({ description: html })}
+          placeholder="What's this event about?"
+          minHeightClass="min-h-[70px]"
+        />
       </div>
       <div>
         <label className={labelClass}>Cover Image</label>

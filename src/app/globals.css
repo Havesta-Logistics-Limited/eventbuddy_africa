@@ -303,6 +303,44 @@ select {
   animation: tab-fade-in 150ms ease-out both;
 }
 
+/* Shared between RichTextEditor (editing) and RichTextDisplay (rendering
+   read-only) so organizer-authored copy — event descriptions, announcements —
+   looks the same while being written as it does once published. Written by
+   hand rather than pulling in @tailwindcss/typography, which this project
+   doesn't otherwise use, purely for these few tags Tiptap's StarterKit
+   produces (p/strong/em/ul/ol/li/a/br). */
+.rich-text-content p {
+  margin: 0.35em 0;
+}
+.rich-text-content p:first-child {
+  margin-top: 0;
+}
+.rich-text-content p:last-child {
+  margin-bottom: 0;
+}
+.rich-text-content ul,
+.rich-text-content ol {
+  margin: 0.35em 0;
+  padding-left: 1.4em;
+}
+.rich-text-content ul {
+  list-style: disc;
+}
+.rich-text-content ol {
+  list-style: decimal;
+}
+.rich-text-content a {
+  color: #c21faf;
+  text-decoration: underline;
+}
+.rich-text-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
 /* Ambient drift behind the register page's glassmorphic cards — backdrop-blur on a
    flat color is invisible, so these two large, low-opacity blurred blobs give the
    blur something to actually reveal. Slow and looping (matching the marquee's

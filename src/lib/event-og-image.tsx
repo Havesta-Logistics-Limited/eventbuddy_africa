@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createAnonClient } from "@/lib/supabase/anon";
+import { stripHtml } from "@/lib/rich-text";
 
 export const eventOgImageSize = { width: 1200, height: 630 };
 
@@ -106,7 +107,7 @@ export function buildEventJsonLd(event: OgEvent, canonicalUrl: string) {
         ? { "@type": "VirtualLocation", url: canonicalUrl }
         : { "@type": "Place", name: event.venue, address: event.location },
   };
-  if (event.description) jsonLd.description = event.description;
+  if (event.description) jsonLd.description = stripHtml(event.description);
   if (event.coverImage && /^https?:\/\//.test(event.coverImage)) jsonLd.image = [event.coverImage];
 
   return jsonLd;

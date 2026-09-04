@@ -28,6 +28,7 @@ import { Logo } from "@/components/logo";
 import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/components/dynamic-registration-form";
 import { OneOnOneRequestStep } from "@/components/one-on-one-request-step";
 import { EventHostCard } from "@/components/event-host-card";
+import { RichTextDisplay } from "@/components/rich-text-display";
 import { formatDate, formatTime, safeHttpUrl } from "@/lib/utils";
 import { applyDiscount, formatNaira } from "@/lib/billing";
 import { getEventStatus, zonedTimeToUtc } from "@/lib/capture-window";
@@ -570,7 +571,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
             {event.description && (
               <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up" style={{ animationDelay: "0ms" }}>
                 <h2 className="font-semibold text-white mb-2">About this event</h2>
-                <p className="text-sm text-white/70 leading-relaxed whitespace-pre-line">{event.description}</p>
+                <RichTextDisplay html={event.description} className="text-sm text-white/70 leading-relaxed" />
               </div>
             )}
 

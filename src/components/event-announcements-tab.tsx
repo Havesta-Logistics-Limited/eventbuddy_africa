@@ -5,6 +5,9 @@ import { toast } from "sonner";
 import { Megaphone, Pin, PinOff, Plus, Trash2, Mail } from "lucide-react";
 import { EventAnnouncement } from "@/lib/types";
 import { PersistError, addAnnouncement, deleteAnnouncement, updateAnnouncement } from "@/lib/store";
+import { RichTextEditor } from "@/components/rich-text-editor";
+import { RichTextDisplay } from "@/components/rich-text-display";
+import { stripHtml } from "@/lib/rich-text";
 
 /** The Announcements tab — one-way organizer broadcasts shown on the public Event
  *  Hub, reverse-chronological with pinned items first. Deliberately not attendee-
@@ -24,7 +27,7 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!body.trim()) {
+    if (!stripHtml(body).trim()) {
       setFormError("Write something to post.");
       return;
     }
@@ -100,14 +103,7 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
-          <textarea
-            rows={3}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            autoFocus
-            placeholder="Share an update with everyone registered for this event…"
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600"
-          />
+          <RichTextEditor value={body} onChange={setBody} placeholder="Share an update with everyone registered for this event…" minHeightClass="min-h-[70px]" />
           <label className="flex items-center gap-2 mt-3 text-sm text-slate-600 cursor-pointer">
             <input type="checkbox" checked={alsoEmail} onChange={(e) => setAlsoEmail(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600" />
             <Mail size={13} className="text-slate-400" />
@@ -153,7 +149,7 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
           {sorted.map((a) => (
             <div key={a.id} className={`bg-white rounded-xl border p-4 ${a.pinned ? "border-brand-200" : "border-slate-200"}`}>
               <div className="flex items-start justify-between gap-3">
-                <p className="text-sm text-slate-700 whitespace-pre-line">{a.body}</p>
+                <RichTextDisplay html={a.body} className="text-sm text-slate-700" />
                 {a.pinned && <Pin size={13} className="text-brand-600 shrink-0 mt-0.5" />}
               </div>
               <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-100">

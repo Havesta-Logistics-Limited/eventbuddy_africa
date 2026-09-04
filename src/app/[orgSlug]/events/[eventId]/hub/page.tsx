@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { BarChart3, Bookmark, BookmarkCheck, Calendar, KeyRound, Loader2, Megaphone, Mic2, Pin, Send, ThumbsUp } from "lucide-react";
 import { formatDate, formatTime } from "@/lib/utils";
+import { RichTextDisplay } from "@/components/rich-text-display";
 
 type HubSession = {
   id: string;
@@ -555,7 +556,7 @@ export default function EventHubPage() {
                   {announcements.map((a) => (
                     <div key={a.id} className={`border rounded-xl p-3.5 ${a.pinned ? "border-brand-200 bg-brand-50/40" : "border-slate-100"}`}>
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm text-slate-700 whitespace-pre-line">{a.body}</p>
+                        <RichTextDisplay html={a.body} className="text-sm text-slate-700" />
                         {a.pinned && <Pin size={12} className="text-brand-600 shrink-0 mt-0.5" />}
                       </div>
                       <p className="text-[11px] text-slate-400 mt-2">
