@@ -303,6 +303,34 @@ select {
   animation: tab-fade-in 150ms ease-out both;
 }
 
+/* Ambient drift behind the register page's glassmorphic cards — backdrop-blur on a
+   flat color is invisible, so these two large, low-opacity blurred blobs give the
+   blur something to actually reveal. Slow and looping (matching the marquee's
+   "always running, never distracting" pace) rather than a one-shot mount effect —
+   this is atmosphere, not a moment to notice. */
+@keyframes aurora-drift-a {
+  0%, 100% {
+    transform: translate(-8%, -8%) scale(1);
+  }
+  50% {
+    transform: translate(8%, 4%) scale(1.15);
+  }
+}
+.animate-aurora-a {
+  animation: aurora-drift-a 26s ease-in-out infinite;
+}
+@keyframes aurora-drift-b {
+  0%, 100% {
+    transform: translate(6%, 8%) scale(1);
+  }
+  50% {
+    transform: translate(-10%, -4%) scale(1.1);
+  }
+}
+.animate-aurora-b {
+  animation: aurora-drift-b 32s ease-in-out infinite;
+}
+
 /* Single global reduced-motion reset — covers every animation/transition in the
    app (including future ones), not just the classes defined above. */
 @media (prefers-reduced-motion: reduce) {

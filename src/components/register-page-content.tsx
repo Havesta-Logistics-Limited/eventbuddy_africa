@@ -460,11 +460,20 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   return (
     <div className="min-h-screen bg-[#22103A]">
+      {/* Ambient glow behind the glass cards — fixed + its own overflow-hidden so it
+          never affects the sticky registration panel's containing block. Purely
+          atmospheric: slow, low-opacity, never the thing a visitor consciously notices. */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-32 -left-24 w-[520px] h-[520px] rounded-full bg-[#C21FAF]/25 blur-[110px] animate-aurora-a" />
+        <div className="absolute top-1/3 -right-32 w-[560px] h-[560px] rounded-full bg-[#6D28D9]/25 blur-[120px] animate-aurora-b" />
+      </div>
+
+      <div className="relative z-10">
       <PublicHeader />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-14">
         {/* Hero — cover image + title/badges/CTA, matching the composition of a real
             event landing page rather than the plain header band this used to be. */}
-        <div className="grid lg:grid-cols-[1.15fr_1fr] gap-8 items-start">
+        <div className="grid lg:grid-cols-[1.15fr_1fr] gap-8 items-start animate-fade-in-up">
           <div className="aspect-video rounded-2xl overflow-hidden bg-slate-100 shadow-sm">
             {event.coverImage ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -553,13 +562,16 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         <div className="grid lg:grid-cols-[1fr_400px] gap-8 mt-10 items-start">
           <div className="space-y-5 min-w-0">
             {event.description && (
-              <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
+              <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up" style={{ animationDelay: "0ms" }}>
                 <h2 className="font-semibold text-white mb-2">About this event</h2>
                 <p className="text-sm text-white/70 leading-relaxed whitespace-pre-line">{event.description}</p>
               </div>
             )}
 
-            <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
+            <div
+              className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up"
+              style={{ animationDelay: event.description ? "60ms" : "0ms" }}
+            >
               <h2 className="font-semibold text-white mb-3">Date and time</h2>
               <p className="flex items-start gap-2.5 text-sm text-white/80">
                 <Calendar size={16} className="text-[#FF8AF5] mt-0.5 shrink-0" />
@@ -573,7 +585,10 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
             </div>
 
             {event.eventFormat === "virtual" ? (
-              <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
+              <div
+                className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up"
+                style={{ animationDelay: event.description ? "120ms" : "60ms" }}
+              >
                 <h2 className="font-semibold text-white mb-3">How to join</h2>
                 <p className="flex items-start gap-2.5 text-sm text-white/80">
                   <Radio size={16} className="text-[#FF8AF5] mt-0.5 shrink-0" />
@@ -584,7 +599,10 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 </p>
               </div>
             ) : (
-              <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
+              <div
+                className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up"
+                style={{ animationDelay: event.description ? "120ms" : "60ms" }}
+              >
                 <h2 className="font-semibold text-white mb-3">Location</h2>
                 <p className="flex items-start gap-2.5 text-sm text-white/80 mb-3">
                   <MapPin size={16} className="text-[#FF8AF5] mt-0.5 shrink-0" />
@@ -604,13 +622,15 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
               </div>
             )}
 
-            <EventHostCard orgSlug={orgSlug} eventId={event.id} orgName={orgName} attendeeSummary={attendeeSummary} />
+            <div className="animate-fade-in-up" style={{ animationDelay: event.description ? "180ms" : "120ms" }}>
+              <EventHostCard orgSlug={orgSlug} eventId={event.id} orgName={orgName} attendeeSummary={attendeeSummary} />
+            </div>
           </div>
 
           {/* Sticky registration panel — this is the real, functional form: ticket
               picker, discount code, dynamic fields, submit. Not a decorative summary
               card standing in for it. */}
-          <div id="register-panel" className="lg:sticky lg:top-8 scroll-mt-8">
+          <div id="register-panel" className="lg:sticky lg:top-8 scroll-mt-8 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
             <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl overflow-hidden">
               {showOneOnOneStep && event ? (
                 <OneOnOneRequestStep
@@ -902,6 +922,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
           <div className="flex-1" style={{ background: "#B8119C" }} />
         </div>
       </footer>
+      </div>
     </div>
   );
 }
