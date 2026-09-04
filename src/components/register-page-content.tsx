@@ -10,6 +10,7 @@ import {
   Calendar,
   CalendarPlus,
   Check,
+  Clock,
   Copy,
   ExternalLink,
   Loader2,
@@ -71,6 +72,10 @@ type Confirmation = {
    *  the registration is captured straight as a lead instead. */
   referenceId?: string;
   emailSent: boolean;
+  /** Defaults to "registered" (paid tickets and events without approval/waitlist
+   *  turned on always land there) — pending/waitlisted only ever come back from the
+   *  free-registration route when the organizer has one of those features on. */
+  status?: "registered" | "pending" | "waitlisted";
   /** Undefined only if Hub provisioning failed server-side (best-effort, never
    *  blocks registration itself) — the button is simply omitted in that case. */
   hubUrl?: string;
@@ -362,7 +367,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         return;
       }
       setAttendeeIdentity(identity);
-      setConfirmation({ referenceId: json.referenceId, emailSent: !!json.emailSent, hubUrl: json.hubUrl ?? undefined, event: json.event });
+      setConfirmation({ referenceId: json.referenceId, emailSent: !!json.emailSent, status: json.status ?? "registered", hubUrl: json.hubUrl ?? undefined, event: json.event });
     } catch {
       setSubmitError("Couldn't complete your registration. Please try again.");
     } finally {
@@ -456,7 +461,8 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   const badges = [STATUS_LABEL[status], event.eventFormat === "virtual" ? "Virtual" : "In Person", event.category].filter(Boolean) as string[];
 
-  const showOneOnOneStep = !!confirmation && oneOnOneEnabled && !oneOnOneDismissed;
+  const showOneOnOneStep =
+    !!confirmation && confirmation.status !== "pending" && confirmation.status !== "waitlisted" && oneOnOneEnabled && !oneOnOneDismissed;
 
   return (
     <div className="min-h-screen bg-[#22103A]">
@@ -645,6 +651,20 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                     setOneOnOneDismissed(true);
                   }}
                 />
+              ) : confirmation && (confirmation.status === "pending" || confirmation.status === "waitlisted") ? (
+                <div className="p-6 text-center">
+                  <div className="w-12 h-12 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center mx-auto mb-4">
+                    <Clock size={22} />
+                  </div>
+                  <h2 className="font-semibold text-lg text-white mb-1">
+                    {confirmation.status === "pending" ? "Registration pending approval" : "You're on the waitlist"}
+                  </h2>
+                  <p className="text-sm text-white/60">
+                    {confirmation.status === "pending"
+                      ? "The organizer reviews registrations before confirming them. We'll email you as soon as yours is approved."
+                      : "This event is at capacity, but we've added you to the waitlist. We'll email you right away if a spot opens up."}
+                  </p>
+                </div>
               ) : confirmation ? (
                 <div className="p-6 text-center">
                   <div className="w-12 h-12 rounded-full bg-teal-400/20 text-teal-300 flex items-center justify-center mx-auto mb-4">

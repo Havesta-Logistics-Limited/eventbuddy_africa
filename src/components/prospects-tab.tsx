@@ -2,22 +2,93 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Users, UserCheck, Download, Loader2, Send } from "lucide-react";
+import { Users, UserCheck, Download, Loader2, Send, Check, X, ArrowUpCircle, ClipboardCheck, ListOrdered } from "lucide-react";
 import { Destination, EventRecord, LeadRecord, RegistrationRecord, StaffRecord, TicketType, University } from "@/lib/types";
 import { downloadCsv, registrationsToCsv } from "@/lib/csv";
-import { updateRegistrationStatus } from "@/lib/store";
+import { updateRegistrationStatus, decideRegistration, updateEvent, PersistError } from "@/lib/store";
 import { RegistrantDetailModal } from "@/components/registrant-detail-modal";
 import { formatNaira } from "@/lib/billing";
 
-const statusStyles: Record<RegistrationRecord["status"], string> = {
+/** The two event-level toggles that put new registrations into 'pending'/'waitlisted'
+ *  instead of straight to 'registered' — shown here (not the creation wizard) since
+ *  an organizer typically decides this after seeing how sign-ups are going, same
+ *  reasoning as the 1-on-1 toggle living in its own dashboard tab rather than the
+ *  wizard. Deliberately shown even with zero registrations yet — that's often exactly
+ *  when an organizer wants to turn this on, before anyone's signed up. */
+function RegistrationSettingsCard({ event }: { event: EventRecord }) {
+  const [togglingApproval, setTogglingApproval] = useState(false);
+  const [togglingWaitlist, setTogglingWaitlist] = useState(false);
+
+  async function toggle(field: "requiresApproval" | "waitlistEnabled", current: boolean | undefined, setBusy: (v: boolean) => void) {
+    setBusy(true);
+    try {
+      await updateEvent(event.id, { [field]: !current });
+    } catch (err) {
+      toast.error(err instanceof PersistError ? err.message : "Couldn't update this setting.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mb-5 p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <ClipboardCheck size={16} className="text-slate-400 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-slate-800">Require approval</p>
+            <p className="text-xs text-slate-500">New registrations start pending — review and approve or decline each one.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={!!event.requiresApproval}
+          onClick={() => toggle("requiresApproval", event.requiresApproval, setTogglingApproval)}
+          disabled={togglingApproval}
+          className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${event.requiresApproval ? "bg-brand-600" : "bg-slate-300"}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${event.requiresApproval ? "translate-x-4" : ""}`} />
+        </button>
+      </div>
+      <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-200">
+        <div className="flex items-center gap-2.5">
+          <ListOrdered size={16} className="text-slate-400 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-slate-800">Waitlist when sold out</p>
+            <p className="text-xs text-slate-500">Once a capacity-limited ticket sells out, new sign-ups join a waitlist instead of being turned away.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={!!event.waitlistEnabled}
+          onClick={() => toggle("waitlistEnabled", event.waitlistEnabled, setTogglingWaitlist)}
+          disabled={togglingWaitlist}
+          className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${event.waitlistEnabled ? "bg-brand-600" : "bg-slate-300"}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${event.waitlistEnabled ? "translate-x-4" : ""}`} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export const statusStyles: Record<RegistrationRecord["status"], string> = {
   registered: "bg-amber-100 text-amber-700",
   checked_in: "bg-teal-100 text-teal-700",
   cancelled: "bg-slate-100 text-slate-500",
+  pending: "bg-orange-100 text-orange-700",
+  waitlisted: "bg-violet-100 text-violet-700",
+  declined: "bg-rose-100 text-rose-700",
 };
-const statusLabels: Record<RegistrationRecord["status"], string> = {
+export const statusLabels: Record<RegistrationRecord["status"], string> = {
   registered: "Registered",
   checked_in: "Checked in",
   cancelled: "Cancelled",
+  pending: "Pending",
+  waitlisted: "Waitlisted",
+  declined: "Declined",
 };
 
 /** Self-service registrants for this event, toggled between everyone who registered and
@@ -72,8 +143,21 @@ export function ProspectsTab({
     }
   }
 
+  async function decide(r: RegistrationRecord, action: "approve" | "decline" | "promote") {
+    if (busyId) return;
+    setBusyId(r.id);
+    try {
+      await decideRegistration(orgSlug, event.id, r.id, "registration", action);
+      toast.success(action === "approve" ? "Approved" : action === "decline" ? "Declined" : "Promoted from waitlist");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't update this registration.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function toggleCheckedIn(r: RegistrationRecord) {
-    if (r.status === "cancelled" || busyId) return;
+    if (r.status === "cancelled" || r.status === "declined" || busyId) return;
     setBusyId(r.id);
     try {
       await updateRegistrationStatus(r.id, r.status === "checked_in" ? "registered" : "checked_in");
@@ -86,10 +170,13 @@ export function ProspectsTab({
 
   if (registrations.length === 0) {
     return (
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-10 text-center">
-        <Users size={28} className="mx-auto mb-3 text-slate-300" />
-        <p className="font-medium text-slate-500">No registrations yet</p>
-        <p className="text-xs text-slate-400 mt-1.5">Self-service sign-ups for this event will appear here.</p>
+      <div>
+        <RegistrationSettingsCard event={event} />
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-10 text-center">
+          <Users size={28} className="mx-auto mb-3 text-slate-300" />
+          <p className="font-medium text-slate-500">No registrations yet</p>
+          <p className="text-xs text-slate-400 mt-1.5">Self-service sign-ups for this event will appear here.</p>
+        </div>
       </div>
     );
   }
@@ -108,6 +195,7 @@ export function ProspectsTab({
 
   return (
     <div>
+      <RegistrationSettingsCard event={event} />
       <div className="grid grid-cols-2 gap-4 mb-5">
         <button
           type="button"
@@ -227,11 +315,34 @@ export function ProspectsTab({
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     {busyId === r.id ? (
                       <Loader2 size={16} className="animate-spin text-slate-400" />
+                    ) : r.status === "pending" ? (
+                      <div className="flex items-center gap-1.5">
+                        <button type="button" onClick={() => decide(r, "approve")} title="Approve" className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                          <Check size={13} />
+                        </button>
+                        <button type="button" onClick={() => decide(r, "decline")} title="Decline" className="p-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100">
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ) : r.status === "waitlisted" ? (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => decide(r, "promote")}
+                          title="Promote from waitlist"
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-medium"
+                        >
+                          <ArrowUpCircle size={13} /> Promote
+                        </button>
+                        <button type="button" onClick={() => decide(r, "decline")} title="Decline" className="p-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100">
+                          <X size={13} />
+                        </button>
+                      </div>
                     ) : (
                       <input
                         type="checkbox"
                         checked={r.status === "checked_in"}
-                        disabled={r.status === "cancelled"}
+                        disabled={r.status === "cancelled" || r.status === "declined"}
                         onChange={() => toggleCheckedIn(r)}
                         title={r.status === "checked_in" ? "Undo check-in" : "Mark as checked in"}
                         className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600 disabled:opacity-40"

@@ -240,7 +240,7 @@ export default function LeadsPage() {
         ) : (
           groupedEvents.map((ev, i) => (
             <Reveal key={ev.id} index={i}>
-              <EventLeadsCard event={ev} leads={filtered.filter((l) => l.eventId === ev.id)} universities={universities} />
+              <EventLeadsCard event={ev} leads={filtered.filter((l) => l.eventId === ev.id)} universities={universities} orgSlug={session?.orgSlug} />
             </Reveal>
           ))
         )}

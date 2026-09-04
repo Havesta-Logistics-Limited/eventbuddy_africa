@@ -132,6 +132,15 @@ export interface EventRecord {
    *  served — enforced atomically by submit_one_on_one_request (migration 0059), not
    *  in application code. null/unset = unlimited. */
   oneOnOneLimit?: number;
+  /** When on, a new registration starts as "pending" instead of "registered" until
+   *  the organizer approves or declines it (see the event dashboard's Prospects/
+   *  Registrations tab). Independent of isInviteOnly — this gates the OPEN
+   *  self-registration path, not a curated guest list. */
+  requiresApproval?: boolean;
+  /** When on, a registration for a sold-out (capacity-limited) ticket type is
+   *  captured as "waitlisted" instead of being rejected. Promotion to a real seat
+   *  is a manual organizer action, not automatic. */
+  waitlistEnabled?: boolean;
   createdAt: string;
 }
 
@@ -186,6 +195,14 @@ export interface LeadRecord {
   comments: string;
   /** Answers to the event's admin-defined customFields, keyed by FieldDef.id. */
   customAnswers?: Record<string, string | string[]>;
+  /** Virtual events' equivalent of RegistrationStatus — a lead captured through
+   *  self-service registration can be 'pending' (approval required), 'waitlisted',
+   *  or 'declined', same lifecycle as a physical registration. Leads captured
+   *  on-site by staff are always 'registered' — those flows never touch this. */
+  status?: "registered" | "pending" | "waitlisted" | "declined";
+  /** Attendee-chosen — excludes them from the public "N Going" name sample on the
+   *  register page (migration 0060/0061). The aggregate count still includes them. */
+  hideFromGuestList?: boolean;
   createdAt: string;
 }
 
@@ -304,7 +321,7 @@ export interface TicketPurchaseAttempt {
   createdAt: string;
 }
 
-export type RegistrationStatus = "registered" | "checked_in" | "cancelled";
+export type RegistrationStatus = "registered" | "checked_in" | "cancelled" | "pending" | "waitlisted" | "declined";
 
 /** A self-service attendee sign-up via an event's public registration link — distinct
  *  from LeadRecord, which is always captured by a logged-in staff member on-site. Each
@@ -326,6 +343,9 @@ export interface RegistrationRecord {
   status: RegistrationStatus;
   checkedInAt?: string;
   checkedInBy?: string;
+  /** Attendee-chosen — excludes them from the public "N Going" name sample on the
+   *  register page (migration 0060/0061). The aggregate count still includes them. */
+  hideFromGuestList?: boolean;
   createdAt: string;
 }
 

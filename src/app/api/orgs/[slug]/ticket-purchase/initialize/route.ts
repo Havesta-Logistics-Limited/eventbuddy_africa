@@ -19,6 +19,7 @@ type InitializeBody = {
    *  registrant_data so createTicketPurchaseRegistration can tag the eventual
    *  registrations/leads row once payment succeeds. */
   source?: "web" | "mobile";
+  hideFromGuestList?: boolean;
 };
 
 /**
@@ -31,7 +32,7 @@ type InitializeBody = {
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/ticket-purchase/initialize">) {
   const { slug } = await ctx.params;
   const body = (await request.json()) as Partial<InitializeBody>;
-  const { eventId, ticketTypeId, firstName, lastName, email, phone, customAnswers, discountCode, source } = body;
+  const { eventId, ticketTypeId, firstName, lastName, email, phone, customAnswers, discountCode, source, hideFromGuestList } = body;
   const resolvedSource = source === "mobile" ? "mobile" : "web";
 
   if (!eventId || !ticketTypeId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
@@ -157,6 +158,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       phone: phone?.trim() || null,
       customAnswers: customAnswers || {},
       source: resolvedSource,
+      hideFromGuestList: Boolean(hideFromGuestList),
     },
   });
   if (insertError) {

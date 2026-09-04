@@ -3,21 +3,11 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { toast } from "sonner";
-import { X, QrCode, Mail, Phone, Calendar, CheckCircle2, MapPin, BookMarked, GraduationCap, Globe2, Building2, MessageSquare, Ticket, Send } from "lucide-react";
+import { X, QrCode, Mail, Phone, Calendar, CheckCircle2, MapPin, BookMarked, GraduationCap, Globe2, Building2, MessageSquare, Ticket, Send, Check, ArrowUpCircle } from "lucide-react";
 import { Destination, EventRecord, LeadRecord, RegistrationRecord, TicketType, University } from "@/lib/types";
-import { updateRegistrationStatus } from "@/lib/store";
+import { updateRegistrationStatus, decideRegistration } from "@/lib/store";
 import { formatNaira } from "@/lib/billing";
-
-const statusStyles: Record<RegistrationRecord["status"], string> = {
-  registered: "bg-amber-100 text-amber-700",
-  checked_in: "bg-teal-100 text-teal-700",
-  cancelled: "bg-slate-100 text-slate-500",
-};
-const statusLabels: Record<RegistrationRecord["status"], string> = {
-  registered: "Registered",
-  checked_in: "Checked in",
-  cancelled: "Cancelled",
-};
+import { statusStyles, statusLabels } from "@/components/prospects-tab";
 
 /** Full detail view for one registrant — their registration form answers, their QR
  *  check-in code, and (when a staff member has pulled them into a lead at a booth) the
@@ -88,6 +78,19 @@ export function RegistrantDetailModal({
     }
   }
 
+  async function decide(action: "approve" | "decline" | "promote") {
+    setBusy(true);
+    try {
+      await decideRegistration(orgSlug, event.id, registration.id, "registration", action);
+      toast.success(action === "approve" ? "Approved" : action === "decline" ? "Declined" : "Promoted from waitlist");
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't update this registration.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop" onClick={onClose}>
       <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-2xl shadow-2xl overflow-y-auto max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
@@ -141,7 +144,7 @@ export function RegistrantDetailModal({
               >
                 <QrCode size={15} /> {showQr ? "Hide QR Code" : "Show QR Code"}
               </button>
-              {registration.status !== "cancelled" && (
+              {(registration.status === "registered" || registration.status === "checked_in") && (
                 <button
                   type="button"
                   onClick={resendEmail}
@@ -151,7 +154,7 @@ export function RegistrantDetailModal({
                   <Send size={15} /> {resending ? "Sending…" : "Resend Email"}
                 </button>
               )}
-              {registration.status !== "cancelled" && (
+              {(registration.status === "registered" || registration.status === "checked_in") && (
                 <button
                   type="button"
                   onClick={toggleCheckedIn}
@@ -164,6 +167,46 @@ export function RegistrantDetailModal({
                 >
                   <MapPin size={15} /> {busy ? "Updating…" : registration.status === "checked_in" ? "Undo Check-in" : "Check Into This Event"}
                 </button>
+              )}
+              {registration.status === "pending" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => decide("approve")}
+                    disabled={busy}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    <Check size={15} /> Approve
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => decide("decline")}
+                    disabled={busy}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-200 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+                  >
+                    <X size={15} /> Decline
+                  </button>
+                </>
+              )}
+              {registration.status === "waitlisted" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => decide("promote")}
+                    disabled={busy}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-60"
+                  >
+                    <ArrowUpCircle size={15} /> Promote
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => decide("decline")}
+                    disabled={busy}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-200 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+                  >
+                    <X size={15} /> Decline
+                  </button>
+                </>
               )}
             </div>
           </div>

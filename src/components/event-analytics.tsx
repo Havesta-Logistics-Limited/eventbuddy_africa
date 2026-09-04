@@ -19,11 +19,17 @@ const REGISTRATION_STATUS_COLORS: Record<RegistrationRecord["status"], string> =
   registered: "#E85D0A",
   checked_in: "#0d7c6e",
   cancelled: "#94a3b8",
+  pending: "#D97706",
+  waitlisted: "#7c3aed",
+  declined: "#dc2626",
 };
 const REGISTRATION_STATUS_LABELS: Record<RegistrationRecord["status"], string> = {
   registered: "Registered",
   checked_in: "Checked In",
   cancelled: "Cancelled",
+  pending: "Pending",
+  waitlisted: "Waitlisted",
+  declined: "Declined",
 };
 
 /** A short vertical bar comparison — used for Registrations vs Participants and for

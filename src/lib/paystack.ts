@@ -309,6 +309,7 @@ type PendingTicketTxn = {
     phone: string | null;
     customAnswers?: Record<string, string | string[]>;
     source?: "web" | "mobile";
+    hideFromGuestList?: boolean;
   } | null;
 };
 
@@ -390,6 +391,8 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
       comments: "",
       custom_answers: info.customAnswers || {},
       source: info.source === "mobile" ? "mobile" : "web",
+      status: "registered",
+      hide_from_guest_list: Boolean(info.hideFromGuestList),
     });
     if (leadErr) {
       console.error(`[ticket-purchase] paid ticket for ${info.email} on event ${txn.event_id} succeeded but no lead could be created:`, leadErr.message);
@@ -418,6 +421,7 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
         phone: info.phone || null,
         custom_answers: info.customAnswers || {},
         source: info.source === "mobile" ? "mobile" : "web",
+        hide_from_guest_list: Boolean(info.hideFromGuestList),
       })
       .select()
       .single();

@@ -176,3 +176,94 @@ export async function sendVirtualConfirmationEmail(to: string, event: Registered
     return false;
   }
 }
+
+/** Sent instead of the real confirmation when the event requires approval — no QR/
+ *  reference ID goes out yet since nothing is confirmed; that follows separately via
+ *  sendRegistrationEmail/sendVirtualConfirmationEmail once the organizer approves. */
+export async function sendPendingApprovalEmail(to: string, event: RegisteredEvent) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
+
+  try {
+    const { eventDate, eventTime } = eventDateTimeLine(event);
+    const safeName = escapeHtml(event.name);
+
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
+      to,
+      subject: `Your registration for ${event.name} is pending approval`,
+      text: `We got your registration for ${event.name} on ${eventDate}${eventTime ? ` at ${eventTime}` : ""}. The organizer reviews registrations before confirming them — we'll email you as soon as yours is approved.`,
+      html: `
+        <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
+          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#D97706; font-weight:600; margin:0 0 8px;">Pending approval</p>
+          <h1 style="font-size:20px; margin:0 0 12px;">${safeName}</h1>
+          <p style="margin:0 0 12px; color:#666; font-size:13px;">${eventDate}${eventTime ? ` · ${eventTime}` : ""}</p>
+          <p style="margin:0; color:#666;">The organizer reviews registrations before confirming them. We'll email you as soon as yours is approved.</p>
+        </div>
+      `,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/** Sent when a capacity-limited ticket is sold out and the organizer has waitlisting
+ *  on — the attendee is captured, not confirmed; promotion to a real registration is
+ *  a manual organizer action, which sends the normal confirmation email at that point. */
+export async function sendWaitlistEmail(to: string, event: RegisteredEvent) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
+
+  try {
+    const { eventDate, eventTime } = eventDateTimeLine(event);
+    const safeName = escapeHtml(event.name);
+
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
+      to,
+      subject: `You're on the waitlist for ${event.name}`,
+      text: `${event.name} on ${eventDate}${eventTime ? ` at ${eventTime}` : ""} is at capacity, but we've added you to the waitlist. We'll email you right away if a spot opens up.`,
+      html: `
+        <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
+          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#D97706; font-weight:600; margin:0 0 8px;">Waitlisted</p>
+          <h1 style="font-size:20px; margin:0 0 12px;">${safeName}</h1>
+          <p style="margin:0 0 12px; color:#666; font-size:13px;">${eventDate}${eventTime ? ` · ${eventTime}` : ""}</p>
+          <p style="margin:0; color:#666;">This event is at capacity, but you're on the waitlist. We'll email you right away if a spot opens up.</p>
+        </div>
+      `,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/** Sent when the organizer declines a pending registration. */
+export async function sendDeclinedEmail(to: string, event: RegisteredEvent) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
+
+  try {
+    const safeName = escapeHtml(event.name);
+
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
+      to,
+      subject: `Update on your registration for ${event.name}`,
+      text: `Your registration for ${event.name} wasn't approved this time.`,
+      html: `
+        <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
+          <h1 style="font-size:20px; margin:0 0 12px;">${safeName}</h1>
+          <p style="margin:0; color:#666;">Your registration wasn't approved this time.</p>
+        </div>
+      `,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}

@@ -2,24 +2,11 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
 import { generateReferenceId } from "@/lib/utils";
-import { sendRegistrationEmail, sendVirtualConfirmationEmail } from "@/lib/registration-email";
+import { sendRegistrationEmail, sendVirtualConfirmationEmail, sendPendingApprovalEmail, sendWaitlistEmail } from "@/lib/registration-email";
 import { sendPushToAttendee } from "@/lib/push";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-/** Atomic, capacity-guarded increment (see 0038_atomic_ticket_discount_counters.sql)
- *  — a plain read-then-write here would let two concurrent free registrations for
- *  the last unit of a capacity-limited ticket both pass the availability check and
- *  both succeed, the same race already fixed on the paid path in paystack.ts. */
-async function incrementTicketQuantitySold(supabase: SupabaseClient, ticketTypeId: string) {
-  const { data: incremented, error } = await supabase.rpc("increment_ticket_sold", { p_ticket_type_id: ticketTypeId });
-  if (error) {
-    console.error(`[register] couldn't increment quantity_sold for ticket ${ticketTypeId}:`, error.message);
-  } else if (!incremented) {
-    console.error(`[register] OVERSOLD: ticket type ${ticketTypeId} was already at capacity for a free registration — needs manual review.`);
-  }
-}
+import { incrementTicketQuantitySold, decrementTicketQuantitySold } from "@/lib/ticket-capacity";
 
 type RegisterBody = {
   eventId: string;
@@ -37,6 +24,10 @@ type RegisterBody = {
    *  this at all (defaults to "web" below), only the mobile app does. Purely for
    *  /platform's mobile-vs-web reporting; doesn't affect any registration logic. */
   source?: "web" | "mobile";
+  /** "Don't show my name publicly" checkbox on the registration form — keeps the
+   *  attendee out of the public "N Going" name sample (they still count toward the
+   *  aggregate number). See public_event_attendee_summary in 0061. */
+  hideFromGuestList?: boolean;
 };
 
 /**
@@ -52,7 +43,7 @@ type RegisterBody = {
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/register">) {
   const { slug } = await ctx.params;
   const body = (await request.json()) as Partial<RegisterBody>;
-  const { eventId, firstName, lastName, email, phone, customAnswers, ticketTypeId, source } = body;
+  const { eventId, firstName, lastName, email, phone, customAnswers, ticketTypeId, source, hideFromGuestList } = body;
   const resolvedSource = source === "mobile" ? "mobile" : "web";
 
   if (!eventId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
@@ -80,7 +71,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, name, date, end_date, start_time, end_time, timezone, capture_override, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location, self_registration_enabled, published"
+      "id, name, date, end_date, start_time, end_time, timezone, capture_override, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location, self_registration_enabled, published, requires_approval, waitlist_enabled"
     )
     .eq("id", eventId)
     .eq("organization_id", org.id)
@@ -110,6 +101,26 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       return NextResponse.json({ error: "This ticket requires payment — please use the payment link instead." }, { status: 400 });
     }
     ticketTypeIdForRegistration = ticket.id;
+  }
+
+  // Reserve the seat (if this ticket type is capacity-limited) before creating any
+  // row — this is what actually fixes the pre-existing oversell bug: the old code
+  // incremented after inserting and only logged a failure, so a sold-out free ticket
+  // could still be registered. Now a failed reservation either falls back to the
+  // waitlist or rejects outright, and never creates a phantom "registered" row.
+  let resolvedStatus: "registered" | "pending" | "waitlisted";
+  let seatReserved = false;
+  if (ticketTypeIdForRegistration) {
+    seatReserved = await incrementTicketQuantitySold(supabase, ticketTypeIdForRegistration);
+    if (seatReserved) {
+      resolvedStatus = event.requires_approval ? "pending" : "registered";
+    } else if (event.waitlist_enabled) {
+      resolvedStatus = "waitlisted";
+    } else {
+      return NextResponse.json({ error: "This ticket is sold out." }, { status: 409 });
+    }
+  } else {
+    resolvedStatus = event.requires_approval ? "pending" : "registered";
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
@@ -162,19 +173,32 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
         comments: "",
         custom_answers: customAnswers || {},
         source: resolvedSource,
+        status: resolvedStatus,
+        ticket_type_id: ticketTypeIdForRegistration,
+        hide_from_guest_list: Boolean(hideFromGuestList),
       })
       .select()
       .single();
     if (leadError || !lead) {
+      if (seatReserved && ticketTypeIdForRegistration) await decrementTicketQuantitySold(supabase, ticketTypeIdForRegistration);
       return NextResponse.json({ error: leadError?.message || "Couldn't complete your registration." }, { status: 500 });
     }
 
-    if (ticketTypeIdForRegistration) await incrementTicketQuantitySold(supabase, ticketTypeIdForRegistration);
+    if (resolvedStatus === "pending") {
+      const emailSent = await sendPendingApprovalEmail(lead.email, event);
+      await sendPushToAttendee(supabase, lead.email, "Registration pending approval", `${event.name} — the organizer will confirm your spot soon.`, { eventId: event.id });
+      return NextResponse.json({ success: true, status: resolvedStatus, emailSent, event: responseEvent });
+    }
+    if (resolvedStatus === "waitlisted") {
+      const emailSent = await sendWaitlistEmail(lead.email, event);
+      await sendPushToAttendee(supabase, lead.email, "You're on the waitlist", `${event.name} — we'll email you if a spot opens up.`, { eventId: event.id });
+      return NextResponse.json({ success: true, status: resolvedStatus, emailSent, event: responseEvent });
+    }
 
     const hub = await tryHubUrl(lead.email, `${firstName.trim()} ${lastName.trim()}`);
     const emailSent = await sendVirtualConfirmationEmail(lead.email, event, hub);
     await sendPushToAttendee(supabase, lead.email, "You're registered! 🎉", `${event.name} — check your email for join details.`, { eventId: event.id });
-    return NextResponse.json({ success: true, emailSent, hubUrl: hub, event: responseEvent });
+    return NextResponse.json({ success: true, status: resolvedStatus, emailSent, hubUrl: hub, event: responseEvent });
   }
 
   let registration = null;
@@ -191,18 +215,33 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
         phone: phone?.trim() || null,
         custom_answers: customAnswers || {},
         source: resolvedSource,
+        status: resolvedStatus,
+        hide_from_guest_list: Boolean(hideFromGuestList),
       })
       .select()
       .single();
     if (data) {
       registration = data;
     } else if (error?.code !== "23505") {
+      if (seatReserved && ticketTypeIdForRegistration) await decrementTicketQuantitySold(supabase, ticketTypeIdForRegistration);
       return NextResponse.json({ error: error?.message || "Couldn't complete your registration." }, { status: 500 });
     }
   }
-  if (!registration) return NextResponse.json({ error: "Couldn't complete your registration. Please try again." }, { status: 500 });
+  if (!registration) {
+    if (seatReserved && ticketTypeIdForRegistration) await decrementTicketQuantitySold(supabase, ticketTypeIdForRegistration);
+    return NextResponse.json({ error: "Couldn't complete your registration. Please try again." }, { status: 500 });
+  }
 
-  if (ticketTypeIdForRegistration) await incrementTicketQuantitySold(supabase, ticketTypeIdForRegistration);
+  if (resolvedStatus === "pending") {
+    const emailSent = await sendPendingApprovalEmail(registration.email, event);
+    await sendPushToAttendee(supabase, registration.email, "Registration pending approval", `${event.name} — the organizer will confirm your spot soon.`, { eventId: event.id });
+    return NextResponse.json({ success: true, status: resolvedStatus, referenceId: registration.reference_id, emailSent, event: responseEvent });
+  }
+  if (resolvedStatus === "waitlisted") {
+    const emailSent = await sendWaitlistEmail(registration.email, event);
+    await sendPushToAttendee(supabase, registration.email, "You're on the waitlist", `${event.name} — we'll email you if a spot opens up.`, { eventId: event.id });
+    return NextResponse.json({ success: true, status: resolvedStatus, referenceId: registration.reference_id, emailSent, event: responseEvent });
+  }
 
   const hub = await tryHubUrl(registration.email, registration.full_name);
   const emailSent = await sendRegistrationEmail(registration.email, registration.reference_id, event, hub);
@@ -211,5 +250,5 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     referenceId: registration.reference_id,
   });
 
-  return NextResponse.json({ success: true, referenceId: registration.reference_id, emailSent, hubUrl: hub, event: responseEvent });
+  return NextResponse.json({ success: true, status: resolvedStatus, referenceId: registration.reference_id, emailSent, hubUrl: hub, event: responseEvent });
 }

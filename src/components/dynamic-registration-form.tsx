@@ -23,6 +23,7 @@ interface FormValues {
   lastName: string;
   email: string;
   phone?: string;
+  hideFromGuestList: boolean;
   custom: CustomAnswers;
 }
 
@@ -31,6 +32,7 @@ export interface DynamicRegistrationFormValues {
   lastName: string;
   email: string;
   phone: string;
+  hideFromGuestList: boolean;
   customAnswers: Record<string, string | string[]>;
 }
 
@@ -118,6 +120,7 @@ export function DynamicRegistrationForm(props: {
       lastName: "",
       email: "",
       phone: "",
+      hideFromGuestList: false,
       custom: Object.fromEntries(fields.map((f) => [f.id, f.type === "checkboxes" ? [] : ""])),
     },
   });
@@ -147,6 +150,7 @@ export function DynamicRegistrationForm(props: {
       lastName: values.lastName,
       email: values.email,
       phone: values.phone ?? "",
+      hideFromGuestList: values.hideFromGuestList,
       customAnswers,
     });
   });
@@ -186,6 +190,11 @@ export function DynamicRegistrationForm(props: {
           ))}
         </div>
       )}
+
+      <label className="flex items-start gap-2.5 text-sm text-white/70 cursor-pointer">
+        <input type="checkbox" {...register("hideFromGuestList")} className="mt-0.5 w-4 h-4 rounded border-white/30 bg-white/5 accent-[#C21FAF]" />
+        Don&apos;t show my name publicly on this event&apos;s guest list
+      </label>
 
       {submitError && <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-400/10 text-rose-200 text-sm">{submitError}</div>}
       <button

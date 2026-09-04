@@ -897,7 +897,7 @@ export default function EventDetailPage() {
             })}
 
             {eventDests.length === 0 && filteredLeads.length > 0 && (
-              <EventLeadsCard event={event} leads={filteredLeads} universities={universities} />
+              <EventLeadsCard event={event} leads={filteredLeads} universities={universities} orgSlug={session.orgSlug} />
             )}
 
             {filteredLeads.length === 0 && (

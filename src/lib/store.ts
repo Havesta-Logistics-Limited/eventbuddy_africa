@@ -142,6 +142,8 @@ function mapEventRow(e: {
   registration_page_views: number | null;
   one_on_one_enabled: boolean | null;
   one_on_one_limit: number | null;
+  requires_approval: boolean | null;
+  waitlist_enabled: boolean | null;
   created_at: string;
 }): EventRecord {
   return {
@@ -176,6 +178,8 @@ function mapEventRow(e: {
     registrationPageViews: e.registration_page_views ?? 0,
     oneOnOneEnabled: e.one_on_one_enabled ?? false,
     oneOnOneLimit: e.one_on_one_limit ?? undefined,
+    requiresApproval: e.requires_approval ?? false,
+    waitlistEnabled: e.waitlist_enabled ?? false,
     createdAt: e.created_at,
   };
 }
@@ -209,6 +213,8 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.virtualAccessNotes !== undefined) row.virtual_access_notes = input.virtualAccessNotes || null;
   if (input.oneOnOneEnabled !== undefined) row.one_on_one_enabled = input.oneOnOneEnabled;
   if (input.oneOnOneLimit !== undefined) row.one_on_one_limit = input.oneOnOneLimit ?? null;
+  if (input.requiresApproval !== undefined) row.requires_approval = input.requiresApproval;
+  if (input.waitlistEnabled !== undefined) row.waitlist_enabled = input.waitlistEnabled;
   return row;
 }
 function mapStaffRow(s: {
@@ -251,6 +257,8 @@ function mapLeadRow(l: {
   taken_ielts: string;
   comments: string;
   custom_answers: Record<string, string | string[]> | null;
+  status?: string | null;
+  hide_from_guest_list?: boolean | null;
   created_at: string;
 }): LeadRecord {
   return {
@@ -272,6 +280,8 @@ function mapLeadRow(l: {
     takenIELTS: l.taken_ielts as LeadRecord["takenIELTS"],
     comments: l.comments,
     customAnswers: l.custom_answers ?? {},
+    status: (l.status as LeadRecord["status"]) ?? "registered",
+    hideFromGuestList: l.hide_from_guest_list ?? false,
     createdAt: l.created_at,
   };
 }
@@ -287,6 +297,7 @@ function mapRegistrationRow(r: {
   checked_in_at: string | null;
   checked_in_by: string | null;
   ticket_type_id: string | null;
+  hide_from_guest_list?: boolean | null;
   created_at: string;
 }): RegistrationRecord {
   return {
@@ -301,6 +312,7 @@ function mapRegistrationRow(r: {
     checkedInAt: r.checked_in_at ?? undefined,
     checkedInBy: r.checked_in_by ?? undefined,
     ticketTypeId: r.ticket_type_id ?? undefined,
+    hideFromGuestList: r.hide_from_guest_list ?? false,
     createdAt: r.created_at,
   };
 }
@@ -870,6 +882,34 @@ export async function updateRegistrationStatus(id: string, status: RegistrationR
   const record = mapRegistrationRow(data);
   registrationsCache = registrationsCache.map((r) => (r.id === id ? record : r));
   emitChange();
+}
+
+/** Approve/decline/promote a pending or waitlisted registration or lead — routed
+ *  through the server (unlike updateRegistrationStatus above) because it can also
+ *  need to touch ticket_types.quantity_sold and send an email, both of which need
+ *  the service-role client. See /api/orgs/[slug]/events/[eventId]/registrations/decision. */
+export async function decideRegistration(
+  orgSlug: string,
+  eventId: string,
+  id: string,
+  kind: "registration" | "lead",
+  action: "approve" | "decline" | "promote"
+): Promise<RegistrationRecord["status"]> {
+  const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/registrations/decision`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, kind, action }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || "Couldn't update this registration.");
+  const newStatus = json.status as RegistrationRecord["status"];
+  if (kind === "registration") {
+    registrationsCache = registrationsCache.map((r) => (r.id === id ? { ...r, status: newStatus } : r));
+  } else {
+    leadsCache = leadsCache.map((l) => (l.id === id ? { ...l, status: newStatus as LeadRecord["status"] } : l));
+  }
+  emitChange();
+  return newStatus;
 }
 export function getLeadsFiltered(eventId?: string, destId?: string, uniId?: string): LeadRecord[] {
   return leadsCache.filter((l) => {
