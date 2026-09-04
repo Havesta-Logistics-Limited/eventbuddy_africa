@@ -191,22 +191,24 @@ export function OneOnOneTab({
           </button>
         </div>
         {oneOnOneEnabled && (
-          <div className="flex items-center gap-2.5 mt-3 pt-3 border-t border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 mt-3 pt-3 border-t border-slate-200">
             <label className="text-xs font-medium text-slate-500 shrink-0">Limit (first come, first served)</label>
-            <input
-              type="number"
-              min={1}
-              value={limitInput}
-              onChange={(e) => setLimitInput(e.target.value)}
-              onBlur={saveLimit}
-              disabled={savingLimit}
-              placeholder="Unlimited"
-              className="w-24 px-2.5 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60"
-            />
-            <span className="text-xs text-slate-400">
-              {requests.length} request{requests.length !== 1 ? "s" : ""}
-              {oneOnOneLimit != null ? ` of ${oneOnOneLimit}` : " so far"}
-            </span>
+            <div className="flex items-center gap-2.5">
+              <input
+                type="number"
+                min={1}
+                value={limitInput}
+                onChange={(e) => setLimitInput(e.target.value)}
+                onBlur={saveLimit}
+                disabled={savingLimit}
+                placeholder="Unlimited"
+                className="w-24 px-2.5 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60"
+              />
+              <span className="text-xs text-slate-400">
+                {requests.length} request{requests.length !== 1 ? "s" : ""}
+                {oneOnOneLimit != null ? ` of ${oneOnOneLimit}` : " so far"}
+              </span>
+            </div>
           </div>
         )}
       </div>

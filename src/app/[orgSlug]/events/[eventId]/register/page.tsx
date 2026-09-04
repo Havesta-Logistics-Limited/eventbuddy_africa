@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { RegisterPageContent } from "@/components/register-page-content";
-import { resolveEventForOg } from "@/lib/event-og-image";
+import { buildEventJsonLd, canonicalEventPath, canonicalEventUrl, resolveEventForOg } from "@/lib/event-og-image";
 import { formatDate, formatTime } from "@/lib/utils";
 
 type Params = { orgSlug: string; eventId: string };
@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   return {
     title: event.name,
     description: whenWhere,
+    alternates: { canonical: canonicalEventPath(orgSlug, event) },
     openGraph: { title: event.name, description: whenWhere },
     twitter: { card: "summary_large_image", title: event.name, description: whenWhere },
   };
@@ -34,5 +35,14 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
  *  /discover/[slug] existed, or an event with no global slug set. */
 export default async function RegisterPage({ params }: { params: Promise<Params> }) {
   const { orgSlug, eventId } = await params;
-  return <RegisterPageContent orgSlug={orgSlug} eventIdOrSlug={eventId} />;
+  const event = await resolveEventForOg(orgSlug, eventId);
+
+  return (
+    <>
+      {event && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildEventJsonLd(event, canonicalEventUrl(orgSlug, event))) }} />
+      )}
+      <RegisterPageContent orgSlug={orgSlug} eventIdOrSlug={eventId} />
+    </>
+  );
 }

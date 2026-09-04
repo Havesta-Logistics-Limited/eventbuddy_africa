@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PublicHeader, RegisterPageContent } from "@/components/register-page-content";
 import { createAnonClient } from "@/lib/supabase/anon";
-import { resolveEventForOg } from "@/lib/event-og-image";
+import { buildEventJsonLd, canonicalEventUrl, resolveEventForOg } from "@/lib/event-og-image";
 import { formatDate, formatTime } from "@/lib/utils";
 
 type Params = { slug: string };
@@ -34,6 +34,8 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   return {
     title: event.name,
     description: whenWhere,
+    // Always this page itself — a global slug's canonical form IS /discover/[slug].
+    alternates: { canonical: `/discover/${slug}` },
     openGraph: { title: event.name, description: whenWhere },
     twitter: { card: "summary_large_image", title: event.name, description: whenWhere },
   };
@@ -53,11 +55,11 @@ export default async function DiscoverEventPage({ params }: { params: Promise<Pa
 
   if (!orgSlug) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-[#22103A]">
         <PublicHeader />
         <div className="flex items-center justify-center p-6 py-32">
-          <div className="text-center text-slate-500 max-w-sm">
-            <p className="font-medium text-slate-700">This event couldn&apos;t be found.</p>
+          <div className="text-center text-white/60 max-w-sm">
+            <p className="font-medium text-white">This event couldn&apos;t be found.</p>
             <p className="text-sm mt-1">Check the link you were given and try again.</p>
           </div>
         </div>
@@ -65,5 +67,14 @@ export default async function DiscoverEventPage({ params }: { params: Promise<Pa
     );
   }
 
-  return <RegisterPageContent orgSlug={orgSlug} eventIdOrSlug={slug} />;
+  const event = await resolveEventForOg(orgSlug, slug);
+
+  return (
+    <>
+      {event && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildEventJsonLd(event, canonicalEventUrl(orgSlug, event))) }} />
+      )}
+      <RegisterPageContent orgSlug={orgSlug} eventIdOrSlug={slug} />
+    </>
+  );
 }

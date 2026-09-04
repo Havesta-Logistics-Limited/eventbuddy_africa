@@ -8,22 +8,27 @@ export const eventOgImageSize = { width: 1200, height: 630 };
 const markPng = await readFile(join(process.cwd(), "public/logo-mark.png"));
 const markSrc = `data:image/png;base64,${markPng.toString("base64")}`;
 
-type OgEvent = {
+export type OgEvent = {
+  id: string;
+  slug: string | null;
   name: string;
   date: string;
   endDate: string | null;
   startTime: string | null;
+  endTime: string | null;
   location: string;
   venue: string;
   coverImage: string | null;
   eventFormat: string | null;
   virtualPlatform: string | null;
+  description: string | null;
 };
 
-/** Resolves the event a register-page link points at, purely for building its share
- *  card — public data only (the same columns the register page itself already shows
- *  everyone), via the anon client since this runs at request time with no session.
- *  Matches by real id or either kind of slug, same as RegisterPageContent. */
+/** Resolves the event a register-page link points at — public data only (the same
+ *  columns the register page itself already shows everyone), via the anon client
+ *  since this runs at request time with no session. Matches by real id or either
+ *  kind of slug, same as RegisterPageContent. Shared by the OG image, canonical-URL
+ *  metadata, and JSON-LD structured data, so it carries everything all three need. */
 export async function resolveEventForOg(orgSlug: string, eventIdOrSlug: string): Promise<OgEvent | null> {
   const supabase = createAnonClient();
   const { data: events } = await supabase.rpc("public_org_events", { org_slug: orgSlug });
@@ -34,25 +39,77 @@ export async function resolveEventForOg(orgSlug: string, eventIdOrSlug: string):
     date: string;
     end_date: string | null;
     start_time: string | null;
+    end_time: string | null;
     location: string;
     venue: string;
     cover_image: string | null;
     event_format: string | null;
     virtual_platform: string | null;
+    description: string | null;
   };
   const event = ((events ?? []) as Row[]).find((e) => e.id === eventIdOrSlug || (e.slug && e.slug === eventIdOrSlug));
   if (!event) return null;
   return {
+    id: event.id,
+    slug: event.slug,
     name: event.name,
     date: event.date,
     endDate: event.end_date,
     startTime: event.start_time,
+    endTime: event.end_time,
     location: event.location,
     venue: event.venue,
     coverImage: event.cover_image,
     eventFormat: event.event_format,
     virtualPlatform: event.virtual_platform,
+    description: event.description,
   };
+}
+
+/** The canonical public URL for an event's register page — /discover/[slug] once it
+ *  has a global slug (migration 0057), otherwise the older org-scoped form. Used both
+ *  for the <link rel="canonical"> tag (so a slug and its org-scoped/id equivalent
+ *  don't read as duplicate content to search engines) and as the JSON-LD `url`. A
+ *  relative path — layout.tsx's metadataBase resolves it to an absolute URL. */
+export function canonicalEventPath(orgSlug: string, event: OgEvent) {
+  return event.slug ? `/discover/${event.slug}` : `/${orgSlug}/events/${event.id}/register`;
+}
+
+/** Same path, as a full URL — schema.org's `url` property (unlike Next's
+ *  `alternates.canonical`) has no metadataBase to resolve a relative path against;
+ *  it's raw text embedded in a <script> tag, so it must be absolute itself. */
+export function canonicalEventUrl(orgSlug: string, event: OgEvent) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  return `${siteUrl}${canonicalEventPath(orgSlug, event)}`;
+}
+
+/** Real Event structured data (schema.org), not filled with placeholders — omits
+ *  `image`/`description` when there's nothing genuine to put there. `image` is
+ *  skipped entirely for a data: URI cover photo (an uploaded file): schema.org and
+ *  Google's rich-result parsers expect image to be a fetchable URL, which a data URI
+ *  embedded in the page's own HTML isn't from a crawler's perspective. */
+export function buildEventJsonLd(event: OgEvent, canonicalUrl: string) {
+  const startDate = `${event.date}T${event.startTime || "00:00:00"}`;
+  const endDate = `${event.endDate || event.date}T${event.endTime || event.startTime || "23:59:59"}`;
+
+  const jsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.name,
+    startDate,
+    endDate,
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: event.eventFormat === "virtual" ? "https://schema.org/OnlineEventAttendanceMode" : "https://schema.org/OfflineEventAttendanceMode",
+    url: canonicalUrl,
+    location:
+      event.eventFormat === "virtual"
+        ? { "@type": "VirtualLocation", url: canonicalUrl }
+        : { "@type": "Place", name: event.venue, address: event.location },
+  };
+  if (event.description) jsonLd.description = event.description;
+  if (event.coverImage && /^https?:\/\//.test(event.coverImage)) jsonLd.image = [event.coverImage];
+
+  return jsonLd;
 }
 
 /** Builds the actual share-card image (Satori/next-og, so only a constrained CSS

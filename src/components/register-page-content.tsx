@@ -394,10 +394,10 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-[#22103A]">
         <PublicHeader />
         <div className="flex items-center justify-center py-32">
-          <MapPinCheckInside size={26} className="text-[#C21FAF]/40 animate-pulse" />
+          <MapPinCheckInside size={26} className="text-[#FF8AF5]/40 animate-pulse" />
         </div>
       </div>
     );
@@ -405,11 +405,11 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   if (loadError || !event) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-[#22103A]">
         <PublicHeader />
         <div className="flex items-center justify-center p-6 py-32">
-          <div className="text-center text-slate-500 max-w-sm">
-            <p className="font-medium text-slate-700">{loadError || "This event couldn't be found."}</p>
+          <div className="text-center text-white/60 max-w-sm">
+            <p className="font-medium text-white">{loadError || "This event couldn't be found."}</p>
             <p className="text-sm mt-1">Check the link you were given and try again.</p>
           </div>
         </div>
@@ -419,12 +419,12 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   if (verifyingPayment && !confirmation) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-[#22103A]">
         <PublicHeader />
         <div className="flex items-center justify-center p-6 py-32">
-          <div className="text-center text-slate-500">
-            <Loader2 size={26} className="animate-spin text-[#C21FAF] mx-auto mb-3" />
-            <p className="font-medium text-slate-700">Verifying your payment…</p>
+          <div className="text-center text-white/60">
+            <Loader2 size={26} className="animate-spin text-[#FF8AF5] mx-auto mb-3" />
+            <p className="font-medium text-white">Verifying your payment…</p>
           </div>
         </div>
       </div>
@@ -433,11 +433,11 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   if (event.eventFormat !== "virtual" && event.selfRegistrationEnabled === false) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-[#22103A]">
         <PublicHeader />
         <div className="flex items-center justify-center p-6 py-32">
-          <div className="text-center text-slate-500 max-w-sm">
-            <p className="font-medium text-slate-700">Registration isn&apos;t available for {event.name}.</p>
+          <div className="text-center text-white/60 max-w-sm">
+            <p className="font-medium text-white">Registration isn&apos;t available for {event.name}.</p>
             <p className="text-sm mt-1">This event captures attendees directly at the door — no sign-up needed ahead of time.</p>
           </div>
         </div>
@@ -459,7 +459,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const showOneOnOneStep = !!confirmation && oneOnOneEnabled && !oneOnOneDismissed;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-[#22103A] pb-20">
       <PublicHeader />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-14">
         {/* Hero — cover image + title/badges/CTA, matching the composition of a real
@@ -489,12 +489,12 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 ))}
               </div>
             )}
-            <h1 className="font-display text-3xl sm:text-4xl text-slate-900 mb-4" style={{ textWrap: "balance" }}>
+            <h1 className="font-display text-3xl sm:text-4xl text-white mb-4" style={{ textWrap: "balance" }}>
               {event.name}
             </h1>
-            <div className="space-y-2 text-slate-600 text-sm mb-6">
+            <div className="space-y-2 text-white/70 text-sm mb-6">
               <p className="flex items-center gap-2">
-                <Calendar size={15} className="text-slate-400 shrink-0" />
+                <Calendar size={15} className="text-white/40 shrink-0" />
                 {formatFullDate(event.date)}
                 {event.startTime && ` · ${formatTime(event.startTime)}`}
                 {event.endTime && ` – ${formatTime(event.endTime)}`}
@@ -502,12 +502,12 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
               <p className="flex items-center gap-2">
                 {event.eventFormat === "virtual" ? (
                   <>
-                    <Video size={15} className="text-slate-400 shrink-0" />
+                    <Video size={15} className="text-white/40 shrink-0" />
                     {event.virtualPlatform || "Online"}
                   </>
                 ) : (
                   <>
-                    <MapPin size={15} className="text-slate-400 shrink-0" />
+                    <MapPin size={15} className="text-white/40 shrink-0" />
                     {event.venue}, {event.location}
                   </>
                 )}
@@ -536,15 +536,15 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         </div>
 
         {/* Quick facts */}
-        <div className="grid grid-cols-3 mt-8 border-y border-slate-200 py-5">
+        <div className="grid grid-cols-3 mt-8 border-y border-white/10 py-5">
           {[
             { label: "Price", value: priceLabel },
             { label: event.eventFormat === "virtual" ? "Platform" : "City", value: event.eventFormat === "virtual" ? event.virtualPlatform || "Online" : event.location },
             { label: "Format", value: event.eventFormat === "virtual" ? "Virtual" : "In Person" },
           ].map((fact, i) => (
-            <div key={fact.label} className={`px-2 ${i > 0 ? "border-l border-slate-200" : ""}`}>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">{fact.label}</p>
-              <p className="text-sm font-semibold text-slate-900 truncate">{fact.value}</p>
+            <div key={fact.label} className={`px-2 ${i > 0 ? "border-l border-white/10" : ""}`}>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40 mb-1">{fact.label}</p>
+              <p className="text-sm font-semibold text-white truncate">{fact.value}</p>
             </div>
           ))}
         </div>
