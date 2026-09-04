@@ -749,7 +749,7 @@ export default function EventDetailPage() {
 
         {activeTab === "announcements" && (
           <div key="announcements" className="animate-tab-fade">
-            <AnnouncementsTab eventId={event.id} announcements={announcements} />
+            <AnnouncementsTab eventId={event.id} orgSlug={session.orgSlug!} announcements={announcements} />
           </div>
         )}
 

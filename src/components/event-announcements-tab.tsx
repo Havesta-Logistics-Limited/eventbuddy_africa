@@ -2,15 +2,21 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Megaphone, Pin, PinOff, Plus, Trash2 } from "lucide-react";
+import { Megaphone, Pin, PinOff, Plus, Trash2, Mail } from "lucide-react";
 import { EventAnnouncement } from "@/lib/types";
 import { PersistError, addAnnouncement, deleteAnnouncement, updateAnnouncement } from "@/lib/store";
 
 /** The Announcements tab — one-way organizer broadcasts shown on the public Event
  *  Hub, reverse-chronological with pinned items first. Deliberately not attendee-
- *  postable (see the Event Hub build plan: this is a broadcast channel, not a feed). */
-export function AnnouncementsTab({ eventId, announcements }: { eventId: string; announcements: EventAnnouncement[] }) {
+ *  postable (see the Event Hub build plan: this is a broadcast channel, not a feed).
+ *  "Also email attendees" additionally pushes the same update straight to every
+ *  confirmed attendee's inbox (see /api/orgs/[slug]/events/[eventId]/broadcast) —
+ *  posting to the Hub alone is pull-based, an attendee only sees it if they open
+ *  the link again. */
+export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId: string; orgSlug: string; announcements: EventAnnouncement[] }) {
   const [body, setBody] = useState("");
+  const [subject, setSubject] = useState("");
+  const [alsoEmail, setAlsoEmail] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -26,8 +32,24 @@ export function AnnouncementsTab({ eventId, announcements }: { eventId: string; 
     setSaving(true);
     try {
       await addAnnouncement({ eventId, body: body.trim(), pinned: false });
-      toast.success("Announcement posted");
+      if (alsoEmail) {
+        const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/broadcast`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subject: subject.trim() || undefined, body: body.trim() }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          toast.error(json.error || "Posted, but couldn't email attendees.");
+        } else {
+          toast.success(`Posted, and emailed ${json.sentCount} of ${json.totalCount} attendee${json.totalCount !== 1 ? "s" : ""}`);
+        }
+      } else {
+        toast.success("Announcement posted");
+      }
       setBody("");
+      setSubject("");
+      setAlsoEmail(false);
       setShowForm(false);
     } catch (err) {
       setFormError(err instanceof PersistError ? err.message : "Couldn't post this announcement. Please try again.");
@@ -86,16 +108,31 @@ export function AnnouncementsTab({ eventId, announcements }: { eventId: string; 
             placeholder="Share an update with everyone registered for this event…"
             className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
+          <label className="flex items-center gap-2 mt-3 text-sm text-slate-600 cursor-pointer">
+            <input type="checkbox" checked={alsoEmail} onChange={(e) => setAlsoEmail(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600" />
+            <Mail size={13} className="text-slate-400" />
+            Also email every confirmed attendee
+          </label>
+          {alsoEmail && (
+            <input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder={`Subject (defaults to "Update from your event")`}
+              className="w-full mt-2 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+            />
+          )}
           {formError && <p className="text-sm text-rose-600 mt-2">{formError}</p>}
           <div className="flex items-center gap-2 mt-3">
             <button type="submit" disabled={saving} className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60">
-              {saving ? "Posting…" : "Post"}
+              {saving ? (alsoEmail ? "Posting & emailing…" : "Posting…") : alsoEmail ? "Post & Email" : "Post"}
             </button>
             <button
               type="button"
               onClick={() => {
                 setShowForm(false);
                 setBody("");
+                setSubject("");
+                setAlsoEmail(false);
                 setFormError("");
               }}
               className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50"

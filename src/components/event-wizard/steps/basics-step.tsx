@@ -47,62 +47,64 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
           ))}
         </div>
       </div>
-      {!isVirtual && (
-        <div>
-          <label className={labelClass}>Who can attend</label>
-          <div className="space-y-2">
-            {(
-              [
-                {
-                  key: "open",
-                  title: "Anyone with the link",
-                  body: "Attendees pre-register themselves and get a QR code to check in with.",
-                },
-                {
-                  key: "staff_only",
-                  title: "Staff-only capture",
-                  body: "No public sign-up link. Staff capture every lead directly at the booth, walk-up, no QR code needed.",
-                },
-                {
-                  key: "invite_only",
-                  title: "Invite-only guest list",
-                  body: "Build a guest list and send personal invites. Only people you've added can RSVP — for private or corporate events.",
-                },
-              ] as const
-            ).map((opt) => {
-              const mode = data.isInviteOnly ? "invite_only" : data.selfRegistrationEnabled === false ? "staff_only" : "open";
-              const selected = mode === opt.key;
-              return (
-                <label
-                  key={opt.key}
-                  className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selected ? "border-[#C21FAF] bg-[#C21FAF]/5" : "border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    checked={selected}
-                    onChange={() =>
-                      onChange(
-                        opt.key === "open"
-                          ? { selfRegistrationEnabled: true, isInviteOnly: false }
-                          : opt.key === "staff_only"
-                            ? { selfRegistrationEnabled: false, isInviteOnly: false }
-                            : { selfRegistrationEnabled: false, isInviteOnly: true }
-                      )
-                    }
-                    className="mt-0.5 w-4 h-4 border-slate-300 text-[#C21FAF] focus:ring-[#C21FAF]"
-                  />
-                  <span>
-                    <span className="block text-sm font-medium text-slate-700">{opt.title}</span>
-                    <span className="block text-xs text-slate-500 mt-0.5">{opt.body}</span>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
+      <div>
+        <label className={labelClass}>Who can attend</label>
+        <div className="space-y-2">
+          {(
+            [
+              {
+                key: "open",
+                title: "Anyone with the link",
+                body: isVirtual ? "Attendees pre-register themselves and get the join link by email." : "Attendees pre-register themselves and get a QR code to check in with.",
+              },
+              ...(isVirtual
+                ? []
+                : ([
+                    {
+                      key: "staff_only",
+                      title: "Staff-only capture",
+                      body: "No public sign-up link. Staff capture every lead directly at the booth, walk-up, no QR code needed.",
+                    },
+                  ] as const)),
+              {
+                key: "invite_only",
+                title: "Invite-only guest list",
+                body: "Build a guest list and send personal invites. Only people you've added can RSVP — for private or corporate events.",
+              },
+            ] as const
+          ).map((opt) => {
+            const mode = data.isInviteOnly ? "invite_only" : data.selfRegistrationEnabled === false ? "staff_only" : "open";
+            const selected = mode === opt.key;
+            return (
+              <label
+                key={opt.key}
+                className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  selected ? "border-[#C21FAF] bg-[#C21FAF]/5" : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <input
+                  type="radio"
+                  checked={selected}
+                  onChange={() =>
+                    onChange(
+                      opt.key === "open"
+                        ? { selfRegistrationEnabled: true, isInviteOnly: false }
+                        : opt.key === "staff_only"
+                          ? { selfRegistrationEnabled: false, isInviteOnly: false }
+                          : { selfRegistrationEnabled: false, isInviteOnly: true }
+                    )
+                  }
+                  className="mt-0.5 w-4 h-4 border-slate-300 text-[#C21FAF] focus:ring-[#C21FAF]"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-slate-700">{opt.title}</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">{opt.body}</span>
+                </span>
+              </label>
+            );
+          })}
         </div>
-      )}
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClass}>Start Date</label>

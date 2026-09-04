@@ -190,6 +190,23 @@ export async function paystackVerify(reference: string): Promise<PaystackVerific
   return json.data;
 }
 
+/** Actually reverses a charge on Paystack (as opposed to handleRefundOrDispute below,
+ *  which only reconciles a refund that already happened externally) — always a full
+ *  refund of the original amount, no partial-refund support in this pass. Paystack
+ *  queues refunds for async processing rather than confirming settlement inline, so a
+ *  `true` return here means "accepted", not "money has already moved". */
+export async function paystackRefund(reference: string): Promise<void> {
+  const res = await fetch(`${PAYSTACK_BASE}/refund`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${paystackKey()}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ transaction: reference }),
+  });
+  const json = (await res.json()) as { status: boolean; message: string };
+  if (!res.ok || !json.status) {
+    throw new Error(json.message || "Paystack couldn't process this refund.");
+  }
+}
+
 export type FinalizeResult =
   | { ok: true; purpose: "ticket_purchase"; eventId: string; referenceId: string | null; hubUrl?: string; alreadyProcessed: boolean }
   | { ok: true; purpose: "other"; eventId: string; alreadyProcessed: true }
@@ -478,6 +495,41 @@ async function sendRefundNoticeEmail(to: string, eventName: string, kind: "refun
       subject: `Payment ${kind} — ${eventName}`,
       text: `A ticket purchase for ${eventName} (${formatNaira(amountNaira)}) has been ${verb}. The registration has been cancelled and capacity restored automatically.`,
       html: renderEmailShell({ color: "#9a3412", label: kind === "refunded" ? "Refund" : "Dispute", emoji: "⚠️" }, bodyHtml),
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/** Tells the attendee their money is back — sent only from the organizer-initiated
+ *  self-service refund route (POST /api/orgs/[slug]/events/[eventId]/registrations/refund),
+ *  never from handleRefundOrDispute itself: that function also runs for the webhook
+ *  path (a refund/dispute Paystack tells us about after the fact, e.g. filed on
+ *  Paystack's own dashboard), where a "your registration was refunded" email to an
+ *  attendee who didn't request anything would be confusing without more context than
+ *  this app has at that point. */
+export async function sendAttendeeRefundEmail(to: string, eventName: string, amountNaira: number) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
+
+  const safeEvent = escapeHtml(eventName);
+  const bodyHtml = `
+    <h1 style="font-size:19px; margin:0 0 12px;">Your payment for ${safeEvent} has been refunded</h1>
+    <p style="margin:0 0 20px; color:#666;">
+      The organizer has refunded your ${escapeHtml(formatNaira(amountNaira))} ticket purchase for <strong>${safeEvent}</strong>.
+      Your registration has been cancelled. The refund will reflect on your original payment method according to your bank's processing time.
+    </p>
+  `;
+
+  try {
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
+      to,
+      subject: `You've been refunded — ${eventName}`,
+      text: `The organizer has refunded your ${formatNaira(amountNaira)} ticket purchase for ${eventName}. Your registration has been cancelled.`,
+      html: renderEmailShell({ color: "#9a3412", label: "Refund", emoji: "💸" }, bodyHtml),
     });
     return !error;
   } catch {

@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { toast } from "sonner";
-import { X, QrCode, Mail, Phone, Calendar, CheckCircle2, MapPin, BookMarked, GraduationCap, Globe2, Building2, MessageSquare, Ticket, Send, Check, ArrowUpCircle } from "lucide-react";
+import { X, QrCode, Mail, Phone, Calendar, CheckCircle2, MapPin, BookMarked, GraduationCap, Globe2, Building2, MessageSquare, Ticket, Send, Check, ArrowUpCircle, Undo2, AlertCircle } from "lucide-react";
 import { Destination, EventRecord, LeadRecord, RegistrationRecord, TicketType, University } from "@/lib/types";
-import { updateRegistrationStatus, decideRegistration } from "@/lib/store";
+import { updateRegistrationStatus, decideRegistration, refundRegistration } from "@/lib/store";
 import { formatNaira } from "@/lib/billing";
 import { statusStyles, statusLabels } from "@/components/prospects-tab";
 
@@ -38,7 +38,11 @@ export function RegistrantDetailModal({
   const [showQr, setShowQr] = useState(false);
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
+  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+  const [refunding, setRefunding] = useState(false);
+  const [refundError, setRefundError] = useState("");
   const customFields = event.customFields ?? [];
+  const canRefund = !!ticketType && ticketType.priceNaira > 0 && registration.status !== "cancelled" && registration.status !== "declined";
 
   async function resendEmail() {
     setResending(true);
@@ -75,6 +79,21 @@ export function RegistrantDetailModal({
       toast.error("Couldn't update check-in status. Please try again.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleRefund() {
+    setRefunding(true);
+    setRefundError("");
+    try {
+      await refundRegistration(orgSlug, event.id, registration.id);
+      toast.success("Refunded — the attendee has been emailed.");
+      setShowRefundConfirm(false);
+      onClose();
+    } catch (err) {
+      setRefundError(err instanceof Error ? err.message : "Couldn't process this refund.");
+    } finally {
+      setRefunding(false);
     }
   }
 
@@ -208,6 +227,15 @@ export function RegistrantDetailModal({
                   </button>
                 </>
               )}
+              {canRefund && (
+                <button
+                  type="button"
+                  onClick={() => setShowRefundConfirm(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-200 text-sm font-medium text-rose-700 hover:bg-rose-50"
+                >
+                  <Undo2 size={15} /> Refund
+                </button>
+              )}
             </div>
           </div>
 
@@ -313,6 +341,42 @@ export function RegistrantDetailModal({
           )}
         </div>
       </div>
+
+      {showRefundConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
+            <h2 className="font-semibold text-slate-900 text-lg mb-2">Refund this ticket?</h2>
+            <p className="text-sm text-slate-600">
+              This reverses the charge on Paystack and cancels <span className="font-semibold">{registration.fullName}</span>&apos;s registration. They&apos;ll be emailed automatically. This
+              can&apos;t be undone from here.
+            </p>
+            {refundError && (
+              <div className="flex items-start gap-2 p-3 mt-4 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                <AlertCircle size={15} className="mt-0.5 shrink-0" />
+                {refundError}
+              </div>
+            )}
+            <div className="flex gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => setShowRefundConfirm(false)}
+                disabled={refunding}
+                className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRefund}
+                disabled={refunding}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-60"
+              >
+                {refunding ? "Refunding…" : "Refund"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

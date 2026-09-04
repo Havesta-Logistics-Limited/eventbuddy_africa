@@ -911,6 +911,22 @@ export async function decideRegistration(
   emitChange();
   return newStatus;
 }
+
+/** Organizer self-service refund — actually reverses the Paystack charge (see
+ *  /api/orgs/[slug]/events/[eventId]/registrations/refund), then marks the
+ *  registration cancelled locally to match what the server just did. Physical
+ *  registrations only — see that route's own doc comment for why. */
+export async function refundRegistration(orgSlug: string, eventId: string, registrationId: string): Promise<void> {
+  const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/registrations/refund`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ registrationId }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || "Couldn't process this refund.");
+  registrationsCache = registrationsCache.map((r) => (r.id === registrationId ? { ...r, status: "cancelled" } : r));
+  emitChange();
+}
 export function getLeadsFiltered(eventId?: string, destId?: string, uniId?: string): LeadRecord[] {
   return leadsCache.filter((l) => {
     if (eventId && l.eventId !== eventId) return false;
