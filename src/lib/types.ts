@@ -141,6 +141,22 @@ export interface EventRecord {
    *  captured as "waitlisted" instead of being rejected. Promotion to a real seat
    *  is a manual organizer action, not automatic. */
   waitlistEnabled?: boolean;
+  /** Set only for an event generated as part of a recurring series (see the wizard's
+   *  "Repeat this event" control and migration 0063) — every occurrence is its own
+   *  fully independent event row (own registrations, own tickets, individually
+   *  editable/cancelable), sharing this id purely so the dashboard can group and
+   *  label them ("Session 2 of 6"). Unset for an ordinary one-off event. */
+  seriesId?: string;
+  /** 1-based position within the series (seriesId) it belongs to — unset when
+   *  seriesId is unset. */
+  seriesOccurrenceIndex?: number;
+  /** Shows a "Survey" tab on the Event Hub once the event has ended (see
+   *  getEventStatus) — off by default so an event with no questions defined
+   *  doesn't show an empty survey to attendees. */
+  surveyEnabled?: boolean;
+  /** Admin-defined post-event questions, same FieldDef model as registration/RSVP
+   *  custom fields — see SurveyForm and the dashboard's Survey tab. */
+  surveyFields?: FieldDef[];
   createdAt: string;
 }
 

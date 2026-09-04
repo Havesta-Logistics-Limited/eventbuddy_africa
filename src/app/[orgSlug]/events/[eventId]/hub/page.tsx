@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { BarChart3, Bookmark, BookmarkCheck, Calendar, KeyRound, Loader2, Megaphone, Mic2, Pin, Send, ThumbsUp } from "lucide-react";
+import { BarChart3, Bookmark, BookmarkCheck, Calendar, Check, ClipboardList, KeyRound, Loader2, Megaphone, Mic2, Pin, Repeat, Send, ThumbsUp } from "lucide-react";
 import { formatDate, formatTime } from "@/lib/utils";
 import { RichTextDisplay } from "@/components/rich-text-display";
+import { SurveyForm, type SurveyAnswers } from "@/components/survey-form";
+import { FieldDef } from "@/lib/types";
 
 type HubSession = {
   id: string;
@@ -37,6 +39,9 @@ type HubPoll = { id: string; question: string; status: string; myOptionId: strin
 type HubData = {
   event: { id: string; name: string; date: string; eventFormat: string };
   attendeeName: string;
+  attendeeEmail: string;
+  canTransferTicket: boolean;
+  survey: { fields: FieldDef[]; alreadySubmitted: boolean } | null;
   sessions: HubSession[];
   speakers: HubSpeaker[];
   questions: HubQuestion[];
@@ -44,7 +49,7 @@ type HubData = {
   polls: HubPoll[];
 };
 
-type Section = "schedule" | "speakers" | "qa" | "polls" | "announcements";
+type Section = "schedule" | "speakers" | "qa" | "polls" | "announcements" | "transfer" | "survey";
 
 /** Public, no-session Event Hub — reached only via the link mailed at registration
  *  (the ?token query param is the whole trust boundary, same as a reference_id).
@@ -79,6 +84,17 @@ export default function EventHubPage() {
   const [lookupRefId, setLookupRefId] = useState("");
   const [lookupError, setLookupError] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
+
+  const [transferName, setTransferName] = useState("");
+  const [transferEmail, setTransferEmail] = useState("");
+  const [transferPhone, setTransferPhone] = useState("");
+  const [transferError, setTransferError] = useState("");
+  const [transferring, setTransferring] = useState(false);
+  const [transferred, setTransferred] = useState(false);
+
+  const [surveySubmitting, setSurveySubmitting] = useState(false);
+  const [surveyError, setSurveyError] = useState("");
+  const [surveySubmitted, setSurveySubmitted] = useState(false);
 
   async function refresh(showSpinner: boolean) {
     if (!token) {
@@ -231,6 +247,57 @@ export default function EventHubPage() {
     }
   }
 
+  async function handleTransfer(e: React.FormEvent) {
+    e.preventDefault();
+    if (!transferName.trim() || !transferEmail.trim()) {
+      setTransferError("Enter the new attendee's name and email.");
+      return;
+    }
+    setTransferError("");
+    setTransferring(true);
+    try {
+      const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/hub/transfer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, fullName: transferName.trim(), email: transferEmail.trim(), phone: transferPhone.trim() || undefined }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setTransferError(json.error || "Couldn't transfer this ticket.");
+        return;
+      }
+      setTransferred(true);
+      toast.success(`Ticket transferred to ${transferName.trim()}`);
+    } catch {
+      setTransferError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setTransferring(false);
+    }
+  }
+
+  async function handleSurveySubmit(answers: SurveyAnswers) {
+    setSurveyError("");
+    setSurveySubmitting(true);
+    try {
+      const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/hub/survey`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, answers }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setSurveyError(json.error || "Couldn't submit your response.");
+        return;
+      }
+      setSurveySubmitted(true);
+      toast.success("Thanks for your feedback!");
+    } catch {
+      setSurveyError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setSurveySubmitting(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -284,7 +351,7 @@ export default function EventHubPage() {
     );
   }
 
-  const { event, sessions, speakers, questions, announcements, polls } = data;
+  const { event, sessions, speakers, questions, announcements, polls, canTransferTicket, survey } = data;
   const speakerById = new Map(speakers.map((s) => [s.id, s]));
   const openSessions = sessions.filter((s) => s.qaOpen);
   const qaAvailable = openSessions.length > 0;
@@ -298,6 +365,8 @@ export default function EventHubPage() {
     { id: "qa", label: "Q&A", icon: Send },
     { id: "polls", label: "Polls", icon: BarChart3 },
     { id: "announcements", label: "Updates", icon: Megaphone },
+    ...(survey ? ([{ id: "survey", label: "Survey", icon: ClipboardList }] as const) : []),
+    ...(canTransferTicket ? ([{ id: "transfer", label: "Transfer", icon: Repeat }] as const) : []),
   ];
 
   return (
@@ -565,6 +634,71 @@ export default function EventHubPage() {
                     </div>
                   ))}
                 </div>
+              ))}
+
+            {section === "survey" &&
+              survey &&
+              (survey.alreadySubmitted || surveySubmitted ? (
+                <div className="text-center py-10">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-3">
+                    <Check size={22} />
+                  </div>
+                  <p className="font-medium text-slate-800">Thanks for your feedback!</p>
+                </div>
+              ) : (
+                <SurveyForm fields={survey.fields} onSubmit={handleSurveySubmit} submitting={surveySubmitting} submitError={surveyError} />
+              ))}
+
+            {section === "transfer" &&
+              (transferred ? (
+                <div className="text-center py-10">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-3">
+                    <Check size={22} />
+                  </div>
+                  <p className="font-medium text-slate-800">Ticket transferred to {transferName}</p>
+                  <p className="text-sm text-slate-500 mt-1">They&apos;ve been emailed their own confirmation.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleTransfer} className="space-y-3">
+                  <p className="text-sm text-slate-500">
+                    Can&apos;t make it to <span className="font-medium text-slate-700">{event.name}</span>? Give your ticket to someone else — they&apos;ll get their own confirmation email,
+                    and you&apos;ll lose access to this one.
+                  </p>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">New attendee&apos;s name</label>
+                    <input
+                      value={transferName}
+                      onChange={(e) => setTransferName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Their email</label>
+                    <input
+                      type="email"
+                      value={transferEmail}
+                      onChange={(e) => setTransferEmail(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Their phone (optional)</label>
+                    <input
+                      type="tel"
+                      value={transferPhone}
+                      onChange={(e) => setTransferPhone(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    />
+                  </div>
+                  {transferError && <p className="text-sm text-rose-600">{transferError}</p>}
+                  <button
+                    type="submit"
+                    disabled={transferring}
+                    className="w-full py-2.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60"
+                  >
+                    {transferring ? "Transferring…" : "Transfer ticket"}
+                  </button>
+                </form>
               ))}
           </div>
         </div>

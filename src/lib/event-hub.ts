@@ -51,18 +51,18 @@ export function hubUrl(siteUrl: string, orgSlug: string, eventId: string, hubTok
 export async function verifyHubMember(
   admin: SupabaseClient,
   params: { slug: string; eventId: string; token: string }
-): Promise<{ organizationId: string; memberId: string; fullName: string } | null> {
+): Promise<{ organizationId: string; memberId: string; fullName: string; email: string } | null> {
   const { data: org } = await admin.from("organizations").select("id").ilike("slug", params.slug).maybeSingle();
   if (!org) return null;
 
   const { data: member } = await admin
     .from("event_hub_members")
-    .select("id, full_name")
+    .select("id, full_name, email")
     .eq("event_id", params.eventId)
     .eq("organization_id", org.id)
     .eq("hub_token", params.token)
     .maybeSingle();
   if (!member) return null;
 
-  return { organizationId: org.id, memberId: member.id, fullName: member.full_name };
+  return { organizationId: org.id, memberId: member.id, fullName: member.full_name, email: member.email };
 }

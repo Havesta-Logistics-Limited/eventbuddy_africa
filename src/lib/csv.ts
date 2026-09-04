@@ -1,4 +1,4 @@
-import { EventRecord, LeadRecord, RegistrationRecord } from "./types";
+import { EventRecord, FieldDef, LeadRecord, RegistrationRecord } from "./types";
 import { getDestinationById, getEventById, getUniversityById } from "./store";
 import { formatCustomAnswers } from "./utils";
 import { getTemplate } from "./event-templates";
@@ -103,6 +103,20 @@ export function registrationsToCsv(registrations: RegistrationRecord[], event: E
     new Date(r.createdAt).toLocaleDateString("en-GB"),
   ]);
 
+  return [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
+}
+
+/** Post-event survey responses — same column-per-question convention as
+ *  eventLeadsToCsv/registrationsToCsv, one row per attendee response. */
+export function surveyResponsesToCsv(responses: { answers: Record<string, string | string[]>; createdAt: string }[], fields: FieldDef[]): string {
+  const headers = ["Submitted", ...fields.map((f) => f.label || "Untitled")];
+  const rows = responses.map((r) => [
+    new Date(r.createdAt).toLocaleString("en-GB"),
+    ...fields.map((f) => {
+      const v = r.answers[f.id];
+      return Array.isArray(v) ? v.join(", ") : (v ?? "");
+    }),
+  ]);
   return [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
 }
 

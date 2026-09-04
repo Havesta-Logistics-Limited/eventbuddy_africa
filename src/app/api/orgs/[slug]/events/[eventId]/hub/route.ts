@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyHubMember } from "@/lib/event-hub";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
+import { getEventStatus } from "@/lib/capture-window";
 
 /**
  * Attendee-facing read for the Event Hub — no session, the unguessable hub_token
@@ -29,10 +30,15 @@ export async function GET(request: Request, ctx: RouteContext<"/api/orgs/[slug]/
   const member = await verifyHubMember(admin, { slug, eventId, token });
   if (!member) return NextResponse.json({ error: "This link isn't valid — check your confirmation email for the right one." }, { status: 403 });
 
-  const { data: event } = await admin.from("events").select("id, name, date, event_format").eq("id", eventId).eq("organization_id", member.organizationId).maybeSingle();
+  const { data: event } = await admin
+    .from("events")
+    .select("id, name, date, end_date, start_time, end_time, timezone, event_format, survey_enabled, survey_fields")
+    .eq("id", eventId)
+    .eq("organization_id", member.organizationId)
+    .maybeSingle();
   if (!event) return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });
 
-  const [sessionRes, speakerRes, sessionSpeakerRes, questionRes, announcementRes, pollRes, pollOptionRes, myUpvoteRes, myVoteRes, myBookmarkRes] = await Promise.all([
+  const [sessionRes, speakerRes, sessionSpeakerRes, questionRes, announcementRes, pollRes, pollOptionRes, myUpvoteRes, myVoteRes, myBookmarkRes, mySurveyResponseRes] = await Promise.all([
     admin.from("event_sessions").select("*").eq("event_id", eventId).order("start_time", { ascending: true }),
     admin.from("event_speakers").select("*").eq("event_id", eventId),
     admin.from("event_session_speakers").select("*"),
@@ -43,6 +49,7 @@ export async function GET(request: Request, ctx: RouteContext<"/api/orgs/[slug]/
     admin.from("event_question_upvotes").select("question_id").eq("hub_member_id", member.memberId),
     admin.from("event_poll_votes").select("poll_id, option_id").eq("hub_member_id", member.memberId),
     admin.from("event_agenda_bookmarks").select("session_id").eq("hub_member_id", member.memberId),
+    admin.from("event_survey_responses").select("id").eq("event_id", eventId).eq("hub_member_id", member.memberId).maybeSingle(),
   ]);
 
   const speakersById = new Map((speakerRes.data ?? []).map((s) => [s.id, s]));
@@ -68,9 +75,23 @@ export async function GET(request: Request, ctx: RouteContext<"/api/orgs/[slug]/
     optionsByPoll.set(o.poll_id, arr);
   }
 
+  const eventStatus = getEventStatus({
+    date: event.date,
+    endDate: event.end_date ?? undefined,
+    startTime: event.start_time ?? undefined,
+    endTime: event.end_time ?? undefined,
+    timezone: event.timezone ?? undefined,
+  });
+
   return NextResponse.json({
     event: { id: event.id, name: event.name, date: event.date, eventFormat: event.event_format },
     attendeeName: member.fullName,
+    attendeeEmail: member.email,
+    canTransferTicket: eventStatus !== "completed",
+    survey:
+      event.survey_enabled && eventStatus === "completed"
+        ? { fields: event.survey_fields ?? [], alreadySubmitted: !!mySurveyResponseRes.data }
+        : null,
     sessions: (sessionRes.data ?? []).map((s) => ({
       id: s.id,
       title: s.title,

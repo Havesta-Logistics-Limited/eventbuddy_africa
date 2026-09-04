@@ -1,2 +1,2 @@
 export { EventWizard } from "./event-wizard";
-export type { EventWizardData } from "./types";
+export type { EventWizardData, RecurrenceConfig } from "./types";

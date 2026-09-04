@@ -144,6 +144,10 @@ function mapEventRow(e: {
   one_on_one_limit: number | null;
   requires_approval: boolean | null;
   waitlist_enabled: boolean | null;
+  series_id: string | null;
+  series_occurrence_index: number | null;
+  survey_enabled: boolean | null;
+  survey_fields: FieldDef[] | null;
   created_at: string;
 }): EventRecord {
   return {
@@ -180,6 +184,10 @@ function mapEventRow(e: {
     oneOnOneLimit: e.one_on_one_limit ?? undefined,
     requiresApproval: e.requires_approval ?? false,
     waitlistEnabled: e.waitlist_enabled ?? false,
+    seriesId: e.series_id ?? undefined,
+    seriesOccurrenceIndex: e.series_occurrence_index ?? undefined,
+    surveyEnabled: e.survey_enabled ?? false,
+    surveyFields: e.survey_fields ?? [],
     createdAt: e.created_at,
   };
 }
@@ -215,6 +223,10 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.oneOnOneLimit !== undefined) row.one_on_one_limit = input.oneOnOneLimit ?? null;
   if (input.requiresApproval !== undefined) row.requires_approval = input.requiresApproval;
   if (input.waitlistEnabled !== undefined) row.waitlist_enabled = input.waitlistEnabled;
+  if (input.seriesId !== undefined) row.series_id = input.seriesId ?? null;
+  if (input.seriesOccurrenceIndex !== undefined) row.series_occurrence_index = input.seriesOccurrenceIndex ?? null;
+  if (input.surveyEnabled !== undefined) row.survey_enabled = input.surveyEnabled;
+  if (input.surveyFields !== undefined) row.survey_fields = input.surveyFields;
   return row;
 }
 function mapStaffRow(s: {
@@ -946,6 +958,20 @@ function slugifyEventName(name: string) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "event"
   );
+}
+
+/** Creates the lightweight grouping row a recurring event's occurrences all link
+ *  back to via events.series_id — see migration 0063. Named after the event
+ *  itself (every occurrence shares that name anyway); there's no separate
+ *  series-level UI to edit this today, it exists purely for the dashboard to
+ *  group and count occurrences. */
+export async function addEventSeries(name: string): Promise<string> {
+  const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) throw new PersistError(undefined);
+  const { data, error } = await supabase.from("event_series").insert({ organization_id: orgId, name }).select("id").single();
+  if (error || !data) throw new PersistError(error);
+  return data.id;
 }
 
 /** Every new event gets a real, human-readable slug from the start (not left null

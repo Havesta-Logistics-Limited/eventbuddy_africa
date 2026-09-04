@@ -29,6 +29,7 @@ import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/c
 import { OneOnOneRequestStep } from "@/components/one-on-one-request-step";
 import { EventHostCard } from "@/components/event-host-card";
 import { RichTextDisplay } from "@/components/rich-text-display";
+import { stripHtml } from "@/lib/rich-text";
 import { formatDate, formatTime, safeHttpUrl } from "@/lib/utils";
 import { applyDiscount, formatNaira } from "@/lib/billing";
 import { getEventStatus, zonedTimeToUtc } from "@/lib/capture-window";
@@ -106,6 +107,73 @@ function formatFullDate(date: string) {
 
 function toGCalStamp(d: Date) {
   return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+/** RFC 5545 TEXT escaping — backslash first, so it doesn't double-escape the
+ *  backslashes this function itself is about to introduce for the other three. */
+function icsEscape(text: string) {
+  return text.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+}
+
+/** RFC 5545 requires folding content lines longer than 75 octets — most calendar
+ *  apps tolerate long lines anyway, but Outlook in particular is known not to. */
+function icsFold(line: string) {
+  if (line.length <= 75) return line;
+  const parts: string[] = [];
+  let rest = line;
+  while (rest.length > 75) {
+    parts.push(rest.slice(0, 75));
+    rest = rest.slice(75);
+  }
+  parts.push(rest);
+  return parts.join("\r\n ");
+}
+
+/** A downloadable .ics file — Google Calendar's own web UI is already covered by
+ *  buildGoogleCalendarUrl above, but this is the only "add to calendar" path that
+ *  works for Apple Calendar, Outlook, and every other calendar app that isn't
+ *  Google's own web client. Built as a data: URI (no server round trip needed —
+ *  every field is already loaded on this page) rather than a Blob object URL,
+ *  since a plain <a download> needs no cleanup and works identically to the
+ *  Google Calendar link right next to it. */
+function buildIcsDataUrl(event: PublicEvent, orgSlug: string) {
+  const start = zonedTimeToUtc(event.date, event.startTime || "09:00", event.timezone);
+  const end = zonedTimeToUtc(event.endDate || event.date, event.endTime || event.startTime || "10:00", event.timezone);
+  const location = event.eventFormat === "virtual" ? event.virtualPlatform || "Online" : `${event.venue}, ${event.location}`;
+  const description = stripHtml(event.description || "");
+  // Built from the site's canonical env var, not window.location.href — this
+  // renders during SSR too (a plain string href, no client-only APIs), so it
+  // must produce the exact same value on the server and after hydration.
+  const path = event.slug ? `/discover/${event.slug}` : `/${orgSlug}/events/${event.id}/register`;
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL || "https://eventbuddy.africa"}${path}`;
+
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//eventbuddy//event//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${event.id}@eventbuddy.africa`,
+    // Not wall-clock "now" — this href is computed during render (server and
+    // client both), so it has to be deterministic from event data alone or the
+    // two renders disagree and React flags a hydration mismatch. DTSTAMP is
+    // metadata for calendar-sync conflict resolution, irrelevant to a one-off
+    // downloaded file like this one, so reusing DTSTART costs nothing real.
+    `DTSTAMP:${toGCalStamp(start)}`,
+    `DTSTART:${toGCalStamp(start)}`,
+    `DTEND:${toGCalStamp(end)}`,
+    `SUMMARY:${icsEscape(event.name)}`,
+    ...(description ? [`DESCRIPTION:${icsEscape(description)}`] : []),
+    `LOCATION:${icsEscape(location)}`,
+    ...(url ? [`URL:${icsEscape(url)}`] : []),
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ]
+    .map(icsFold)
+    .join("\r\n");
+
+  return `data:text/calendar;charset=utf-8,${encodeURIComponent(lines)}`;
 }
 
 /** A real, working "Add to calendar" action — not a placeholder button — built from
@@ -545,7 +613,15 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
               >
                 <CalendarPlus size={16} />
-                Add to calendar
+                Google Calendar
+              </a>
+              <a
+                href={buildIcsDataUrl(event, orgSlug)}
+                download={`${event.name.replace(/[^a-z0-9]/gi, "_")}.ics`}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
+              >
+                <CalendarPlus size={16} />
+                Apple / Outlook (.ics)
               </a>
             </div>
           </div>

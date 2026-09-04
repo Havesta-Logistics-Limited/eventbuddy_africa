@@ -4,7 +4,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { EventRecord } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
-import type { EventWizardData } from "./types";
+import type { EventWizardData, RecurrenceConfig } from "./types";
 import { TemplateStep } from "./steps/template-step";
 import { AudienceStep } from "./steps/audience-step";
 import { BasicsStep } from "./steps/basics-step";
@@ -68,7 +68,7 @@ type StepId = "template" | "basics" | "audience" | "fields" | "access" | "review
 export function EventWizard(props: {
   mode: "create" | "edit";
   initialEvent?: EventRecord;
-  onSubmit: (data: EventWizardData, intent: "draft" | "publish") => Promise<void>;
+  onSubmit: (data: EventWizardData, intent: "draft" | "publish", recurrence?: RecurrenceConfig) => Promise<void>;
   onCancel: () => void;
 }) {
   const { mode, initialEvent, onSubmit, onCancel } = props;
@@ -78,6 +78,8 @@ export function EventWizard(props: {
   const [submitting, setSubmitting] = useState<"draft" | "publish" | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [stepIndex, setStepIndex] = useState(0);
+  const [repeats, setRepeats] = useState(false);
+  const [recurrence, setRecurrence] = useState<RecurrenceConfig>({ frequency: "weekly", count: 4 });
 
   const template = getTemplate(data.templateId);
   // The template choice is immutable after creation — changing it once leads exist
@@ -119,7 +121,8 @@ export function EventWizard(props: {
           staffAccessCode: data.staffAccessCode?.trim() || undefined,
           repAccessCode: data.repAccessCode?.trim() || undefined,
         },
-        intent
+        intent,
+        mode === "create" && repeats ? recurrence : undefined
       );
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Couldn't save this event. Please try again.");
@@ -162,7 +165,52 @@ export function EventWizard(props: {
 
         <div className="p-6 space-y-4 overflow-y-auto flex-1">
           {step === "template" && <TemplateStep selectedId={data.templateId || "education-fair"} onSelect={selectTemplate} />}
-          {step === "basics" && <BasicsStep data={data} onChange={patch} />}
+          {step === "basics" && (
+            <>
+              <BasicsStep data={data} onChange={patch} />
+              {mode === "create" && (
+                <div className="pt-4 border-t border-slate-100">
+                  <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={repeats}
+                      onChange={(e) => setRepeats(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-[#C21FAF] focus:ring-[#C21FAF]"
+                    />
+                    Repeat this event
+                  </label>
+                  {repeats && (
+                    <div className="mt-3 flex items-center gap-2.5 pl-6">
+                      <select
+                        value={recurrence.frequency}
+                        onChange={(e) => setRecurrence((r) => ({ ...r, frequency: e.target.value as RecurrenceConfig["frequency"] }))}
+                        className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                      >
+                        <option value="weekly">Weekly</option>
+                        <option value="biweekly">Every 2 weeks</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
+                      <span className="text-sm text-slate-500">for</span>
+                      <input
+                        type="number"
+                        min={2}
+                        max={52}
+                        value={recurrence.count}
+                        onChange={(e) => setRecurrence((r) => ({ ...r, count: Math.max(2, Math.min(52, Number(e.target.value) || 2)) }))}
+                        className="w-16 px-2.5 py-2 rounded-lg border border-slate-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                      />
+                      <span className="text-sm text-slate-500">occurrences</span>
+                    </div>
+                  )}
+                  {repeats && (
+                    <p className="text-xs text-slate-400 mt-2 pl-6">
+                      Creates {recurrence.count} separate events, each with its own registrations and tickets — set ticket types up on each one individually.
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
           {step === "audience" && (
             <AudienceStep allowRepAccess={data.allowRepAccess ?? true} onChange={(allowRepAccess) => patch({ allowRepAccess })} />
           )}

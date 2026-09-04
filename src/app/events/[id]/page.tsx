@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { AlertCircle, ArrowLeft, Calendar, Check, Copy, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, QrCode, RefreshCw, Trash2, Video, X, Search } from "lucide-react";
+import { AlertCircle, ArrowLeft, Calendar, Check, Copy, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, QrCode, RefreshCw, Repeat, Trash2, Video, X, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import {
@@ -57,6 +57,7 @@ import { OneOnOneTab } from "@/components/event-one-on-one-tab";
 import { QaTab } from "@/components/event-qa-tab";
 import { PollsTab } from "@/components/event-polls-tab";
 import { AnnouncementsTab } from "@/components/event-announcements-tab";
+import { SurveyTab } from "@/components/event-survey-tab";
 import { GuestListTab } from "@/components/event-guest-list-tab";
 import { EventHubQrModal } from "@/components/event-hub-qr-modal";
 import { RowSkeleton } from "@/components/skeleton";
@@ -79,7 +80,8 @@ type TabId =
   | "qa"
   | "polls"
   | "announcements"
-  | "guests";
+  | "guests"
+  | "survey";
 
 export default function EventDetailPage() {
   const session = useRequireRole(ADMIN_ONLY);
@@ -368,6 +370,7 @@ export default function EventDetailPage() {
     { id: "qa", label: "Q&A" },
     { id: "polls", label: "Polls" },
     { id: "announcements", label: "Announcements" },
+    { id: "survey", label: "Survey" },
   ];
 
   // Other Education Fair events this org has created, for the "copy destinations
@@ -393,6 +396,31 @@ export default function EventDetailPage() {
                 {event.published === false ? "Draft" : status.charAt(0).toUpperCase() + status.slice(1)}
               </span>
               <h1 className="font-display text-2xl text-slate-900 mb-3">{event.name}</h1>
+              {event.seriesId &&
+                (() => {
+                  const siblings = allEvents
+                    .filter((e) => e.seriesId === event.seriesId)
+                    .sort((a, b) => (a.seriesOccurrenceIndex ?? 0) - (b.seriesOccurrenceIndex ?? 0));
+                  return (
+                    <div className="flex items-center gap-2 mb-3 text-xs text-slate-500">
+                      <Repeat size={12} />
+                      <span>
+                        Session {event.seriesOccurrenceIndex} of {siblings.length} in this series
+                      </span>
+                      <select
+                        value={event.id}
+                        onChange={(e) => router.push(`/events/${e.target.value}`)}
+                        className="px-2 py-0.5 rounded-md border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-brand-600"
+                      >
+                        {siblings.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {new Date(s.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                })()}
               <div className="flex flex-wrap gap-4 text-sm text-slate-500">
                 <span className="flex items-start gap-1.5">
                   <Calendar size={14} className="mt-0.5 shrink-0" />
@@ -756,6 +784,12 @@ export default function EventDetailPage() {
         {activeTab === "guests" && (
           <div key="guests" className="animate-tab-fade">
             <GuestListTab eventId={event.id} orgSlug={session.orgSlug!} guests={guests} />
+          </div>
+        )}
+
+        {activeTab === "survey" && (
+          <div key="survey" className="animate-tab-fade">
+            <SurveyTab event={event} />
           </div>
         )}
 

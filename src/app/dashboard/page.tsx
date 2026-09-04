@@ -6,13 +6,13 @@ import { toast } from "sonner";
 import { Plus, Calendar, MapPin, Users, QrCode, Clock, CheckCircle2, AlertCircle, Search, SlidersHorizontal, Presentation } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import { PersistError, addEvent, useDataReady, useDestinations, useEvents, useLeads, useRegistrations } from "@/lib/store";
+import { PersistError, addEvent, addEventSeries, useDataReady, useDestinations, useEvents, useLeads, useRegistrations } from "@/lib/store";
 import { EventRecord, EventStatus, Role } from "@/lib/types";
 import { getEventStatus } from "@/lib/capture-window";
-import { formatTime, getEventCity, getEventMonthLabel, sortEventsByProximity } from "@/lib/utils";
+import { formatTime, generateRecurrenceDates, getEventCity, getEventMonthLabel, sortEventsByProximity } from "@/lib/utils";
 import { DestinationFlags } from "@/components/destination-flags";
 import { EventFilterModal } from "@/components/event-filter-modal";
-import { EventWizard, type EventWizardData } from "@/components/event-wizard";
+import { EventWizard, type EventWizardData, type RecurrenceConfig } from "@/components/event-wizard";
 import { Reveal } from "@/components/reveal";
 import { EventCardSkeleton, StatTileSkeleton } from "@/components/skeleton";
 import { AuthLoading } from "@/components/auth-loading";
@@ -176,15 +176,46 @@ export default function DashboardPage() {
     { label: "Total Leads", value: leads.length },
   ];
 
-  const handleCreate = async (data: EventWizardData, intent: "draft" | "publish") => {
+  const handleCreate = async (data: EventWizardData, intent: "draft" | "publish", recurrence?: RecurrenceConfig) => {
     try {
-      const created = await addEvent({ ...data, published: intent === "publish" });
+      if (!recurrence) {
+        const created = await addEvent({ ...data, published: intent === "publish" });
+        setShowWizard(false);
+        if (intent === "publish") {
+          toast.success("Event created");
+          notifyEventCreated(created);
+        } else {
+          toast.success("Saved as draft — publish it from the event page when you're ready");
+        }
+        return;
+      }
+
+      const occurrences = generateRecurrenceDates(data.date, data.endDate || undefined, recurrence.frequency, recurrence.count);
+      const seriesId = await addEventSeries(data.name);
+      const created: EventRecord[] = [];
+      // Sequential, not Promise.all — addEvent retries on a slug conflict by
+      // appending "-2", "-3"... against whatever's already in eventsCache at the
+      // moment it runs; racing every insert at once would have them all read the
+      // same pre-insert cache and pick the same fallback slug.
+      for (let i = 0; i < occurrences.length; i++) {
+        created.push(
+          await addEvent({
+            ...data,
+            date: occurrences[i].date,
+            endDate: occurrences[i].endDate,
+            slug: undefined,
+            published: intent === "publish",
+            seriesId,
+            seriesOccurrenceIndex: i + 1,
+          })
+        );
+      }
       setShowWizard(false);
       if (intent === "publish") {
-        toast.success("Event created");
-        notifyEventCreated(created);
+        toast.success(`${created.length} events created`);
+        notifyEventCreated(created[0]);
       } else {
-        toast.success("Saved as draft — publish it from the event page when you're ready");
+        toast.success(`${created.length} events saved as drafts — publish them from each event's page when you're ready`);
       }
     } catch (err) {
       throw err instanceof PersistError ? new Error(err.message) : err instanceof Error ? err : new Error("Couldn't create that event. Please try again.");

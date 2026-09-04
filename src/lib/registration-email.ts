@@ -267,3 +267,37 @@ export async function sendDeclinedEmail(to: string, event: RegisteredEvent) {
     return false;
   }
 }
+
+/** Sent to the person GIVING UP a ticket once a transfer completes — the new
+ *  owner gets the normal registration/virtual confirmation email instead (same
+ *  reference ID/QR or join link, just re-sent with their name on it), not a
+ *  bespoke template, since that's genuinely what they now have. */
+export async function sendTicketTransferredAwayEmail(to: string, event: RegisteredEvent, newFullName: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
+
+  try {
+    const { eventDate, eventTime } = eventDateTimeLine(event);
+    const safeName = escapeHtml(event.name);
+    const safeNewName = escapeHtml(newFullName);
+
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
+      to,
+      subject: `Your ticket for ${event.name} has been transferred`,
+      text: `Your ticket for ${event.name} on ${eventDate}${eventTime ? ` at ${eventTime}` : ""} has been transferred to ${newFullName}. You no longer have a ticket for this event.`,
+      html: `
+        <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
+          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#6D28D9; font-weight:600; margin:0 0 8px;">Ticket transferred</p>
+          <h1 style="font-size:20px; margin:0 0 12px;">${safeName}</h1>
+          <p style="margin:0 0 12px; color:#666; font-size:13px;">${eventDate}${eventTime ? ` · ${eventTime}` : ""}</p>
+          <p style="margin:0; color:#666;">This ticket has been transferred to <strong>${safeNewName}</strong>. You no longer have a ticket for this event.</p>
+        </div>
+      `,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}

@@ -129,3 +129,38 @@ export function compressImageFile(file: File, maxDimension = 1280, quality = 0.8
     reader.readAsDataURL(file);
   });
 }
+
+function toDateStr(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * Dates for a recurring event's occurrences, including the first — used by the
+ * event wizard's "Repeat this event" control. Builds each occurrence from local
+ * date components (getFullYear/getMonth/getDate), never toISOString, since that
+ * converts to UTC and would silently shift the date by a day in any timezone
+ * with a non-zero UTC offset; setDate/setMonth here only ever add whole days or
+ * months on top of a local midnight anchor, so the local calendar date is what
+ * has to come back out.
+ */
+export function generateRecurrenceDates(
+  startDate: string,
+  endDate: string | undefined,
+  frequency: "weekly" | "biweekly" | "monthly",
+  count: number
+): { date: string; endDate?: string }[] {
+  const start = new Date(`${startDate}T00:00:00`);
+  const spanDays = endDate ? Math.round((new Date(`${endDate}T00:00:00`).getTime() - start.getTime()) / 86400000) : 0;
+
+  return Array.from({ length: count }, (_, i) => {
+    const occurrence = new Date(start);
+    if (frequency === "weekly") occurrence.setDate(occurrence.getDate() + i * 7);
+    else if (frequency === "biweekly") occurrence.setDate(occurrence.getDate() + i * 14);
+    else occurrence.setMonth(occurrence.getMonth() + i);
+
+    if (spanDays <= 0) return { date: toDateStr(occurrence) };
+    const occurrenceEnd = new Date(occurrence);
+    occurrenceEnd.setDate(occurrenceEnd.getDate() + spanDays);
+    return { date: toDateStr(occurrence), endDate: toDateStr(occurrenceEnd) };
+  });
+}
