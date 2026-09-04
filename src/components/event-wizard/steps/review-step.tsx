@@ -9,6 +9,7 @@ export function ReviewStep({ data, template }: { data: EventWizardData; template
       <div className="rounded-lg bg-slate-50 border border-slate-200 p-4 space-y-2">
         <Row label="Template" value={template.name} />
         <Row label="Name" value={data.name || "—"} />
+        {data.category && <Row label="Category" value={data.category} />}
         <Row label="Dates" value={data.endDate ? `${data.date} – ${data.endDate}` : data.date || "—"} />
         {data.eventFormat === "virtual" ? (
           <>

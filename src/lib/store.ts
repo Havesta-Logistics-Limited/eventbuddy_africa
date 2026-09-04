@@ -10,6 +10,7 @@ import {
   EventPoll,
   EventQuestion,
   EventRecord,
+  EventOneOnOneRequest,
   EventSession,
   EventSpeaker,
   FieldDef,
@@ -58,6 +59,7 @@ let ticketTypesCache: TicketType[] = [];
 let discountCodesCache: DiscountCode[] = [];
 let eventSessionsCache: EventSession[] = [];
 let eventSpeakersCache: EventSpeaker[] = [];
+let eventOneOnOneRequestsCache: EventOneOnOneRequest[] = [];
 let eventAnnouncementsCache: EventAnnouncement[] = [];
 let eventGuestsCache: EventGuest[] = [];
 let sessionCache: Session | null = null;
@@ -110,6 +112,7 @@ function mapUniversityRow(u: { id: string; destination_id: string; name: string;
 }
 function mapEventRow(e: {
   id: string;
+  slug: string | null;
   name: string;
   date: string;
   end_date: string | null;
@@ -128,6 +131,7 @@ function mapEventRow(e: {
   published: boolean | null;
   price_naira: number | null;
   template_id: string | null;
+  category: string | null;
   custom_fields: FieldDef[] | null;
   timezone: string | null;
   capture_override: "open" | "closed" | null;
@@ -136,10 +140,12 @@ function mapEventRow(e: {
   virtual_platform: string | null;
   virtual_access_notes: string | null;
   registration_page_views: number | null;
+  one_on_one_enabled: boolean | null;
   created_at: string;
 }): EventRecord {
   return {
     id: e.id,
+    slug: e.slug ?? undefined,
     name: e.name,
     date: e.date,
     endDate: e.end_date ?? undefined,
@@ -158,6 +164,7 @@ function mapEventRow(e: {
     published: e.published ?? true,
     priceNaira: e.price_naira !== null && e.price_naira !== undefined ? Number(e.price_naira) : undefined,
     templateId: e.template_id ?? "education-fair",
+    category: e.category ?? undefined,
     customFields: e.custom_fields ?? [],
     timezone: e.timezone ?? undefined,
     captureOverride: e.capture_override ?? null,
@@ -166,11 +173,13 @@ function mapEventRow(e: {
     virtualPlatform: e.virtual_platform ?? undefined,
     virtualAccessNotes: e.virtual_access_notes ?? undefined,
     registrationPageViews: e.registration_page_views ?? 0,
+    oneOnOneEnabled: e.one_on_one_enabled ?? false,
     createdAt: e.created_at,
   };
 }
 function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   const row: Record<string, unknown> = {};
+  if (input.slug !== undefined) row.slug = input.slug || null;
   if (input.name !== undefined) row.name = input.name;
   if (input.date !== undefined) row.date = input.date;
   if (input.endDate !== undefined) row.end_date = input.endDate || null;
@@ -188,6 +197,7 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.isInviteOnly !== undefined) row.is_invite_only = input.isInviteOnly;
   if (input.published !== undefined) row.published = input.published;
   if (input.templateId !== undefined) row.template_id = input.templateId;
+  if (input.category !== undefined) row.category = input.category || null;
   if (input.customFields !== undefined) row.custom_fields = input.customFields;
   if (input.timezone !== undefined) row.timezone = input.timezone;
   if (input.captureOverride !== undefined) row.capture_override = input.captureOverride;
@@ -195,6 +205,7 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.virtualJoinUrl !== undefined) row.virtual_join_url = input.virtualJoinUrl || null;
   if (input.virtualPlatform !== undefined) row.virtual_platform = input.virtualPlatform || null;
   if (input.virtualAccessNotes !== undefined) row.virtual_access_notes = input.virtualAccessNotes || null;
+  if (input.oneOnOneEnabled !== undefined) row.one_on_one_enabled = input.oneOnOneEnabled;
   return row;
 }
 function mapStaffRow(s: {
@@ -447,6 +458,31 @@ function eventSpeakerToRow(input: Partial<Omit<EventSpeaker, "id" | "createdAt">
   if (input.photoUrl !== undefined) row.photo_url = input.photoUrl || null;
   return row;
 }
+function mapEventOneOnOneRequestRow(r: {
+  id: string;
+  event_id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  note: string | null;
+  status: "pending" | "assigned" | "done";
+  assignment: string | null;
+  created_at: string;
+  updated_at: string;
+}): EventOneOnOneRequest {
+  return {
+    id: r.id,
+    eventId: r.event_id,
+    fullName: r.full_name,
+    email: r.email,
+    phone: r.phone ?? undefined,
+    note: r.note ?? undefined,
+    status: r.status,
+    assignment: r.assignment ?? undefined,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
 function mapEventAnnouncementRow(a: { id: string; event_id: string; body: string; pinned: boolean; created_at: string }): EventAnnouncement {
   return { id: a.id, eventId: a.event_id, body: a.body, pinned: a.pinned, createdAt: a.created_at };
 }
@@ -542,6 +578,7 @@ async function fetchAdminData() {
       discountCodesCache = [];
       eventSessionsCache = [];
       eventSpeakersCache = [];
+      eventOneOnOneRequestsCache = [];
       eventAnnouncementsCache = [];
       eventGuestsCache = [];
       orgDataFetched = true;
@@ -559,6 +596,7 @@ async function fetchAdminData() {
       sessionRes,
       speakerRes,
       sessionSpeakerRes,
+      oneOnOneRequestRes,
       announcementRes,
       guestRes,
     ] = await Promise.all([
@@ -575,6 +613,7 @@ async function fetchAdminData() {
       // No organization_id column on this join table — scoped below via the
       // (already org-filtered) session ids instead.
       supabase.from("event_session_speakers").select("*"),
+      supabase.from("event_one_on_one_requests").select("*").eq("organization_id", orgId),
       supabase.from("event_announcements").select("*").eq("organization_id", orgId),
       supabase.from("event_guests").select("*").eq("organization_id", orgId),
     ]);
@@ -599,6 +638,7 @@ async function fetchAdminData() {
       sessionSpeakersById.set(link.session_id, arr);
     }
     eventSessionsCache = (sessionRes.data ?? []).map((s) => mapEventSessionRow(s, sessionSpeakersById.get(s.id) ?? []));
+    eventOneOnOneRequestsCache = (oneOnOneRequestRes.data ?? []).map(mapEventOneOnOneRequestRow);
     eventAnnouncementsCache = (announcementRes.data ?? []).map(mapEventAnnouncementRow);
     eventGuestsCache = (guestRes.data ?? []).map(mapEventGuestRow);
     orgDataFetched = true;
@@ -704,6 +744,7 @@ const ticketTypesSnap = snap(() => ticketTypesCache, [] as TicketType[]);
 const discountCodesSnap = snap(() => discountCodesCache, [] as DiscountCode[]);
 const eventSessionsSnap = snap(() => eventSessionsCache, [] as EventSession[]);
 const eventSpeakersSnap = snap(() => eventSpeakersCache, [] as EventSpeaker[]);
+const eventOneOnOneRequestsSnap = snap(() => eventOneOnOneRequestsCache, [] as EventOneOnOneRequest[]);
 const eventAnnouncementsSnap = snap(() => eventAnnouncementsCache, [] as EventAnnouncement[]);
 const eventGuestsSnap = snap(() => eventGuestsCache, [] as EventGuest[]);
 const sessionSnap = snap<Session | null>(() => sessionCache, null);
@@ -751,6 +792,10 @@ export function useEventSpeakers() {
   useEnsureDataFetched();
   return useSyncExternalStore(subscribe, eventSpeakersSnap.client, eventSpeakersSnap.server);
 }
+export function useEventOneOnOneRequests() {
+  useEnsureDataFetched();
+  return useSyncExternalStore(subscribe, eventOneOnOneRequestsSnap.client, eventOneOnOneRequestsSnap.server);
+}
 export function useEventAnnouncements() {
   useEnsureDataFetched();
   return useSyncExternalStore(subscribe, eventAnnouncementsSnap.client, eventAnnouncementsSnap.server);
@@ -793,6 +838,9 @@ export function getSessionsForEvent(eventId: string): EventSession[] {
 export function getSpeakersForEvent(eventId: string): EventSpeaker[] {
   return eventSpeakersCache.filter((s) => s.eventId === eventId);
 }
+export function getOneOnOneRequestsForEvent(eventId: string): EventOneOnOneRequest[] {
+  return eventOneOnOneRequestsCache.filter((r) => r.eventId === eventId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
 export function getAnnouncementsForEvent(eventId: string): EventAnnouncement[] {
   return eventAnnouncementsCache.filter((a) => a.eventId === eventId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
@@ -829,14 +877,46 @@ export function getLeadsFiltered(eventId?: string, destId?: string, uniId?: stri
 
 // ---- event CRUD (admin only — browser client, RLS + auto-filled organization_id) ----
 
+function slugifyEventName(name: string) {
+  return (
+    name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "event"
+  );
+}
+
+/** Every new event gets a real, human-readable slug from the start (not left null
+ *  until an organizer thinks to set one) — it's what makes /discover/[slug] a
+ *  universal public link format. Uniqueness is global across every organization
+ *  (events_slug_key, migration 0057), and this browser-side client can't read other
+ *  orgs' rows to pre-check a candidate under RLS — so it just attempts the insert and
+ *  retries with a numeric suffix on a real 23505 conflict, exactly like the dashboard's
+ *  manual slug editor already does for the update path. */
 export async function addEvent(input: Omit<EventRecord, "id" | "createdAt">): Promise<EventRecord> {
   const supabase = createSupabaseBrowserClient();
-  const { data, error } = await supabase.from("events").insert(eventToRow(input)).select().single();
-  if (error || !data) throw new PersistError(error);
-  const record = mapEventRow(data);
-  eventsCache = [...eventsCache, record];
-  emitChange();
-  return record;
+  const baseSlug = input.slug ? slugifyEventName(input.slug) : slugifyEventName(input.name);
+  let candidate = baseSlug;
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    const { data, error } = await supabase
+      .from("events")
+      .insert(eventToRow({ ...input, slug: candidate }))
+      .select()
+      .single();
+    if (data) {
+      const record = mapEventRow(data);
+      eventsCache = [...eventsCache, record];
+      emitChange();
+      return record;
+    }
+    if (error?.code === "23505" && error.message.includes("slug") && attempt < 6) {
+      candidate = `${baseSlug}-${attempt + 1}`;
+      continue;
+    }
+    throw new PersistError(error);
+  }
+  throw new PersistError(undefined);
 }
 export async function updateEvent(id: string, patch: Partial<Omit<EventRecord, "id" | "createdAt">>): Promise<void> {
   const supabase = createSupabaseBrowserClient();
@@ -853,7 +933,10 @@ export async function updateEvent(id: string, patch: Partial<Omit<EventRecord, "
 export async function duplicateEvent(id: string): Promise<EventRecord | undefined> {
   const source = eventsCache.find((e) => e.id === id);
   if (!source) return undefined;
-  return addEvent({ ...source, name: `${source.name} (Copy)`, published: true });
+  // Cleared, not carried over — otherwise addEvent would try to reuse the source
+  // event's own slug as its base candidate instead of deriving a fresh one from
+  // the "(Copy)" name.
+  return addEvent({ ...source, name: `${source.name} (Copy)`, published: true, slug: undefined });
 }
 
 /** Deletes an event and, via the DB's cascading foreign key, every lead collected for
@@ -1008,6 +1091,22 @@ export async function deleteEventSpeaker(id: string): Promise<void> {
   const { error } = await supabase.from("event_speakers").delete().eq("id", id);
   if (error) throw new PersistError(error);
   await refetchSessionsAndSpeakers();
+}
+
+/** Organizer-side update once they've worked out the matching themselves — sets
+ *  status and/or the free-text assignment (booth/room/stand/speaker). Nothing here
+ *  ever creates a request; those only ever come from the public interest-request
+ *  route (see /api/orgs/[slug]/events/[eventId]/one-on-one/request). */
+export async function updateOneOnOneRequest(id: string, patch: { status?: EventOneOnOneRequest["status"]; assignment?: string }): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (patch.status !== undefined) row.status = patch.status;
+  if (patch.assignment !== undefined) row.assignment = patch.assignment || null;
+  const { data, error } = await supabase.from("event_one_on_one_requests").update(row).eq("id", id).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapEventOneOnOneRequestRow(data);
+  eventOneOnOneRequestsCache = eventOneOnOneRequestsCache.map((r) => (r.id === id ? record : r));
+  emitChange();
 }
 
 export async function assignSpeakerToSession(sessionId: string, speakerId: string, role: SessionSpeaker["role"]): Promise<void> {

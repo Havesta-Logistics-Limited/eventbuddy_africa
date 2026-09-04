@@ -9,6 +9,7 @@ import { formatNaira } from "@/lib/billing";
 
 type DiscoverEvent = {
   id: string;
+  slug?: string;
   name: string;
   date: string;
   endDate?: string;
@@ -212,7 +213,7 @@ export default function DiscoverEventsPage() {
               return (
                 <Link
                   key={event.id}
-                  href={`/${event.orgSlug}/events/${event.id}/register`}
+                  href={event.slug ? `/discover/${event.slug}` : `/${event.orgSlug}/events/${event.id}/register`}
                   className="group rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-brand-600/40 hover:shadow-md transition-all animate-fade-in-up"
                   style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
                 >

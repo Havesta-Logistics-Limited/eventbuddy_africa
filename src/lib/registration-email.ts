@@ -73,6 +73,40 @@ export async function sendRegistrationEmail(to: string, referenceId: string, eve
   }
 }
 
+/** Best-effort confirmation for a booked 1-on-1 slot — sent right after a successful
+ *  booking on the post-registration step. Failure here never blocks the booking
+ *  itself, same as every other confirmation email in this file. */
+/** Best-effort confirmation that a 1-on-1 interest request went through — sent right
+ *  after submission on the post-registration step. Nothing is scheduled yet at this
+ *  point (the organizer still has to work out the actual matching), so this is
+ *  deliberately just an acknowledgement, not a booking confirmation. */
+export async function sendOneOnOneRequestConfirmation(to: string, eventName: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
+
+  try {
+    const safeEventName = escapeHtml(eventName);
+
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
+      to,
+      subject: `Your 1-on-1 request for ${eventName}`,
+      text: `We got your 1-on-1 request for ${eventName}. The organizer will reach out to set up a meeting for you at the event.`,
+      html: `
+        <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
+          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#C21FAF; font-weight:600; margin:0 0 8px;">1-on-1 requested</p>
+          <h1 style="font-size:20px; margin:0 0 12px;">${safeEventName}</h1>
+          <p style="margin:0; color:#666;">We've let the organizer know you're interested — they'll set up a meeting for you at the event.</p>
+        </div>
+      `,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 /** Confirmation email for a virtual event — no QR/reference ID (there's no physical
  *  check-in), just the join details. Mirrors sendRegistrationEmail's tone. */
 export async function sendVirtualConfirmationEmail(to: string, event: RegisteredEvent, hubUrl?: string) {

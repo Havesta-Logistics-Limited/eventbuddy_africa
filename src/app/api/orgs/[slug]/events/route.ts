@@ -5,6 +5,7 @@ import type { FieldDef } from "@/lib/types";
 type OrgRow = { id: string; name: string; slug: string };
 type EventRow = {
   id: string;
+  slug: string | null;
   name: string;
   date: string;
   end_date: string | null;
@@ -16,6 +17,7 @@ type EventRow = {
   description: string | null;
   cover_image: string | null;
   template_id: string | null;
+  category: string | null;
   custom_fields: unknown;
   event_format: string | null;
   virtual_join_url: string | null;
@@ -81,6 +83,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
     organization: { id: org.id, name: org.name, slug: org.slug },
     events: events.map((e) => ({
       id: e.id,
+      slug: e.slug ?? undefined,
       name: e.name,
       date: e.date,
       endDate: e.end_date ?? undefined,
@@ -92,6 +95,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       description: e.description ?? "",
       coverImage: e.cover_image ?? undefined,
       templateId: e.template_id ?? "education-fair",
+      category: e.category ?? undefined,
       customFields: (e.custom_fields as FieldDef[] | null) ?? [],
       eventFormat: (e.event_format as "physical" | "virtual" | null) ?? "physical",
       virtualJoinUrl: e.virtual_join_url ?? undefined,

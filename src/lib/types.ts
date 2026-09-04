@@ -48,6 +48,10 @@ export interface FieldDef {
 
 export interface EventRecord {
   id: string;
+  /** Optional custom slug for this event's public registration link (e.g.
+   *  "career-fair-2026" instead of the raw id), unique per organization
+   *  (case-insensitive). Unset events keep working off their raw id. */
+  slug?: string;
   name: string;
   date: string; // ISO date, start
   endDate?: string;
@@ -96,6 +100,11 @@ export interface EventRecord {
    *  though the DB column is NOT NULL DEFAULT 'education-fair' — the DB default covers
    *  any call site that doesn't set it. */
   templateId?: string;
+  /** Organizer-set public category label (e.g. "Conference", "Networking") shown as a
+   *  badge on the register page — deliberately separate from templateId, which drives
+   *  internal structure (dashboard tabs, default custom fields) and is never itself
+   *  fit to show attendees (its "custom" template literally reads "Custom / Blank"). */
+  category?: string;
   /** Admin-defined lead-form questions for non-Education-Fair templates. */
   customFields?: FieldDef[];
   /** IANA zone (e.g. "Africa/Lagos"), captured automatically from the creating admin's
@@ -115,6 +124,10 @@ export interface EventRecord {
   virtualPlatform?: string;
   /** Virtual events only — extra info attendees need beyond the link, e.g. a meeting ID/passcode. */
   virtualAccessNotes?: string;
+  /** Shows a "Book a 1-on-1" step right after registration, letting the attendee claim
+   *  an open slot from event_speaker_slots. Independent of whether the event actually
+   *  has any speakers/slots yet — the register page checks that separately. */
+  oneOnOneEnabled?: boolean;
   createdAt: string;
 }
 
@@ -356,6 +369,26 @@ export interface EventSpeaker {
   bio?: string;
   photoUrl?: string;
   createdAt: string;
+}
+
+/** An attendee's expression of interest in a 1-on-1, taken as a separate step right
+ *  after they complete normal event registration — deliberately not tied to picking
+ *  a speaker or a time slot up front. The organizer reviews these and manually fills
+ *  in `assignment` (a booth, room, stand, or speaker name — whatever the event
+ *  actually needs) once they've worked out the matching themselves. Not linked back
+ *  to a registrations/leads row by id — physical events use registrations, virtual
+ *  ones use leads, so identity is stored directly here instead of a polymorphic FK. */
+export interface EventOneOnOneRequest {
+  id: string;
+  eventId: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  note?: string;
+  status: "pending" | "assigned" | "done";
+  assignment?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** A question submitted by an attendee through the Event Hub — pending until an

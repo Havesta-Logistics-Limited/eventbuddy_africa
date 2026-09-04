@@ -3,6 +3,7 @@ import { createAnonClient } from "@/lib/supabase/anon";
 
 type DiscoverEventRow = {
   id: string;
+  slug: string | null;
   name: string;
   date: string;
   end_date: string | null;
@@ -44,6 +45,7 @@ export async function GET() {
   return NextResponse.json({
     events: events.map((e) => ({
       id: e.id,
+      slug: e.slug ?? undefined,
       name: e.name,
       date: e.date,
       endDate: e.end_date ?? undefined,

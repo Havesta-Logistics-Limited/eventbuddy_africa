@@ -170,6 +170,25 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
         </>
       )}
       <div>
+        <label className={labelClass}>Category</label>
+        <input
+          list="event-category-suggestions"
+          value={data.category || ""}
+          onChange={(e) => onChange({ category: e.target.value })}
+          placeholder="e.g. Conference, Networking, Concert"
+          className={fieldClass}
+        />
+        <datalist id="event-category-suggestions">
+          <option value="Conference" />
+          <option value="Networking" />
+          <option value="Workshop" />
+          <option value="Fair / Expo" />
+          <option value="Concert / Festival" />
+          <option value="Meetup" />
+        </datalist>
+        <p className="text-xs text-slate-400 mt-1">Shown as a badge on your public registration page. Leave blank to not show one.</p>
+      </div>
+      <div>
         <label className={labelClass}>Description</label>
         <textarea rows={2} value={data.description} onChange={(e) => onChange({ description: e.target.value })} className={`${fieldClass} resize-none`} />
       </div>
