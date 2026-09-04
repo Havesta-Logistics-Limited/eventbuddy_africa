@@ -144,35 +144,35 @@ export function EventHostCard({
   const sampleNames = attendeeSummary?.sampleNames ?? [];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6">
-      <h2 className="font-semibold text-slate-900 mb-4">Hosted By</h2>
-      <div className="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
-        <div className="w-10 h-10 rounded-full bg-[#FFF3FD] text-[#93147D] flex items-center justify-center font-semibold shrink-0">
+    <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
+      <h2 className="font-semibold text-white mb-4">Hosted By</h2>
+      <div className="flex items-center gap-3 pb-4 mb-4 border-b border-white/10">
+        <div className="w-10 h-10 rounded-full bg-[#FF8AF5]/20 text-[#FF8AF5] flex items-center justify-center font-semibold shrink-0">
           {orgName.charAt(0).toUpperCase() || "?"}
         </div>
-        <p className="font-medium text-slate-900">{orgName}</p>
+        <p className="font-medium text-white">{orgName}</p>
       </div>
 
       {totalCount > 0 && (
         <div className="mb-4">
-          <p className="text-sm font-medium text-slate-700 mb-3">
+          <p className="text-sm font-medium text-white/80 mb-3">
             {totalCount.toLocaleString()} Going
           </p>
           {sampleNames.length > 0 && (
             <>
               <div className="flex -space-x-2 mb-2">{sampleNames.slice(0, 8).map((n, i) => initialsAvatar(n, i))}</div>
-              <p className="text-xs text-slate-500">{namesLine(sampleNames, totalCount)}</p>
+              <p className="text-xs text-white/50">{namesLine(sampleNames, totalCount)}</p>
             </>
           )}
         </div>
       )}
 
-      <div className="pt-4 border-t border-slate-100 space-y-2.5">
-        <button type="button" onClick={() => setModal("contact")} className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800">
+      <div className="pt-4 border-t border-white/10 space-y-2.5">
+        <button type="button" onClick={() => setModal("contact")} className="flex items-center gap-2 text-sm font-medium text-white/60 hover:text-white">
           <Mail size={14} />
           Contact the Host
         </button>
-        <button type="button" onClick={() => setModal("report")} className="flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-rose-600">
+        <button type="button" onClick={() => setModal("report")} className="flex items-center gap-2 text-sm font-medium text-white/40 hover:text-rose-300">
           <Flag size={13} />
           Report Event
         </button>

@@ -53,28 +53,28 @@ export function OneOnOneRequestStep({
   return (
     <div className="p-6">
       <div className="text-center mb-5">
-        <div className="w-12 h-12 rounded-full bg-[#FFF3FD] text-[#C21FAF] flex items-center justify-center mx-auto mb-3">
+        <div className="w-12 h-12 rounded-full bg-[#FF8AF5]/20 text-[#FF8AF5] flex items-center justify-center mx-auto mb-3">
           <HeartHandshake size={20} />
         </div>
-        <h2 className="font-semibold text-lg text-slate-900">Want a 1-on-1?</h2>
-        <p className="text-sm text-slate-500 mt-1">Let us know and the organizer will set up a meeting for you at the event.</p>
+        <h2 className="font-semibold text-lg text-white">Want a 1-on-1?</h2>
+        <p className="text-sm text-white/60 mt-1">Let us know and the organizer will set up a meeting for you at the event.</p>
       </div>
 
       <div className="mb-4">
-        <label className="block text-xs font-medium text-slate-500 mb-1.5">What would you like to discuss? (optional)</label>
+        <label className="block text-xs font-medium text-white/50 mb-1.5">What would you like to discuss? (optional)</label>
         <textarea
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="e.g. Interested in your AI product roadmap"
-          className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+          className="w-full px-3.5 py-2.5 rounded-lg border border-white/20 bg-white/5 text-white placeholder:text-white/40 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#FF8AF5]"
         />
       </div>
 
-      {error && <p className="text-xs text-rose-600 mb-3">{error}</p>}
+      {error && <p className="text-xs text-rose-300 mb-3">{error}</p>}
 
       <div className="flex items-center gap-3">
-        <button type="button" onClick={onSkip} className="text-sm font-medium text-slate-500 hover:text-slate-700">
+        <button type="button" onClick={onSkip} className="text-sm font-medium text-white/50 hover:text-white/80">
           No thanks
         </button>
         <button

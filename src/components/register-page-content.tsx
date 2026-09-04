@@ -38,12 +38,12 @@ export function PublicHeader() {
   return (
     <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-        <Link href="/discover" className="sm:hidden">
+        <span className="sm:hidden">
           <Logo height={18} />
-        </Link>
-        <Link href="/discover" className="hidden sm:block">
+        </span>
+        <span className="hidden sm:block">
           <Logo height={26} />
-        </Link>
+        </span>
         <nav className="flex items-center gap-3 sm:gap-6">
           <Link href="/discover" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
             Events
@@ -459,7 +459,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const showOneOnOneStep = !!confirmation && oneOnOneEnabled && !oneOnOneDismissed;
 
   return (
-    <div className="min-h-screen bg-[#22103A] pb-20">
+    <div className="min-h-screen bg-[#22103A]">
       <PublicHeader />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-14">
         {/* Hero — cover image + title/badges/CTA, matching the composition of a real
@@ -553,51 +553,51 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         <div className="grid lg:grid-cols-[1fr_400px] gap-8 mt-10 items-start">
           <div className="space-y-5 min-w-0">
             {event.description && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h2 className="font-semibold text-slate-900 mb-2">About this event</h2>
-                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{event.description}</p>
+              <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
+                <h2 className="font-semibold text-white mb-2">About this event</h2>
+                <p className="text-sm text-white/70 leading-relaxed whitespace-pre-line">{event.description}</p>
               </div>
             )}
 
-            <div className="bg-white rounded-2xl border border-slate-200 p-6">
-              <h2 className="font-semibold text-slate-900 mb-3">Date and time</h2>
-              <p className="flex items-start gap-2.5 text-sm text-slate-700">
-                <Calendar size={16} className="text-[#C21FAF] mt-0.5 shrink-0" />
+            <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
+              <h2 className="font-semibold text-white mb-3">Date and time</h2>
+              <p className="flex items-start gap-2.5 text-sm text-white/80">
+                <Calendar size={16} className="text-[#FF8AF5] mt-0.5 shrink-0" />
                 <span>
                   {formatFullDate(event.date)}
                   {event.startTime && ` · ${formatTime(event.startTime)}`}
                   {event.endTime && ` – ${formatTime(event.endTime)}`}
-                  {event.timezone && <span className="block text-slate-400 text-xs mt-0.5">{event.timezone.replace(/_/g, " ")}</span>}
+                  {event.timezone && <span className="block text-white/40 text-xs mt-0.5">{event.timezone.replace(/_/g, " ")}</span>}
                 </span>
               </p>
             </div>
 
             {event.eventFormat === "virtual" ? (
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h2 className="font-semibold text-slate-900 mb-3">How to join</h2>
-                <p className="flex items-start gap-2.5 text-sm text-slate-700">
-                  <Radio size={16} className="text-[#C21FAF] mt-0.5 shrink-0" />
+              <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
+                <h2 className="font-semibold text-white mb-3">How to join</h2>
+                <p className="flex items-start gap-2.5 text-sm text-white/80">
+                  <Radio size={16} className="text-[#FF8AF5] mt-0.5 shrink-0" />
                   <span>
                     {event.virtualPlatform || "Online event"}
-                    <span className="block text-slate-400 text-xs mt-0.5">The join link is sent by email once you register.</span>
+                    <span className="block text-white/40 text-xs mt-0.5">The join link is sent by email once you register.</span>
                   </span>
                 </p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h2 className="font-semibold text-slate-900 mb-3">Location</h2>
-                <p className="flex items-start gap-2.5 text-sm text-slate-700 mb-3">
-                  <MapPin size={16} className="text-[#C21FAF] mt-0.5 shrink-0" />
+              <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
+                <h2 className="font-semibold text-white mb-3">Location</h2>
+                <p className="flex items-start gap-2.5 text-sm text-white/80 mb-3">
+                  <MapPin size={16} className="text-[#FF8AF5] mt-0.5 shrink-0" />
                   <span>
                     {event.venue}
-                    <span className="block text-slate-500">{event.location}</span>
+                    <span className="block text-white/50">{event.location}</span>
                   </span>
                 </p>
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${event.venue}, ${event.location}`)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm font-medium text-[#C21FAF] hover:underline inline-flex items-center gap-1"
+                  className="text-sm font-medium text-[#FF8AF5] hover:underline inline-flex items-center gap-1"
                 >
                   Open in Google Maps <ExternalLink size={12} />
                 </a>
@@ -611,7 +611,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
               picker, discount code, dynamic fields, submit. Not a decorative summary
               card standing in for it. */}
           <div id="register-panel" className="lg:sticky lg:top-8 scroll-mt-8">
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl overflow-hidden">
               {showOneOnOneStep && event ? (
                 <OneOnOneRequestStep
                   orgSlug={orgSlug}
@@ -627,11 +627,11 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 />
               ) : confirmation ? (
                 <div className="p-6 text-center">
-                  <div className="w-12 h-12 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 rounded-full bg-teal-400/20 text-teal-300 flex items-center justify-center mx-auto mb-4">
                     <Check size={22} />
                   </div>
-                  <h2 className="font-semibold text-lg text-slate-900 mb-1">You&apos;re registered!</h2>
-                  <p className="text-sm text-slate-500 mb-6">
+                  <h2 className="font-semibold text-lg text-white mb-1">You&apos;re registered!</h2>
+                  <p className="text-sm text-white/60 mb-6">
                     {confirmation.event.eventFormat === "virtual"
                       ? confirmation.emailSent
                         ? "We've also emailed you the joining details. No check-in needed — just join at the time above."
@@ -644,17 +644,19 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                   {confirmation.referenceId && (
                     <>
                       {qrDataUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={qrDataUrl} alt="Registration QR code" className="mx-auto mb-4 rounded-lg border border-slate-200" width={180} height={180} />
+                        <div className="inline-block p-3 bg-white rounded-lg mb-4">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={qrDataUrl} alt="Registration QR code" width={164} height={164} />
+                        </div>
                       )}
 
                       <button
                         type="button"
                         onClick={copyReferenceId}
-                        className="inline-flex items-center gap-2 mx-auto px-4 py-2 rounded-lg border border-slate-200 font-mono text-base font-semibold text-slate-800 hover:bg-slate-50"
+                        className="flex mx-auto items-center gap-2 px-4 py-2 rounded-lg border border-white/20 bg-white/5 font-mono text-base font-semibold text-white hover:bg-white/10"
                       >
                         {confirmation.referenceId}
-                        {copied ? <Check size={15} className="text-teal-600" /> : <Copy size={15} className="text-slate-400" />}
+                        {copied ? <Check size={15} className="text-teal-300" /> : <Copy size={15} className="text-white/40" />}
                       </button>
                     </>
                   )}
@@ -671,59 +673,59 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                   )}
 
                   {confirmation.event.eventFormat === "virtual" ? (
-                    <div className="mt-6 pt-5 border-t border-slate-100 text-left">
-                      <h3 className="text-sm font-semibold text-slate-800 mb-2">Joining details</h3>
+                    <div className="mt-6 pt-5 border-t border-white/10 text-left">
+                      <h3 className="text-sm font-semibold text-white mb-2">Joining details</h3>
                       {safeHttpUrl(confirmation.event.virtualJoinUrl) && (
-                        <a href={safeHttpUrl(confirmation.event.virtualJoinUrl)} target="_blank" rel="noreferrer" className="block text-sm text-[#C21FAF] hover:underline break-all">
+                        <a href={safeHttpUrl(confirmation.event.virtualJoinUrl)} target="_blank" rel="noreferrer" className="block text-sm text-[#FF8AF5] hover:underline break-all">
                           {confirmation.event.virtualJoinUrl}
                         </a>
                       )}
-                      {confirmation.event.virtualAccessNotes && <p className="text-sm text-slate-500 mt-2 whitespace-pre-line">{confirmation.event.virtualAccessNotes}</p>}
+                      {confirmation.event.virtualAccessNotes && <p className="text-sm text-white/60 mt-2 whitespace-pre-line">{confirmation.event.virtualAccessNotes}</p>}
                     </div>
                   ) : (
-                    <div className="mt-6 pt-5 border-t border-slate-100 text-left">
-                      <h3 className="text-sm font-semibold text-slate-800 mb-2">At the event</h3>
-                      <p className="text-sm text-slate-500">
+                    <div className="mt-6 pt-5 border-t border-white/10 text-left">
+                      <h3 className="text-sm font-semibold text-white mb-2">At the event</h3>
+                      <p className="text-sm text-white/60">
                         Show this QR code (or your reference ID) at check-in — {confirmation.event.venue}, {confirmation.event.location}.
                       </p>
                     </div>
                   )}
 
                   {oneOnOneRequested && (
-                    <div className="mt-6 pt-5 border-t border-slate-100 text-left">
-                      <h3 className="text-sm font-semibold text-slate-800 mb-2">1-on-1 requested</h3>
-                      <p className="text-sm text-slate-500">The organizer knows you&apos;re interested — they&apos;ll set up a meeting for you at the event.</p>
+                    <div className="mt-6 pt-5 border-t border-white/10 text-left">
+                      <h3 className="text-sm font-semibold text-white mb-2">1-on-1 requested</h3>
+                      <p className="text-sm text-white/60">The organizer knows you&apos;re interested — they&apos;ll set up a meeting for you at the event.</p>
                     </div>
                   )}
                 </div>
               ) : (
                 <>
-                  <div className="px-6 pt-6 pb-5 border-b border-slate-100">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">{isFreeEvent ? "Free event" : "Tickets"}</p>
-                    <p className="font-display text-3xl text-slate-900">{priceLabel}</p>
+                  <div className="px-6 pt-6 pb-5 border-b border-white/10">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-1">{isFreeEvent ? "Free event" : "Tickets"}</p>
+                    <p className="font-display text-3xl text-white">{priceLabel}</p>
                   </div>
 
                   <div className="p-6">
                     {ticketTypes.length === 1 && ticketTypes[0].priceNaira > 0 && (
-                      <div className="flex items-center justify-between gap-3 p-3.5 mb-5 rounded-xl bg-slate-50 border border-slate-200">
-                        <p className="text-sm text-slate-700 flex items-center gap-2">
-                          <Ticket size={14} className="text-[#C21FAF]" />
+                      <div className="flex items-center justify-between gap-3 p-3.5 mb-5 rounded-xl bg-white/5 border border-white/15">
+                        <p className="text-sm text-white/80 flex items-center gap-2">
+                          <Ticket size={14} className="text-[#FF8AF5]" />
                           {ticketTypes[0].name}
                         </p>
                         {discountedPrice != null ? (
                           <span className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400 line-through">{formatNaira(ticketTypes[0].priceNaira)}</span>
-                            <span className="font-semibold text-emerald-700">{formatNaira(discountedPrice)}</span>
+                            <span className="text-xs text-white/40 line-through">{formatNaira(ticketTypes[0].priceNaira)}</span>
+                            <span className="font-semibold text-emerald-300">{formatNaira(discountedPrice)}</span>
                           </span>
                         ) : (
-                          <span className="font-semibold text-slate-900">{formatNaira(ticketTypes[0].priceNaira)}</span>
+                          <span className="font-semibold text-white">{formatNaira(ticketTypes[0].priceNaira)}</span>
                         )}
                       </div>
                     )}
 
                     {ticketTypes.length > 1 && (
                       <div className="mb-5">
-                        <h2 className="text-sm font-semibold text-slate-800 mb-2">Choose a ticket</h2>
+                        <h2 className="text-sm font-semibold text-white mb-2">Choose a ticket</h2>
                         <div className="space-y-2">
                           {ticketTypes.map((t) => {
                             const available = isTicketAvailable(t);
@@ -738,18 +740,18 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                                   handleRemoveDiscount();
                                 }}
                                 className={`w-full text-left p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                                  selected ? "border-[#C21FAF] bg-[#C21FAF]/5" : "border-slate-200 hover:border-slate-300"
+                                  selected ? "border-[#FF8AF5] bg-[#FF8AF5]/10" : "border-white/15 hover:border-white/30"
                                 }`}
                               >
                                 <div className="min-w-0">
-                                  <p className="font-medium text-slate-900 flex items-center gap-2">
-                                    <Ticket size={14} className={selected ? "text-[#C21FAF]" : "text-slate-400"} />
+                                  <p className="font-medium text-white flex items-center gap-2">
+                                    <Ticket size={14} className={selected ? "text-[#FF8AF5]" : "text-white/40"} />
                                     {t.name}
                                   </p>
-                                  {t.description && <p className="text-xs text-slate-500 mt-0.5">{t.description}</p>}
-                                  {!available && <p className="text-xs text-rose-500 mt-0.5">Sold out or unavailable</p>}
+                                  {t.description && <p className="text-xs text-white/50 mt-0.5">{t.description}</p>}
+                                  {!available && <p className="text-xs text-rose-300 mt-0.5">Sold out or unavailable</p>}
                                 </div>
-                                <span className="font-semibold text-slate-900 shrink-0">{t.priceNaira > 0 ? formatNaira(t.priceNaira) : "Free"}</span>
+                                <span className="font-semibold text-white shrink-0">{t.priceNaira > 0 ? formatNaira(t.priceNaira) : "Free"}</span>
                               </button>
                             );
                           })}
@@ -760,21 +762,21 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                     {selectedTicket && selectedTicket.priceNaira > 0 && (
                       <div className="mb-5">
                         {appliedDiscount ? (
-                          <div className="p-3 rounded-lg bg-emerald-50 text-emerald-800 text-sm">
+                          <div className="p-3 rounded-lg bg-emerald-400/10 text-emerald-200 text-sm">
                             <div className="flex items-center justify-between gap-3">
                               <span className="flex items-center gap-2">
                                 <Tag size={14} />
                                 <span className="font-mono font-semibold">{appliedDiscount.code}</span> applied
                               </span>
-                              <button type="button" onClick={handleRemoveDiscount} className="text-emerald-700 hover:text-emerald-900">
+                              <button type="button" onClick={handleRemoveDiscount} className="text-emerald-200 hover:text-emerald-100">
                                 <X size={15} />
                               </button>
                             </div>
                             {discountedPrice != null && (
-                              <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-emerald-100">
+                              <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-emerald-400/20">
                                 <span className="text-xs">You saved {formatNaira(selectedTicket.priceNaira - discountedPrice)}</span>
                                 <span className="flex items-center gap-2">
-                                  <span className="text-xs text-emerald-600 line-through">{formatNaira(selectedTicket.priceNaira)}</span>
+                                  <span className="text-xs text-emerald-300/70 line-through">{formatNaira(selectedTicket.priceNaira)}</span>
                                   <span className="font-semibold">{formatNaira(discountedPrice)} to pay</span>
                                 </span>
                               </div>
@@ -787,54 +789,54 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                                 value={discountCodeInput}
                                 onChange={(e) => setDiscountCodeInput(e.target.value)}
                                 placeholder="Discount code"
-                                className="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                                className="flex-1 px-3.5 py-2.5 rounded-lg border border-white/20 bg-white/5 text-white placeholder:text-white/40 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#FF8AF5]"
                               />
                               <button
                                 type="button"
                                 onClick={handleApplyDiscount}
                                 disabled={validatingDiscount || !discountCodeInput.trim()}
-                                className="px-4 py-2.5 rounded-lg text-sm font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                                className="px-4 py-2.5 rounded-lg text-sm font-medium border border-white/20 text-white hover:bg-white/10 disabled:opacity-50"
                               >
                                 {validatingDiscount ? "Checking…" : "Apply"}
                               </button>
                             </div>
-                            {discountError && <p className="text-xs text-rose-600 mt-1.5">{discountError}</p>}
+                            {discountError && <p className="text-xs text-rose-300 mt-1.5">{discountError}</p>}
                           </>
                         )}
                       </div>
                     )}
 
                     {submitError && (
-                      <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                      <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-rose-400/10 text-rose-200 text-sm">
                         <AlertCircle size={15} className="mt-0.5 shrink-0" />
                         {submitError}
                       </div>
                     )}
 
                     {ticketTypes.length > 1 && !selectedTicketId ? (
-                      <p className="text-sm text-slate-400 text-center py-4">Select a ticket above to continue.</p>
+                      <p className="text-sm text-white/40 text-center py-4">Select a ticket above to continue.</p>
                     ) : ticketTypes.length === 1 && !isTicketAvailable(ticketTypes[0]) ? (
-                      <p className="text-sm text-slate-400 text-center py-4">This event&apos;s ticket is sold out or unavailable.</p>
+                      <p className="text-sm text-white/40 text-center py-4">This event&apos;s ticket is sold out or unavailable.</p>
                     ) : (
                       <DynamicRegistrationForm fields={event.customFields || []} onSubmit={handleSubmit} submitting={submitting} submitError="" onProgress={handleFormProgress} />
                     )}
                   </div>
 
-                  <div className="px-6 py-4 border-t border-slate-100 space-y-2.5">
-                    <p className="flex items-center gap-2.5 text-xs text-slate-500">
-                      <Calendar size={13} className="text-slate-400 shrink-0" />
+                  <div className="px-6 py-4 border-t border-white/10 space-y-2.5">
+                    <p className="flex items-center gap-2.5 text-xs text-white/50">
+                      <Calendar size={13} className="text-white/30 shrink-0" />
                       {formatDate(event.date)}
                       {event.startTime && ` · ${formatTime(event.startTime)}`}
                     </p>
-                    <p className="flex items-center gap-2.5 text-xs text-slate-500 truncate">
+                    <p className="flex items-center gap-2.5 text-xs text-white/50 truncate">
                       {event.eventFormat === "virtual" ? (
                         <>
-                          <Video size={13} className="text-slate-400 shrink-0" />
+                          <Video size={13} className="text-white/30 shrink-0" />
                           {event.virtualPlatform || "Online"}
                         </>
                       ) : (
                         <>
-                          <MapPin size={13} className="text-slate-400 shrink-0" />
+                          <MapPin size={13} className="text-white/30 shrink-0" />
                           {event.venue}, {event.location}
                         </>
                       )}
@@ -844,7 +846,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                   <button
                     type="button"
                     onClick={handleShare}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-slate-600 border-t border-slate-100 hover:bg-slate-50 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white/70 border-t border-white/10 hover:bg-white/5 transition-colors"
                   >
                     <Share2 size={14} />
                     Share this event
@@ -855,6 +857,51 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
           </div>
         </div>
       </div>
+
+      <footer className="text-white mt-16" style={{ background: "#170821" }}>
+        <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
+          <div>
+            <Logo tone="white" variant="full" height={16} />
+            <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">
+              Registration, ticketing, and check-in for any event — education fairs, job fairs, conferences, and more.
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-3">Product</p>
+            <div className="flex flex-col gap-2.5 text-sm">
+              <Link href="/discover" className="text-white/70 hover:text-white">
+                Discover Events
+              </Link>
+              <Link href="/pricing" className="text-white/70 hover:text-white">
+                Pricing
+              </Link>
+              <Link href="/signup" className="text-white/70 hover:text-white">
+                Get Started
+              </Link>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-3">Legal</p>
+            <div className="flex flex-col gap-2.5 text-sm">
+              <Link href="/privacy" className="text-white/70 hover:text-white">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-white/70 hover:text-white">
+                Terms &amp; Conditions
+              </Link>
+              <Link href="/contact" className="text-white/70 hover:text-white">
+                Contact
+              </Link>
+            </div>
+          </div>
+        </div>
+        <div className="h-1 w-full flex">
+          <div className="flex-1" style={{ background: "#C21FAF" }} />
+          <div className="flex-1" style={{ background: "#6D28D9" }} />
+          <div className="flex-1" style={{ background: "#E85D0A" }} />
+          <div className="flex-1" style={{ background: "#B8119C" }} />
+        </div>
+      </footer>
     </div>
   );
 }

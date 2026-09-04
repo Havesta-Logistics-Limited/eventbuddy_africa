@@ -35,10 +35,10 @@ export interface DynamicRegistrationFormValues {
 }
 
 const fieldClass =
-  "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent";
+  "w-full px-3.5 py-2.5 rounded-lg border border-white/20 text-sm bg-white/5 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent";
 const selectClass = `${fieldClass} cursor-pointer`;
-const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
-const errorClass = "text-rose-600 text-xs mt-1";
+const labelClass = "block text-sm font-medium text-white/70 mb-1.5";
+const errorClass = "text-rose-300 text-xs mt-1";
 
 function DynamicField({ field, register, errors }: { field: FieldDef; register: UseFormRegister<FormValues>; errors: FieldErrors<FormValues> }) {
   const name = `custom.${field.id}` as const;
@@ -63,7 +63,7 @@ function DynamicField({ field, register, errors }: { field: FieldDef; register: 
       ) : field.type === "multiple_choice" ? (
         <div className="grid grid-cols-2 gap-2">
           {(field.options ?? []).map((opt) => (
-            <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-200 text-sm cursor-pointer hover:border-slate-300">
+            <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-white/20 text-sm text-white/80 cursor-pointer hover:border-white/40">
               <input type="radio" value={opt} {...register(path)} className="accent-[#C21FAF]" />
               {opt}
             </label>
@@ -72,7 +72,7 @@ function DynamicField({ field, register, errors }: { field: FieldDef; register: 
       ) : field.type === "checkboxes" ? (
         <div className="grid grid-cols-2 gap-2">
           {(field.options ?? []).map((opt) => (
-            <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-200 text-sm cursor-pointer hover:border-slate-300">
+            <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-white/20 text-sm text-white/80 cursor-pointer hover:border-white/40">
               <input type="checkbox" value={opt} {...register(path)} className="accent-[#C21FAF]" />
               {opt}
             </label>
@@ -153,8 +153,8 @@ export function DynamicRegistrationForm(props: {
 
   return (
     <form onSubmit={submit} className="space-y-5">
-      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Your Details</h2>
+      <div className="space-y-4">
+        <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider">Your Details</h2>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelClass}>First Name *</label>
@@ -179,15 +179,15 @@ export function DynamicRegistrationForm(props: {
       </div>
 
       {fields.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Additional Questions</h2>
+        <div className="space-y-4 pt-4 border-t border-white/10">
+          <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider">Additional Questions</h2>
           {fields.map((f) => (
             <DynamicField key={f.id} field={f} register={register} errors={errors} />
           ))}
         </div>
       )}
 
-      {submitError && <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">{submitError}</div>}
+      {submitError && <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-400/10 text-rose-200 text-sm">{submitError}</div>}
       <button
         type="submit"
         disabled={submitting}
