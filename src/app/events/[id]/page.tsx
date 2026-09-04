@@ -394,12 +394,14 @@ export default function EventDetailPage() {
               </span>
               <h1 className="font-display text-2xl text-slate-900 mb-3">{event.name}</h1>
               <div className="flex flex-wrap gap-4 text-sm text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <Calendar size={14} />
-                  {new Date(event.date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
-                  {event.endDate && ` – ${new Date(event.endDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`}
-                  {event.startTime && ` • ${formatTime(event.startTime)}`}
-                  {event.endTime && ` - ${formatTime(event.endTime)}`}
+                <span className="flex items-start gap-1.5">
+                  <Calendar size={14} className="mt-0.5 shrink-0" />
+                  <span>
+                    {new Date(event.date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                    {event.endDate && ` – ${new Date(event.endDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`}
+                    {event.startTime && ` • ${formatTime(event.startTime)}`}
+                    {event.endTime && ` - ${formatTime(event.endTime)}`}
+                  </span>
                 </span>
                 {event.eventFormat === "virtual" ? (
                   <span className="flex items-center gap-1.5">
@@ -723,7 +725,13 @@ export default function EventDetailPage() {
 
         {activeTab === "one-on-one" && (
           <div key="one-on-one" className="animate-tab-fade">
-            <OneOnOneTab eventId={event.id} oneOnOneEnabled={event.oneOnOneEnabled ?? false} requests={oneOnOneRequests} />
+            <OneOnOneTab
+              orgSlug={session?.orgSlug ?? ""}
+              eventId={event.id}
+              oneOnOneEnabled={event.oneOnOneEnabled ?? false}
+              oneOnOneLimit={event.oneOnOneLimit}
+              requests={oneOnOneRequests}
+            />
           </div>
         )}
 

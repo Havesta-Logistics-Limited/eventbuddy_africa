@@ -124,10 +124,14 @@ export interface EventRecord {
   virtualPlatform?: string;
   /** Virtual events only — extra info attendees need beyond the link, e.g. a meeting ID/passcode. */
   virtualAccessNotes?: string;
-  /** Shows a "Book a 1-on-1" step right after registration, letting the attendee claim
-   *  an open slot from event_speaker_slots. Independent of whether the event actually
-   *  has any speakers/slots yet — the register page checks that separately. */
+  /** Shows a "Book a 1-on-1" step right after registration, letting the attendee flag
+   *  interest — see EventOneOnOneRequest. The organizer works out the actual
+   *  matching themselves; this only controls whether the step appears at all. */
   oneOnOneEnabled?: boolean;
+  /** Optional cap on how many 1-on-1 requests this event accepts, first-come-first-
+   *  served — enforced atomically by submit_one_on_one_request (migration 0059), not
+   *  in application code. null/unset = unlimited. */
+  oneOnOneLimit?: number;
   createdAt: string;
 }
 
@@ -387,6 +391,10 @@ export interface EventOneOnOneRequest {
   note?: string;
   status: "pending" | "assigned" | "done";
   assignment?: string;
+  /** Set once the organizer has told the attendee their assignment (see
+   *  .../one-on-one/[requestId]/notify) — lets the dashboard show whether that's
+   *  already happened instead of risking a duplicate email. */
+  notifiedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

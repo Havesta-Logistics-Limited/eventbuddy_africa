@@ -26,6 +26,7 @@ import { EventRecord, TicketType } from "@/lib/types";
 import { Logo } from "@/components/logo";
 import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/components/dynamic-registration-form";
 import { OneOnOneRequestStep } from "@/components/one-on-one-request-step";
+import { EventHostCard } from "@/components/event-host-card";
 import { formatDate, formatTime, safeHttpUrl } from "@/lib/utils";
 import { applyDiscount, formatNaira } from "@/lib/billing";
 import { getEventStatus, zonedTimeToUtc } from "@/lib/capture-window";
@@ -167,6 +168,9 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const [oneOnOneDismissed, setOneOnOneDismissed] = useState(false);
   const [oneOnOneRequested, setOneOnOneRequested] = useState(false);
 
+  const [orgName, setOrgName] = useState("");
+  const [attendeeSummary, setAttendeeSummary] = useState<{ totalCount: number; sampleNames: string[] } | null>(null);
+
   // eventIdOrSlug may be the event's real id, an org-scoped slug, or a global slug
   // (see migration 0057) — all are matched here against the org's full event list,
   // and every API call after this point uses the resolved `found.id` (the real
@@ -185,11 +189,16 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
           return;
         }
         setEvent(found);
+        setOrgName(eventsData.organization?.name ?? "");
         const ticketsData = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/tickets`).then((res) => res.json());
         const tickets = (ticketsData.ticketTypes as PublicTicketType[]) || [];
         setTicketTypes(tickets);
         if (tickets.length === 1) setSelectedTicketId(tickets[0].id);
         fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/register/view`, { method: "POST" }).catch(() => {});
+        fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/attendee-summary`)
+          .then((res) => res.json())
+          .then((json) => setAttendeeSummary({ totalCount: json.totalCount ?? 0, sampleNames: json.sampleNames ?? [] }))
+          .catch(() => {});
       })
       .catch(() => setLoadError("Couldn't load this page. Check your connection and try again."))
       .finally(() => setLoading(false));
@@ -594,6 +603,8 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 </a>
               </div>
             )}
+
+            <EventHostCard orgSlug={orgSlug} eventId={event.id} orgName={orgName} attendeeSummary={attendeeSummary} />
           </div>
 
           {/* Sticky registration panel — this is the real, functional form: ticket

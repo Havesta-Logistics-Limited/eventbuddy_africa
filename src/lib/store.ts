@@ -141,6 +141,7 @@ function mapEventRow(e: {
   virtual_access_notes: string | null;
   registration_page_views: number | null;
   one_on_one_enabled: boolean | null;
+  one_on_one_limit: number | null;
   created_at: string;
 }): EventRecord {
   return {
@@ -174,6 +175,7 @@ function mapEventRow(e: {
     virtualAccessNotes: e.virtual_access_notes ?? undefined,
     registrationPageViews: e.registration_page_views ?? 0,
     oneOnOneEnabled: e.one_on_one_enabled ?? false,
+    oneOnOneLimit: e.one_on_one_limit ?? undefined,
     createdAt: e.created_at,
   };
 }
@@ -206,6 +208,7 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.virtualPlatform !== undefined) row.virtual_platform = input.virtualPlatform || null;
   if (input.virtualAccessNotes !== undefined) row.virtual_access_notes = input.virtualAccessNotes || null;
   if (input.oneOnOneEnabled !== undefined) row.one_on_one_enabled = input.oneOnOneEnabled;
+  if (input.oneOnOneLimit !== undefined) row.one_on_one_limit = input.oneOnOneLimit ?? null;
   return row;
 }
 function mapStaffRow(s: {
@@ -467,6 +470,7 @@ function mapEventOneOnOneRequestRow(r: {
   note: string | null;
   status: "pending" | "assigned" | "done";
   assignment: string | null;
+  notified_at: string | null;
   created_at: string;
   updated_at: string;
 }): EventOneOnOneRequest {
@@ -479,6 +483,7 @@ function mapEventOneOnOneRequestRow(r: {
     note: r.note ?? undefined,
     status: r.status,
     assignment: r.assignment ?? undefined,
+    notifiedAt: r.notified_at ?? undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -1106,6 +1111,15 @@ export async function updateOneOnOneRequest(id: string, patch: { status?: EventO
   if (error || !data) throw new PersistError(error);
   const record = mapEventOneOnOneRequestRow(data);
   eventOneOnOneRequestsCache = eventOneOnOneRequestsCache.map((r) => (r.id === id ? record : r));
+  emitChange();
+}
+
+/** Patches the client cache after a successful notify-attendee call (see
+ *  /api/orgs/[slug]/events/[eventId]/one-on-one/[requestId]/notify) — that route
+ *  does the actual write server-side (it needs the service-role client to send the
+ *  email), so this just reflects the result the route already confirmed. */
+export function markOneOnOneRequestNotified(id: string, notifiedAt: string): void {
+  eventOneOnOneRequestsCache = eventOneOnOneRequestsCache.map((r) => (r.id === id ? { ...r, notifiedAt } : r));
   emitChange();
 }
 

@@ -232,7 +232,7 @@ export default function DiscoverEventsPage() {
                     <span className={`absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full ${badge.cls}`}>{badge.label}</span>
                   </div>
                   <div className="p-5">
-                    <p className="text-xs font-medium text-brand-600 uppercase tracking-wide mb-1.5">{event.orgName}</p>
+                    <p className="text-xs font-medium text-brand-600 uppercase tracking-wide mb-1.5">Eventbuddy</p>
                     <h2 className="font-semibold text-slate-900 mb-2 line-clamp-2">{event.name}</h2>
                     <div className="space-y-1.5 text-sm text-slate-500">
                       <p className="flex items-center gap-1.5">

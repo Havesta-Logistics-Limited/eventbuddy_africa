@@ -34,16 +34,22 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     return NextResponse.json({ error: "1-on-1 requests aren't available for this event." }, { status: 403 });
   }
 
-  const { data: created, error: insertError } = await admin
-    .from("event_one_on_one_requests")
-    .insert({ organization_id: org.id, event_id: event.id, full_name: fullName.trim(), email: email.trim(), phone: phone?.trim() || null, note: note?.trim() || null })
-    .select()
-    .single();
-  if (insertError || !created) {
-    return NextResponse.json({ error: insertError?.message || "Couldn't send your request." }, { status: 500 });
-  }
+  // Capacity (if the organizer set one) is enforced atomically inside this function
+  // via a per-event advisory lock — a plain count-then-insert here would let two
+  // concurrent submissions both slip past a limit of, say, 1 (migration 0059).
+  const { data: result, error: rpcError } = await admin
+    .rpc("submit_one_on_one_request", {
+      p_event_id: event.id,
+      p_full_name: fullName.trim(),
+      p_email: email.trim(),
+      p_phone: phone?.trim() || null,
+      p_note: note?.trim() || null,
+    })
+    .maybeSingle<{ ok: boolean; error_message: string | null; request_id: string | null }>();
+  if (rpcError) return NextResponse.json({ error: rpcError.message }, { status: 500 });
+  if (!result?.ok) return NextResponse.json({ error: result?.error_message || "Couldn't send your request." }, { status: 409 });
 
-  const emailSent = await sendOneOnOneRequestConfirmation(created.email, event.name);
+  const emailSent = await sendOneOnOneRequestConfirmation(email.trim(), event.name);
 
   return NextResponse.json({ success: true, emailSent });
 }
