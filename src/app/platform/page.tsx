@@ -93,6 +93,8 @@ type OrgRow = {
   pending_login_email: string | null;
   login_email_change_status: "none" | "requested";
   login_email_change_requested_at: string | null;
+  account_deletion_status: "none" | "requested";
+  account_deletion_requested_at: string | null;
 };
 type EventRow = {
   id: string;
@@ -249,7 +251,7 @@ export default function PlatformDashboard() {
       supabase
         .from("organizations_payout_masked")
         .select(
-          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number_masked, payout_account_name, payout_change_status, payout_change_requested_at, pending_name, name_change_status, name_change_requested_at, pending_login_email, login_email_change_status, login_email_change_requested_at"
+          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number_masked, payout_account_name, payout_change_status, payout_change_requested_at, pending_name, name_change_status, name_change_requested_at, pending_login_email, login_email_change_status, login_email_change_requested_at, account_deletion_status, account_deletion_requested_at"
         )
         .order("created_at", { ascending: false }),
       supabase
@@ -423,6 +425,29 @@ export default function PlatformDashboard() {
       toast.success(`Login email updated to ${org.pending_login_email}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't approve this email change.");
+    } finally {
+      setBusyOrgId(null);
+    }
+  }
+
+  // Unlike the other two request/approve flows, there's no field to write back —
+  // approving actually deletes the owner's auth user (see
+  // /api/platform/approve-account-deletion), which cascades to the org and
+  // everything under it. Removed from the local list rather than patched.
+  async function approveAccountDeletion(org: OrgRow) {
+    setBusyOrgId(org.id);
+    try {
+      const res = await fetch("/api/platform/approve-account-deletion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId: org.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Couldn't delete this account.");
+      setOrgs((prev) => prev.filter((o) => o.id !== org.id));
+      toast.success(`${org.name} deleted`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't delete this account.");
     } finally {
       setBusyOrgId(null);
     }
@@ -1139,6 +1164,43 @@ export default function PlatformDashboard() {
                           >
                             <CheckCircle2 size={14} />
                             Approve
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {(() => {
+                const pendingAccountDeletions = orgs.filter((o) => o.account_deletion_status === "requested");
+                if (pendingAccountDeletions.length === 0) return null;
+                return (
+                  <div className="mb-6">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2.5">Pending account deletion requests ({pendingAccountDeletions.length})</h2>
+                    <div className="space-y-3">
+                      {pendingAccountDeletions.map((org) => (
+                        <div key={org.id} className="bg-white rounded-xl border border-rose-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm text-slate-500">
+                              <span className="font-medium text-slate-900">{org.name}</span> requested to permanently delete their account
+                            </p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              Requested{" "}
+                              {org.account_deletion_requested_at
+                                ? new Date(org.account_deletion_requested_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                                : "recently"}{" "}
+                              — this deletes their organization and everything under it. Verify this is really them before approving.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => approveAccountDeletion(org)}
+                            disabled={busyOrgId === org.id}
+                            className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600 text-white text-sm font-medium hover:bg-rose-700 disabled:opacity-50"
+                          >
+                            <Trash2 size={14} />
+                            Approve deletion
                           </button>
                         </div>
                       ))}

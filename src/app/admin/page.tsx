@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Plus, Users, X, Edit2, Trash2, Landmark, ShieldCheck, UserCircle, Loader2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, Plus, Users, X, Edit2, Trash2, Landmark, ShieldCheck, UserCircle, Loader2 } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -14,6 +14,7 @@ import { AuthLoading } from "@/components/auth-loading";
 import { TwoFactorSettings } from "@/components/two-factor-settings";
 import { MfaNagBanner } from "@/components/mfa-nag-banner";
 import { ImageCropperModal } from "@/components/image-cropper-modal";
+import { ActiveDevicesSection } from "@/components/active-devices";
 import { compressImageFile } from "@/lib/utils";
 
 const ADMIN_ONLY: Role[] = ["admin"];
@@ -54,6 +55,12 @@ export default function AdminPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
+
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState("");
+  const [deleteAccountConfirmText, setDeleteAccountConfirmText] = useState("");
+  const [deleteAccountError, setDeleteAccountError] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -105,6 +112,7 @@ export default function AdminPage() {
   const [loginEmailChangeStatus, setLoginEmailChangeStatus] = useState<"none" | "requested">("none");
   const [pendingLoginEmail, setPendingLoginEmail] = useState("");
   const [savingLoginEmail, setSavingLoginEmail] = useState(false);
+  const [accountDeletionStatus, setAccountDeletionStatus] = useState<"none" | "requested">("none");
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -116,7 +124,7 @@ export default function AdminPage() {
       setOrgId(id);
       const { data } = await supabase
         .from("organizations")
-        .select("name, pending_name, name_change_status, bio, logo_url, pending_login_email, login_email_change_status")
+        .select("name, pending_name, name_change_status, bio, logo_url, pending_login_email, login_email_change_status, account_deletion_status")
         .eq("id", id)
         .maybeSingle();
       setOrgName(data?.name || "");
@@ -128,6 +136,7 @@ export default function AdminPage() {
       setOrgLogoUrl(data?.logo_url || "");
       setPendingLoginEmail(data?.pending_login_email || "");
       setLoginEmailChangeStatus((data?.login_email_change_status as "none" | "requested") || "none");
+      setAccountDeletionStatus((data?.account_deletion_status as "none" | "requested") || "none");
       setLoadingOrgName(false);
     });
   }, []);
@@ -328,6 +337,37 @@ export default function AdminPage() {
       setPasswordError(err instanceof Error ? err.message : "Couldn't update your password.");
     } finally {
       setChangingPassword(false);
+    }
+  }
+
+  async function handleRequestAccountDeletion() {
+    setDeleteAccountError("");
+    if (deleteAccountConfirmText.trim() !== orgName.trim()) {
+      setDeleteAccountError(`Type "${orgName}" to confirm.`);
+      return;
+    }
+    if (!deleteAccountPassword) {
+      setDeleteAccountError("Enter your password.");
+      return;
+    }
+    setDeletingAccount(true);
+    try {
+      const res = await fetch("/api/account/request-deletion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: deleteAccountPassword }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Couldn't submit that request.");
+      setAccountDeletionStatus("requested");
+      setShowDeleteAccountModal(false);
+      setDeleteAccountPassword("");
+      setDeleteAccountConfirmText("");
+      toast.success("Deletion requested — we'll review it and let you know.");
+    } catch (err) {
+      setDeleteAccountError(err instanceof Error ? err.message : "Couldn't submit that request.");
+    } finally {
+      setDeletingAccount(false);
     }
   }
 
@@ -913,6 +953,98 @@ export default function AdminPage() {
             <div>
               <h2 className="font-semibold text-slate-800 mb-4">Two-factor authentication</h2>
               <TwoFactorSettings />
+            </div>
+
+            <ActiveDevicesSection />
+
+            <div>
+              <h2 className="font-semibold text-slate-800 mb-1">Delete account</h2>
+              {accountDeletionStatus === "requested" ? (
+                <div className="bg-white rounded-xl border border-amber-200 p-5">
+                  <p className="text-sm text-slate-700">
+                    Deletion requested for <span className="font-medium">{orgName}</span>.
+                  </p>
+                  <p className="text-xs text-slate-400 mt-2">
+                    Awaiting approval from the eventbuddy team — for security, account deletion isn&apos;t applied instantly.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-slate-500 mb-4">
+                    Permanently deletes your account, your organization, and everything under it — events, registrations, leads, and staff. This can&apos;t
+                    be undone.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteAccountModal(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-rose-600 text-sm font-medium text-white hover:bg-rose-700 transition-transform active:scale-[0.97]"
+                  >
+                    <AlertTriangle size={15} />
+                    Delete my account
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {showDeleteAccountModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
+            <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
+              <h2 className="font-semibold text-slate-900 text-lg mb-2">Request account deletion?</h2>
+              <p className="text-sm text-slate-600">
+                This requests permanent deletion of <span className="font-semibold">{orgName}</span> and everything under it — events, registrations,
+                leads, and staff. A platform admin reviews and approves it before it takes effect.
+              </p>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Type <span className="font-semibold">{orgName}</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteAccountConfirmText}
+                  onChange={(e) => setDeleteAccountConfirmText(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Your password</label>
+                <input
+                  type="password"
+                  value={deleteAccountPassword}
+                  onChange={(e) => setDeleteAccountPassword(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+              {deleteAccountError && (
+                <div className="flex items-start gap-2 p-3 mt-4 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                  <AlertCircle size={15} className="mt-0.5 shrink-0" />
+                  {deleteAccountError}
+                </div>
+              )}
+              <div className="flex gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteAccountModal(false);
+                    setDeleteAccountPassword("");
+                    setDeleteAccountConfirmText("");
+                    setDeleteAccountError("");
+                  }}
+                  disabled={deletingAccount}
+                  className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRequestAccountDeletion}
+                  disabled={deletingAccount}
+                  className="flex-1 py-2.5 rounded-lg bg-rose-600 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60"
+                >
+                  {deletingAccount ? "Requesting…" : "Request deletion"}
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -7,6 +7,34 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Best-effort "Browser on OS" label for a raw User-Agent string (e.g. from
+ *  auth.sessions) — covers the common desktop/mobile browsers and platforms,
+ *  not an exhaustive UA database. Order matters: Edge/Opera UAs also contain
+ *  "Chrome", and iOS Chrome/Firefox UAs also contain "Safari", so the more
+ *  specific brand must be checked first. */
+export function parseUserAgent(ua: string | null | undefined): { browser: string; os: string; isMobile: boolean } {
+  const s = ua || "";
+  const isMobile = /Mobile|Android|iPhone|iPad/.test(s);
+  let browser = "Unknown browser";
+  if (/Edg\//.test(s)) browser = "Edge";
+  else if (/OPR\/|Opera/.test(s)) browser = "Opera";
+  else if (/Chrome\//.test(s)) browser = "Chrome";
+  else if (/CriOS\//.test(s)) browser = "Chrome";
+  else if (/FxiOS\//.test(s)) browser = "Firefox";
+  else if (/Firefox\//.test(s)) browser = "Firefox";
+  else if (/Safari\//.test(s)) browser = "Safari";
+
+  let os = "Unknown OS";
+  if (/Windows/.test(s)) os = "Windows";
+  else if (/iPhone|iPad|iPod/.test(s)) os = "iOS";
+  else if (/Mac OS X/.test(s)) os = "macOS";
+  else if (/Android/.test(s)) os = "Android";
+  else if (/CrOS/.test(s)) os = "ChromeOS";
+  else if (/Linux/.test(s)) os = "Linux";
+
+  return { browser, os, isMobile };
+}
+
 /**
  * Guards any admin-authored free-text URL (currently: an event's virtual join
  * link) before it's ever used as an `href`. React doesn't sanitize `href`
