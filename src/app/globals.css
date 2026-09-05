@@ -323,6 +323,10 @@ select {
    hand rather than pulling in @tailwindcss/typography, which this project
    doesn't otherwise use, purely for these few tags Tiptap's StarterKit
    produces (p/strong/em/ul/ol/li/a/br). */
+.rich-text-content {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
 .rich-text-content p {
   margin: 0.35em 0;
 }

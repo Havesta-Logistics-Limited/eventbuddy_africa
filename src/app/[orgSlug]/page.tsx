@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { OrgProfileContent } from "@/components/org-profile-content";
 import { PublicHeader, RegisterPageContent } from "@/components/register-page-content";
-import { buildEventJsonLd, canonicalEventUrl, resolveEventForOg } from "@/lib/event-og-image";
+import { buildEventJsonLd, canonicalEventUrl, resolveEventForOg, safeJsonLdString } from "@/lib/event-og-image";
 import { formatDate, formatTime } from "@/lib/utils";
 
 type Params = { orgSlug: string };
@@ -76,7 +76,7 @@ export default async function RootSlugPage({ params }: { params: Promise<Params>
     return (
       <>
         {event && (
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildEventJsonLd(event, canonicalEventUrl(eventOrgSlug, event))) }} />
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLdString(buildEventJsonLd(event, canonicalEventUrl(eventOrgSlug, event))) }} />
         )}
         <RegisterPageContent orgSlug={eventOrgSlug} eventIdOrSlug={slug} />
       </>

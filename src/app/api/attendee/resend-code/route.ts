@@ -74,27 +74,26 @@ export async function POST(request: Request) {
     return rateLimitedResponse();
   }
 
+  // Deliberately always responds { success: true } for a well-formed email —
+  // same anti-enumeration reasoning as forgot-password: whether an account
+  // exists at all, and whether it's already verified, never reaches the
+  // response. The real conditional (does an unverified account exist, does a
+  // code actually go out) only affects whether an email is sent, never what
+  // the caller sees.
   const user = await findUserByEmail(email);
-  if (!user) {
-    return NextResponse.json({ error: "No account found with that email." }, { status: 404 });
-  }
-  if (user.confirmed_at) {
-    return NextResponse.json({ error: "This account is already verified — try logging in." }, { status: 400 });
-  }
-
-  const supabase = createAdminClient();
-  const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-    type: "signup",
-    email,
-    password: `throwaway-${crypto.randomUUID()}`,
-  });
-  if (linkError || !linkData.user) {
-    return NextResponse.json({ error: linkError?.message || "Couldn't send a new code." }, { status: 400 });
+  if (user && !user.confirmed_at) {
+    const supabase = createAdminClient();
+    const { data: linkData } = await supabase.auth.admin.generateLink({
+      type: "signup",
+      email,
+      password: `throwaway-${crypto.randomUUID()}`,
+    });
+    const code = linkData?.properties?.email_otp;
+    if (code) {
+      const firstName = ((user.user_metadata?.full_name as string) || "there").trim().split(/\s+/)[0];
+      await sendVerificationEmail(email, firstName, code);
+    }
   }
 
-  const code = linkData.properties?.email_otp;
-  const firstName = ((user.user_metadata?.full_name as string) || "there").trim().split(/\s+/)[0];
-  const emailSent = code ? await sendVerificationEmail(email, firstName, code) : false;
-
-  return NextResponse.json({ success: true, emailSent });
+  return NextResponse.json({ success: true });
 }

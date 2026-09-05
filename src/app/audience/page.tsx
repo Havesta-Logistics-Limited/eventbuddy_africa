@@ -265,12 +265,12 @@ function SentBlastsSection({ orgId }: { orgId: string }) {
 
   return (
     <div className="mt-8 bg-white rounded-2xl border border-slate-200 overflow-hidden">
-      <button type="button" onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
-        <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-          <Send size={15} className="text-slate-400" />
-          Sent Blasts/Newsletters {!loading && `(${rows.length})`}
+      <button type="button" onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between gap-2 px-4 py-3.5 text-left">
+        <span className="flex items-center gap-2 text-sm font-medium text-slate-700 min-w-0 truncate">
+          <Send size={15} className="text-slate-400 shrink-0" />
+          <span className="truncate">Sent Blasts/Newsletters {!loading && `(${rows.length})`}</span>
         </span>
-        <ChevronDown size={15} className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={15} className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
         <div className="border-t border-slate-100">
@@ -426,7 +426,7 @@ export default function AudiencePage() {
             <h1 className="font-display text-2xl text-slate-900">Audience</h1>
             <p className="text-slate-500 text-sm mt-0.5">Everyone who&apos;s registered for one of your events or followed you directly.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowBlast(true)}
               disabled={members.length === 0}

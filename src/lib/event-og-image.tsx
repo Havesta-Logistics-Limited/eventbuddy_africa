@@ -115,6 +115,16 @@ export function buildEventJsonLd(event: OgEvent, canonicalUrl: string) {
   return jsonLd;
 }
 
+/** JSON.stringify doesn't escape `<`, so an org-controlled field (event name,
+ *  venue, location, description) containing the literal text "</script>"
+ *  would close this tag early and turn whatever follows into live, parsed
+ *  HTML — a stored XSS hitting every visitor of the page. Every caller that
+ *  injects buildEventJsonLd's result via dangerouslySetInnerHTML must go
+ *  through this instead of a raw JSON.stringify. */
+export function safeJsonLdString(jsonLd: unknown): string {
+  return JSON.stringify(jsonLd).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+}
+
 /** Builds the actual share-card image (Satori/next-og, so only a constrained CSS
  *  subset applies — flexbox only, `display: flex` on every box) — a two-panel card
  *  matching Luma's own share-card composition: a branded panel with the event name

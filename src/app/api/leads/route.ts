@@ -82,16 +82,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 403 });
   }
 
+  // A client-supplied registrationId must actually belong to this staffId's own
+  // event before it's trusted for anything below — otherwise a tampered request
+  // could attach an arbitrary UUID (another org's registration) to this lead.
+  let registrationId = body.registrationId || null;
+  if (registrationId) {
+    const { data: registration } = await supabase.from("registrations").select("id").eq("id", registrationId).eq("event_id", staffRow.event_id).maybeSingle();
+    if (!registration) registrationId = null;
+  }
+
   // A lead pulled from a registration (see /api/registrations/lookup) can only be
   // collected once per university — the same attendee visiting a different university's
   // booth is a legitimate second lead, so this is scoped to (registration, university),
   // not just (registration, event). Re-checked here rather than trusted from the lookup
   // response, since time can pass between pulling the data and hitting Save.
-  if (body.registrationId && staffRow.university_id) {
+  if (registrationId && staffRow.university_id) {
     const { data: existing } = await supabase
       .from("leads")
       .select("id")
-      .eq("registration_id", body.registrationId)
+      .eq("registration_id", registrationId)
       .eq("university_id", staffRow.university_id)
       .maybeSingle();
     if (existing) {
@@ -107,7 +116,7 @@ export async function POST(request: Request) {
       destination_id: staffRow.destination_id ?? null,
       university_id: staffRow.university_id ?? null,
       staff_id: staffRow.id,
-      registration_id: body.registrationId || null,
+      registration_id: registrationId,
       first_name: firstName,
       middle_name: body.middleName || null,
       last_name: lastName,

@@ -81,7 +81,10 @@ export async function POST(request: Request) {
     options: { data: { full_name: fullName, phone, account_type: "attendee" } },
   });
   if (linkError || !linkData.user) {
-    return NextResponse.json({ error: linkError?.message || "Couldn't create that account." }, { status: 400 });
+    // Never pass linkError.message through — GoTrue's own wording discloses that
+    // an account with this email already exists, letting an attacker enumerate
+    // registered emails. See src/app/api/signup/route.ts's identical fix.
+    return NextResponse.json({ error: "Couldn't create that account. If you already have one, try logging in instead." }, { status: 400 });
   }
 
   const code = linkData.properties?.email_otp;

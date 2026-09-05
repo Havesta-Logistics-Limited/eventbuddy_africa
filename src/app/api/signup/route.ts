@@ -128,7 +128,13 @@ export async function POST(request: Request) {
     options: { redirectTo: new URL("/login?verified=1", request.url).toString(), data: { full_name: fullName } },
   });
   if (linkError || !linkData.user) {
-    return NextResponse.json({ error: linkError?.message || "Couldn't create that account." }, { status: 400 });
+    // Never pass linkError.message through — GoTrue's own wording for this call
+    // discloses "a user with this email already exists", which lets an attacker
+    // enumerate registered emails one signup attempt at a time. Zod above already
+    // caught malformed input, so the only realistic failure left at this point is
+    // a duplicate email (or an outage) — this generic message covers both without
+    // confirming which.
+    return NextResponse.json({ error: "Couldn't create that account. If you already have one, try logging in instead." }, { status: 400 });
   }
   const created = linkData.user;
 

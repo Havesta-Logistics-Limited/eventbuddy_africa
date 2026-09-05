@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { RegisterPageContent } from "@/components/register-page-content";
-import { buildEventJsonLd, canonicalEventPath, canonicalEventUrl, resolveEventForOg } from "@/lib/event-og-image";
+import { buildEventJsonLd, canonicalEventPath, canonicalEventUrl, resolveEventForOg, safeJsonLdString } from "@/lib/event-og-image";
 import { formatDate, formatTime } from "@/lib/utils";
 
 type Params = { orgSlug: string; eventId: string };
@@ -40,7 +40,7 @@ export default async function RegisterPage({ params }: { params: Promise<Params>
   return (
     <>
       {event && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildEventJsonLd(event, canonicalEventUrl(orgSlug, event))) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLdString(buildEventJsonLd(event, canonicalEventUrl(orgSlug, event))) }} />
       )}
       <RegisterPageContent orgSlug={orgSlug} eventIdOrSlug={eventId} />
     </>

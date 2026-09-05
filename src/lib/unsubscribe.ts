@@ -3,11 +3,12 @@ import { createHmac, timingSafeEqual } from "crypto";
 /** Signs/verifies an org+email pair for one-click unsubscribe links, without
  *  needing a stored per-recipient token the way organization_followers'
  *  unsubscribe_token does — a blast reaches registrants/leads too, who have no
- *  such column. Keyed on CRON_SECRET: already a private, production-provisioned
- *  secret with no other public exposure, and unrelated in purpose but fine to
- *  reuse for this — swap to a dedicated secret if that ever changes. */
+ *  such column. Prefers a dedicated UNSUBSCRIBE_SECRET; falls back to CRON_SECRET
+ *  only so already-issued links (signed before this env var existed) keep
+ *  verifying — set UNSUBSCRIBE_SECRET in production and this stops touching
+ *  CRON_SECRET entirely. */
 function sign(organizationId: string, email: string): string {
-  const secret = process.env.CRON_SECRET || "";
+  const secret = process.env.UNSUBSCRIBE_SECRET || process.env.CRON_SECRET || "";
   return createHmac("sha256", secret).update(`${organizationId}:${email.toLowerCase()}`).digest("hex");
 }
 
