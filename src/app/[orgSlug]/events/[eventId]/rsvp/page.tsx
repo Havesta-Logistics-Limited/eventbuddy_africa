@@ -7,6 +7,7 @@ import QRCode from "qrcode";
 import { AlertCircle, Calendar, Check, Copy, ExternalLink, HelpCircle, MapPin, MapPinCheckInside, ThumbsDown, ThumbsUp, Video, X } from "lucide-react";
 import { FieldDef } from "@/lib/types";
 import { formatDate, formatTime, safeHttpUrl } from "@/lib/utils";
+import { RichTextDisplay } from "@/components/rich-text-display";
 
 type RsvpEvent = {
   name: string;
@@ -323,7 +324,7 @@ export default function RsvpPage() {
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <p className="text-sm text-slate-600 mb-1">Hi {guest.fullName.split(" ")[0]},</p>
-            {event.description && <p className="text-sm text-slate-600 mb-5">{event.description}</p>}
+            {event.description && <RichTextDisplay html={event.description} className="text-sm text-slate-600 mb-5" />}
 
             {submitError && (
               <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-rose-50 text-rose-700 text-sm">

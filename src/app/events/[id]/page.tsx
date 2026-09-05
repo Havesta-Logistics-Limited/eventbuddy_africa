@@ -59,6 +59,7 @@ import { QaTab } from "@/components/event-qa-tab";
 import { PollsTab } from "@/components/event-polls-tab";
 import { AnnouncementsTab } from "@/components/event-announcements-tab";
 import { SurveyTab } from "@/components/event-survey-tab";
+import { RichTextDisplay } from "@/components/rich-text-display";
 import { GuestListTab } from "@/components/event-guest-list-tab";
 import { EventHubQrModal } from "@/components/event-hub-qr-modal";
 import { RowSkeleton } from "@/components/skeleton";
@@ -423,7 +424,9 @@ export default function EventDetailPage() {
                 <p className="text-xs text-slate-400 mt-1">{event.virtualAccessNotes}</p>
               )}
               {event.description && event.description.trim() !== event.name.trim() && (
-                <p className="text-slate-600 text-sm mt-3 pt-3 border-t border-slate-100">{event.description}</p>
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <RichTextDisplay html={event.description} className="text-slate-600 text-sm" />
+                </div>
               )}
               {event.published === false && (
                 <p className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-3 w-fit">
