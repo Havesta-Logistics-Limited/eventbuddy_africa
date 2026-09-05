@@ -113,6 +113,7 @@ function mapUniversityRow(u: { id: string; destination_id: string; name: string;
 function mapEventRow(e: {
   id: string;
   slug: string | null;
+  checkin_slug: string | null;
   name: string;
   date: string;
   end_date: string | null;
@@ -153,6 +154,7 @@ function mapEventRow(e: {
   return {
     id: e.id,
     slug: e.slug ?? undefined,
+    checkinSlug: e.checkin_slug ?? undefined,
     name: e.name,
     date: e.date,
     endDate: e.end_date ?? undefined,
@@ -194,6 +196,7 @@ function mapEventRow(e: {
 function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   const row: Record<string, unknown> = {};
   if (input.slug !== undefined) row.slug = input.slug || null;
+  if (input.checkinSlug !== undefined) row.checkin_slug = input.checkinSlug || null;
   if (input.name !== undefined) row.name = input.name;
   if (input.date !== undefined) row.date = input.date;
   if (input.endDate !== undefined) row.end_date = input.endDate || null;

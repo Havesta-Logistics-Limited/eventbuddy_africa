@@ -71,7 +71,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, name, date, end_date, start_time, end_time, timezone, capture_override, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location, self_registration_enabled, published, requires_approval, waitlist_enabled"
+      "id, slug, name, date, end_date, start_time, end_time, timezone, capture_override, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location, self_registration_enabled, published, requires_approval, waitlist_enabled"
     )
     .eq("id", eventId)
     .eq("organization_id", org.id)
@@ -138,7 +138,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
         email: attendeeEmail,
         fullName: attendeeName,
       });
-      return buildHubUrl(siteUrl, slug, resolvedEventId, hubToken);
+      return buildHubUrl(siteUrl, slug, event!, hubToken);
     } catch {
       return undefined;
     }

@@ -35,9 +35,15 @@ export async function ensureHubMember(
   return { hubToken: existing.hub_token };
 }
 
-export function hubUrl(siteUrl: string, orgSlug: string, eventId: string, hubToken: string): string {
-  return `${siteUrl}/${orgSlug}/events/${eventId}/hub?token=${encodeURIComponent(hubToken)}`;
+/** Uses the event's own slug when it has one — shorter and readable, same
+ *  reasoning as the register and check-in links — falling back to the raw id
+ *  for an event with none. verifyHubMember below resolves either form back to
+ *  the real event, so an already-mailed id-based Hub link keeps working. */
+export function hubUrl(siteUrl: string, orgSlug: string, event: { id: string; slug?: string | null }, hubToken: string): string {
+  return `${siteUrl}/${orgSlug}/events/${event.slug || event.id}/hub?token=${encodeURIComponent(hubToken)}`;
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Resolves an org slug + hub_token into the member row it belongs to — the shared
@@ -46,23 +52,32 @@ export function hubUrl(siteUrl: string, orgSlug: string, eventId: string, hubTok
  * mismatch rather than throwing, so callers can respond with a uniform 403 without
  * distinguishing "no such org" from "wrong token" — that distinction isn't useful
  * to an attacker probing this endpoint, and isn't needed by a legitimate caller
- * either (they either have their own real link, or they don't).
+ * either (they either have their own real link, or they don't). `eventId` may be
+ * a real id or the event's slug (see hubUrl) — resolved here once, and the real
+ * id is returned so callers never need to re-resolve it for their own queries
+ * against event_sessions/event_questions/etc., whose event_id columns are
+ * always the real uuid, never a slug.
  */
 export async function verifyHubMember(
   admin: SupabaseClient,
   params: { slug: string; eventId: string; token: string }
-): Promise<{ organizationId: string; memberId: string; fullName: string; email: string } | null> {
+): Promise<{ organizationId: string; eventId: string; memberId: string; fullName: string; email: string } | null> {
   const { data: org } = await admin.from("organizations").select("id").ilike("slug", params.slug).maybeSingle();
   if (!org) return null;
+
+  const { data: event } = UUID_RE.test(params.eventId)
+    ? await admin.from("events").select("id").eq("organization_id", org.id).eq("id", params.eventId).maybeSingle()
+    : await admin.from("events").select("id").eq("organization_id", org.id).eq("slug", params.eventId).maybeSingle();
+  if (!event) return null;
 
   const { data: member } = await admin
     .from("event_hub_members")
     .select("id, full_name, email")
-    .eq("event_id", params.eventId)
+    .eq("event_id", event.id)
     .eq("organization_id", org.id)
     .eq("hub_token", params.token)
     .maybeSingle();
   if (!member) return null;
 
-  return { organizationId: org.id, memberId: member.id, fullName: member.full_name, email: member.email };
+  return { organizationId: org.id, eventId: event.id, memberId: member.id, fullName: member.full_name, email: member.email };
 }

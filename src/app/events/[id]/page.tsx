@@ -61,7 +61,7 @@ import { AnnouncementsTab } from "@/components/event-announcements-tab";
 import { SurveyTab } from "@/components/event-survey-tab";
 import { RichTextDisplay } from "@/components/rich-text-display";
 import { GuestListTab } from "@/components/event-guest-list-tab";
-import { EventHubQrModal } from "@/components/event-hub-qr-modal";
+import { EventQrModal } from "@/components/event-qr-modal";
 import { RowSkeleton } from "@/components/skeleton";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AuthLoading } from "@/components/auth-loading";
@@ -126,6 +126,7 @@ export default function EventDetailPage() {
   const [duplicating, setDuplicating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [showHubQr, setShowHubQr] = useState(false);
+  const [showRegQr, setShowRegQr] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -231,14 +232,19 @@ export default function EventDetailPage() {
     }
   }
 
-  async function handleCopyLink() {
-    if (!event || typeof window === "undefined") return;
-    // The short universal format once a slug is set (no org segment, no
-    // /discover prefix — see src/app/[orgSlug]/page.tsx); falls back to the
-    // older org-scoped form for an event with no slug.
-    const link = event.slug
+  // The short universal format once a slug is set (no org segment, no
+  // /discover prefix — see src/app/[orgSlug]/page.tsx); falls back to the
+  // older org-scoped form for an event with no slug.
+  function registrationLink() {
+    if (!event || typeof window === "undefined") return "";
+    return event.slug
       ? `${window.location.origin}/${event.slug}`
       : `${window.location.origin}/${session?.orgSlug ?? ""}/events/${event.id}/register`;
+  }
+
+  async function handleCopyLink() {
+    const link = registrationLink();
+    if (!link) return;
     await navigator.clipboard.writeText(link);
     setLinkCopied(true);
     toast.success("Link copied");
@@ -448,6 +454,13 @@ export default function EventDetailPage() {
                     {publishing ? "Publishing…" : "Publish Event"}
                   </button>
                 )}
+                <button
+                  onClick={() => setShowRegQr(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <QrCode size={14} />
+                  Registration QR
+                </button>
                 <button
                   onClick={() => setShowHubQr(true)}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
@@ -884,10 +897,22 @@ export default function EventDetailPage() {
         )}
 
         {showHubQr && typeof window !== "undefined" && (
-          <EventHubQrModal
-            eventName={event.name}
-            hubUrl={`${window.location.origin}/${session.orgSlug}/events/${event.id}/hub`}
+          <EventQrModal
+            title="Event Hub QR Code"
+            description={`Scanning this takes anyone straight to the ${event.name} hub — schedule, speakers, and Q&A.`}
+            url={`${window.location.origin}/${session.orgSlug}/events/${event.slug || event.id}/hub`}
+            downloadName={`${event.name.replace(/[^a-z0-9]/gi, "_")}_hub_qr.png`}
             onClose={() => setShowHubQr(false)}
+          />
+        )}
+
+        {showRegQr && typeof window !== "undefined" && (
+          <EventQrModal
+            title="Registration QR Code"
+            description={`Scanning this takes anyone straight to the ${event.name} registration page.`}
+            url={registrationLink()}
+            downloadName={`${event.name.replace(/[^a-z0-9]/gi, "_")}_registration_qr.png`}
+            onClose={() => setShowRegQr(false)}
           />
         )}
 

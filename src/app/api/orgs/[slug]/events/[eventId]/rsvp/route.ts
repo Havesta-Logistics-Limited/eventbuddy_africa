@@ -106,7 +106,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const { data: event } = await admin
     .from("events")
     .select(
-      "id, name, date, end_date, start_time, end_time, timezone, capture_override, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location, published"
+      "id, slug, name, date, end_date, start_time, end_time, timezone, capture_override, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location, published"
     )
     .eq("id", eventId)
     .eq("organization_id", guest.organizationId)
@@ -154,7 +154,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   async function tryHubUrl(attendeeEmail: string, attendeeName: string): Promise<string | undefined> {
     try {
       const { hubToken } = await ensureHubMember(admin, { organizationId: guest!.organizationId, eventId, email: attendeeEmail, fullName: attendeeName });
-      return buildHubUrl(siteUrl, slug, eventId, hubToken);
+      return buildHubUrl(siteUrl, slug, event!, hubToken);
     } catch {
       return undefined;
     }

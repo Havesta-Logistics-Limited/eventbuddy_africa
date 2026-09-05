@@ -49,7 +49,10 @@ export default function RepLoginPage() {
         setUniversities(data.universities);
         const events: CheckinEvent[] = data.events;
         const pinnedMatch =
-          pinnedEvent && events.find((e) => (e.id === pinnedEvent || e.slug === pinnedEvent) && getTemplate(e.templateId).usesDestinations && e.allowRepAccess !== false);
+          pinnedEvent &&
+          events.find(
+            (e) => (e.id === pinnedEvent || e.checkinSlug === pinnedEvent || e.slug === pinnedEvent) && getTemplate(e.templateId).usesDestinations && e.allowRepAccess !== false
+          );
         if (pinnedMatch) setSelectedEventId(pinnedMatch.id);
       })
       .catch(() => setLoadError("Couldn't load this page. Check your connection and try again."))

@@ -6,6 +6,7 @@ type OrgRow = { id: string; name: string; slug: string };
 type EventRow = {
   id: string;
   slug: string | null;
+  checkin_slug: string | null;
   name: string;
   date: string;
   end_date: string | null;
@@ -84,6 +85,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
     events: events.map((e) => ({
       id: e.id,
       slug: e.slug ?? undefined,
+      checkinSlug: e.checkin_slug ?? undefined,
       name: e.name,
       date: e.date,
       endDate: e.end_date ?? undefined,

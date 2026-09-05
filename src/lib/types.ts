@@ -52,6 +52,10 @@ export interface EventRecord {
    *  "career-fair-2026" instead of the raw id), unique per organization
    *  (case-insensitive). Unset events keep working off their raw id. */
   slug?: string;
+  /** Optional custom slug for this event's staff/rep check-in link — fully
+   *  independent of `slug` above; the registration link and check-in link
+   *  are shared with different audiences and must never move together. */
+  checkinSlug?: string;
   name: string;
   date: string; // ISO date, start
   endDate?: string;

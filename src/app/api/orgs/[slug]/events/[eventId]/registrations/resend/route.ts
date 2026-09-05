@@ -36,7 +36,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, name, date, start_time, end_time, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location")
+    .select("id, slug, name, date, start_time, end_time, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location")
     .eq("id", eventId)
     .eq("organization_id", org.id)
     .maybeSingle();
@@ -62,7 +62,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     let hub: string | undefined;
     try {
       const { hubToken } = await ensureHubMember(admin, { organizationId: org.id, eventId: event.id, email: reg.email, fullName: reg.full_name });
-      hub = buildHubUrl(siteUrl, org.slug, event.id, hubToken);
+      hub = buildHubUrl(siteUrl, org.slug, event, hubToken);
     } catch {
       hub = undefined;
     }

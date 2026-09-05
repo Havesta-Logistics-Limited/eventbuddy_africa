@@ -230,7 +230,7 @@ async function resolveHubUrlForTxn(supabase: SupabaseClient, txn: PendingTicketT
       email: info.email,
       fullName: `${info.firstName} ${info.lastName}`,
     });
-    return buildHubUrl(siteUrl, org.slug, txn.event_id, hubToken);
+    return buildHubUrl(siteUrl, org.slug, { id: txn.event_id }, hubToken);
   } catch {
     return undefined;
   }
@@ -347,7 +347,7 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
 
   const { data: event, error: eventErr } = await supabase
     .from("events")
-    .select("name, date, start_time, end_time, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location")
+    .select("id, slug, name, date, start_time, end_time, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location")
     .eq("id", txn.event_id)
     .maybeSingle();
   if (!event) {
@@ -364,7 +364,7 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
       if (!org?.slug) return undefined;
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://eventbuddy.africa";
       const { hubToken } = await ensureHubMember(supabase, { organizationId: txn.organization_id, eventId: txn.event_id, email: attendeeEmail, fullName: attendeeName });
-      return buildHubUrl(siteUrl, org.slug, txn.event_id, hubToken);
+      return buildHubUrl(siteUrl, org.slug, event!, hubToken);
     } catch {
       return undefined;
     }

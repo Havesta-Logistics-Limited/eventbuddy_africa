@@ -57,7 +57,7 @@ export default function StaffSetupPage() {
         setDestinations(data.destinations);
         setUniversities(data.universities);
         setStaffMembers(data.staff);
-        const pinnedMatch = pinnedEvent && data.events.find((e: CheckinEvent) => e.id === pinnedEvent || e.slug === pinnedEvent);
+        const pinnedMatch = pinnedEvent && data.events.find((e: CheckinEvent) => e.id === pinnedEvent || e.checkinSlug === pinnedEvent || e.slug === pinnedEvent);
         if (pinnedMatch) setSelectedEventId(pinnedMatch.id);
       })
       .catch(() => setLoadError("Couldn't load this page. Check your connection and try again."))
