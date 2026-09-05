@@ -31,7 +31,10 @@ const ALT_RE = /alt\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
 // Anchored to the start of the style value (not just "contains width:...")
 // specifically so it can't greedily match "max-width:100%" instead of the
 // real "width:NN%" that always comes first in what this file itself emits.
-const IMG_WIDTH_RE = /style\s*=\s*(?:"width:(\d{1,3})%|'width:(\d{1,3})%)/i;
+// \s* after the colon because the DOM's own style serialization (what the
+// editor's getHTML() actually produces) inserts a space — "width: 55%", not
+// "width:55%" — confirmed against the real Tiptap output, not assumed.
+const IMG_WIDTH_RE = /style\s*=\s*(?:"width:\s*(\d{1,3})%|'width:\s*(\d{1,3})%)/i;
 
 /** Safe to pass straight to dangerouslySetInnerHTML. */
 export function sanitizeRichTextHtml(html: string): string {

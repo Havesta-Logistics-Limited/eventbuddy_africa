@@ -40,7 +40,7 @@ function firstName(fullName: string) {
  *  registration QR email already uses this exact cid:/attachments pattern
  *  instead of an inline data URL. Remote https:// images pass through
  *  untouched (already real, loadable URLs). */
-function extractInlineImages(html: string): { html: string; attachments: { filename: string; content: string; contentId: string }[] } {
+export function extractInlineImages(html: string): { html: string; attachments: { filename: string; content: string; contentId: string }[] } {
   let count = 0;
   const attachments: { filename: string; content: string; contentId: string }[] = [];
   const rewritten = html.replace(/<img\s+[^>]*src="data:image\/([a-zA-Z0-9.+-]+);base64,([^"]+)"[^>]*>/g, (full, subtype: string, base64: string) => {

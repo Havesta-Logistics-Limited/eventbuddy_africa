@@ -107,7 +107,12 @@ export function RichTextEditor({
         link: { openOnClick: false, autolink: true, HTMLAttributes: { rel: "noreferrer noopener", target: "_blank" } },
       }),
       Placeholder.configure({ placeholder: placeholder || "" }),
-      ...(allowImages ? [ResizableImage] : []),
+      // allowBase64 defaults to false, meaning Tiptap's own HTML parser would
+      // silently drop a data: URL image the next time this content gets
+      // re-parsed (setContent, or a fresh editor instance loading saved
+      // content) — since every image here is stored as a data URL (same
+      // convention as every other image upload in this app), this must be on.
+      ...(allowImages ? [ResizableImage.configure({ allowBase64: true })] : []),
     ],
     content: value,
     immediatelyRender: false,
