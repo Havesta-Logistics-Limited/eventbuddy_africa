@@ -1782,6 +1782,29 @@ export async function login(
   return finishAdminLogin(supabase, data.user);
 }
 
+/** Completes an "accept invite" flow — the browser already has a live Supabase
+ *  Auth session from clicking the invite link (the client SDK picks it up
+ *  automatically on landing), so this just sets the invited teammate's real
+ *  password, flips their organization_members row to active, and resolves the
+ *  session the same way login() would. */
+export async function acceptInvite(password: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = createSupabaseBrowserClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) return { success: false, error: "This invite link has expired. Ask for a new one." };
+
+  const { error: pwError } = await supabase.auth.updateUser({ password });
+  if (pwError) return { success: false, error: pwError.message };
+
+  const res = await fetch("/api/members/accept", { method: "POST" });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) return { success: false, error: json.error || "Couldn't activate your account." };
+
+  return finishAdminLogin(supabase, user);
+}
+
 /** Completes a login that stopped at the 2FA step — verifies the code against the
  *  factor login() already identified, then runs the same session-bridge login()
  *  would have run directly if 2FA weren't enabled. */

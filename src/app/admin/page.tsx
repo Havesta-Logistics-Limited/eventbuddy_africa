@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertCircle, Plus, Users, X, Edit2, Trash2, Landmark, ShieldCheck, UserCircle, Loader2 } from "lucide-react";
 import { Shell } from "@/components/shell";
@@ -93,6 +93,14 @@ export default function AdminPage() {
   const [savingLogo, setSavingLogo] = useState(false);
   const [logoUploadError, setLogoUploadError] = useState("");
   const [logoCropSource, setLogoCropSource] = useState<string | null>(null);
+  const [members, setMembers] = useState<{ id: string; email: string; role: "admin" | "event_support"; eventId: string | null; status: "pending" | "active" }[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"admin" | "event_support">("admin");
+  const [inviteEventId, setInviteEventId] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [loginEmailDraft, setLoginEmailDraft] = useState("");
   const [loginEmailChangeStatus, setLoginEmailChangeStatus] = useState<"none" | "requested">("none");
   const [pendingLoginEmail, setPendingLoginEmail] = useState("");
@@ -123,6 +131,62 @@ export default function AdminPage() {
       setLoadingOrgName(false);
     });
   }, []);
+
+  const fetchMembers = useCallback(async (id: string) => {
+    setLoadingMembers(true);
+    const supabase = createSupabaseBrowserClient();
+    const { data } = await supabase.from("organization_members").select("id, email, role, event_id, status").eq("organization_id", id).order("invited_at", { ascending: true });
+    setMembers((data ?? []).map((m) => ({ id: m.id, email: m.email, role: m.role, eventId: m.event_id, status: m.status })));
+    setLoadingMembers(false);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (orgId) fetchMembers(orgId);
+  }, [orgId, fetchMembers]);
+
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault();
+    if (!session?.orgSlug || !inviteEmail.trim()) return;
+    if (inviteRole === "event_support" && !inviteEventId) {
+      setInviteError("Pick the event this person will support.");
+      return;
+    }
+    setInviting(true);
+    setInviteError("");
+    try {
+      const res = await fetch(`/api/orgs/${encodeURIComponent(session.orgSlug)}/members/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole, eventId: inviteRole === "event_support" ? inviteEventId : undefined }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Couldn't send that invite.");
+      toast.success(json.emailSent ? "Invite sent" : "Invite created — but the email couldn't be sent");
+      setInviteEmail("");
+      setInviteEventId("");
+      if (orgId) await fetchMembers(orgId);
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : "Couldn't send that invite.");
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  async function handleRemoveMember(id: string) {
+    setRemovingMemberId(id);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.from("organization_members").delete().eq("id", id);
+      if (error) throw error;
+      setMembers((prev) => prev.filter((m) => m.id !== id));
+      toast.success("Removed from your team");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't remove that person.");
+    } finally {
+      setRemovingMemberId(null);
+    }
+  }
 
   // Lost access to your login email entirely (not just a normal address
   // update) — Supabase's own self-service email change would send a
@@ -543,6 +607,98 @@ export default function AdminPage() {
                   </button>
                 </form>
               )}
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-slate-800 mb-4">Team</h2>
+              <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                <p className="text-xs text-slate-500 -mt-1">
+                  Invite teammates with their own dashboard login — Admins get identical access to you; Event Support is locked to one event.
+                </p>
+                {loadingMembers ? (
+                  <div className="h-16 rounded-lg bg-slate-100 animate-pulse" />
+                ) : members.length > 0 ? (
+                  <div className="space-y-2">
+                    {members.map((m) => {
+                      const memberEvent = m.eventId ? events.find((e) => e.id === m.eventId) : undefined;
+                      return (
+                        <div key={m.id} className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg border border-slate-100 bg-slate-50/60">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-800 truncate">{m.email}</p>
+                            <p className="text-xs text-slate-500">
+                              {m.role === "admin" ? "Admin" : `Event Support — ${memberEvent?.name ?? "an event"}`}
+                              {m.status === "pending" && <span className="text-amber-600"> · Invite pending</span>}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMember(m.id)}
+                            disabled={removingMemberId === m.id}
+                            className="text-xs font-medium text-rose-600 hover:underline disabled:opacity-60 shrink-0"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                <form onSubmit={handleInvite} className="pt-2 border-t border-slate-100 space-y-3">
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1.5">Email</label>
+                      <input
+                        required
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="teammate@example.com"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1.5">Role</label>
+                      <select
+                        value={inviteRole}
+                        onChange={(e) => setInviteRole(e.target.value as "admin" | "event_support")}
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                      >
+                        <option value="admin">Admin</option>
+                        <option value="event_support">Event Support</option>
+                      </select>
+                    </div>
+                  </div>
+                  {inviteRole === "event_support" && (
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1.5">Event</label>
+                      <select
+                        required
+                        value={inviteEventId}
+                        onChange={(e) => setInviteEventId(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                      >
+                        <option value="" disabled>
+                          Select an event
+                        </option>
+                        {events.map((ev) => (
+                          <option key={ev.id} value={ev.id}>
+                            {ev.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {inviteError && <p className="text-xs text-rose-600">{inviteError}</p>}
+                  <button
+                    type="submit"
+                    disabled={inviting}
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
+                    style={{ background: "#C21FAF" }}
+                  >
+                    {inviting ? "Sending invite…" : "Send invite"}
+                  </button>
+                </form>
+              </div>
             </div>
 
             <div>

@@ -6,6 +6,7 @@
  *  by the static page instead). Checked at org signup (uniqueSlug) and when an
  *  organizer sets a custom event link (EventSlugEditor). */
 export const RESERVED_SLUGS = new Set([
+  "accept-invite",
   "admin",
   "api",
   "audience",
