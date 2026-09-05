@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Check, Edit2, X } from "lucide-react";
 import { EventRecord } from "@/lib/types";
 import { PersistError, updateEvent } from "@/lib/store";
+import { RESERVED_SLUGS } from "@/lib/reserved-slugs";
 
 function slugify(value: string) {
   return value
@@ -15,13 +16,13 @@ function slugify(value: string) {
 }
 
 /** Edits events.slug — the one custom link an event has, shared by both the
- *  register link (/discover/[slug]) and, since it's shorter and more readable
- *  than the raw event id, the staff/rep check-in links too (see
- *  CheckinLinksCard). Rendered in more than one place on the event page (the
- *  registration card up top, the Check-in links card in its own tab) since an
- *  organizer editing it from either one should see the same result — self-
- *  contained rather than lifted into shared page state, so each instance owns
- *  its own edit/save UI but they all write the same field. */
+ *  register link (/[slug], see src/app/[orgSlug]/page.tsx) and, since it's
+ *  shorter and more readable than the raw event id, the staff/rep check-in
+ *  links too (see CheckinLinksCard). Rendered in more than one place on the
+ *  event page (the registration card up top, the Check-in links card in its
+ *  own tab) since an organizer editing it from either one should see the same
+ *  result — self-contained rather than lifted into shared page state, so each
+ *  instance owns its own edit/save UI but they all write the same field. */
 export function EventSlugEditor({ event }: { event: EventRecord }) {
   const [editing, setEditing] = useState(false);
   const [input, setInput] = useState("");
@@ -30,6 +31,15 @@ export function EventSlugEditor({ event }: { event: EventRecord }) {
 
   async function handleSave() {
     const cleaned = slugify(input);
+    // Reserved words are the ones that would actually be unreachable (shadowed
+    // by a real page at that path — see reserved-slugs.ts); a collision with
+    // another org's own slug can't be checked here (RLS only lets this browser
+    // client see its own org's rows), but that failure mode is just a dead
+    // link the organizer would notice immediately, not a security issue.
+    if (cleaned && RESERVED_SLUGS.has(cleaned)) {
+      setError("That link is reserved — try another.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -67,7 +77,7 @@ export function EventSlugEditor({ event }: { event: EventRecord }) {
   return (
     <div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-400 shrink-0 hidden sm:inline">eventbuddy.africa/discover/</span>
+        <span className="text-xs text-slate-400 shrink-0 hidden sm:inline">eventbuddy.africa/</span>
         <input
           autoFocus
           value={input}

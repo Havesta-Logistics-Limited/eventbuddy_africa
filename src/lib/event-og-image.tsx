@@ -67,13 +67,15 @@ export async function resolveEventForOg(orgSlug: string, eventIdOrSlug: string):
   };
 }
 
-/** The canonical public URL for an event's register page — /discover/[slug] once it
- *  has a global slug (migration 0057), otherwise the older org-scoped form. Used both
- *  for the <link rel="canonical"> tag (so a slug and its org-scoped/id equivalent
- *  don't read as duplicate content to search engines) and as the JSON-LD `url`. A
- *  relative path — layout.tsx's metadataBase resolves it to an absolute URL. */
+/** The canonical public URL for an event's register page — /[slug] once it has a
+ *  global slug (migration 0057), resolved at the root by src/app/[orgSlug]/page.tsx
+ *  (org profile and event-by-slug share that one route), otherwise the older
+ *  org-scoped form. Used both for the <link rel="canonical"> tag (so a slug and
+ *  its org-scoped/id equivalent don't read as duplicate content to search
+ *  engines) and as the JSON-LD `url`. A relative path — layout.tsx's
+ *  metadataBase resolves it to an absolute URL. */
 export function canonicalEventPath(orgSlug: string, event: OgEvent) {
-  return event.slug ? `/discover/${event.slug}` : `/${orgSlug}/events/${event.id}/register`;
+  return event.slug ? `/${event.slug}` : `/${orgSlug}/events/${event.id}/register`;
 }
 
 /** Same path, as a full URL — schema.org's `url` property (unlike Next's

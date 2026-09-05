@@ -15,7 +15,11 @@ export const revalidate = 3600;
  *  (/[orgSlug]/events/[eventId]/register), which stay out of both this file and
  *  search entirely (see robots.ts) since they're meant to be reached only via a
  *  direct link an organizer shares. Everything else (dashboard, admin, staff/rep
- *  check-in links) is behind auth or a private link either way. */
+ *  check-in links) is behind auth or a private link either way.
+ *
+ *  Event URLs point at the short /[slug] form (src/app/[orgSlug]/page.tsx), not
+ *  /discover/[slug] — that older path still works (redirects here) but was never
+ *  the one worth telling search engines about once the short form existed. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: { path: string; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number }[] = [
     { path: "", changeFrequency: "daily", priority: 1 },
@@ -33,14 +37,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority,
   }));
 
-  // Only events with a global slug have a /discover/[slug] URL at all — anything
+  // Only events with a global slug have a short /[slug] URL at all — anything
   // without one is only reachable via its org-scoped link, which stays unlisted.
   const supabase = createAnonClient();
   const { data: events } = await supabase.rpc("public_discover_events");
   const eventEntries: MetadataRoute.Sitemap = ((events ?? []) as { slug: string | null }[])
     .filter((e) => e.slug)
     .map((e) => ({
-      url: `${siteUrl}/discover/${e.slug}`,
+      url: `${siteUrl}/${e.slug}`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.6,

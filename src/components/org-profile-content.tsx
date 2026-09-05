@@ -35,7 +35,7 @@ function EventCard({ event, orgSlug, i }: { event: OrgProfileEvent; orgSlug: str
   const badge = priceBadge(event.minPriceNaira);
   return (
     <Link
-      href={event.slug ? `/discover/${event.slug}` : `/${orgSlug}/events/${event.id}/register`}
+      href={event.slug ? `/${event.slug}` : `/${orgSlug}/events/${event.id}/register`}
       className="group rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-brand-600/40 hover:shadow-md transition-all animate-fade-in-up"
       style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
     >

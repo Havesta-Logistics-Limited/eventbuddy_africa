@@ -2,12 +2,16 @@ import DefaultImage from "@/app/opengraph-image";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { buildEventOgImage, eventOgImageSize, resolveEventForOg } from "@/lib/event-og-image";
 
-export const alt = "Event registration";
+export const alt = "eventbuddy";
 export const size = eventOgImageSize;
 export const contentType = "image/png";
 
-export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+/** Mirrors this segment's own page.tsx: an event's real share card once its slug
+ *  resolves, the generic site default for an org profile or an unresolved slug —
+ *  no bespoke org-profile share card exists yet, same as before this route also
+ *  had to resolve events. */
+export default async function Image({ params }: { params: Promise<{ orgSlug: string }> }) {
+  const { orgSlug: slug } = await params;
   const supabase = createAnonClient();
   const { data } = await supabase.rpc("public_event_by_slug", { p_slug: slug }).maybeSingle<{ event_id: string; org_slug: string }>();
   if (!data) return DefaultImage();

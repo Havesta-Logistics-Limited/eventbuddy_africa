@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
+import { RESERVED_SLUGS } from "@/lib/reserved-slugs";
 
 /** Best-effort welcome email — the account and org already exist by the time this
  *  runs (unconfirmed), so a failure here (missing Resend key, provider error) is
@@ -75,46 +76,13 @@ function slugify(name: string) {
   );
 }
 
-/** Every top-level static route this app serves — an org's public profile lives at
- *  the root /[orgSlug] (see src/app/[orgSlug]/page.tsx), and Next only falls back to
- *  a dynamic segment when no static route matches, so an org slug equal to one of
- *  these would be permanently unreachable (shadowed by the static page instead). */
-const RESERVED_ORG_SLUGS = new Set([
-  "admin",
-  "api",
-  "checkin",
-  "collect",
-  "contact",
-  "dashboard",
-  "discover",
-  "events",
-  "forgot-password",
-  "leads",
-  "login",
-  "maintenance",
-  "managed-events",
-  "my-leads",
-  "platform",
-  "pricing",
-  "privacy",
-  "reset-password",
-  "signup",
-  "terms",
-  "robots.txt",
-  "sitemap.xml",
-  "opengraph-image",
-  "apple-icon.png",
-  "icon.png",
-  "favicon.ico",
-]);
-
 /** Appends -2, -3, ... until it finds a slug that isn't already taken or reserved. */
 async function uniqueSlug(supabase: ReturnType<typeof createAdminClient>, base: string) {
   const baseSlug = slugify(base);
   let candidate = baseSlug;
   let suffix = 2;
   for (;;) {
-    if (!RESERVED_ORG_SLUGS.has(candidate)) {
+    if (!RESERVED_SLUGS.has(candidate)) {
       const { data } = await supabase.from("organizations").select("id").ilike("slug", candidate).maybeSingle();
       if (!data) return candidate;
     }

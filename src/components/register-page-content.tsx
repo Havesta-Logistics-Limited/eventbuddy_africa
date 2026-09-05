@@ -144,7 +144,7 @@ function buildIcsDataUrl(event: PublicEvent, orgSlug: string) {
   // Built from the site's canonical env var, not window.location.href — this
   // renders during SSR too (a plain string href, no client-only APIs), so it
   // must produce the exact same value on the server and after hydration.
-  const path = event.slug ? `/discover/${event.slug}` : `/${orgSlug}/events/${event.id}/register`;
+  const path = event.slug ? `/${event.slug}` : `/${orgSlug}/events/${event.id}/register`;
   const url = `${process.env.NEXT_PUBLIC_SITE_URL || "https://eventbuddy.africa"}${path}`;
 
   const lines = [
@@ -204,10 +204,11 @@ const PENDING_IDENTITY_KEY = "eventbuddy:pendingAttendeeIdentity";
  * sticky ticket/registration/1-on-1-booking panel. Mounted from two different routes
  * that resolve `eventIdOrSlug` differently before rendering this:
  *  - /[orgSlug]/events/[eventId]/register — the original org-scoped form (id or an
- *    org-scoped slug), kept working for any link shared before /discover/[slug]
- *    existed or for an event with no global slug set.
- *  - /discover/[slug] — the newer universal public link format, which resolves the
- *    owning org first (see /api/events/by-slug) then renders this unchanged.
+ *    org-scoped slug), kept working for any link shared before the short /[slug]
+ *    form existed or for an event with no global slug set.
+ *  - /[slug] (src/app/[orgSlug]/page.tsx) — the short universal public link format,
+ *    which resolves the owning org first (see public_event_by_slug) then renders
+ *    this unchanged. /discover/[slug] still works too, redirecting here.
  * Both pass the exact param the visitor's URL contains; the fetch below matches it
  * against the org's events by either id or slug, same as it always has.
  */

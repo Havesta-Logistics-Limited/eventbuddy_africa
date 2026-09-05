@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         "/dashboard",
         "/admin",
+        "/audience",
         "/events",
         "/leads",
         "/collect",
