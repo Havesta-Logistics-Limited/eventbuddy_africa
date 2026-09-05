@@ -233,10 +233,11 @@ export default function EventDetailPage() {
 
   async function handleCopyLink() {
     if (!event || typeof window === "undefined") return;
-    // The new universal format once a slug is set (no org segment needed at all);
-    // falls back to the older org-scoped form for an event with no slug.
+    // The short universal format once a slug is set (no org segment, no
+    // /discover prefix — see src/app/[orgSlug]/page.tsx); falls back to the
+    // older org-scoped form for an event with no slug.
     const link = event.slug
-      ? `${window.location.origin}/discover/${event.slug}`
+      ? `${window.location.origin}/${event.slug}`
       : `${window.location.origin}/${session?.orgSlug ?? ""}/events/${event.id}/register`;
     await navigator.clipboard.writeText(link);
     setLinkCopied(true);
