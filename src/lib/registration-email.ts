@@ -302,15 +302,14 @@ export async function sendTicketTransferredAwayEmail(to: string, event: Register
   }
 }
 
-export type ReminderKind = "24h" | "dayof" | "1h";
+export type ReminderKind = "24h" | "1h";
 
 const REMINDER_COPY: Record<ReminderKind, { label: string; lead: string }> = {
   "24h": { label: "See you tomorrow", lead: "is happening tomorrow" },
-  dayof: { label: "Today's the day", lead: "is today" },
   "1h": { label: "Starting soon", lead: "starts in about an hour" },
 };
 
-/** One of the 3 automatic reminders (24h/day-of/1h before) the event-reminders
+/** One of the 2 automatic reminders (24h/1h before) the event-reminders
  *  cron sends — see src/app/api/cron/event-reminders. Best-effort like every
  *  other email here; a failed send just means that reminder stage is skipped
  *  (the cron's own tracking columns mean it's never retried later as a

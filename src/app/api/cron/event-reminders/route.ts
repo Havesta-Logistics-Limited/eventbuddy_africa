@@ -19,16 +19,19 @@ type Attendee = {
   email: string;
   full_name: string;
   reminder_24h_sent_at: string | null;
-  reminder_dayof_sent_at: string | null;
   reminder_1h_sent_at: string | null;
 };
 
 /**
- * netlify/functions/event-reminders-cron.mts hits this hourly. Sends up to 3
- * automatic reminders per registration/lead — 24h before, the morning of (8am
- * in the event's own timezone), and 1h before — mirroring the rsvp-reminders
- * cron's idempotency pattern but with 3 independent tracked stages instead of
- * one, since these fire on 3 different schedules per event.
+ * netlify/functions/event-reminders-cron.mts hits this hourly. Sends up to 2
+ * automatic reminders per registration/lead — 24h before (advance planning)
+ * and 1h before (the actionable "leave now" nudge) — mirroring the
+ * rsvp-reminders cron's idempotency pattern but with 2 independent tracked
+ * stages instead of one, since these fire on 2 different schedules per event.
+ * A third "morning of" stage was cut deliberately: for a morning event it
+ * landed almost back-to-back with the 24h reminder, and at real attendee
+ * volume (hundreds per event) a 3rd stage meaningfully adds to email cost
+ * for the least useful of the three.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -59,11 +62,9 @@ export async function GET(request: Request) {
 
   for (const event of events) {
     const eventStart = zonedTimeToUtc(event.date, event.start_time || "09:00", event.timezone ?? undefined).getTime();
-    const dayOfTarget = zonedTimeToUtc(event.date, "08:00", event.timezone ?? undefined).getTime();
 
-    const due: { kind: ReminderKind; column: "reminder_24h_sent_at" | "reminder_dayof_sent_at" | "reminder_1h_sent_at" }[] = [];
+    const due: { kind: ReminderKind; column: "reminder_24h_sent_at" | "reminder_1h_sent_at" }[] = [];
     if (inWindow(eventStart - 24 * 3600000, now)) due.push({ kind: "24h", column: "reminder_24h_sent_at" });
-    if (dayOfTarget < eventStart && inWindow(dayOfTarget, now)) due.push({ kind: "dayof", column: "reminder_dayof_sent_at" });
     if (inWindow(eventStart - 3600000, now)) due.push({ kind: "1h", column: "reminder_1h_sent_at" });
     if (due.length === 0) continue;
 
@@ -73,13 +74,13 @@ export async function GET(request: Request) {
       const [regRes, leadRes] = await Promise.all([
         admin
           .from("registrations")
-          .select("id, email, full_name, reminder_24h_sent_at, reminder_dayof_sent_at, reminder_1h_sent_at")
+          .select("id, email, full_name, reminder_24h_sent_at, reminder_1h_sent_at")
           .eq("event_id", event.id)
           .in("status", ["registered", "checked_in"])
           .is(column, null),
         admin
           .from("leads")
-          .select("id, email, first_name, last_name, reminder_24h_sent_at, reminder_dayof_sent_at, reminder_1h_sent_at")
+          .select("id, email, first_name, last_name, reminder_24h_sent_at, reminder_1h_sent_at")
           .eq("event_id", event.id)
           .eq("status", "registered")
           .is(column, null),
