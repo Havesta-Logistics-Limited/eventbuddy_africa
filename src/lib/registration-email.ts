@@ -301,3 +301,53 @@ export async function sendTicketTransferredAwayEmail(to: string, event: Register
     return false;
   }
 }
+
+export type ReminderKind = "24h" | "dayof" | "1h";
+
+const REMINDER_COPY: Record<ReminderKind, { label: string; lead: string }> = {
+  "24h": { label: "See you tomorrow", lead: "is happening tomorrow" },
+  dayof: { label: "Today's the day", lead: "is today" },
+  "1h": { label: "Starting soon", lead: "starts in about an hour" },
+};
+
+/** One of the 3 automatic reminders (24h/day-of/1h before) the event-reminders
+ *  cron sends — see src/app/api/cron/event-reminders. Best-effort like every
+ *  other email here; a failed send just means that reminder stage is skipped
+ *  (the cron's own tracking columns mean it's never retried later as a
+ *  duplicate of a different stage). */
+export async function sendEventReminderEmail(to: string, event: RegisteredEvent, kind: ReminderKind, hubUrl?: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
+
+  try {
+    const { eventDate, eventTime } = eventDateTimeLine(event);
+    const safeName = escapeHtml(event.name);
+    const { label, lead } = REMINDER_COPY[kind];
+    const isVirtual = event.event_format === "virtual";
+    const validJoinUrl = safeHttpUrl(event.virtual_join_url);
+    const safeJoinUrl = validJoinUrl ? escapeHtml(validJoinUrl) : "";
+    const locationHtml = isVirtual
+      ? `<p style="margin:0 0 4px;">${event.virtual_platform ? `${escapeHtml(event.virtual_platform)} — ` : ""}${safeJoinUrl ? `<a href="${safeJoinUrl}">${safeJoinUrl}</a>` : ""}</p>`
+      : `<p style="margin:0;">${escapeHtml(event.venue)}, ${escapeHtml(event.location)}</p>`;
+
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
+      to,
+      subject: `${event.name} ${lead}`,
+      text: `${event.name} ${lead} — ${eventDate}${eventTime ? ` at ${eventTime}` : ""}.${isVirtual && event.virtual_join_url ? `\n\nJoin here: ${event.virtual_join_url}` : ""}${hubUrl ? `\n\nEvent hub: ${hubUrl}` : ""}`,
+      html: `
+        <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
+          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#C21FAF; font-weight:600; margin:0 0 8px;">${label}</p>
+          <h1 style="font-size:20px; margin:0 0 12px;">${safeName}</h1>
+          <p style="margin:0 0 12px; color:#666; font-size:13px;">${eventDate}${eventTime ? ` · ${eventTime}` : ""}</p>
+          ${locationHtml}
+          ${hubUrl ? `<div style="text-align:center; margin-top:20px;">${emailButton(hubUrl, "Open event hub", "#C21FAF")}</div>` : ""}
+        </div>
+      `,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
