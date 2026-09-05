@@ -13,6 +13,7 @@ export function StaffRosterTab({
   universities,
   orgSlug,
   eventId,
+  eventSlug,
 }: {
   role: "staff" | "rep";
   staff: StaffRecord[];
@@ -20,10 +21,11 @@ export function StaffRosterTab({
   universities: University[];
   orgSlug?: string;
   eventId: string;
+  eventSlug?: string;
 }) {
   return (
     <div>
-      {orgSlug && <CheckinLinksCard orgSlug={orgSlug} eventId={eventId} showStaffLink={role === "staff"} showRepLink={role === "rep"} />}
+      {orgSlug && <CheckinLinksCard orgSlug={orgSlug} eventId={eventId} eventSlug={eventSlug} showStaffLink={role === "staff"} showRepLink={role === "rep"} />}
 
       {staff.length === 0 ? (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-10 text-center">

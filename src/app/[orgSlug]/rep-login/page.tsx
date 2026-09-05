@@ -16,9 +16,10 @@ export default function RepLoginPage() {
   const orgSlug = params.orgSlug;
   const router = useRouter();
   const searchParams = useSearchParams();
-  // A per-event share link (?event=<id>) locks the flow to that one event and skips
-  // the "which event are you viewing?" picker entirely — see CheckinLinksCard.
-  const pinnedEventId = searchParams.get("event");
+  // A per-event share link (?event=<id-or-slug>) locks the flow to that one event
+  // and skips the "which event are you viewing?" picker entirely — see
+  // CheckinLinksCard, which prefers the event's slug when it has one.
+  const pinnedEvent = searchParams.get("event");
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -47,9 +48,9 @@ export default function RepLoginPage() {
         setDestinations(data.destinations);
         setUniversities(data.universities);
         const events: CheckinEvent[] = data.events;
-        if (pinnedEventId && events.some((e) => e.id === pinnedEventId && getTemplate(e.templateId).usesDestinations && e.allowRepAccess !== false)) {
-          setSelectedEventId(pinnedEventId);
-        }
+        const pinnedMatch =
+          pinnedEvent && events.find((e) => (e.id === pinnedEvent || e.slug === pinnedEvent) && getTemplate(e.templateId).usesDestinations && e.allowRepAccess !== false);
+        if (pinnedMatch) setSelectedEventId(pinnedMatch.id);
       })
       .catch(() => setLoadError("Couldn't load this page. Check your connection and try again."))
       .finally(() => setLoading(false));
@@ -99,7 +100,7 @@ export default function RepLoginPage() {
   // template has — other event types have no rep flow, so they're not selectable here.
   const repEligibleEvents = events.filter((e) => getTemplate(e.templateId).usesDestinations && e.allowRepAccess !== false);
 
-  if (pinnedEventId && !selectedEventId) {
+  if (pinnedEvent && !selectedEventId) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <div className="text-center text-slate-500">
@@ -136,7 +137,7 @@ export default function RepLoginPage() {
         event={selectedEvent}
         instruction="Select your destination and university to view the leads collected for your school."
         secondaryAction={
-          pinnedEventId
+          pinnedEvent
             ? undefined
             : {
                 label: "Back to events",

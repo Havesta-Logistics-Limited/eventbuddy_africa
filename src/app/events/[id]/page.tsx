@@ -422,9 +422,9 @@ export default function EventDetailPage() {
                   );
                 })()}
               <div className="flex flex-wrap gap-4 text-sm text-slate-500">
-                <span className="flex items-start gap-1.5">
-                  <Calendar size={14} className="mt-0.5 shrink-0" />
-                  <span>
+                <span className="flex items-center gap-1.5">
+                  <Calendar size={14} className="shrink-0" />
+                  <span className="whitespace-nowrap">
                     {new Date(event.date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
                     {event.endDate && ` – ${new Date(event.endDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`}
                     {event.startTime && ` • ${formatTime(event.startTime)}`}
@@ -711,6 +711,7 @@ export default function EventDetailPage() {
               universities={universities}
               orgSlug={session.orgSlug}
               eventId={event.id}
+              eventSlug={event.slug}
             />
           </div>
         )}
@@ -822,33 +823,37 @@ export default function EventDetailPage() {
                     className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
-                <select
-                  value={filterDest}
-                  onChange={(e) => {
-                    setFilterDest(e.target.value);
-                    setFilterUni("");
-                  }}
-                  className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
-                >
-                  <option value="">All Destinations</option>
-                  {eventDests.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.flag} {d.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={filterUni}
-                  onChange={(e) => setFilterUni(e.target.value)}
-                  className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white min-w-[160px]"
-                >
-                  <option value="">All Universities</option>
-                  {availableUnis.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.shortName}
-                    </option>
-                  ))}
-                </select>
+                {usesDestinations && (
+                  <>
+                    <select
+                      value={filterDest}
+                      onChange={(e) => {
+                        setFilterDest(e.target.value);
+                        setFilterUni("");
+                      }}
+                      className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
+                    >
+                      <option value="">All Destinations</option>
+                      {eventDests.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.flag} {d.name}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={filterUni}
+                      onChange={(e) => setFilterUni(e.target.value)}
+                      className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white min-w-[160px]"
+                    >
+                      <option value="">All Universities</option>
+                      {availableUnis.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.shortName}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                )}
                 {activeFilters > 0 && (
                   <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-rose-600 hover:bg-rose-50 border border-rose-100">
                     <X size={13} />

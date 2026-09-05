@@ -16,9 +16,11 @@ export default function StaffSetupPage() {
   const orgSlug = params.orgSlug;
   const router = useRouter();
   const searchParams = useSearchParams();
-  // A per-event share link (?event=<id>) locks the flow to that one event and skips
-  // the "which event are you at?" picker entirely — see CheckinLinksCard.
-  const pinnedEventId = searchParams.get("event");
+  // A per-event share link (?event=<id-or-slug>) locks the flow to that one event
+  // and skips the "which event are you at?" picker entirely — see CheckinLinksCard,
+  // which prefers the event's slug (shorter, readable) when it has one, falling
+  // back to the raw id otherwise, same as the registration link already does.
+  const pinnedEvent = searchParams.get("event");
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -55,9 +57,8 @@ export default function StaffSetupPage() {
         setDestinations(data.destinations);
         setUniversities(data.universities);
         setStaffMembers(data.staff);
-        if (pinnedEventId && data.events.some((e: CheckinEvent) => e.id === pinnedEventId)) {
-          setSelectedEventId(pinnedEventId);
-        }
+        const pinnedMatch = pinnedEvent && data.events.find((e: CheckinEvent) => e.id === pinnedEvent || e.slug === pinnedEvent);
+        if (pinnedMatch) setSelectedEventId(pinnedMatch.id);
       })
       .catch(() => setLoadError("Couldn't load this page. Check your connection and try again."))
       .finally(() => setLoading(false));
@@ -116,7 +117,7 @@ export default function StaffSetupPage() {
     );
   }
 
-  if (pinnedEventId && !selectedEventId) {
+  if (pinnedEvent && !selectedEventId) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <div className="text-center text-slate-500">
@@ -156,7 +157,7 @@ export default function StaffSetupPage() {
         eyebrow="Staff sign-in"
         event={selectedEvent}
         instruction="Pick your name, then the destination and school you're collecting for. It stays locked for every lead you add until you end the session."
-        secondaryAction={pinnedEventId ? undefined : { label: "Back to events", onClick: () => setSelectedEventId(null) }}
+        secondaryAction={pinnedEvent ? undefined : { label: "Back to events", onClick: () => setSelectedEventId(null) }}
         variant="staff"
       />
       <div className="relative max-w-xl mx-auto px-4 -mt-8">
