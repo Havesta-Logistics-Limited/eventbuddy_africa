@@ -201,6 +201,23 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const recipients = result.recipients.filter((r) => !suppressedSet.has(r.email));
   if (recipients.length === 0) return NextResponse.json({ success: true, sentCount: 0, totalCount: 0 });
 
+  const orgId = org.id;
+  const userId = user.id;
+  async function logBlast(sentCount: number) {
+    await admin.from("audience_blasts").insert({
+      organization_id: orgId,
+      sent_by: userId,
+      subject,
+      message_html: messageHtml,
+      cta_label: ctaLabel ?? null,
+      cta_url: ctaUrl ?? null,
+      target_event_id: target?.eventId ?? null,
+      target_status: target?.status ?? null,
+      recipient_count: recipients.length,
+      sent_count: sentCount,
+    });
+  }
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   const resend = new Resend(apiKey);
   let sentCount = 0;
@@ -221,6 +238,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       // blast over one bad chunk.
     }
   }
+
+  await logBlast(sentCount);
 
   return NextResponse.json({ success: true, sentCount, totalCount: recipients.length });
 }

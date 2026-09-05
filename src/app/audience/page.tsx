@@ -11,6 +11,7 @@ import { Role } from "@/lib/types";
 import { downloadCsv } from "@/lib/csv";
 import { AuthLoading } from "@/components/auth-loading";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { RichTextDisplay } from "@/components/rich-text-display";
 import { getEventStatus } from "@/lib/capture-window";
 
 const ADMIN_ONLY: Role[] = ["admin"];
@@ -221,6 +222,100 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
   );
 }
 
+type BlastRow = {
+  id: string;
+  subject: string;
+  message_html: string;
+  cta_label: string | null;
+  cta_url: string | null;
+  target_event_id: string | null;
+  target_status: string | null;
+  recipient_count: number;
+  sent_count: number;
+  created_at: string;
+};
+
+function SentBlastsSection({ orgId }: { orgId: string }) {
+  const events = useEvents();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<BlastRow[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase
+      .from("audience_blasts")
+      .select("id, subject, message_html, cta_label, cta_url, target_event_id, target_status, recipient_count, sent_count, created_at")
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .then(({ data }) => {
+        setRows((data ?? []) as BlastRow[]);
+        setLoading(false);
+      });
+  }, [orgId]);
+
+  function targetLabel(row: BlastRow) {
+    if (!row.target_event_id) return "Everyone";
+    const eventName = events.find((e) => e.id === row.target_event_id)?.name || "a deleted event";
+    const statusLabel = row.target_status === "checked_in" ? "checked-in attendees" : row.target_status === "no_show" ? "no-shows" : "registered attendees";
+    return `${eventName} — ${statusLabel}`;
+  }
+
+  return (
+    <div className="mt-8 bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <button type="button" onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
+        <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <Send size={15} className="text-slate-400" />
+          Sent blasts {!loading && `(${rows.length})`}
+        </span>
+        <ChevronDown size={15} className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="border-t border-slate-100">
+          {loading ? (
+            <div className="p-4 text-xs text-slate-400">Loading…</div>
+          ) : rows.length === 0 ? (
+            <div className="p-4 text-xs text-slate-400">No blasts sent yet.</div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {rows.map((r) => (
+                <div key={r.id}>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedId((id) => (id === r.id ? null : r.id))}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-800 truncate">{r.subject}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {targetLabel(r)} · {r.sent_count}/{r.recipient_count} delivered ·{" "}
+                        {new Date(r.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                    </div>
+                    <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform ${expandedId === r.id ? "rotate-180" : ""}`} />
+                  </button>
+                  {expandedId === r.id && (
+                    <div className="px-4 pb-4">
+                      <RichTextDisplay html={r.message_html} className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3" />
+                      {r.cta_label && r.cta_url && (
+                        <p className="text-xs text-slate-500 mt-2">
+                          Button: <span className="font-medium">{r.cta_label}</span> → {r.cta_url}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function UnsubscribedSection({ orgId }: { orgId: string }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -281,6 +376,7 @@ export default function AudiencePage() {
   const [members, setMembers] = useState<AudienceMember[]>([]);
   const [search, setSearch] = useState("");
   const [showBlast, setShowBlast] = useState(false);
+  const [blastRefreshKey, setBlastRefreshKey] = useState(0);
   const [orgId, setOrgId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -429,9 +525,19 @@ export default function AudiencePage() {
           </div>
         )}
 
+        {orgId && <SentBlastsSection key={blastRefreshKey} orgId={orgId} />}
         {orgId && <UnsubscribedSection orgId={orgId} />}
       </div>
-      {showBlast && session.orgSlug && <BlastModal orgSlug={session.orgSlug} recipientCount={members.length} onClose={() => setShowBlast(false)} />}
+      {showBlast && session.orgSlug && (
+        <BlastModal
+          orgSlug={session.orgSlug}
+          recipientCount={members.length}
+          onClose={() => {
+            setShowBlast(false);
+            setBlastRefreshKey((k) => k + 1);
+          }}
+        />
+      )}
     </Shell>
   );
 }
