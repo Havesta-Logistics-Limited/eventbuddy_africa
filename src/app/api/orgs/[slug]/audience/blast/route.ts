@@ -19,9 +19,35 @@ const BodySchema = z.object({
 // instead of one event's attendees.
 const CHUNK_SIZE = 20;
 
-async function sendOne(resend: Resend, to: string, orgName: string, subject: string, message: string, unsubUrl: string) {
+function firstName(fullName: string) {
+  return fullName.trim().split(/\s+/)[0] || "";
+}
+
+async function sendOne(
+  resend: Resend,
+  to: string,
+  recipientName: string,
+  orgName: string,
+  orgLogoUrl: string | undefined,
+  subject: string,
+  message: string,
+  unsubUrl: string
+) {
+  const greeting = recipientName ? `Hi ${escapeHtml(firstName(recipientName))},` : "Hi there,";
+  // Blank lines mark real paragraph breaks; single line breaks within a
+  // paragraph are preserved as-is (white-space:pre-line) rather than everything
+  // collapsing into one run-on block.
+  const paragraphs = message
+    .split(/\n{2,}/)
+    .map((p) => `<p style="margin:0 0 16px; white-space:pre-line;">${escapeHtml(p)}</p>`)
+    .join("");
+  const logoHtml = orgLogoUrl
+    ? `<img src="${orgLogoUrl}" alt="${escapeHtml(orgName)}" width="44" height="44" style="border-radius:10px; display:block; margin:0 0 16px; object-fit:cover;" />`
+    : "";
   const bodyHtml = `
-    <p style="margin:0 0 20px; white-space:pre-line;">${escapeHtml(message)}</p>
+    ${logoHtml}
+    <p style="margin:0 0 4px; font-weight:600; color:#1e1b2e;">${greeting}</p>
+    ${paragraphs}
     <p style="margin:24px 0 0; padding-top:16px; border-top:1px solid #eee; font-size:11px; color:#aaa;">
       You're receiving this because you're part of ${escapeHtml(orgName)}'s audience on eventbuddy.
       <a href="${unsubUrl}" style="color:#aaa;">Unsubscribe</a>
@@ -32,7 +58,7 @@ async function sendOne(resend: Resend, to: string, orgName: string, subject: str
       from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
       to,
       subject,
-      text: `${message}\n\nUnsubscribe: ${unsubUrl}`,
+      text: `${greeting}\n\n${message}\n\nUnsubscribe: ${unsubUrl}`,
       html: renderEmailShell({ color: "#C21FAF", label: orgName, emoji: "📣" }, bodyHtml),
     });
     return !error;
@@ -77,7 +103,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   const admin = createAdminClient();
-  const { data: org } = await admin.from("organizations").select("id, name").eq("id", access.id).maybeSingle();
+  const { data: org } = await admin.from("organizations").select("id, name, logo_url").eq("id", access.id).maybeSingle();
   if (!org) return NextResponse.json({ error: "This organization couldn't be found." }, { status: 404 });
 
   const { data: audience, error: audienceError } = await admin.rpc("organization_audience", { p_organization_id: org.id });
@@ -86,7 +112,14 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const { data: suppressed } = await admin.from("organization_email_suppressions").select("email").eq("organization_id", org.id);
   const suppressedSet = new Set((suppressed ?? []).map((s) => s.email.toLowerCase()));
 
-  const recipients = ((audience ?? []) as { email: string }[]).map((a) => a.email.toLowerCase()).filter((email) => !suppressedSet.has(email));
+  const seen = new Set<string>();
+  const recipients: { email: string; fullName: string }[] = [];
+  for (const a of (audience ?? []) as { email: string; full_name: string | null }[]) {
+    const email = a.email.toLowerCase();
+    if (suppressedSet.has(email) || seen.has(email)) continue;
+    seen.add(email);
+    recipients.push({ email, fullName: a.full_name || "" });
+  }
   if (recipients.length === 0) return NextResponse.json({ success: true, sentCount: 0, totalCount: 0 });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
@@ -95,7 +128,9 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   for (let i = 0; i < recipients.length; i += CHUNK_SIZE) {
     const chunk = recipients.slice(i, i + CHUNK_SIZE);
-    const results = await Promise.all(chunk.map((email) => sendOne(resend, email, org.name, subject, message, unsubscribeUrl(siteUrl, org.id, email))));
+    const results = await Promise.all(
+      chunk.map((r) => sendOne(resend, r.email, r.fullName, org.name, org.logo_url ?? undefined, subject, message, unsubscribeUrl(siteUrl, org.id, r.email)))
+    );
     sentCount += results.filter(Boolean).length;
   }
 
