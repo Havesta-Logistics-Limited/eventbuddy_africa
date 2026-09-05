@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import {
   Calendar,
   CalendarPlus,
   Check,
+  ChevronDown,
   Clock,
   Copy,
   ExternalLink,
@@ -205,6 +206,61 @@ function buildGoogleCalendarUrl(event: PublicEvent) {
     location: event.eventFormat === "virtual" ? event.virtualPlatform || "Online" : `${event.venue}, ${event.location}`,
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/** Collapses the two calendar-export options behind one button so the hero CTA
+ *  row (Register / Add to calendar) always fits on one line without needing
+ *  horizontal scroll, even on a narrow phone — three separate buttons here
+ *  (Register, Google Calendar, Apple/Outlook) genuinely didn't fit at once. */
+function AddToCalendarMenu({ event, orgSlug }: { event: PublicEvent; orgSlug: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-colors whitespace-nowrap"
+      >
+        <CalendarPlus size={16} />
+        Add to calendar
+        <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 sm:right-0 sm:left-auto z-20 mt-1.5 w-52 bg-white rounded-xl border border-slate-200 shadow-lg py-1 animate-dropdown-settle origin-top">
+          <a
+            href={buildGoogleCalendarUrl(event)}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => setOpen(false)}
+            className="block w-full text-left px-3.5 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            Google Calendar
+          </a>
+          <button
+            type="button"
+            onClick={() => {
+              downloadIcs(event, orgSlug);
+              setOpen(false);
+            }}
+            className="block w-full text-left px-3.5 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            Apple / Outlook (.ics)
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 const STATUS_LABEL: Record<string, string> = { upcoming: "Upcoming", active: "Happening now", completed: "Completed" };
@@ -615,32 +671,16 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 )}
               </p>
             </div>
-            <div className="flex flex-nowrap items-center gap-3 overflow-x-auto">
+            <div className="flex flex-nowrap items-center gap-3">
               <a
                 href="#register-panel"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity shrink-0"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity shrink-0 whitespace-nowrap"
                 style={{ background: "#C21FAF" }}
               >
                 <Ticket size={16} />
                 {isFreeEvent ? "Register free" : `Register · ${priceLabel}`}
               </a>
-              <a
-                href={buildGoogleCalendarUrl(event)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-colors shrink-0 whitespace-nowrap"
-              >
-                <CalendarPlus size={16} />
-                Google Calendar
-              </a>
-              <button
-                type="button"
-                onClick={() => downloadIcs(event, orgSlug)}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-colors shrink-0 whitespace-nowrap"
-              >
-                <CalendarPlus size={16} />
-                Apple / Outlook (.ics)
-              </button>
+              <AddToCalendarMenu event={event} orgSlug={orgSlug} />
             </div>
           </div>
         </div>
