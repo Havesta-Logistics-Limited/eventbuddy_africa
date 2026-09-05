@@ -71,11 +71,11 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Couldn't send that blast.");
+      if (!res.ok) throw new Error(json.error || "Couldn't send that blast/newsletter.");
       toast.success(`Sent to ${json.sentCount} of ${json.totalCount} people`);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't send that blast.");
+      setError(err instanceof Error ? err.message : "Couldn't send that blast/newsletter.");
     } finally {
       setSending(false);
     }
@@ -85,7 +85,7 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0">
-          <h3 className="font-semibold text-slate-900">Send a blast</h3>
+          <h3 className="font-semibold text-slate-900">Send a Blast/Newsletter</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X size={18} />
           </button>
@@ -214,7 +214,7 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60"
           >
             <Send size={14} />
-            {sending ? "Sending…" : "Send blast"}
+            {sending ? "Sending…" : "Send Blast/Newsletter"}
           </button>
         </form>
       </div>
@@ -268,7 +268,7 @@ function SentBlastsSection({ orgId }: { orgId: string }) {
       <button type="button" onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
         <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
           <Send size={15} className="text-slate-400" />
-          Sent blasts {!loading && `(${rows.length})`}
+          Sent Blasts/Newsletters {!loading && `(${rows.length})`}
         </span>
         <ChevronDown size={15} className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
@@ -277,7 +277,7 @@ function SentBlastsSection({ orgId }: { orgId: string }) {
           {loading ? (
             <div className="p-4 text-xs text-slate-400">Loading…</div>
           ) : rows.length === 0 ? (
-            <div className="p-4 text-xs text-slate-400">No blasts sent yet.</div>
+            <div className="p-4 text-xs text-slate-400">No blasts/newsletters sent yet.</div>
           ) : (
             <div className="divide-y divide-slate-100">
               {rows.map((r) => (
@@ -348,7 +348,7 @@ function UnsubscribedSection({ orgId }: { orgId: string }) {
           {loading ? (
             <div className="p-4 text-xs text-slate-400">Loading…</div>
           ) : rows.length === 0 ? (
-            <div className="p-4 text-xs text-slate-400">Nobody has unsubscribed from your blasts.</div>
+            <div className="p-4 text-xs text-slate-400">Nobody has unsubscribed from your blasts/newsletters.</div>
           ) : (
             <div className="divide-y divide-slate-100">
               {rows.map((r) => (
@@ -434,7 +434,7 @@ export default function AudiencePage() {
               className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={14} />
-              Send blast
+              Send Blast/Newsletter
             </button>
             {members.length > 0 && (
               <button
