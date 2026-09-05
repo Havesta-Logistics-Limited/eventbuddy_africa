@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Flag, Mail, X } from "lucide-react";
 import { FollowOrgButton } from "@/components/follow-org-button";
@@ -150,15 +151,17 @@ export function EventHostCard({
     <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
       <h2 className="font-semibold text-white mb-4">Hosted By</h2>
       <div className="flex items-center gap-3 pb-4 mb-4 border-b border-white/10">
-        {orgLogoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={orgLogoUrl} alt={orgName} className="w-10 h-10 rounded-full object-cover shrink-0" />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-[#FF8AF5]/20 text-[#FF8AF5] flex items-center justify-center font-semibold shrink-0">
-            {orgName.charAt(0).toUpperCase() || "?"}
-          </div>
-        )}
-        <p className="font-medium text-white flex-1 min-w-0 truncate">{orgName}</p>
+        <Link href={`/${orgSlug}`} className="flex items-center gap-3 flex-1 min-w-0 group">
+          {orgLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={orgLogoUrl} alt={orgName} className="w-10 h-10 rounded-full object-cover shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-[#FF8AF5]/20 text-[#FF8AF5] flex items-center justify-center font-semibold shrink-0">
+              {orgName.charAt(0).toUpperCase() || "?"}
+            </div>
+          )}
+          <p className="font-medium text-white flex-1 min-w-0 truncate group-hover:underline">{orgName}</p>
+        </Link>
         <FollowOrgButton orgSlug={orgSlug} theme="dark" />
       </div>
 
