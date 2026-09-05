@@ -617,6 +617,7 @@ async function fetchAdminData() {
       return;
     }
     const [
+      orgRes,
       destRes,
       uniRes,
       eventRes,
@@ -632,6 +633,12 @@ async function fetchAdminData() {
       announcementRes,
       guestRes,
     ] = await Promise.all([
+      // Refreshes the cached session's org name/slug in case either changed since
+      // login (e.g. an approved name change, or a slug edit) — sessionCache is only
+      // ever populated once at login otherwise, so without this an already-open
+      // session would keep building links (public page, check-in links) with a
+      // stale org slug indefinitely.
+      supabase.from("organizations").select("name, slug").eq("id", orgId).maybeSingle(),
       supabase.from("destinations").select("*").eq("organization_id", orgId),
       supabase.from("universities").select("*").eq("organization_id", orgId),
       supabase.from("events").select("*").eq("organization_id", orgId),
@@ -649,6 +656,10 @@ async function fetchAdminData() {
       supabase.from("event_announcements").select("*").eq("organization_id", orgId),
       supabase.from("event_guests").select("*").eq("organization_id", orgId),
     ]);
+    if (orgRes.data && sessionCache && (sessionCache.orgSlug !== (orgRes.data.slug ?? undefined) || sessionCache.name !== orgRes.data.name)) {
+      sessionCache = { ...sessionCache, name: orgRes.data.name || sessionCache.name, orgSlug: orgRes.data.slug ?? undefined };
+      persistSession();
+    }
     destinationsCache = (destRes.data ?? []).map(mapDestinationRow);
     universitiesCache = (uniRes.data ?? []).map(mapUniversityRow);
     eventsCache = (eventRes.data ?? []).map(mapEventRow);
