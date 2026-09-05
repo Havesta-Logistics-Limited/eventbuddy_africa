@@ -49,7 +49,9 @@ function extractInlineImages(html: string): { html: string; attachments: { filen
     attachments.push({ filename: `image-${count}.${subtype.split("+")[0]}`, content: base64, contentId: cid });
     const altMatch = /alt="([^"]*)"/.exec(full);
     const alt = altMatch ? altMatch[1] : "";
-    return `<img src="cid:${cid}" alt="${alt}" style="max-width:100%;">`;
+    const styleMatch = /style="([^"]*)"/.exec(full);
+    const style = styleMatch ? styleMatch[1] : "max-width:100%;";
+    return `<img src="cid:${cid}" alt="${alt}" style="${style}">`;
   });
   return { html: rewritten, attachments };
 }

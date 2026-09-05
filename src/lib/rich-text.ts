@@ -28,6 +28,10 @@ const TAG_RE = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g;
 const HREF_RE = /href\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
 const SRC_RE = /src\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
 const ALT_RE = /alt\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+// Anchored to the start of the style value (not just "contains width:...")
+// specifically so it can't greedily match "max-width:100%" instead of the
+// real "width:NN%" that always comes first in what this file itself emits.
+const IMG_WIDTH_RE = /style\s*=\s*(?:"width:(\d{1,3})%|'width:(\d{1,3})%)/i;
 
 /** Safe to pass straight to dangerouslySetInnerHTML. */
 export function sanitizeRichTextHtml(html: string): string {
@@ -50,7 +54,13 @@ export function sanitizeRichTextHtml(html: string): string {
       if (!/^(https:\/\/|data:image\/)/i.test(src)) return "";
       const altMatch = ALT_RE.exec(attrs);
       const alt = (altMatch ? altMatch[1] ?? altMatch[2] ?? "" : "").replace(/"/g, "&quot;");
-      return `<img src="${src.replace(/"/g, "&quot;")}" alt="${alt}" style="max-width:100%;">`;
+      // Only a plain "NN%" width survives — never the raw style string — so a
+      // resized image keeps its size without opening up arbitrary CSS injection
+      // via the style attribute.
+      const widthMatch = IMG_WIDTH_RE.exec(attrs);
+      const widthPct = widthMatch ? widthMatch[1] ?? widthMatch[2] : null;
+      const width = widthPct ? `${Math.min(100, Math.max(5, Number(widthPct)))}%` : "55%";
+      return `<img src="${src.replace(/"/g, "&quot;")}" alt="${alt}" style="width:${width};max-width:100%;height:auto;">`;
     }
     return `<${tagName}>`;
   });

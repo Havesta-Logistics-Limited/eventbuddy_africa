@@ -333,6 +333,15 @@ select {
   color: #c21faf;
   text-decoration: underline;
 }
+.rich-text-content img {
+  border-radius: 0.5rem;
+  margin: 0.5em 0;
+  display: block;
+}
+.rich-text-content img.ProseMirror-selectednode {
+  outline: 2px solid #c21faf;
+  outline-offset: 2px;
+}
 .rich-text-content p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
