@@ -153,15 +153,17 @@ export default function AudiencePage() {
             <h1 className="font-display text-2xl text-slate-900">Audience</h1>
             <p className="text-slate-500 text-sm mt-0.5">Everyone who&apos;s registered for one of your events or followed you directly.</p>
           </div>
-          {members.length > 0 && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowBlast(true)}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700"
-              >
-                <Send size={14} />
-                Send blast
-              </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowBlast(true)}
+              disabled={members.length === 0}
+              title={members.length === 0 ? "You don't have an audience yet" : undefined}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send size={14} />
+              Send blast
+            </button>
+            {members.length > 0 && (
               <button
                 onClick={exportAudience}
                 className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -169,8 +171,8 @@ export default function AudiencePage() {
                 <Download size={14} />
                 Export
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4 mb-6">

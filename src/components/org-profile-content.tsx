@@ -262,6 +262,30 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
           </section>
 
           <section className="max-w-6xl mx-auto px-6 pb-24">
+            <div className="flex justify-end mb-6">
+              <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setView("list")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    view === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  <List size={13} />
+                  List
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView("calendar")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    view === "calendar" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  <LayoutGrid size={13} />
+                  Calendar
+                </button>
+              </div>
+            </div>
             {events.length === 0 ? (
               <div className="text-center py-20 text-slate-400 bg-white rounded-2xl border border-slate-200">
                 <CalendarX size={32} className="mx-auto mb-3 opacity-40" />
@@ -270,30 +294,6 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
               </div>
             ) : (
               <>
-                <div className="flex justify-end mb-6">
-                  <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-slate-100">
-                    <button
-                      type="button"
-                      onClick={() => setView("list")}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                        view === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      <List size={13} />
-                      List
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setView("calendar")}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                        view === "calendar" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      <LayoutGrid size={13} />
-                      Calendar
-                    </button>
-                  </div>
-                </div>
                 {view === "calendar" ? (
                   <CalendarView events={events} orgSlug={orgSlug} />
                 ) : (
