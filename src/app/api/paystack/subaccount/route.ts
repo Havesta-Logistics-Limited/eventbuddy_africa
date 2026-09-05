@@ -58,11 +58,24 @@ export async function POST(request: Request) {
   const body = (await request.json()) as Partial<Body>;
   const { action, bankCode, bankName, accountNumber } = body;
 
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("id, name, paystack_subaccount_code, payout_change_status, is_fee_exempt")
-    .eq("owner_user_id", user.id)
-    .maybeSingle();
+  const orgColumns = "id, name, paystack_subaccount_code, payout_change_status, is_fee_exempt";
+  let { data: org } = await supabase.from("organizations").select(orgColumns).eq("owner_user_id", user.id).maybeSingle();
+  if (!org) {
+    // Not the owner — an invited admin member manages payouts identically
+    // (confirmed: full access, same as the owner). event_support members never
+    // reach this route's UI and aren't granted it here either.
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .eq("status", "active")
+      .maybeSingle();
+    if (membership) {
+      const { data: memberOrg } = await supabase.from("organizations").select(orgColumns).eq("id", membership.organization_id).maybeSingle();
+      org = memberOrg;
+    }
+  }
   if (!org) return NextResponse.json({ error: "No organization found for this account." }, { status: 404 });
 
   if (action === "request-change") {

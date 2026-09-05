@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
+import { resolveOrgAccess } from "@/lib/org-access";
 import { sendRegistrationEmail } from "@/lib/registration-email";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
@@ -31,8 +32,11 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     return rateLimitedResponse();
   }
 
-  const { data: org } = await supabase.from("organizations").select("id, slug").eq("owner_user_id", user.id).ilike("slug", slug).maybeSingle();
+  const org = await resolveOrgAccess(supabase, user.id, slug);
   if (!org) return NextResponse.json({ error: "Not authorized for this organization." }, { status: 403 });
+  if (org.role === "event_support" && org.eventId !== eventId) {
+    return NextResponse.json({ error: "Not authorized for this event." }, { status: 403 });
+  }
 
   const { data: event } = await supabase
     .from("events")

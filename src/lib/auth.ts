@@ -6,8 +6,9 @@ import { logout, useSession } from "./store";
 import { createClient } from "./supabase/client";
 import { Role, Session } from "./types";
 
-function fallbackRouteFor(role: Role) {
+function fallbackRouteFor(role: Role, eventId?: string) {
   if (role === "admin") return "/dashboard";
+  if (role === "event_support") return eventId ? `/events/${eventId}` : "/dashboard";
   if (role === "staff") return "/collect";
   return "/leads";
 }
@@ -42,7 +43,7 @@ export function useRequireRole(allowedRoles: Role[]): Session | null {
     if (!session) {
       router.replace("/login");
     } else if (!allowedRoles.includes(session.role)) {
-      router.replace(fallbackRouteFor(session.role));
+      router.replace(fallbackRouteFor(session.role, session.eventId));
     }
   }, [ready, session, allowedRoles, router]);
 
@@ -53,7 +54,7 @@ export function useRequireRole(allowedRoles: Role[]): Session | null {
   // anymore, so every save would fail an RLS check with no clear explanation. Catch
   // that here instead, once per gated page, and sign out cleanly.
   useEffect(() => {
-    if (!ready || !session || session.role !== "admin") return;
+    if (!ready || !session || (session.role !== "admin" && session.role !== "event_support")) return;
     let cancelled = false;
     (async () => {
       const supabase = createClient();
@@ -62,7 +63,16 @@ export function useRequireRole(allowedRoles: Role[]): Session | null {
       } = await supabase.auth.getUser();
       if (!user) return;
       const { data: org } = await supabase.from("organizations").select("id").eq("owner_user_id", user.id).maybeSingle();
-      if (!cancelled && !org) {
+      if (org) return;
+      // Not an owner — an admin/event_support member is still valid as long as
+      // their membership row is still active.
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (!cancelled && !membership) {
         await logout();
         router.replace("/login");
       }

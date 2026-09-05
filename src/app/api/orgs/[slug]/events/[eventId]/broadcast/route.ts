@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBroadcastEmail, BROADCAST_RECIPIENT_CAP } from "@/lib/broadcast-email";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 import { stripHtml } from "@/lib/rich-text";
+import { resolveOrgAccess } from "@/lib/org-access";
 
 type Body = { subject?: string; body?: string };
 
@@ -33,8 +34,11 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     return rateLimitedResponse();
   }
 
-  const { data: org } = await supabase.from("organizations").select("id").eq("owner_user_id", user.id).ilike("slug", slug).maybeSingle();
+  const org = await resolveOrgAccess(supabase, user.id, slug);
   if (!org) return NextResponse.json({ error: "Not authorized for this organization." }, { status: 403 });
+  if (org.role === "event_support" && org.eventId !== eventId) {
+    return NextResponse.json({ error: "Not authorized for this event." }, { status: 403 });
+  }
 
   const { data: event } = await supabase.from("events").select("id, name").eq("id", eventId).eq("organization_id", org.id).maybeSingle();
   if (!event) return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });

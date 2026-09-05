@@ -1,4 +1,4 @@
-export type Role = "admin" | "staff" | "rep";
+export type Role = "admin" | "staff" | "rep" | "event_support";
 
 /** Owned by exactly one event — not shared across an org's events. Two events that
  *  both need "United Kingdom" each get their own independent Destination row (and

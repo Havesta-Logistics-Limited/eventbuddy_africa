@@ -586,7 +586,18 @@ export async function resolveMyOrgId(supabase: ReturnType<typeof createSupabaseB
   } = await supabase.auth.getUser();
   if (!user) return null;
   const { data } = await supabase.from("organizations").select("id").eq("owner_user_id", user.id).maybeSingle();
-  myOrgId = data?.id ?? null;
+  if (data?.id) {
+    myOrgId = data.id;
+    return myOrgId;
+  }
+  // Not an owner — might be an invited admin/event_support member instead.
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+  myOrgId = membership?.organization_id ?? null;
   return myOrgId;
 }
 
@@ -1687,7 +1698,32 @@ async function finishAdminLogin(
   supabase: ReturnType<typeof createSupabaseBrowserClient>,
   user: { id: string; email?: string }
 ): Promise<{ success: boolean; error?: string }> {
-  const { data: org } = await supabase.from("organizations").select("id, name, slug, is_suspended").eq("owner_user_id", user.id).maybeSingle();
+  const { data: ownedOrg } = await supabase.from("organizations").select("id, name, slug, is_suspended").eq("owner_user_id", user.id).maybeSingle();
+
+  let org = ownedOrg;
+  let role: "admin" | "event_support" = "admin";
+  let eventId: string | undefined;
+
+  if (!org) {
+    // Not an owner — check for an invited membership instead (admin: same
+    // access as the owner; event_support: locked to one assigned event).
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("organization_id, role, event_id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+    if (membership) {
+      const { data: memberOrg } = await supabase
+        .from("organizations")
+        .select("id, name, slug, is_suspended")
+        .eq("id", membership.organization_id)
+        .maybeSingle();
+      org = memberOrg;
+      role = membership.role as "admin" | "event_support";
+      eventId = membership.event_id ?? undefined;
+    }
+  }
 
   if (!org) {
     await supabase.auth.signOut();
@@ -1703,7 +1739,8 @@ async function finishAdminLogin(
     id: user.id,
     name: org.name || user.email || "Admin",
     email: user.email || "",
-    role: "admin",
+    role,
+    eventId,
     orgSlug: org.slug ?? undefined,
   };
   persistSession();

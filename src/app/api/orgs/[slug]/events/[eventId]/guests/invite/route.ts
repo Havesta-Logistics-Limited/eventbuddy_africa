@@ -4,6 +4,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { sendGuestInviteEmail } from "@/lib/guest-invite-email";
 import { guestRsvpUrl } from "@/lib/event-guest";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
+import { resolveOrgAccess } from "@/lib/org-access";
 
 const BodySchema = z.object({ guestIds: z.array(z.string().uuid()).min(1).max(50) });
 
@@ -32,8 +33,11 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     return rateLimitedResponse();
   }
 
-  const { data: org } = await supabase.from("organizations").select("id, slug").eq("owner_user_id", user.id).ilike("slug", slug).maybeSingle();
+  const org = await resolveOrgAccess(supabase, user.id, slug);
   if (!org) return NextResponse.json({ error: "Not authorized for this organization." }, { status: 403 });
+  if (org.role === "event_support" && org.eventId !== eventId) {
+    return NextResponse.json({ error: "Not authorized for this event." }, { status: 403 });
+  }
 
   const { data: event } = await supabase
     .from("events")

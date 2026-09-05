@@ -67,7 +67,7 @@ import { RowSkeleton } from "@/components/skeleton";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AuthLoading } from "@/components/auth-loading";
 
-const ADMIN_ONLY: Role[] = ["admin"];
+const ADMIN_ONLY: Role[] = ["admin", "event_support"];
 
 type TabId =
   | "dashboard"
@@ -94,6 +94,12 @@ export default function EventDetailPage() {
   const allEvents = useEvents();
   const dataReady = useDataReady();
   const event = getEventById(params.id);
+
+  useEffect(() => {
+    if (session?.role === "event_support" && session.eventId !== params.id) {
+      router.replace(session.eventId ? `/events/${session.eventId}` : "/login");
+    }
+  }, [session, params.id, router]);
   const leads = useLeads().filter((l) => l.eventId === params.id);
   const registrations = useRegistrations().filter((r) => r.eventId === params.id);
   const staff = useStaff();

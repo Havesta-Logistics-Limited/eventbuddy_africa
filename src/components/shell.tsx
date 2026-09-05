@@ -32,6 +32,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const isAdmin = session?.role === "admin";
   const isRep = session?.role === "rep";
   const isStaff = session?.role === "staff";
+  const isEventSupport = session?.role === "event_support";
 
   // Platform-admin status is a separate axis from the org role above — an org owner
   // may or may not also be a platform admin — so it needs its own check.
@@ -51,9 +52,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
     ? isPlatformAdmin
       ? [...adminNav, { to: "/platform", label: "Platform", icon: ShieldCheck }]
       : adminNav
-    : isRep
-      ? repNav
-      : staffNav;
+    : isEventSupport
+      ? [] // locked to their one event page — nothing else to navigate to
+      : isRep
+        ? repNav
+        : staffNav;
 
   const staffDest = session?.destinationId ? getDestinationById(session.destinationId) : null;
   const staffUni = session?.universityId ? getUniversityById(session.universityId) : null;
