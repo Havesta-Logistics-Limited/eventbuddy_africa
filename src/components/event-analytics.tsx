@@ -216,7 +216,7 @@ export function EventAnalytics({
       <div className={`grid grid-cols-2 ${statsLgCols} gap-4 mb-5`}>
         {stats.map((s, i) => (
           <Reveal key={s.label} index={i}>
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+            <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/85 hover:shadow-md active:translate-y-0 active:scale-[0.98]">
               <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: s.bg }}>
                 <s.icon size={18} style={{ color: s.accent }} />
               </div>
@@ -229,7 +229,7 @@ export function EventAnalytics({
 
       {registrations.length > 0 && (
         <div className="grid md:grid-cols-2 gap-5 mb-5">
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Ticket size={16} className="text-brand-600" />
               <h3 className="font-semibold text-slate-800">Registrations &amp; Participants</h3>
@@ -243,7 +243,7 @@ export function EventAnalytics({
           </div>
 
           {registrationStatusRows.length > 0 && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <ClipboardList size={16} className="text-brand-600" />
                 <h3 className="font-semibold text-slate-800">Registration Status</h3>
@@ -259,7 +259,7 @@ export function EventAnalytics({
       )}
 
       {isEducationFair && leads.length === 0 && (
-        <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-8 text-center mb-5">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-dashed border-slate-300 p-8 text-center mb-5">
           <Users size={24} className="mx-auto mb-2 text-slate-300" />
           <p className="text-sm font-medium text-slate-500">No leads captured for this event yet</p>
           <p className="text-xs text-slate-400 mt-1">Destination, study level, and qualification breakdowns will appear here once staff start capturing leads.</p>
@@ -268,7 +268,7 @@ export function EventAnalytics({
 
       {isEducationFair && leads.length > 0 && (
         <div className="grid md:grid-cols-2 gap-5 mb-5">
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Globe2 size={16} className="text-brand-600" />
               <h3 className="font-semibold text-slate-800">Leads by Destination</h3>
@@ -292,7 +292,7 @@ export function EventAnalytics({
             />
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <GraduationCap size={16} className="text-brand-600" />
               <h3 className="font-semibold text-slate-800">Preferred Study Level</h3>
@@ -325,7 +325,7 @@ export function EventAnalytics({
 
       {isEducationFair && leads.length > 0 && (
         <div className="grid md:grid-cols-2 gap-5 mb-5">
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Award size={16} className="text-brand-600" />
               <h3 className="font-semibold text-slate-800">Highest Qualification</h3>
@@ -333,7 +333,7 @@ export function EventAnalytics({
             <VerticalBars items={[...byEducation, ...(educationMissing > 0 ? [{ label: "No Data", value: educationMissing, color: NO_DATA_COLOR_VERTICAL }] : [])]} />
           </div>
 
-          <div className={`bg-white rounded-2xl border border-slate-200 p-5 shadow-sm ${byUniversity.length === 0 ? "flex flex-col items-center justify-center text-center" : ""}`}>
+          <div className={`bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm ${byUniversity.length === 0 ? "flex flex-col items-center justify-center text-center" : ""}`}>
             <div className="flex items-center gap-2 mb-4">
               <Building2 size={16} className="text-brand-600" />
               <h3 className="font-semibold text-slate-800">Leads by University</h3>
@@ -348,7 +348,7 @@ export function EventAnalytics({
       )}
 
       {isEducationFair && leads.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm mb-5">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm mb-5">
           <div className="flex items-center gap-2 mb-4">
             <BookMarked size={16} className="text-brand-600" />
             <h3 className="font-semibold text-slate-800">Top Courses</h3>
@@ -370,7 +370,7 @@ export function EventAnalytics({
             const total = options.reduce((sum, o) => sum + o.count, 0);
             return (
               <Reveal key={field.id} index={i}>
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <ListChecks size={16} className="text-brand-600" />
                     <h3 className="font-semibold text-slate-800">{field.label || "Untitled question"}</h3>

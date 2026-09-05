@@ -16,6 +16,7 @@ import { EventWizard, type EventWizardData, type RecurrenceConfig } from "@/comp
 import { Reveal } from "@/components/reveal";
 import { EventCardSkeleton, StatTileSkeleton } from "@/components/skeleton";
 import { AuthLoading } from "@/components/auth-loading";
+import { AmbientBackground } from "@/components/ambient-background";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -40,7 +41,7 @@ function EventCard({ event }: { event: EventRecord }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className="h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md hover:border-brand-600/30 transition-all flex flex-col"
+      className="h-full bg-white/75 backdrop-blur-xl rounded-xl border border-white/80 shadow-sm overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:border-brand-600/30 active:translate-y-0 active:scale-[0.99] active:shadow-md"
     >
       <div className="aspect-video bg-slate-100 relative">
         {event.coverImage && !imgError ? (
@@ -240,6 +241,7 @@ export default function DashboardPage() {
 
   return (
     <Shell>
+      <AmbientBackground />
       <div className="p-6 max-w-6xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div className="min-w-0">
@@ -248,7 +250,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={() => setShowWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#C21FAF] hover:bg-[#93147D] transition-[transform,background-color] active:scale-[0.97] shrink-0 whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#C21FAF] shadow-sm hover:bg-[#93147D] hover:shadow-md transition-[transform,background-color,box-shadow] active:scale-[0.97] shrink-0 whitespace-nowrap"
           >
             <Plus size={16} />
             New Event
@@ -260,7 +262,7 @@ export default function DashboardPage() {
             ? Array.from({ length: 5 }).map((_, i) => <StatTileSkeleton key={i} />)
             : stats.map((s, i) => (
                 <Reveal key={s.label} index={i}>
-                  <div className="rounded-xl bg-slate-50 p-4">
+                  <div className="rounded-xl bg-white/60 backdrop-blur-xl border border-white/70 shadow-sm p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-md active:translate-y-0 active:scale-[0.98]">
                     <p className="text-xs text-slate-500 mb-1">{s.label}</p>
                     <p className="text-2xl font-bold text-slate-900 tabular-nums">{s.value}</p>
                   </div>
@@ -269,13 +271,13 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-5">
-          <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+          <div className="flex gap-1 bg-white/60 backdrop-blur-md border border-white/70 rounded-lg p-1 w-fit">
             {(["all", "draft", "active", "upcoming", "completed"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${
-                  filter === f ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"
+                className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-all duration-150 active:scale-[0.95] ${
+                  filter === f ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
                 }`}
               >
                 {f}
@@ -296,10 +298,10 @@ export default function DashboardPage() {
 
           <button
             onClick={() => setShowFilterModal(true)}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm font-medium transition-all duration-150 active:scale-[0.96] ${
               activeFilterCount > 0
                 ? "border-brand-600/30 bg-brand-600/5 text-brand-600"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                : "border-slate-200 bg-white/70 backdrop-blur-md text-slate-600 hover:border-slate-300 hover:bg-white"
             }`}
           >
             <SlidersHorizontal size={14} />

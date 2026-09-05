@@ -63,6 +63,7 @@ import { RichTextDisplay } from "@/components/rich-text-display";
 import { GuestListTab } from "@/components/event-guest-list-tab";
 import { EventQrModal } from "@/components/event-qr-modal";
 import { QrCodesMenu } from "@/components/qr-codes-menu";
+import { AmbientBackground } from "@/components/ambient-background";
 import { RowSkeleton } from "@/components/skeleton";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AuthLoading } from "@/components/auth-loading";
@@ -364,13 +365,14 @@ export default function EventDetailPage() {
 
   return (
     <Shell>
+      <AmbientBackground />
       <div className="p-6 max-w-5xl mx-auto">
         <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-5">
           <ArrowLeft size={15} />
           Back to events
         </Link>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-6">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 shadow-sm p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:justify-between">
             <div className="flex-1 min-w-0">
               <span
@@ -456,7 +458,7 @@ export default function EventDetailPage() {
                   <button
                     onClick={handlePublish}
                     disabled={publishing}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-60"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow-sm transition-all hover:shadow-md active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
                     style={{ background: "#C21FAF" }}
                   >
                     {publishing ? "Publishing…" : "Publish Event"}
@@ -466,14 +468,14 @@ export default function EventDetailPage() {
                 <button
                   onClick={handleDuplicate}
                   disabled={duplicating}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-60"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white/60 backdrop-blur-md text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
                 >
                   <Copy size={14} />
                   {duplicating ? "Duplicating…" : "Duplicate"}
                 </button>
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white/60 backdrop-blur-md text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 hover:shadow-sm active:scale-[0.96]"
                 >
                   <Edit2 size={14} />
                   Edit Event
@@ -483,7 +485,7 @@ export default function EventDetailPage() {
                     setDeleteError("");
                     setShowDeleteConfirm(true);
                   }}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-rose-200 text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-rose-200 bg-white/60 backdrop-blur-md text-sm font-medium text-rose-600 transition-all hover:bg-rose-50 hover:shadow-sm active:scale-[0.96]"
                 >
                   <Trash2 size={14} />
                   Delete
@@ -575,7 +577,7 @@ export default function EventDetailPage() {
                 key={t.id}
                 type="button"
                 onClick={() => setActiveTab(t.id)}
-                className={`pb-3 -mb-px border-b-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`pb-3 -mb-px border-b-2 text-sm font-medium whitespace-nowrap transition-all active:scale-[0.97] ${
                   activeTab === t.id ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-700"
                 }`}
               >

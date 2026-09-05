@@ -31,20 +31,20 @@ export function QrCodesMenu({
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white/60 backdrop-blur-md text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 hover:shadow-sm active:scale-[0.96]"
       >
         <QrCode size={14} />
         QR Codes
         <ChevronDown size={13} className={`transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1.5 w-48 bg-white rounded-lg border border-slate-200 shadow-lg py-1">
+        <div className="absolute right-0 z-20 mt-1.5 w-48 bg-white/90 backdrop-blur-xl rounded-lg border border-white/70 shadow-lg py-1 animate-dropdown-settle origin-top-right">
           <button
             onClick={() => {
               onRegistrationQr();
               setOpen(false);
             }}
-            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            className="w-full text-left px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50 active:scale-[0.98]"
           >
             Registration QR
           </button>
@@ -53,7 +53,7 @@ export function QrCodesMenu({
               onHubQr();
               setOpen(false);
             }}
-            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            className="w-full text-left px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50 active:scale-[0.98]"
           >
             Event Hub QR
           </button>
@@ -62,7 +62,7 @@ export function QrCodesMenu({
               onCheckinQr();
               setOpen(false);
             }}
-            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            className="w-full text-left px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50 active:scale-[0.98]"
           >
             Staff Check-in QR
           </button>
