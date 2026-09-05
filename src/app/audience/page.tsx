@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Download, Megaphone, Search, UserCheck, Users } from "lucide-react";
+import { AlertCircle, Download, Megaphone, Search, Send, UserCheck, Users, X } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { resolveMyOrgId } from "@/lib/store";
@@ -15,6 +15,86 @@ const ADMIN_ONLY: Role[] = ["admin"];
 
 type AudienceMember = { email: string; fullName: string; source: "registered" | "follower"; joinedAt: string };
 
+function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; recipientCount: number; onClose: () => void }) {
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!subject.trim() || !message.trim()) return;
+    setSending(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/audience/blast`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: subject.trim(), message: message.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Couldn't send that blast.");
+      toast.success(`Sent to ${json.sentCount} of ${json.totalCount} people`);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't send that blast.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <h3 className="font-semibold text-slate-900">Send a blast</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleSend} className="p-5 space-y-3">
+          <p className="text-xs text-slate-500 -mt-1 mb-1">Sends to up to {recipientCount.toLocaleString()} people in your audience.</p>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Subject</label>
+            <input
+              required
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="e.g. We're back with a new event!"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Message</label>
+            <textarea
+              required
+              rows={6}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Write your update, invite, or newsletter…"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600"
+            />
+          </div>
+          {error && (
+            <p className="flex items-start gap-1.5 text-xs text-rose-600">
+              <AlertCircle size={13} className="mt-0.5 shrink-0" />
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={sending}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60"
+          >
+            <Send size={14} />
+            {sending ? "Sending…" : "Send blast"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 /** Everyone who's ever joined this org's audience — either by registering for one
  *  of its events, or by explicitly following (see FollowOrgButton) without
  *  necessarily registering for anything. Read-only for now: the actual send
@@ -25,6 +105,7 @@ export default function AudiencePage() {
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState<AudienceMember[]>([]);
   const [search, setSearch] = useState("");
+  const [showBlast, setShowBlast] = useState(false);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -73,13 +154,22 @@ export default function AudiencePage() {
             <p className="text-slate-500 text-sm mt-0.5">Everyone who&apos;s registered for one of your events or followed you directly.</p>
           </div>
           {members.length > 0 && (
-            <button
-              onClick={exportAudience}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700"
-            >
-              <Download size={14} />
-              Export
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowBlast(true)}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700"
+              >
+                <Send size={14} />
+                Send blast
+              </button>
+              <button
+                onClick={exportAudience}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
+              >
+                <Download size={14} />
+                Export
+              </button>
+            </div>
           )}
         </div>
 
@@ -160,6 +250,7 @@ export default function AudiencePage() {
           </div>
         )}
       </div>
+      {showBlast && session.orgSlug && <BlastModal orgSlug={session.orgSlug} recipientCount={members.length} onClose={() => setShowBlast(false)} />}
     </Shell>
   );
 }
