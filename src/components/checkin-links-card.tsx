@@ -3,31 +3,31 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Link2 } from "lucide-react";
+import { EventRecord } from "@/lib/types";
+import { EventSlugEditor } from "@/components/event-slug-editor";
 
 /** Per-event check-in links — the ?event= param locks staff-setup/rep-login to this
  *  one event and skips the "which event are you at?" picker, so a link shared for one
  *  fair can never be used to check in against a different one. Uses the event's own
  *  slug when it has one (same short, readable form the registration link already
- *  uses) instead of always falling back to the raw id. Shown on the event detail
- *  page, scoped to whether that event's template uses reps. Matches the Attendee
- *  registration card's own pattern one section up: a plain "Copy ... link" button,
- *  not the full URL sitting exposed in a text box by default. */
+ *  uses) instead of always falling back to the raw id — editable right here via
+ *  EventSlugEditor, the same control the registration card uses one section up,
+ *  since both links share this one field. Shown on the event detail page, scoped
+ *  to whether that event's template uses reps. */
 export function CheckinLinksCard({
   orgSlug,
-  eventId,
-  eventSlug,
+  event,
   showStaffLink = true,
   showRepLink = true,
 }: {
   orgSlug: string;
-  eventId: string;
-  eventSlug?: string;
+  event: EventRecord;
   showStaffLink?: boolean;
   showRepLink?: boolean;
 }) {
   const [copied, setCopied] = useState<"staff" | "rep" | null>(null);
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const eventParam = eventSlug || eventId;
+  const eventParam = event.slug || event.id;
   const links = [
     ...(showStaffLink ? [{ key: "staff" as const, label: "Staff check-in link", path: `/${orgSlug}/staff-setup?event=${eventParam}` }] : []),
     ...(showRepLink ? [{ key: "rep" as const, label: "Rep check-in link", path: `/${orgSlug}/rep-login?event=${eventParam}` }] : []),
@@ -49,7 +49,7 @@ export function CheckinLinksCard({
       <p className="text-xs text-slate-500 mb-3">
         {who} this to check in, no admin login needed — unique to this event, it can&apos;t be used to check in against a different one.
       </p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 mb-2">
         {links.map(({ key, label, path }) => (
           <button
             key={key}
@@ -62,6 +62,7 @@ export function CheckinLinksCard({
           </button>
         ))}
       </div>
+      <EventSlugEditor event={event} />
     </div>
   );
 }

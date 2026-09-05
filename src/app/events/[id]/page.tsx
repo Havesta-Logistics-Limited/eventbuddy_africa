@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { AlertCircle, ArrowLeft, Calendar, Check, Copy, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, QrCode, RefreshCw, Repeat, Trash2, Video, X, Search } from "lucide-react";
+import { AlertCircle, ArrowLeft, Calendar, Copy, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, QrCode, RefreshCw, Repeat, Trash2, Video, X, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import {
@@ -49,6 +49,7 @@ import { UniversitiesTab } from "@/components/universities-tab";
 import { DestinationsUniversitiesManagement } from "@/components/destinations-universities-management";
 import { ProspectsTab } from "@/components/prospects-tab";
 import { StaffRosterTab } from "@/components/staff-roster-tab";
+import { EventSlugEditor } from "@/components/event-slug-editor";
 import { RepsManagement } from "@/components/reps-management";
 import { TicketsTab } from "@/components/tickets-tab";
 import { ScheduleTab } from "@/components/event-schedule-tab";
@@ -128,10 +129,6 @@ export default function EventDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
-  const [editingSlug, setEditingSlug] = useState(false);
-  const [slugInput, setSlugInput] = useState("");
-  const [slugError, setSlugError] = useState("");
-  const [savingSlug, setSavingSlug] = useState(false);
 
   // A freshly duplicated event lands here with ?edit=1 so the admin can
   // adjust the copy (name, dates, venue) immediately instead of hunting
@@ -246,34 +243,6 @@ export default function EventDetailPage() {
     setTimeout(() => setLinkCopied(false), 2000);
   }
 
-  function slugify(value: string) {
-    return value
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  }
-
-  async function handleSaveSlug() {
-    if (!event) return;
-    const cleaned = slugify(slugInput);
-    setSavingSlug(true);
-    setSlugError("");
-    try {
-      // `cleaned` is always a real string here (never undefined) specifically so
-      // eventToRow's `!== undefined` check fires and an empty value actually nulls
-      // the column out — passing undefined would make it skip the field entirely,
-      // silently failing to clear a previously-set custom link.
-      await updateEvent(event.id, { slug: cleaned });
-      setEditingSlug(false);
-      toast.success(cleaned ? "Custom link saved" : "Custom link removed");
-    } catch (err) {
-      const code = err instanceof PersistError && err.cause && typeof err.cause === "object" && "code" in err.cause ? (err.cause as { code?: string }).code : undefined;
-      setSlugError(code === "23505" ? "This link is already taken — try another." : err instanceof PersistError ? err.message : "Couldn't save this link.");
-    } finally {
-      setSavingSlug(false);
-    }
-  }
 
   if (!session) return <AuthLoading />;
 
@@ -572,53 +541,11 @@ export default function EventDetailPage() {
                 </button>
               </div>
             ) : null}
-            {(event.eventFormat === "virtual" || event.selfRegistrationEnabled !== false) &&
-              (editingSlug ? (
-                <div className="mt-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400 shrink-0 hidden sm:inline">eventbuddy.africa/discover/</span>
-                    <input
-                      autoFocus
-                      value={slugInput}
-                      onChange={(e) => setSlugInput(e.target.value)}
-                      placeholder="your-event-name"
-                      className="min-w-0 flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-600"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSaveSlug}
-                      disabled={savingSlug}
-                      className="p-1.5 rounded-lg text-emerald-600 border border-emerald-200 hover:bg-emerald-50 disabled:opacity-50 shrink-0"
-                    >
-                      <Check size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingSlug(false);
-                        setSlugError("");
-                      }}
-                      className="p-1.5 rounded-lg text-slate-500 border border-slate-200 hover:bg-slate-50 shrink-0"
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1.5">Leave blank to use the default link. Letters, numbers, and dashes only.</p>
-                  {slugError && <p className="text-xs text-rose-600 mt-1">{slugError}</p>}
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSlugInput(event.slug ?? "");
-                    setEditingSlug(true);
-                  }}
-                  className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-slate-400 hover:text-brand-600"
-                >
-                  <Edit2 size={10} />
-                  {event.slug ? "Edit custom link" : "Customize this link"}
-                </button>
-              ))}
+            {(event.eventFormat === "virtual" || event.selfRegistrationEnabled !== false) && (
+              <div className="mt-2">
+                <EventSlugEditor event={event} />
+              </div>
+            )}
             {!(event.eventFormat === "virtual" || event.selfRegistrationEnabled !== false) && (
               <div>
                 <h2 className="font-semibold text-slate-800 text-sm mb-1">Attendee registration</h2>
@@ -710,8 +637,7 @@ export default function EventDetailPage() {
               destinations={destinations}
               universities={universities}
               orgSlug={session.orgSlug}
-              eventId={event.id}
-              eventSlug={event.slug}
+              event={event}
             />
           </div>
         )}
@@ -728,7 +654,7 @@ export default function EventDetailPage() {
                   destinations={destinations}
                   universities={universities}
                   orgSlug={session.orgSlug}
-                  eventId={event.id}
+                  event={event}
                 />
               ) : (
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-sm text-slate-500">

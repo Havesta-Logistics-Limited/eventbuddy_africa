@@ -1,6 +1,6 @@
 "use client";
 
-import { Destination, StaffRecord, University } from "@/lib/types";
+import { Destination, EventRecord, StaffRecord, University } from "@/lib/types";
 import { CheckinLinksCard } from "@/components/checkin-links-card";
 
 /** Read-only roster of everyone who has signed in for this event via the staff or rep
@@ -12,20 +12,18 @@ export function StaffRosterTab({
   destinations,
   universities,
   orgSlug,
-  eventId,
-  eventSlug,
+  event,
 }: {
   role: "staff" | "rep";
   staff: StaffRecord[];
   destinations: Destination[];
   universities: University[];
   orgSlug?: string;
-  eventId: string;
-  eventSlug?: string;
+  event: EventRecord;
 }) {
   return (
     <div>
-      {orgSlug && <CheckinLinksCard orgSlug={orgSlug} eventId={eventId} eventSlug={eventSlug} showStaffLink={role === "staff"} showRepLink={role === "rep"} />}
+      {orgSlug && <CheckinLinksCard orgSlug={orgSlug} event={event} showStaffLink={role === "staff"} showRepLink={role === "rep"} />}
 
       {staff.length === 0 ? (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-10 text-center">
