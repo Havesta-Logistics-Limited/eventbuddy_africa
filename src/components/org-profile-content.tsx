@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Calendar, MapPin, Video, BadgeCheck, CalendarX } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, LayoutGrid, List, MapPin, Video, BadgeCheck, CalendarX } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { FollowOrgButton } from "@/components/follow-org-button";
 import { formatDate, formatTime } from "@/lib/utils";
@@ -78,6 +78,103 @@ function EventCard({ event, orgSlug, i }: { event: OrgProfileEvent; orgSlug: str
   );
 }
 
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function toDateStr(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+/** A month grid alongside the default list view — same events, arranged by
+ *  date instead of upcoming/past, so a visitor can see at a glance which days
+ *  this organizer has something on. Each cell links straight to the event,
+ *  same destination as an EventCard. */
+function CalendarView({ events, orgSlug }: { events: OrgProfileEvent[]; orgSlug: string }) {
+  const [month, setMonth] = useState(() => {
+    const first = events.slice().sort((a, b) => a.date.localeCompare(b.date))[0];
+    const base = first ? new Date(`${first.date}T00:00:00`) : new Date();
+    return new Date(base.getFullYear(), base.getMonth(), 1);
+  });
+
+  const eventsByDate = new Map<string, OrgProfileEvent[]>();
+  for (const event of events) {
+    const start = new Date(`${event.date}T00:00:00`);
+    const end = new Date(`${event.endDate ?? event.date}T00:00:00`);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const key = toDateStr(d);
+      const arr = eventsByDate.get(key) ?? [];
+      arr.push(event);
+      eventsByDate.set(key, arr);
+    }
+  }
+
+  const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+  const gridStart = new Date(monthStart);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+  const today = toDateStr(new Date());
+
+  const cells = Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(gridStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-slate-900">{monthStart.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</h3>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setMonth(new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1))}
+            className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMonth(new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1))}
+            className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+            aria-label="Next month"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 gap-px bg-slate-100 rounded-lg overflow-hidden border border-slate-100">
+        {WEEKDAY_LABELS.map((label) => (
+          <div key={label} className="bg-slate-50 text-center text-[11px] font-medium text-slate-400 py-1.5">
+            {label}
+          </div>
+        ))}
+        {cells.map((day) => {
+          const key = toDateStr(day);
+          const dayEvents = eventsByDate.get(key) ?? [];
+          const inMonth = day.getMonth() === monthStart.getMonth();
+          return (
+            <div key={key} className={`bg-white min-h-[92px] p-1.5 ${inMonth ? "" : "bg-slate-50/50"}`}>
+              <p className={`text-[11px] mb-1 ${key === today ? "font-bold text-brand-600" : inMonth ? "text-slate-400" : "text-slate-300"}`}>{day.getDate()}</p>
+              <div className="space-y-1">
+                {dayEvents.slice(0, 2).map((event) => (
+                  <Link
+                    key={event.id}
+                    href={event.slug ? `/${event.slug}` : `/${orgSlug}/events/${event.id}/register`}
+                    className="block text-[10px] leading-snug px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 truncate hover:bg-brand-100"
+                    title={event.name}
+                  >
+                    {event.name}
+                  </Link>
+                ))}
+                {dayEvents.length > 2 && <p className="text-[10px] text-slate-400 px-1.5">+{dayEvents.length - 2} more</p>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /** Public /[orgSlug] profile page — an organizer's name, optional bio, and every
  *  publicly reachable event they've run, split into upcoming and past. Client-
  *  rendered like /discover (the sibling page.tsx wrapper handles generateMetadata
@@ -87,6 +184,7 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
   const [events, setEvents] = useState<OrgProfileEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [view, setView] = useState<"list" | "calendar">("list");
 
   useEffect(() => {
     fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/public-profile`)
@@ -172,25 +270,55 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
               </div>
             ) : (
               <>
-                {upcoming.length > 0 && (
-                  <div className="mb-10">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-4">Upcoming</h2>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                      {upcoming.map((event, i) => (
-                        <EventCard key={event.id} event={event} orgSlug={orgSlug} i={i} />
-                      ))}
-                    </div>
+                <div className="flex justify-end mb-6">
+                  <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setView("list")}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        view === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      <List size={13} />
+                      List
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setView("calendar")}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        view === "calendar" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      <LayoutGrid size={13} />
+                      Calendar
+                    </button>
                   </div>
-                )}
-                {past.length > 0 && (
-                  <div>
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-4">Past events</h2>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 opacity-80">
-                      {past.map((event, i) => (
-                        <EventCard key={event.id} event={event} orgSlug={orgSlug} i={i} />
-                      ))}
-                    </div>
-                  </div>
+                </div>
+                {view === "calendar" ? (
+                  <CalendarView events={events} orgSlug={orgSlug} />
+                ) : (
+                  <>
+                    {upcoming.length > 0 && (
+                      <div className="mb-10">
+                        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-4">Upcoming</h2>
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                          {upcoming.map((event, i) => (
+                            <EventCard key={event.id} event={event} orgSlug={orgSlug} i={i} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {past.length > 0 && (
+                      <div>
+                        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-4">Past events</h2>
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 opacity-80">
+                          {past.map((event, i) => (
+                            <EventCard key={event.id} event={event} orgSlug={orgSlug} i={i} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}
