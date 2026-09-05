@@ -17,13 +17,17 @@
  *  function has itself validated (an http(s) href, nothing else), which rules
  *  out attribute-based injection regardless of what was in the original attrs
  *  string, and the fixed tag allowlist rules out anything else executable
- *  (script/style/img/on*-handler-bearing tags are stripped entirely, tag and
- *  attributes both). Has zero runtime dependencies, so there's nothing left for
- *  a bundler to fail to trace. */
-const ALLOWED_TAGS = new Set(["p", "strong", "em", "ul", "ol", "li", "a", "br"]);
+ *  (script/style/on*-handler-bearing tags are stripped entirely, tag and
+ *  attributes both — img is allowed but, like `a`, only ever rebuilt from a
+ *  validated `src`, never the original attrs string, so an `onerror`/`onload`
+ *  handler on the original tag can never survive). Has zero runtime
+ *  dependencies, so there's nothing left for a bundler to fail to trace. */
+const ALLOWED_TAGS = new Set(["p", "strong", "em", "ul", "ol", "li", "a", "br", "img"]);
 
 const TAG_RE = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g;
 const HREF_RE = /href\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+const SRC_RE = /src\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+const ALT_RE = /alt\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
 
 /** Safe to pass straight to dangerouslySetInnerHTML. */
 export function sanitizeRichTextHtml(html: string): string {
@@ -39,6 +43,14 @@ export function sanitizeRichTextHtml(html: string): string {
         return `<a href="${href.replace(/"/g, "&quot;")}" target="_blank" rel="noreferrer noopener">`;
       }
       return "<a>";
+    }
+    if (tagName === "img") {
+      const srcMatch = SRC_RE.exec(attrs);
+      const src = srcMatch ? srcMatch[1] ?? srcMatch[2] ?? "" : "";
+      if (!/^(https:\/\/|data:image\/)/i.test(src)) return "";
+      const altMatch = ALT_RE.exec(attrs);
+      const alt = (altMatch ? altMatch[1] ?? altMatch[2] ?? "" : "").replace(/"/g, "&quot;");
+      return `<img src="${src.replace(/"/g, "&quot;")}" alt="${alt}" style="max-width:100%;">`;
     }
     return `<${tagName}>`;
   });

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extension-placeholder";
-import { Bold, Italic, List, ListOrdered, Link2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Image as TiptapImage } from "@tiptap/extension-image";
+import { Bold, Italic, Image as ImageIcon, Link2, List, ListOrdered, Loader2 } from "lucide-react";
+import { cn, compressImageFile } from "@/lib/utils";
 
 function ToolbarButton({
   onClick,
@@ -37,9 +38,10 @@ function ToolbarButton({
   );
 }
 
-/** A minimal rich text editor (bold/italic/lists/links only — no headings, code
- *  blocks, or images) for organizer-authored copy that attendees actually read:
- *  event descriptions and announcements. Stores its value as HTML; render it back
+/** A minimal rich text editor (bold/italic/lists/links, plus images when
+ *  `allowImages` is set — no headings or code blocks) for organizer-authored
+ *  copy that attendees actually read: event descriptions, announcements, and
+ *  audience blasts. Stores its value as HTML; render it back
  *  with <RichTextDisplay> (see rich-text-display.tsx), never raw — the HTML this
  *  produces is schema-constrained by Tiptap itself, but content already in the
  *  database could in principle have been written by some other path, so the
@@ -50,13 +52,24 @@ export function RichTextEditor({
   placeholder,
   className,
   minHeightClass = "min-h-[90px]",
+  allowImages = false,
 }: {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
   className?: string;
   minHeightClass?: string;
+  /** Loads Tiptap's Image extension + an "Insert image" toolbar button — off by
+   *  default so existing callers (event descriptions, announcements) are
+   *  unaffected. Images are stored as data URLs in the HTML, same as every
+   *  other image upload in this app; callers that email this content (the
+   *  audience blast) are responsible for converting embedded data URLs into
+   *  real attachments before sending, since email clients don't render them. */
+  allowImages?: boolean;
 }) {
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -69,6 +82,7 @@ export function RichTextEditor({
         link: { openOnClick: false, autolink: true, HTMLAttributes: { rel: "noreferrer noopener", target: "_blank" } },
       }),
       Placeholder.configure({ placeholder: placeholder || "" }),
+      ...(allowImages ? [TiptapImage.configure({ HTMLAttributes: { style: "max-width:100%;" } })] : []),
     ],
     content: value,
     immediatelyRender: false,
@@ -104,6 +118,19 @@ export function RichTextEditor({
     editor.chain().focus().extendMarkRange("link").setLink({ href: url.trim() }).run();
   };
 
+  const handleImageFile = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const dataUrl = await compressImageFile(file, 1000, 0.85);
+      editor.chain().focus().setImage({ src: dataUrl }).run();
+    } catch {
+      // A failed image read just means nothing gets inserted — no error state
+      // needed for a single toolbar action the user can immediately retry.
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   return (
     <div className={cn("rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-brand-600", className)}>
       <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-slate-100">
@@ -124,6 +151,25 @@ export function RichTextEditor({
         <ToolbarButton label="Link" active={editor.isActive("link")} onClick={setLink}>
           <Link2 size={14} />
         </ToolbarButton>
+        {allowImages && (
+          <>
+            <span className="w-px h-4 bg-slate-200 mx-1" />
+            <ToolbarButton label="Insert image" disabled={uploadingImage} onClick={() => fileInputRef.current?.click()}>
+              {uploadingImage ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
+            </ToolbarButton>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) handleImageFile(file);
+              }}
+            />
+          </>
+        )}
       </div>
       <EditorContent editor={editor} className="px-3.5 py-2.5" />
     </div>

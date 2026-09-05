@@ -1,36 +1,73 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Download, Megaphone, Search, Send, UserCheck, Users, X } from "lucide-react";
+import { AlertCircle, ChevronDown, Download, Megaphone, Search, Send, UserCheck, UserMinus, Users, X } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import { resolveMyOrgId } from "@/lib/store";
+import { resolveMyOrgId, useEvents, useLeads, useRegistrations } from "@/lib/store";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Role } from "@/lib/types";
 import { downloadCsv } from "@/lib/csv";
 import { AuthLoading } from "@/components/auth-loading";
+import { RichTextEditor } from "@/components/rich-text-editor";
+import { getEventStatus } from "@/lib/capture-window";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
 type AudienceMember = { email: string; fullName: string; source: "registered" | "follower"; joinedAt: string };
+type StatusFilter = "registered" | "checked_in" | "no_show";
 
 function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; recipientCount: number; onClose: () => void }) {
+  const events = useEvents();
+  const registrations = useRegistrations();
+  const leads = useLeads();
+
   const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
+  const [messageHtml, setMessageHtml] = useState("");
+  const [showCta, setShowCta] = useState(false);
+  const [ctaLabel, setCtaLabel] = useState("");
+  const [ctaUrl, setCtaUrl] = useState("");
+  const [targetMode, setTargetMode] = useState<"everyone" | "event">("everyone");
+  const [eventId, setEventId] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("registered");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
+  const selectedEvent = events.find((e) => e.id === eventId);
+  const isVirtual = selectedEvent?.eventFormat === "virtual";
+  const eventEnded = selectedEvent ? getEventStatus(selectedEvent) === "completed" : false;
+
+  const previewCount = useMemo(() => {
+    if (targetMode === "everyone") return recipientCount;
+    if (!selectedEvent) return 0;
+    if (isVirtual) return leads.filter((l) => l.eventId === selectedEvent.id && l.status === "registered").length;
+    const eventRegs = registrations.filter((r) => r.eventId === selectedEvent.id);
+    if (statusFilter === "checked_in") return eventRegs.filter((r) => r.status === "checked_in").length;
+    if (statusFilter === "no_show") return eventRegs.filter((r) => r.status === "registered" && !r.checkedInAt).length;
+    return eventRegs.filter((r) => r.status === "registered" || r.status === "checked_in").length;
+  }, [targetMode, recipientCount, selectedEvent, isVirtual, registrations, leads, statusFilter]);
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
-    if (!subject.trim() || !message.trim()) return;
+    if (!subject.trim() || !messageHtml.trim()) return;
+    if (targetMode === "event" && !eventId) {
+      setError("Pick an event to target.");
+      return;
+    }
     setSending(true);
     setError("");
     try {
       const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/audience/blast`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: subject.trim(), message: message.trim() }),
+        body: JSON.stringify({
+          subject: subject.trim(),
+          messageHtml,
+          ctaLabel: showCta && ctaLabel.trim() ? ctaLabel.trim() : undefined,
+          ctaUrl: showCta && ctaUrl.trim() ? ctaUrl.trim() : undefined,
+          target: targetMode === "event" ? { eventId, status: statusFilter } : undefined,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Couldn't send that blast.");
@@ -45,15 +82,64 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0">
           <h3 className="font-semibold text-slate-900">Send a blast</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSend} className="p-5 space-y-3">
-          <p className="text-xs text-slate-500 -mt-1 mb-1">Sends to up to {recipientCount.toLocaleString()} people in your audience.</p>
+        <form onSubmit={handleSend} className="p-5 space-y-4 overflow-y-auto">
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Send to</label>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={targetMode}
+                onChange={(e) => setTargetMode(e.target.value as "everyone" | "event")}
+                className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+              >
+                <option value="everyone">Everyone in my audience</option>
+                <option value="event">One event&apos;s attendees</option>
+              </select>
+              {targetMode === "event" && (
+                <>
+                  <select
+                    value={eventId}
+                    onChange={(e) => {
+                      setEventId(e.target.value);
+                      setStatusFilter("registered");
+                    }}
+                    className="min-w-0 flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  >
+                    <option value="" disabled>
+                      Select an event
+                    </option>
+                    {events.map((ev) => (
+                      <option key={ev.id} value={ev.id}>
+                        {ev.name}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedEvent && (
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                      className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    >
+                      <option value="registered">Registered</option>
+                      {!isVirtual && <option value="checked_in">Checked-in</option>}
+                      {!isVirtual && eventEnded && <option value="no_show">No-show</option>}
+                    </select>
+                  )}
+                </>
+              )}
+            </div>
+            {targetMode === "event" && selectedEvent && !isVirtual && !eventEnded && statusFilter === "no_show" && (
+              <p className="text-xs text-amber-600 mt-1.5">No-show can only be targeted once this event has ended.</p>
+            )}
+            <p className="text-xs text-slate-500 mt-1.5">Sends to up to {previewCount.toLocaleString()} people.</p>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1.5">Subject</label>
             <input
@@ -66,15 +152,55 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1.5">Message</label>
-            <textarea
-              required
-              rows={6}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
+            <RichTextEditor
+              value={messageHtml}
+              onChange={setMessageHtml}
               placeholder="Write your update, invite, or newsletter…"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600"
+              minHeightClass="min-h-[220px]"
+              allowImages
             />
           </div>
+
+          <div>
+            {!showCta ? (
+              <button type="button" onClick={() => setShowCta(true)} className="text-xs font-medium text-brand-600 hover:underline">
+                + Add a button
+              </button>
+            ) : (
+              <div className="border border-slate-200 rounded-lg p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-slate-700">Button</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCta(false);
+                      setCtaLabel("");
+                      setCtaUrl("");
+                    }}
+                    className="text-xs text-slate-400 hover:text-slate-600"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-2.5">
+                  <input
+                    value={ctaLabel}
+                    onChange={(e) => setCtaLabel(e.target.value)}
+                    placeholder="Button text, e.g. Register now"
+                    className="px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                  <input
+                    type="url"
+                    value={ctaUrl}
+                    onChange={(e) => setCtaUrl(e.target.value)}
+                    placeholder="https://…"
+                    className="px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {error && (
             <p className="flex items-start gap-1.5 text-xs text-rose-600">
               <AlertCircle size={13} className="mt-0.5 shrink-0" />
@@ -95,6 +221,55 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
   );
 }
 
+function UnsubscribedSection({ orgId }: { orgId: string }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<{ email: string; createdAt: string }[]>([]);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase
+      .from("organization_email_suppressions")
+      .select("email, created_at")
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setRows((data ?? []).map((r) => ({ email: r.email, createdAt: r.created_at })));
+        setLoading(false);
+      });
+  }, [orgId]);
+
+  return (
+    <div className="mt-8 bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <button type="button" onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
+        <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <UserMinus size={15} className="text-slate-400" />
+          Unsubscribed {!loading && `(${rows.length})`}
+        </span>
+        <ChevronDown size={15} className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="border-t border-slate-100">
+          {loading ? (
+            <div className="p-4 text-xs text-slate-400">Loading…</div>
+          ) : rows.length === 0 ? (
+            <div className="p-4 text-xs text-slate-400">Nobody has unsubscribed from your blasts.</div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {rows.map((r) => (
+                <div key={r.email} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                  <span className="text-slate-700">{r.email}</span>
+                  <span className="text-xs text-slate-400">{new Date(r.createdAt).toLocaleDateString("en-GB")}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Everyone who's ever joined this org's audience — either by registering for one
  *  of its events, or by explicitly following (see FollowOrgButton) without
  *  necessarily registering for anything. Read-only for now: the actual send
@@ -106,15 +281,17 @@ export default function AudiencePage() {
   const [members, setMembers] = useState<AudienceMember[]>([]);
   const [search, setSearch] = useState("");
   const [showBlast, setShowBlast] = useState(false);
+  const [orgId, setOrgId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
-    resolveMyOrgId(supabase).then(async (orgId) => {
-      if (!orgId) {
+    resolveMyOrgId(supabase).then(async (id) => {
+      if (!id) {
         setLoading(false);
         return;
       }
-      const { data, error } = await supabase.rpc("organization_audience", { p_organization_id: orgId });
+      setOrgId(id);
+      const { data, error } = await supabase.rpc("organization_audience", { p_organization_id: id });
       if (error) {
         toast.error("Couldn't load your audience.");
       } else {
@@ -251,6 +428,8 @@ export default function AudiencePage() {
             </div>
           </div>
         )}
+
+        {orgId && <UnsubscribedSection orgId={orgId} />}
       </div>
       {showBlast && session.orgSlug && <BlastModal orgSlug={session.orgSlug} recipientCount={members.length} onClose={() => setShowBlast(false)} />}
     </Shell>
