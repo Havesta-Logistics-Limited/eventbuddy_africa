@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Calendar, Users, Settings, LogOut, Menu, X, BookOpen, ScanLine, ShieldCheck } from "lucide-react";
+import { Calendar, Users, Settings, LogOut, Menu, X, BookOpen, ScanLine, ShieldCheck, Megaphone } from "lucide-react";
 import { getDestinationById, getEventById, getUniversityById, logout, useSession } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/logo";
@@ -11,6 +11,7 @@ import { Logo } from "@/components/logo";
 const adminNav = [
   { to: "/dashboard", label: "Events", icon: Calendar },
   { to: "/leads", label: "Leads", icon: Users },
+  { to: "/audience", label: "Audience", icon: Megaphone },
   { to: "/admin", label: "Settings", icon: Settings },
 ];
 

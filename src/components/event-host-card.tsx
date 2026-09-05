@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Flag, Mail, X } from "lucide-react";
+import { FollowOrgButton } from "@/components/follow-org-button";
 
 const AVATAR_COLORS = ["#FCE7F3", "#FEF3C7", "#DBEAFE", "#D1FAE5", "#EDE9FE", "#FFE4E6", "#FFEDD5", "#E0F2FE"];
 const AVATAR_TEXT = ["#BE185D", "#B45309", "#1D4ED8", "#047857", "#6D28D9", "#BE123C", "#C2410C", "#0369A1"];
@@ -150,7 +151,8 @@ export function EventHostCard({
         <div className="w-10 h-10 rounded-full bg-[#FF8AF5]/20 text-[#FF8AF5] flex items-center justify-center font-semibold shrink-0">
           {orgName.charAt(0).toUpperCase() || "?"}
         </div>
-        <p className="font-medium text-white">{orgName}</p>
+        <p className="font-medium text-white flex-1 min-w-0 truncate">{orgName}</p>
+        <FollowOrgButton orgSlug={orgSlug} theme="dark" />
       </div>
 
       {totalCount > 0 && (

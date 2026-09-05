@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Calendar, MapPin, Video, BadgeCheck, CalendarX } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { FollowOrgButton } from "@/components/follow-org-button";
 import { formatDate, formatTime } from "@/lib/utils";
 import { formatNaira } from "@/lib/billing";
 
@@ -146,13 +147,14 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
               >
                 {profile.name.trim().charAt(0).toUpperCase() || "?"}
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <h1 className="font-display text-3xl sm:text-4xl text-slate-900 flex items-center gap-2">
                   {profile.name}
                   {profile.isVerified && <BadgeCheck size={22} className="text-brand-600" />}
                 </h1>
                 {profile.bio && <p className="text-slate-500 mt-1 max-w-xl">{profile.bio}</p>}
               </div>
+              <FollowOrgButton orgSlug={orgSlug} theme="light" />
             </div>
           </section>
 
