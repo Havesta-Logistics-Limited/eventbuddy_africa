@@ -570,14 +570,14 @@ export default function EventDetailPage() {
 
         </div>
 
-        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 border-b border-slate-200 mb-6">
-          <div className="flex flex-wrap gap-x-5 gap-y-1">
+        <div className="flex items-start gap-3 border-b border-slate-200 mb-6">
+          <div className="flex gap-x-5 overflow-x-auto min-w-0">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => setActiveTab(t.id)}
-                className={`pb-3 -mb-px border-b-2 text-sm font-medium whitespace-nowrap transition-all active:scale-[0.97] ${
+                className={`pb-3 -mb-px border-b-2 text-sm font-medium whitespace-nowrap shrink-0 transition-all active:scale-[0.97] ${
                   activeTab === t.id ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-700"
                 }`}
               >

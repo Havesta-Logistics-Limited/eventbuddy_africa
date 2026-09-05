@@ -152,7 +152,7 @@ function CalendarView({ events, orgSlug }: { events: OrgProfileEvent[]; orgSlug:
           const dayEvents = eventsByDate.get(key) ?? [];
           const inMonth = day.getMonth() === monthStart.getMonth();
           return (
-            <div key={key} className={`bg-white min-h-[92px] p-1.5 ${inMonth ? "" : "bg-slate-50/50"}`}>
+            <div key={key} className={`bg-white min-h-[64px] sm:min-h-[92px] p-1 sm:p-1.5 ${inMonth ? "" : "bg-slate-50/50"}`}>
               <p className={`text-[11px] mb-1 ${key === today ? "font-bold text-brand-600" : inMonth ? "text-slate-400" : "text-slate-300"}`}>{day.getDate()}</p>
               <div className="space-y-1">
                 {dayEvents.slice(0, 2).map((event) => (
