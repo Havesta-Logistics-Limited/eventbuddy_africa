@@ -237,7 +237,7 @@ function AddToCalendarMenu({ event, orgSlug }: { event: PublicEvent; orgSlug: st
         <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div className="absolute left-0 sm:right-0 sm:left-auto z-20 mt-1.5 w-52 bg-white rounded-xl border border-slate-200 shadow-lg py-1 animate-dropdown-settle origin-top">
+        <div className="absolute right-0 z-20 mt-1.5 w-52 bg-white rounded-xl border border-slate-200 shadow-lg py-1 animate-dropdown-settle origin-top-right">
           <a
             href={buildGoogleCalendarUrl(event)}
             target="_blank"

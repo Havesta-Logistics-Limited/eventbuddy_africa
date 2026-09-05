@@ -7,6 +7,7 @@ import { Logo } from "@/components/logo";
 import { FollowOrgButton } from "@/components/follow-org-button";
 import { formatDate, formatTime } from "@/lib/utils";
 import { formatNaira } from "@/lib/billing";
+import { getEventStatus } from "@/lib/capture-window";
 
 type OrgProfileEvent = {
   id: string;
@@ -16,6 +17,7 @@ type OrgProfileEvent = {
   endDate?: string;
   startTime?: string;
   endTime?: string;
+  timezone?: string;
   location: string;
   venue: string;
   coverImage?: string;
@@ -201,9 +203,13 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
       .finally(() => setLoading(false));
   }, [orgSlug]);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const upcoming = events.filter((e) => (e.endDate ?? e.date) >= today).sort((a, b) => a.date.localeCompare(b.date));
-  const past = events.filter((e) => (e.endDate ?? e.date) < today);
+  // Same status logic the register page and dashboard already use — a plain
+  // date comparison alone can't tell "upcoming" from "happening right now"
+  // for a multi-day event that's started but not finished yet.
+  const eventStatuses = new Map(events.map((e) => [e.id, getEventStatus(e)]));
+  const ongoing = events.filter((e) => eventStatuses.get(e.id) === "active").sort((a, b) => a.date.localeCompare(b.date));
+  const upcoming = events.filter((e) => eventStatuses.get(e.id) === "upcoming").sort((a, b) => a.date.localeCompare(b.date));
+  const past = events.filter((e) => eventStatuses.get(e.id) === "completed");
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -298,6 +304,19 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
                   <CalendarView events={events} orgSlug={orgSlug} />
                 ) : (
                   <>
+                    {ongoing.length > 0 && (
+                      <div className="mb-10">
+                        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-emerald-600 mb-4">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          Happening now
+                        </h2>
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                          {ongoing.map((event, i) => (
+                            <EventCard key={event.id} event={event} orgSlug={orgSlug} i={i} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {upcoming.length > 0 && (
                       <div className="mb-10">
                         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-4">Upcoming</h2>
