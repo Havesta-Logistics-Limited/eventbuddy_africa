@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { AlertCircle, ArrowLeft, Calendar, Copy, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, QrCode, RefreshCw, Repeat, Trash2, Video, X, Search } from "lucide-react";
+import { AlertCircle, ArrowLeft, Calendar, Copy, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, RefreshCw, Repeat, Trash2, Video, X, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import {
@@ -62,6 +62,7 @@ import { SurveyTab } from "@/components/event-survey-tab";
 import { RichTextDisplay } from "@/components/rich-text-display";
 import { GuestListTab } from "@/components/event-guest-list-tab";
 import { EventQrModal } from "@/components/event-qr-modal";
+import { QrCodesMenu } from "@/components/qr-codes-menu";
 import { RowSkeleton } from "@/components/skeleton";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AuthLoading } from "@/components/auth-loading";
@@ -363,7 +364,7 @@ export default function EventDetailPage() {
         </Link>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-6">
-          <div className="flex flex-wrap items-start gap-4 justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:justify-between">
             <div className="flex-1 min-w-0">
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${
@@ -454,20 +455,7 @@ export default function EventDetailPage() {
                     {publishing ? "Publishing…" : "Publish Event"}
                   </button>
                 )}
-                <button
-                  onClick={() => setShowRegQr(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  <QrCode size={14} />
-                  Registration QR
-                </button>
-                <button
-                  onClick={() => setShowHubQr(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  <QrCode size={14} />
-                  Event Hub QR
-                </button>
+                <QrCodesMenu onRegistrationQr={() => setShowRegQr(true)} onHubQr={() => setShowHubQr(true)} />
                 <button
                   onClick={handleDuplicate}
                   disabled={duplicating}

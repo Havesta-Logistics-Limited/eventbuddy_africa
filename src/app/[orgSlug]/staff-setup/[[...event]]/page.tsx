@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { AlertCircle, KeyRound, MapPinCheckInside, Plus, UserRound } from "lucide-react";
 import { loginAsStaff } from "@/lib/store";
 import { Destination, EventRecord, University } from "@/lib/types";
@@ -12,15 +12,14 @@ import { EventSignInHero } from "@/components/event-signin-hero";
 type CheckinEvent = EventRecord & { hasStaffCode: boolean; hasRepCode: boolean };
 
 export default function StaffSetupPage() {
-  const params = useParams<{ orgSlug: string }>();
+  const params = useParams<{ orgSlug: string; event?: string[] }>();
   const orgSlug = params.orgSlug;
   const router = useRouter();
-  const searchParams = useSearchParams();
-  // A per-event share link (?event=<id-or-slug>) locks the flow to that one event
-  // and skips the "which event are you at?" picker entirely — see CheckinLinksCard,
-  // which prefers the event's slug (shorter, readable) when it has one, falling
-  // back to the raw id otherwise, same as the registration link already does.
-  const pinnedEvent = searchParams.get("event");
+  // A per-event share link (/staff-setup/<checkin-slug-or-id>) locks the flow to
+  // that one event and skips the "which event are you at?" picker entirely — see
+  // CheckinLinksCard, which prefers the event's own checkinSlug (shorter, readable)
+  // when it has one, falling back to the raw id otherwise.
+  const pinnedEvent = params.event?.[0] ?? null;
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");

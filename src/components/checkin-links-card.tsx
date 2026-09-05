@@ -6,11 +6,11 @@ import { Link2 } from "lucide-react";
 import { EventRecord } from "@/lib/types";
 import { EventSlugEditor } from "@/components/event-slug-editor";
 
-/** Per-event check-in links — the ?event= param locks staff-setup/rep-login to this
- *  one event and skips the "which event are you at?" picker, so a link shared for one
- *  fair can never be used to check in against a different one. Uses the event's own
- *  own `checkinSlug` when it has one, independent of the registration link's
- *  `slug` — editable right here via EventSlugEditor bound to that separate
+/** Per-event check-in links — the trailing path segment locks staff-setup/rep-login
+ *  to this one event and skips the "which event are you at?" picker, so a link
+ *  shared for one fair can never be used to check in against a different one. Uses
+ *  the event's own `checkinSlug` when it has one, independent of the registration
+ *  link's `slug` — editable right here via EventSlugEditor bound to that separate
  *  field, so customizing one link never touches the other. Shown on the event
  *  detail page, scoped to whether that event's template uses reps. */
 export function CheckinLinksCard({
@@ -26,10 +26,10 @@ export function CheckinLinksCard({
 }) {
   const [copied, setCopied] = useState<"staff" | "rep" | null>(null);
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const eventParam = event.checkinSlug || event.id;
+  const eventParam = encodeURIComponent(event.checkinSlug || event.id);
   const links = [
-    ...(showStaffLink ? [{ key: "staff" as const, label: "Staff check-in link", path: `/${orgSlug}/staff-setup?event=${eventParam}` }] : []),
-    ...(showRepLink ? [{ key: "rep" as const, label: "Rep check-in link", path: `/${orgSlug}/rep-login?event=${eventParam}` }] : []),
+    ...(showStaffLink ? [{ key: "staff" as const, label: "Staff check-in link", path: `/${orgSlug}/staff-setup/${eventParam}` }] : []),
+    ...(showRepLink ? [{ key: "rep" as const, label: "Rep check-in link", path: `/${orgSlug}/rep-login/${eventParam}` }] : []),
   ];
 
   function copy(key: "staff" | "rep", url: string) {
