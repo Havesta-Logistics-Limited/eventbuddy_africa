@@ -148,7 +148,12 @@ export default function EventHubPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh(true);
-    const id = setInterval(() => refresh(false), 6000);
+    // 20s, not 6s — every attendee action (voting, bookmarking, asking a
+    // question) already triggers its own immediate refresh(false), so this
+    // interval only affects how fast you see *other* attendees' updates. At a
+    // few hundred concurrent attendees, 6s was a real, unnecessary API-call
+    // cost driver for a live-room feature that doesn't need sub-10s latency.
+    const id = setInterval(() => refresh(false), 20000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgSlug, eventId, token]);

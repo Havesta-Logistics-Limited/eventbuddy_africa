@@ -92,20 +92,34 @@ export async function GET(request: Request) {
           row: { ...l, full_name: `${l.first_name} ${l.last_name}`.trim() } as unknown as Attendee,
         })),
       ];
+      if (attendees.length === 0) continue;
 
+      // One query for every recipient's hub token instead of one per recipient —
+      // at a few hundred attendees this was a real, avoidable per-row query.
+      const emails = Array.from(new Set(attendees.map((a) => a.row.email)));
+      let hubTokenByEmail = new Map<string, string>();
+      if (orgSlug) {
+        const { data: members } = await admin.from("event_hub_members").select("email, hub_token").eq("event_id", event.id).in("email", emails);
+        hubTokenByEmail = new Map((members ?? []).map((m) => [m.email, m.hub_token]));
+      }
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
+
+      const sentIds: Record<"registrations" | "leads", string[]> = { registrations: [], leads: [] };
       for (const { table, row } of attendees) {
-        let hub: string | undefined;
-        if (orgSlug) {
-          const { data: member } = await admin.from("event_hub_members").select("hub_token").eq("event_id", event.id).eq("email", row.email).maybeSingle();
-          if (member) {
-            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
-            hub = buildHubUrl(siteUrl, orgSlug, event, member.hub_token);
-          }
-        }
+        const hubToken = hubTokenByEmail.get(row.email);
+        const hub = orgSlug && hubToken ? buildHubUrl(siteUrl, orgSlug, event, hubToken) : undefined;
         const sent = await sendEventReminderEmail(row.email, event, kind, hub);
         if (sent) {
-          await admin.from(table).update({ [column]: new Date().toISOString() }).eq("id", row.id);
+          sentIds[table].push(row.id);
           reminded++;
+        }
+      }
+
+      // Same idea for the sent_at stamps — one update per table per stage
+      // instead of one per recipient.
+      for (const table of ["registrations", "leads"] as const) {
+        if (sentIds[table].length > 0) {
+          await admin.from(table).update({ [column]: new Date().toISOString() }).in("id", sentIds[table]);
         }
       }
     }

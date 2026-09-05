@@ -17,8 +17,9 @@ export async function GET(request: Request, ctx: RouteContext<"/api/orgs/[slug]/
   const token = searchParams.get("token");
   if (!token) return NextResponse.json({ error: "Missing access token." }, { status: 400 });
 
-  // The page polls this every few seconds while open — generous enough for that,
-  // but still bounded, matching every sibling hub route's per-token throttle.
+  // The page polls this every 20s while open (plus an immediate refresh after
+  // the attendee's own actions) — generous enough for that, but still bounded,
+  // matching every sibling hub route's per-token throttle.
   if (!(await checkRateLimit(`hub-get:token:${token}`, 120, 10 * 60))) {
     return rateLimitedResponse();
   }
