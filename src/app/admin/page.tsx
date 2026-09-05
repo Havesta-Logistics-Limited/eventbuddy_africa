@@ -87,6 +87,10 @@ export default function AdminPage() {
   const [orgBio, setOrgBio] = useState("");
   const [orgBioDraft, setOrgBioDraft] = useState("");
   const [savingBio, setSavingBio] = useState(false);
+  const [loginEmailDraft, setLoginEmailDraft] = useState("");
+  const [loginEmailChangeStatus, setLoginEmailChangeStatus] = useState<"none" | "requested">("none");
+  const [pendingLoginEmail, setPendingLoginEmail] = useState("");
+  const [savingLoginEmail, setSavingLoginEmail] = useState(false);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -96,16 +100,49 @@ export default function AdminPage() {
         return;
       }
       setOrgId(id);
-      const { data } = await supabase.from("organizations").select("name, pending_name, name_change_status, bio").eq("id", id).maybeSingle();
+      const { data } = await supabase
+        .from("organizations")
+        .select("name, pending_name, name_change_status, bio, pending_login_email, login_email_change_status")
+        .eq("id", id)
+        .maybeSingle();
       setOrgName(data?.name || "");
       setOrgNameDraft(data?.name || "");
       setOrgPendingName(data?.pending_name || "");
       setOrgNameChangeStatus((data?.name_change_status as "none" | "requested") || "none");
       setOrgBio(data?.bio || "");
       setOrgBioDraft(data?.bio || "");
+      setPendingLoginEmail(data?.pending_login_email || "");
+      setLoginEmailChangeStatus((data?.login_email_change_status as "none" | "requested") || "none");
       setLoadingOrgName(false);
     });
   }, []);
+
+  // Lost access to your login email entirely (not just a normal address
+  // update) — Supabase's own self-service email change would send a
+  // confirmation to the address you no longer control, which is exactly the
+  // problem. A platform admin verifies you out of band and approves instead
+  // (see /api/platform/approve-email-change), same request/approve shape as
+  // an org name change.
+  async function handleRequestEmailChange(e: React.FormEvent) {
+    e.preventDefault();
+    if (!orgId || !loginEmailDraft.trim()) return;
+    setSavingLoginEmail(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase
+        .from("organizations")
+        .update({ pending_login_email: loginEmailDraft.trim().toLowerCase(), login_email_change_status: "requested", login_email_change_requested_at: new Date().toISOString() })
+        .eq("id", orgId);
+      if (error) throw error;
+      setPendingLoginEmail(loginEmailDraft.trim().toLowerCase());
+      setLoginEmailChangeStatus("requested");
+      toast.success("Email change requested — we'll review it and let you know.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't submit that request.");
+    } finally {
+      setSavingLoginEmail(false);
+    }
+  }
 
   async function handleSaveBio(e: React.FormEvent) {
     e.preventDefault();
@@ -464,6 +501,49 @@ export default function AdminPage() {
                     style={{ background: "#C21FAF" }}
                   >
                     {savingOrgName ? "Requesting…" : "Request name change"}
+                  </button>
+                </form>
+              )}
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-slate-800 mb-4">Login email</h2>
+              {loadingOrgName ? (
+                <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+              ) : loginEmailChangeStatus === "requested" ? (
+                <div className="bg-white rounded-xl border border-amber-200 p-5">
+                  <p className="text-sm text-slate-700">
+                    Current login email: <span className="font-medium">{profileEmail}</span>
+                  </p>
+                  <p className="text-sm text-slate-700 mt-1">
+                    Requested: <span className="font-medium text-amber-700">{pendingLoginEmail}</span>
+                  </p>
+                  <p className="text-xs text-slate-400 mt-2">Awaiting approval from the eventbuddy team — for security, email changes aren&apos;t applied instantly.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleRequestEmailChange} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">New login email</label>
+                    <input
+                      required
+                      type="email"
+                      value={loginEmailDraft}
+                      onChange={(e) => setLoginEmailDraft(e.target.value)}
+                      placeholder={profileEmail}
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                    />
+                    <p className="text-xs text-slate-400 mt-1.5">
+                      Lost access to <span className="font-medium">{profileEmail}</span>? Request a switch to a new address here — a platform admin
+                      verifies and approves it before it takes effect, since this is what you use to sign in and reset your password.
+                    </p>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={savingLoginEmail || !loginEmailDraft.trim()}
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
+                    style={{ background: "#C21FAF" }}
+                  >
+                    {savingLoginEmail ? "Requesting…" : "Request email change"}
                   </button>
                 </form>
               )}

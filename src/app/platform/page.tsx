@@ -90,6 +90,9 @@ type OrgRow = {
   pending_name: string | null;
   name_change_status: "none" | "requested";
   name_change_requested_at: string | null;
+  pending_login_email: string | null;
+  login_email_change_status: "none" | "requested";
+  login_email_change_requested_at: string | null;
 };
 type EventRow = {
   id: string;
@@ -246,7 +249,7 @@ export default function PlatformDashboard() {
       supabase
         .from("organizations_payout_masked")
         .select(
-          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number_masked, payout_account_name, payout_change_status, payout_change_requested_at, pending_name, name_change_status, name_change_requested_at"
+          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number_masked, payout_account_name, payout_change_status, payout_change_requested_at, pending_name, name_change_status, name_change_requested_at, pending_login_email, login_email_change_status, login_email_change_requested_at"
         )
         .order("created_at", { ascending: false }),
       supabase
@@ -398,6 +401,31 @@ export default function PlatformDashboard() {
       toast.error(error.message);
     }
     setBusyOrgId(null);
+  }
+
+  // Unlike approveNameChange, this can't be a direct client update — the value
+  // being changed is auth.users.email, not a plain organizations column, which
+  // only the service role can touch (see /api/platform/approve-email-change).
+  async function approveEmailChange(org: OrgRow) {
+    if (!org.pending_login_email) return;
+    setBusyOrgId(org.id);
+    try {
+      const res = await fetch("/api/platform/approve-email-change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId: org.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Couldn't approve this email change.");
+      // Not org.email — that's the org's separate contact address (0007), unrelated
+      // to the owner's auth.users login email this just changed.
+      setOrgs((prev) => prev.map((o) => (o.id === org.id ? { ...o, pending_login_email: null, login_email_change_status: "none" } : o)));
+      toast.success(`Login email updated to ${org.pending_login_email}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't approve this email change.");
+    } finally {
+      setBusyOrgId(null);
+    }
   }
 
   // Unlike a payout change, the requested value itself is already visible up
@@ -1068,6 +1096,44 @@ export default function PlatformDashboard() {
                           <button
                             type="button"
                             onClick={() => approveNameChange(org)}
+                            disabled={busyOrgId === org.id}
+                            className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50"
+                          >
+                            <CheckCircle2 size={14} />
+                            Approve
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {(() => {
+                const pendingEmailChanges = orgs.filter((o) => o.login_email_change_status === "requested" && o.pending_login_email);
+                if (pendingEmailChanges.length === 0) return null;
+                return (
+                  <div className="mb-6">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2.5">Pending login email change requests ({pendingEmailChanges.length})</h2>
+                    <div className="space-y-3">
+                      {pendingEmailChanges.map((org) => (
+                        <div key={org.id} className="bg-white rounded-xl border border-amber-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm text-slate-500">
+                              <span className="font-medium text-slate-900">{org.name}</span> wants their login email changed to{" "}
+                              <span className="font-medium text-amber-700">{org.pending_login_email}</span>
+                            </p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              Requested{" "}
+                              {org.login_email_change_requested_at
+                                ? new Date(org.login_email_change_requested_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                                : "recently"}{" "}
+                              — verify this is really them before approving.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => approveEmailChange(org)}
                             disabled={busyOrgId === org.id}
                             className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50"
                           >
