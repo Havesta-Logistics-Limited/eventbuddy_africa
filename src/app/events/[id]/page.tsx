@@ -134,6 +134,7 @@ export default function EventDetailPage() {
   const [publishing, setPublishing] = useState(false);
   const [showHubQr, setShowHubQr] = useState(false);
   const [showRegQr, setShowRegQr] = useState(false);
+  const [showCheckinQr, setShowCheckinQr] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -461,7 +462,7 @@ export default function EventDetailPage() {
                     {publishing ? "Publishing…" : "Publish Event"}
                   </button>
                 )}
-                <QrCodesMenu onRegistrationQr={() => setShowRegQr(true)} onHubQr={() => setShowHubQr(true)} />
+                <QrCodesMenu onRegistrationQr={() => setShowRegQr(true)} onHubQr={() => setShowHubQr(true)} onCheckinQr={() => setShowCheckinQr(true)} />
                 <button
                   onClick={handleDuplicate}
                   disabled={duplicating}
@@ -907,6 +908,16 @@ export default function EventDetailPage() {
             url={registrationLink()}
             downloadName={`${event.name.replace(/[^a-z0-9]/gi, "_")}_registration_qr.png`}
             onClose={() => setShowRegQr(false)}
+          />
+        )}
+
+        {showCheckinQr && typeof window !== "undefined" && (
+          <EventQrModal
+            title="Staff Check-in QR Code"
+            description={`Scanning this takes staff straight to the ${event.name} check-in sign-in page — no admin login needed.`}
+            url={`${window.location.origin}/${session.orgSlug}/staff-setup/${encodeURIComponent(event.checkinSlug || event.id)}`}
+            downloadName={`${event.name.replace(/[^a-z0-9]/gi, "_")}_checkin_qr.png`}
+            onClose={() => setShowCheckinQr(false)}
           />
         )}
 

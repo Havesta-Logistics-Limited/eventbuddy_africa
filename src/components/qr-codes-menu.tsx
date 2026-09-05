@@ -3,10 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, QrCode } from "lucide-react";
 
-/** Collapses the two per-event QR actions (registration, hub) behind one
- *  button — keeping the event header's action row from growing every time a
+/** Collapses the per-event QR actions (registration, hub, staff check-in) behind
+ *  one button — keeping the event header's action row from growing every time a
  *  new QR link is added. */
-export function QrCodesMenu({ onRegistrationQr, onHubQr }: { onRegistrationQr: () => void; onHubQr: () => void }) {
+export function QrCodesMenu({
+  onRegistrationQr,
+  onHubQr,
+  onCheckinQr,
+}: {
+  onRegistrationQr: () => void;
+  onHubQr: () => void;
+  onCheckinQr: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -48,6 +56,15 @@ export function QrCodesMenu({ onRegistrationQr, onHubQr }: { onRegistrationQr: (
             className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
           >
             Event Hub QR
+          </button>
+          <button
+            onClick={() => {
+              onCheckinQr();
+              setOpen(false);
+            }}
+            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            Staff Check-in QR
           </button>
         </div>
       )}
