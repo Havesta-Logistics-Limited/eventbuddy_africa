@@ -129,14 +129,13 @@ function icsFold(line: string) {
   return parts.join("\r\n ");
 }
 
-/** A downloadable .ics file — Google Calendar's own web UI is already covered by
+/** The .ics file content — Google Calendar's own web UI is already covered by
  *  buildGoogleCalendarUrl above, but this is the only "add to calendar" path that
  *  works for Apple Calendar, Outlook, and every other calendar app that isn't
- *  Google's own web client. Built as a data: URI (no server round trip needed —
- *  every field is already loaded on this page) rather than a Blob object URL,
- *  since a plain <a download> needs no cleanup and works identically to the
- *  Google Calendar link right next to it. */
-function buildIcsDataUrl(event: PublicEvent, orgSlug: string) {
+ *  Google's own web client. Returns raw text rather than a data: URI — Safari
+ *  doesn't honor the `download` attribute on a data: href (it just navigates to
+ *  it instead), so downloadIcs below wraps this in a real Blob object URL. */
+function buildIcsContent(event: PublicEvent, orgSlug: string) {
   const start = zonedTimeToUtc(event.date, event.startTime || "09:00", event.timezone);
   const end = zonedTimeToUtc(event.endDate || event.date, event.endTime || event.startTime || "10:00", event.timezone);
   const location = event.eventFormat === "virtual" ? event.virtualPlatform || "Online" : `${event.venue}, ${event.location}`;
@@ -173,7 +172,23 @@ function buildIcsDataUrl(event: PublicEvent, orgSlug: string) {
     .map(icsFold)
     .join("\r\n");
 
-  return `data:text/calendar;charset=utf-8,${encodeURIComponent(lines)}`;
+  return lines;
+}
+
+/** Downloads via a real Blob object URL rather than a data: href — the only
+ *  reliable cross-browser way to trigger a file download, notably including
+ *  Safari (the primary audience for an "Apple / Outlook" button), which
+ *  ignores `download` on data: URIs and just navigates to them instead. */
+function downloadIcs(event: PublicEvent, orgSlug: string) {
+  const blob = new Blob([buildIcsContent(event, orgSlug)], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${event.name.replace(/[^a-z0-9]/gi, "_")}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 /** A real, working "Add to calendar" action — not a placeholder button — built from
@@ -600,10 +615,10 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 )}
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-nowrap items-center gap-3 overflow-x-auto">
               <a
                 href="#register-panel"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity shrink-0"
                 style={{ background: "#C21FAF" }}
               >
                 <Ticket size={16} />
@@ -613,19 +628,19 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 href={buildGoogleCalendarUrl(event)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-colors shrink-0 whitespace-nowrap"
               >
                 <CalendarPlus size={16} />
                 Google Calendar
               </a>
-              <a
-                href={buildIcsDataUrl(event, orgSlug)}
-                download={`${event.name.replace(/[^a-z0-9]/gi, "_")}.ics`}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
+              <button
+                type="button"
+                onClick={() => downloadIcs(event, orgSlug)}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-colors shrink-0 whitespace-nowrap"
               >
                 <CalendarPlus size={16} />
                 Apple / Outlook (.ics)
-              </a>
+              </button>
             </div>
           </div>
         </div>
