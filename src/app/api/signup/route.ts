@@ -56,6 +56,7 @@ async function sendWelcomeEmail(to: string, firstName: string, verifyUrl: string
 
 const SignupSchema = z.object({
   fullName: z.string().trim().min(2, "Enter your full name."),
+  organizationName: z.string().trim().min(2, "Enter your organization's name."),
   email: z.string().trim().email("Enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
   phone: z
@@ -97,13 +98,8 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid input." }, { status: 400 });
   }
-  const { fullName, email, password, phone } = parsed.data;
-  // No separate org-name field on the signup form — the organization is simply
-  // named after the person who created it. Nothing in the app currently lets
-  // an org rename itself after signup (only a platform admin editing the row
-  // directly), so this name is effectively permanent — see the accompanying
-  // note to the user about this trade-off.
-  const orgName = fullName;
+  const { fullName, organizationName, email, password, phone } = parsed.data;
+  const orgName = organizationName;
 
   // IP-only — a duplicate email already fails at the DB layer, so this exists to
   // stop one source from mass-creating fake accounts/orgs with different emails.

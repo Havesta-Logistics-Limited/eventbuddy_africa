@@ -244,6 +244,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const [oneOnOneRequested, setOneOnOneRequested] = useState(false);
 
   const [orgName, setOrgName] = useState("");
+  const [orgLogoUrl, setOrgLogoUrl] = useState("");
   const [attendeeSummary, setAttendeeSummary] = useState<{ totalCount: number; sampleNames: string[] } | null>(null);
 
   // eventIdOrSlug may be the event's real id, an org-scoped slug, or a global slug
@@ -265,6 +266,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         }
         setEvent(found);
         setOrgName(eventsData.organization?.name ?? "");
+        setOrgLogoUrl(eventsData.organization?.logoUrl ?? "");
         const ticketsData = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/tickets`).then((res) => res.json());
         const tickets = (ticketsData.ticketTypes as PublicTicketType[]) || [];
         setTicketTypes(tickets);
@@ -707,7 +709,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
             )}
 
             <div className="animate-fade-in-up" style={{ animationDelay: event.description ? "180ms" : "120ms" }}>
-              <EventHostCard orgSlug={orgSlug} eventId={event.id} orgName={orgName} attendeeSummary={attendeeSummary} />
+              <EventHostCard orgSlug={orgSlug} eventId={event.id} orgName={orgName} orgLogoUrl={orgLogoUrl} attendeeSummary={attendeeSummary} />
             </div>
           </div>
 

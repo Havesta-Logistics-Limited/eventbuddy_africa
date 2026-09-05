@@ -110,11 +110,13 @@ export function EventHostCard({
   orgSlug,
   eventId,
   orgName,
+  orgLogoUrl,
   attendeeSummary,
 }: {
   orgSlug: string;
   eventId: string;
   orgName: string;
+  orgLogoUrl?: string;
   attendeeSummary: { totalCount: number; sampleNames: string[] } | null;
 }) {
   const [modal, setModal] = useState<"contact" | "report" | null>(null);
@@ -148,9 +150,14 @@ export function EventHostCard({
     <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
       <h2 className="font-semibold text-white mb-4">Hosted By</h2>
       <div className="flex items-center gap-3 pb-4 mb-4 border-b border-white/10">
-        <div className="w-10 h-10 rounded-full bg-[#FF8AF5]/20 text-[#FF8AF5] flex items-center justify-center font-semibold shrink-0">
-          {orgName.charAt(0).toUpperCase() || "?"}
-        </div>
+        {orgLogoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={orgLogoUrl} alt={orgName} className="w-10 h-10 rounded-full object-cover shrink-0" />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-[#FF8AF5]/20 text-[#FF8AF5] flex items-center justify-center font-semibold shrink-0">
+            {orgName.charAt(0).toUpperCase() || "?"}
+          </div>
+        )}
         <p className="font-medium text-white flex-1 min-w-0 truncate">{orgName}</p>
         <FollowOrgButton orgSlug={orgSlug} theme="dark" />
       </div>

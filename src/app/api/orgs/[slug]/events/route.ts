@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAnonClient } from "@/lib/supabase/anon";
 import type { FieldDef } from "@/lib/types";
 
-type OrgRow = { id: string; name: string; slug: string };
+type OrgRow = { id: string; name: string; slug: string; logo_url: string | null };
 type EventRow = {
   id: string;
   slug: string | null;
@@ -81,7 +81,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const staffRows = (staffRes.data ?? []) as StaffNameRow[];
 
   return NextResponse.json({
-    organization: { id: org.id, name: org.name, slug: org.slug },
+    organization: { id: org.id, name: org.name, slug: org.slug, logoUrl: org.logo_url ?? undefined },
     events: events.map((e) => ({
       id: e.id,
       slug: e.slug ?? undefined,

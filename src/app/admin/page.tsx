@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Plus, Users, X, Edit2, Trash2, Landmark, ShieldCheck, UserCircle } from "lucide-react";
+import { AlertCircle, Plus, Users, X, Edit2, Trash2, Landmark, ShieldCheck, UserCircle, Loader2 } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -13,6 +13,8 @@ import { Reveal } from "@/components/reveal";
 import { AuthLoading } from "@/components/auth-loading";
 import { TwoFactorSettings } from "@/components/two-factor-settings";
 import { MfaNagBanner } from "@/components/mfa-nag-banner";
+import { ImageCropperModal } from "@/components/image-cropper-modal";
+import { compressImageFile } from "@/lib/utils";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -87,6 +89,10 @@ export default function AdminPage() {
   const [orgBio, setOrgBio] = useState("");
   const [orgBioDraft, setOrgBioDraft] = useState("");
   const [savingBio, setSavingBio] = useState(false);
+  const [orgLogoUrl, setOrgLogoUrl] = useState("");
+  const [savingLogo, setSavingLogo] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState("");
+  const [logoCropSource, setLogoCropSource] = useState<string | null>(null);
   const [loginEmailDraft, setLoginEmailDraft] = useState("");
   const [loginEmailChangeStatus, setLoginEmailChangeStatus] = useState<"none" | "requested">("none");
   const [pendingLoginEmail, setPendingLoginEmail] = useState("");
@@ -102,7 +108,7 @@ export default function AdminPage() {
       setOrgId(id);
       const { data } = await supabase
         .from("organizations")
-        .select("name, pending_name, name_change_status, bio, pending_login_email, login_email_change_status")
+        .select("name, pending_name, name_change_status, bio, logo_url, pending_login_email, login_email_change_status")
         .eq("id", id)
         .maybeSingle();
       setOrgName(data?.name || "");
@@ -111,6 +117,7 @@ export default function AdminPage() {
       setOrgNameChangeStatus((data?.name_change_status as "none" | "requested") || "none");
       setOrgBio(data?.bio || "");
       setOrgBioDraft(data?.bio || "");
+      setOrgLogoUrl(data?.logo_url || "");
       setPendingLoginEmail(data?.pending_login_email || "");
       setLoginEmailChangeStatus((data?.login_email_change_status as "none" | "requested") || "none");
       setLoadingOrgName(false);
@@ -141,6 +148,38 @@ export default function AdminPage() {
       toast.error(err instanceof Error ? err.message : "Couldn't submit that request.");
     } finally {
       setSavingLoginEmail(false);
+    }
+  }
+
+  async function saveLogo(dataUrl: string) {
+    if (!orgId) return;
+    setSavingLogo(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.from("organizations").update({ logo_url: dataUrl }).eq("id", orgId);
+      if (error) throw error;
+      setOrgLogoUrl(dataUrl);
+      toast.success("Logo updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save your logo.");
+    } finally {
+      setSavingLogo(false);
+    }
+  }
+
+  async function handleRemoveLogo() {
+    if (!orgId) return;
+    setSavingLogo(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.from("organizations").update({ logo_url: null }).eq("id", orgId);
+      if (error) throw error;
+      setOrgLogoUrl("");
+      toast.success("Logo removed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't remove your logo.");
+    } finally {
+      setSavingLogo(false);
     }
   }
 
@@ -561,7 +600,84 @@ export default function AdminPage() {
               {loadingOrgName ? (
                 <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
               ) : (
-                <form onSubmit={handleSaveBio} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Logo</label>
+                    <div className="flex items-center gap-4">
+                      {orgLogoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={orgLogoUrl} alt="Organization logo" className="w-16 h-16 rounded-2xl object-cover border border-slate-200 shrink-0" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-300 shrink-0">
+                          <UserCircle size={28} />
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2.5">
+                        <label className="cursor-pointer px-3.5 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                          {savingLogo ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <Loader2 size={14} className="animate-spin" />
+                              Saving…
+                            </span>
+                          ) : orgLogoUrl ? (
+                            "Change logo"
+                          ) : (
+                            "Upload logo"
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={savingLogo}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              e.target.value = "";
+                              if (!file) return;
+                              setLogoUploadError("");
+                              try {
+                                const dataUrl = await compressImageFile(file, 1000, 0.92);
+                                setLogoCropSource(dataUrl);
+                              } catch (err) {
+                                setLogoUploadError(err instanceof Error ? err.message : "Couldn't process that image.");
+                              }
+                            }}
+                          />
+                        </label>
+                        {orgLogoUrl && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveLogo}
+                            disabled={savingLogo}
+                            className="text-sm font-medium text-rose-600 hover:underline disabled:opacity-60"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">Shown on your public page and on your event registration pages.</p>
+                    {logoUploadError && (
+                      <p className="flex items-start gap-1.5 text-xs text-rose-600 mt-2">
+                        <AlertCircle size={13} className="mt-0.5 shrink-0" />
+                        {logoUploadError}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {logoCropSource && (
+                <ImageCropperModal
+                  imageSrc={logoCropSource}
+                  aspect={1}
+                  onCancel={() => setLogoCropSource(null)}
+                  onSave={(croppedDataUrl) => {
+                    setLogoCropSource(null);
+                    saveLogo(croppedDataUrl);
+                  }}
+                />
+              )}
+              {loadingOrgName ? null : (
+                <form onSubmit={handleSaveBio} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4 mt-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Bio</label>
                     <textarea

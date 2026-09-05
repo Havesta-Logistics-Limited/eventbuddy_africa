@@ -24,7 +24,7 @@ type OrgProfileEvent = {
   minPriceNaira: number | null;
 };
 
-type OrgProfile = { name: string; slug: string; bio: string; isVerified: boolean };
+type OrgProfile = { name: string; slug: string; bio: string; logoUrl?: string; isVerified: boolean };
 
 function priceBadge(minPriceNaira: number | null) {
   if (minPriceNaira == null || minPriceNaira === 0) return { label: "Free", cls: "bg-slate-100 text-slate-600" };
@@ -141,12 +141,17 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
         <>
           <section className="max-w-6xl mx-auto px-6 pt-14 pb-8">
             <div className="flex items-center gap-4">
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl shrink-0"
-                style={{ background: "#FF8AF5", color: "#170821" }}
-              >
-                {profile.name.trim().charAt(0).toUpperCase() || "?"}
-              </div>
+              {profile.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.logoUrl} alt={profile.name} className="w-16 h-16 rounded-2xl object-cover shrink-0" />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl shrink-0"
+                  style={{ background: "#FF8AF5", color: "#170821" }}
+                >
+                  {profile.name.trim().charAt(0).toUpperCase() || "?"}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <h1 className="font-display text-3xl sm:text-4xl text-slate-900 flex items-center gap-2">
                   {profile.name}

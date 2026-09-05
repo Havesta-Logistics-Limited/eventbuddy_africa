@@ -29,7 +29,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { data: orgRows, error: orgError } = await supabase.rpc("public_organization_profile", { org_slug: slug });
   if (orgError) return NextResponse.json({ error: orgError.message }, { status: 500 });
-  const org = (orgRows ?? [])[0] as { id: string; name: string; slug: string; bio: string | null; is_verified: boolean } | undefined;
+  const org = (orgRows ?? [])[0] as { id: string; name: string; slug: string; bio: string | null; logo_url: string | null; is_verified: boolean } | undefined;
   if (!org) return NextResponse.json({ error: "This organizer couldn't be found." }, { status: 404 });
 
   const { data: eventsData } = await supabase.rpc("public_organization_events", { org_slug: slug });
@@ -43,7 +43,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   return NextResponse.json({
-    organization: { name: org.name, slug: org.slug, bio: org.bio ?? "", isVerified: org.is_verified },
+    organization: { name: org.name, slug: org.slug, bio: org.bio ?? "", logoUrl: org.logo_url ?? undefined, isVerified: org.is_verified },
     events: events.map((e) => ({
       id: e.id,
       slug: e.slug ?? undefined,

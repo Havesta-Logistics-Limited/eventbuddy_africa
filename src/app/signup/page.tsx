@@ -10,6 +10,7 @@ import { Logo } from "@/components/logo";
 export default function SignupPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +27,7 @@ export default function SignupPage() {
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, phone, password }),
+        body: JSON.stringify({ fullName, organizationName, email, phone, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -130,6 +131,18 @@ export default function SignupPage() {
                 required
                 className={fieldClass}
               />
+            </div>
+            <div>
+              <label className={labelClass}>Organization name</label>
+              <input
+                type="text"
+                value={organizationName}
+                onChange={(e) => setOrganizationName(e.target.value)}
+                placeholder="e.g. Naija Summit Events"
+                required
+                className={fieldClass}
+              />
+              <p className="text-xs text-slate-400 mt-1">Shown to attendees, and used for your event links — e.g. eventbuddy.africa/your-org-name.</p>
             </div>
             <div>
               <label className={labelClass}>Email address</label>

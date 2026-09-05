@@ -5,12 +5,22 @@ import Cropper, { type Area } from "react-easy-crop";
 import { X, ZoomIn } from "lucide-react";
 import { getCroppedImage } from "@/lib/image-crop";
 
-/** Lets the organizer choose exactly which part of an uploaded cover image is
- *  visible, at the one aspect ratio (16:9) every cover-image display spot in the
- *  app now shares — so the crop chosen here is exactly what shows up everywhere
- *  (dashboard card, event page, event picker), with no further automatic cropping
- *  or letterboxing happening later. */
-export function ImageCropperModal({ imageSrc, onCancel, onSave }: { imageSrc: string; onCancel: () => void; onSave: (dataUrl: string) => void }) {
+/** Lets the organizer choose exactly which part of an uploaded image is visible —
+ *  16:9 (the default) for every cover-image display spot in the app, or a square
+ *  1:1 crop for an organization logo — so the crop chosen here is exactly what
+ *  shows up everywhere, with no further automatic cropping or letterboxing
+ *  happening later. */
+export function ImageCropperModal({
+  imageSrc,
+  aspect = 16 / 9,
+  onCancel,
+  onSave,
+}: {
+  imageSrc: string;
+  aspect?: number;
+  onCancel: () => void;
+  onSave: (dataUrl: string) => void;
+}) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -41,12 +51,12 @@ export function ImageCropperModal({ imageSrc, onCancel, onSave }: { imageSrc: st
           </button>
         </div>
 
-        <div className="relative w-full aspect-video bg-slate-900">
+        <div className="relative w-full bg-slate-900" style={{ aspectRatio: aspect }}>
           <Cropper
             image={imageSrc}
             crop={crop}
             zoom={zoom}
-            aspect={16 / 9}
+            aspect={aspect}
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={(_area, pixels) => setCroppedAreaPixels(pixels)}
