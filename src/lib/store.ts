@@ -114,7 +114,6 @@ function mapEventRow(e: {
   id: string;
   slug: string | null;
   checkin_slug: string | null;
-  preview_token: string;
   name: string;
   date: string;
   end_date: string | null;
@@ -156,7 +155,6 @@ function mapEventRow(e: {
     id: e.id,
     slug: e.slug ?? undefined,
     checkinSlug: e.checkin_slug ?? undefined,
-    previewToken: e.preview_token,
     name: e.name,
     date: e.date,
     endDate: e.end_date ?? undefined,

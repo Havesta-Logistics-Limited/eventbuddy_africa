@@ -288,13 +288,16 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  // Presence of this alone is what puts the whole page in view-only preview
-  // mode — see the fetch effect below and handleSubmit's guard.
-  const previewToken = searchParams.get("preview");
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [event, setEvent] = useState<PublicEvent | null>(null);
+  // True only when this event was reached via the fallback single-event lookup
+  // (see the fetch effect below) — the normal /events list only ever returns
+  // published events, so landing there at all means it's still a draft. Puts
+  // the whole page in view-only preview mode: same link works before AND
+  // after publishing, just without a working Register button until then.
+  const [isDraftPreview, setIsDraftPreview] = useState(false);
 
   const [ticketTypes, setTicketTypes] = useState<PublicTicketType[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -327,36 +330,14 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   // and every API call after this point uses the resolved `found.id` (the real
   // uuid), never the raw param, since none of those routes understand slugs.
   //
-  // A ?preview=<token> link (see migration 0079) is a completely different path:
-  // it's how a still-draft event is ever reachable at all, since the normal
-  // /events list only ever returns published events. eventIdOrSlug is always the
-  // real event id in that case (that's all the admin page's "copy preview link"
-  // button ever generates), so there's no id-vs-slug resolution needed — and
-  // deliberately no view-count/attendee-summary tracking, since a preview visit
-  // isn't a real visitor.
+  // That list (/events) only ever returns published events, so a still-draft
+  // event is never in it — not found there falls back to a single-event lookup
+  // with no published/date filter at all (migration 0080), which is what makes
+  // the SAME link work before publishing too, in this page's own view-only
+  // preview mode, rather than needing a separate preview-only URL. Deliberately
+  // no view-count/attendee-summary tracking on that fallback path, since a
+  // preview visit isn't a real visitor.
   useEffect(() => {
-    if (previewToken) {
-      fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventIdOrSlug)}/preview?token=${encodeURIComponent(previewToken)}`)
-        .then((res) => res.json())
-        .then(async (data) => {
-          if (data.error) {
-            setLoadError(data.error);
-            return;
-          }
-          const found = data.event as PublicEvent;
-          setEvent(found);
-          setOrgName(data.organization?.name ?? "");
-          setOrgLogoUrl(data.organization?.logoUrl ?? "");
-          const ticketsData = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/tickets`).then((res) => res.json());
-          const tickets = (ticketsData.ticketTypes as PublicTicketType[]) || [];
-          setTicketTypes(tickets);
-          if (tickets.length === 1) setSelectedTicketId(tickets[0].id);
-        })
-        .catch(() => setLoadError("Couldn't load this preview. The link may be invalid."))
-        .finally(() => setLoading(false));
-      return;
-    }
-
     fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events`)
       .then((res) => res.json())
       .then(async (eventsData) => {
@@ -365,26 +346,41 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
           return;
         }
         const found = (eventsData.events as PublicEvent[]).find((e) => e.id === eventIdOrSlug || (e.slug && e.slug === eventIdOrSlug));
-        if (!found) {
+        if (found) {
+          setEvent(found);
+          setIsDraftPreview(false);
+          setOrgName(eventsData.organization?.name ?? "");
+          setOrgLogoUrl(eventsData.organization?.logoUrl ?? "");
+          const ticketsData = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/tickets`).then((res) => res.json());
+          const tickets = (ticketsData.ticketTypes as PublicTicketType[]) || [];
+          setTicketTypes(tickets);
+          if (tickets.length === 1) setSelectedTicketId(tickets[0].id);
+          fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/register/view`, { method: "POST" }).catch(() => {});
+          fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/attendee-summary`)
+            .then((res) => res.json())
+            .then((json) => setAttendeeSummary({ totalCount: json.totalCount ?? 0, sampleNames: json.sampleNames ?? [] }))
+            .catch(() => {});
+          return;
+        }
+
+        const previewData = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventIdOrSlug)}/preview`).then((res) => res.json());
+        if (previewData.error) {
           setLoadError("This event couldn't be found — it may have ended or the link may be incorrect.");
           return;
         }
-        setEvent(found);
-        setOrgName(eventsData.organization?.name ?? "");
-        setOrgLogoUrl(eventsData.organization?.logoUrl ?? "");
-        const ticketsData = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/tickets`).then((res) => res.json());
+        const previewEvent = previewData.event as PublicEvent;
+        setEvent(previewEvent);
+        setIsDraftPreview(previewEvent.published === false);
+        setOrgName(previewData.organization?.name ?? "");
+        setOrgLogoUrl(previewData.organization?.logoUrl ?? "");
+        const ticketsData = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${previewEvent.id}/tickets`).then((res) => res.json());
         const tickets = (ticketsData.ticketTypes as PublicTicketType[]) || [];
         setTicketTypes(tickets);
         if (tickets.length === 1) setSelectedTicketId(tickets[0].id);
-        fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/register/view`, { method: "POST" }).catch(() => {});
-        fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/attendee-summary`)
-          .then((res) => res.json())
-          .then((json) => setAttendeeSummary({ totalCount: json.totalCount ?? 0, sampleNames: json.sampleNames ?? [] }))
-          .catch(() => {});
       })
       .catch(() => setLoadError("Couldn't load this page. Check your connection and try again."))
       .finally(() => setLoading(false));
-  }, [orgSlug, eventIdOrSlug, previewToken]);
+  }, [orgSlug, eventIdOrSlug]);
 
   useEffect(() => {
     if (!confirmation?.referenceId) return;
@@ -512,8 +508,8 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   async function handleSubmit(values: DynamicRegistrationFormValues) {
     if (!event) return;
-    if (previewToken) {
-      setSubmitError("This is a preview link — registration isn't available until the event is published.");
+    if (isDraftPreview) {
+      setSubmitError("This event isn't published yet — registration isn't available until it is.");
       return;
     }
     const selectedTicket = ticketTypes.find((t) => t.id === selectedTicketId);
@@ -657,11 +653,11 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
       <div className="relative z-10">
       <PublicHeader />
-      {previewToken && (
+      {isDraftPreview && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
           <div className="flex items-center gap-2 rounded-xl border border-amber-300/40 bg-amber-400/10 px-4 py-2.5 text-sm text-amber-200">
             <Eye size={15} className="shrink-0" />
-            Preview only — this is what your event page will look like. Registration isn&apos;t available from this link.
+            Preview only — this is what your event page will look like once published. Registration isn&apos;t open yet.
           </div>
         </div>
       )}

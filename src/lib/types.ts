@@ -56,13 +56,6 @@ export interface EventRecord {
    *  independent of `slug` above; the registration link and check-in link
    *  are shared with different audiences and must never move together. */
   checkinSlug?: string;
-  /** Permanent, random per-event secret (DB-generated, never client-settable) —
-   *  the whole trust boundary for the private preview link (?preview=<token> on
-   *  the real register URL), the same "knowledge of the token IS access" model
-   *  as a registration's referenceId or a hub member's hub_token. Lets a
-   *  still-unpublished draft's registration page be viewed by anyone with the
-   *  link, without making the event publicly listed/discoverable. */
-  previewToken?: string;
   name: string;
   date: string; // ISO date, start
   endDate?: string;
