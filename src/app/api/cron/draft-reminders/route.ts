@@ -6,7 +6,7 @@ import { formatDate } from "@/lib/utils";
 
 /** One reminder per still-unpublished event, sent to its org's admin — deliberately
  *  unconditional (no "already reminded this cycle" tracking) since the cron itself
- *  only fires every 30 minutes, so each run is exactly one reminder per draft per
+ *  only fires every 2 hours, so each run is exactly one reminder per draft per
  *  cycle by construction. Stops the moment the event is published or deleted. */
 async function sendDraftReminderEmail(to: string, firstName: string, eventName: string, eventDate: string, manageUrl: string) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -38,7 +38,7 @@ async function sendDraftReminderEmail(to: string, firstName: string, eventName: 
 }
 
 /**
- * netlify/functions/draft-reminders-cron.mts hits this every 30 minutes to nudge org
+ * netlify/functions/draft-reminders-cron.mts hits this every 2 hours to nudge org
  * admins about events they've saved as a draft but never published. Guarded by
  * CRON_SECRET so it can't be triggered by anyone who finds the URL.
  */

@@ -1,5 +1,5 @@
 /**
- * Netlify Scheduled Function — fires every 30 minutes (see the `config.schedule`
+ * Netlify Scheduled Function — fires every 2 hours (see the `config.schedule`
  * below) and simply calls the real logic living at /api/cron/draft-reminders (a
  * Next.js Route Handler), rather than duplicating the reminder logic here. Netlify
  * runs scheduled functions on UTC cron syntax and doesn't attach any auth header
@@ -21,5 +21,5 @@ export default async () => {
 };
 
 export const config = {
-  schedule: "*/30 * * * *",
+  schedule: "0 */2 * * *",
 };
