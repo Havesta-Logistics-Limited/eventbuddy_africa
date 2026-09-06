@@ -14,6 +14,7 @@ import {
   Clock,
   Copy,
   ExternalLink,
+  Eye,
   Loader2,
   MapPin,
   MapPinCheckInside,
@@ -287,6 +288,9 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  // Presence of this alone is what puts the whole page in view-only preview
+  // mode — see the fetch effect below and handleSubmit's guard.
+  const previewToken = searchParams.get("preview");
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -322,7 +326,37 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   // (see migration 0057) — all are matched here against the org's full event list,
   // and every API call after this point uses the resolved `found.id` (the real
   // uuid), never the raw param, since none of those routes understand slugs.
+  //
+  // A ?preview=<token> link (see migration 0079) is a completely different path:
+  // it's how a still-draft event is ever reachable at all, since the normal
+  // /events list only ever returns published events. eventIdOrSlug is always the
+  // real event id in that case (that's all the admin page's "copy preview link"
+  // button ever generates), so there's no id-vs-slug resolution needed — and
+  // deliberately no view-count/attendee-summary tracking, since a preview visit
+  // isn't a real visitor.
   useEffect(() => {
+    if (previewToken) {
+      fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventIdOrSlug)}/preview?token=${encodeURIComponent(previewToken)}`)
+        .then((res) => res.json())
+        .then(async (data) => {
+          if (data.error) {
+            setLoadError(data.error);
+            return;
+          }
+          const found = data.event as PublicEvent;
+          setEvent(found);
+          setOrgName(data.organization?.name ?? "");
+          setOrgLogoUrl(data.organization?.logoUrl ?? "");
+          const ticketsData = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/tickets`).then((res) => res.json());
+          const tickets = (ticketsData.ticketTypes as PublicTicketType[]) || [];
+          setTicketTypes(tickets);
+          if (tickets.length === 1) setSelectedTicketId(tickets[0].id);
+        })
+        .catch(() => setLoadError("Couldn't load this preview. The link may be invalid."))
+        .finally(() => setLoading(false));
+      return;
+    }
+
     fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events`)
       .then((res) => res.json())
       .then(async (eventsData) => {
@@ -350,7 +384,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
       })
       .catch(() => setLoadError("Couldn't load this page. Check your connection and try again."))
       .finally(() => setLoading(false));
-  }, [orgSlug, eventIdOrSlug]);
+  }, [orgSlug, eventIdOrSlug, previewToken]);
 
   useEffect(() => {
     if (!confirmation?.referenceId) return;
@@ -478,6 +512,10 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   async function handleSubmit(values: DynamicRegistrationFormValues) {
     if (!event) return;
+    if (previewToken) {
+      setSubmitError("This is a preview link — registration isn't available until the event is published.");
+      return;
+    }
     const selectedTicket = ticketTypes.find((t) => t.id === selectedTicketId);
     const identity = { fullName: `${values.firstName.trim()} ${values.lastName.trim()}`.trim(), email: values.email.trim(), phone: values.phone.trim() || undefined };
     setSubmitError("");
@@ -619,6 +657,14 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
       <div className="relative z-10">
       <PublicHeader />
+      {previewToken && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
+          <div className="flex items-center gap-2 rounded-xl border border-amber-300/40 bg-amber-400/10 px-4 py-2.5 text-sm text-amber-200">
+            <Eye size={15} className="shrink-0" />
+            Preview only — this is what your event page will look like. Registration isn&apos;t available from this link.
+          </div>
+        </div>
+      )}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-14">
         {/* Hero — cover image + title/badges/CTA, matching the composition of a real
             event landing page rather than the plain header band this used to be. */}

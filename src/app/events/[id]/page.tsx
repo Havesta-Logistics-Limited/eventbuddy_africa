@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { AlertCircle, ArrowLeft, Calendar, Copy, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, RefreshCw, Repeat, Trash2, Video, X, Search } from "lucide-react";
+import { AlertCircle, ArrowLeft, Calendar, Copy, Eye, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, RefreshCw, Repeat, Trash2, Video, X, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import {
@@ -140,6 +140,7 @@ export default function EventDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
+  const [previewLinkCopied, setPreviewLinkCopied] = useState(false);
 
   // A freshly duplicated event lands here with ?edit=1 so the admin can
   // adjust the copy (name, dates, venue) immediately instead of hunting
@@ -258,6 +259,23 @@ export default function EventDetailPage() {
     setLinkCopied(true);
     toast.success("Link copied");
     setTimeout(() => setLinkCopied(false), 2000);
+  }
+
+  // Always the explicit org-scoped path, never event.slug's shortcut — a draft
+  // may not even have a slug set yet, and the ?preview=<token> query string is
+  // what actually matters here, not which URL shape carries it.
+  function previewLink() {
+    if (!event?.previewToken || typeof window === "undefined") return "";
+    return `${window.location.origin}/${session?.orgSlug ?? ""}/events/${event.id}/register?preview=${event.previewToken}`;
+  }
+
+  async function handleCopyPreviewLink() {
+    const link = previewLink();
+    if (!link) return;
+    await navigator.clipboard.writeText(link);
+    setPreviewLinkCopied(true);
+    toast.success("Preview link copied");
+    setTimeout(() => setPreviewLinkCopied(false), 2000);
   }
 
 
@@ -558,6 +576,22 @@ export default function EventDetailPage() {
             {(event.eventFormat === "virtual" || event.selfRegistrationEnabled !== false) && (
               <div className="mt-2">
                 <EventSlugEditor event={event} />
+              </div>
+            )}
+            {event.published === false && (event.eventFormat === "virtual" || event.selfRegistrationEnabled !== false) && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-2.5">
+                <div>
+                  <h2 className="font-semibold text-amber-900 text-sm mb-0.5">Private preview link</h2>
+                  <p className="text-xs text-amber-700">Share this to show the page before it&apos;s published — nobody else can find it, and it isn&apos;t open for real registration yet.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyPreviewLink}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 text-amber-800 bg-white hover:bg-amber-100"
+                >
+                  <Eye size={12} />
+                  {previewLinkCopied ? "Link copied!" : "Copy preview link"}
+                </button>
               </div>
             )}
             {!(event.eventFormat === "virtual" || event.selfRegistrationEnabled !== false) && (
