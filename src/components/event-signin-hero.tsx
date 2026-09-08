@@ -6,16 +6,14 @@ import { formatDate, formatTime } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 
 const VARIANTS = {
-  staff: {
-    gradient: "linear-gradient(145deg, #04223d 0%, #1098F7 100%)",
-    eyebrow: "text-sky-300",
-  },
-  rep: {
-    gradient: "linear-gradient(145deg, #170821 0%, #C21FAF 100%)",
-    eyebrow: "text-fuchsia-300",
-  },
+  staff: { eyebrow: "text-sky-300" },
+  rep: { eyebrow: "text-fuchsia-300" },
 };
 
+/** Sits directly on the shared DarkAuroraShell backdrop (see dark-aurora-shell.tsx)
+ *  rather than its own solid color banner — same look as the registration page's
+ *  own title block, so a staff/rep check-in link feels like the same product as
+ *  the registration link an attendee gets. */
 export function EventSignInHero({
   eyebrow,
   event,
@@ -31,14 +29,7 @@ export function EventSignInHero({
 }) {
   const theme = VARIANTS[variant];
   return (
-    <div className="relative overflow-hidden px-6 pt-6 pb-16 text-white" style={{ background: theme.gradient }}>
-      <div
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage: "radial-gradient(circle at center, rgba(255,255,255,0.4) 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-        }}
-      />
+    <div className="relative px-6 pt-6 pb-16 text-white">
       <div className="relative max-w-xl mx-auto">
         <div className="flex items-center justify-between">
           <Logo tone="white" height={14} />
@@ -49,7 +40,9 @@ export function EventSignInHero({
           )}
         </div>
         <p className={`mt-8 font-mono text-xs font-semibold uppercase tracking-widest ${theme.eyebrow}`}>{eyebrow}</p>
-        <h1 className="mt-2 font-display text-2xl sm:text-3xl leading-tight">{event.name}</h1>
+        <h1 className="mt-2 font-display text-2xl sm:text-3xl leading-tight" style={{ textWrap: "balance" }}>
+          {event.name}
+        </h1>
         <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/70">
           <span className="inline-flex items-center gap-1.5">
             {event.eventFormat === "virtual" ? (

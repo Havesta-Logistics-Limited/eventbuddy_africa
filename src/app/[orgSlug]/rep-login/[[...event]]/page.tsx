@@ -8,6 +8,7 @@ import { Destination, EventRecord, University } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
 import { EventPicker } from "@/components/event-picker";
 import { EventSignInHero } from "@/components/event-signin-hero";
+import { DarkAuroraShell } from "@/components/dark-aurora-shell";
 
 type CheckinEvent = EventRecord & { hasStaffCode: boolean; hasRepCode: boolean };
 
@@ -96,20 +97,24 @@ export default function RepLoginPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <MapPinCheckInside size={26} className="text-[#C21FAF]/40 animate-pulse" />
-      </div>
+      <DarkAuroraShell>
+        <div className="min-h-screen flex items-center justify-center">
+          <MapPinCheckInside size={26} className="text-white/40 animate-pulse" />
+        </div>
+      </DarkAuroraShell>
     );
   }
 
   if (loadError) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="text-center text-slate-500">
-          <p className="font-medium text-slate-700">{loadError}</p>
-          <p className="text-sm mt-1">Check the link your coordinator gave you and try again.</p>
+      <DarkAuroraShell>
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <div className="text-center text-white/60">
+            <p className="font-medium text-white/90">{loadError}</p>
+            <p className="text-sm mt-1">Check the link your coordinator gave you and try again.</p>
+          </div>
         </div>
-      </div>
+      </DarkAuroraShell>
     );
   }
 
@@ -119,12 +124,14 @@ export default function RepLoginPage() {
 
   if (pinnedEvent && !selectedEventId) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="text-center text-slate-500">
-          <p className="font-medium text-slate-700">This event&apos;s check-in link isn&apos;t valid anymore.</p>
-          <p className="text-sm mt-1">Ask your event coordinator for the current rep check-in link.</p>
+      <DarkAuroraShell>
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <div className="text-center text-white/60">
+            <p className="font-medium text-white/90">This event&apos;s check-in link isn&apos;t valid anymore.</p>
+            <p className="text-sm mt-1">Ask your event coordinator for the current rep check-in link.</p>
+          </div>
         </div>
-      </div>
+      </DarkAuroraShell>
     );
   }
 
@@ -148,7 +155,8 @@ export default function RepLoginPage() {
   if (!selectedEvent) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-10">
+    <DarkAuroraShell>
+    <div className="min-h-screen pb-10">
       <EventSignInHero
         eyebrow="Rep sign-in"
         event={selectedEvent}
@@ -167,12 +175,12 @@ export default function RepLoginPage() {
         variant="rep"
       />
       <div className="relative max-w-xl mx-auto px-4 -mt-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl p-6">
         <div className="space-y-8">
           {codeRequired && (
             <section>
-              <h2 className="flex items-center gap-2 text-base font-bold text-slate-900 mb-3">
-                <KeyRound size={16} className="text-slate-400" />
+              <h2 className="flex items-center gap-2 text-base font-bold text-white mb-3">
+                <KeyRound size={16} className="text-white/40" />
                 Event access code
               </h2>
               <input
@@ -183,12 +191,12 @@ export default function RepLoginPage() {
                   setError("");
                 }}
                 placeholder="Enter the code provided by your event coordinator"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                className="w-full px-4 py-3 rounded-xl border border-white/20 bg-white/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
               />
             </section>
           )}
           <section>
-            <h2 className="text-base font-bold text-slate-900 mb-3">1. Which destination?</h2>
+            <h2 className="text-base font-bold text-white mb-3">1. Which destination?</h2>
             <div className="flex flex-wrap gap-2.5">
               {destinations
                 .filter((d) => selectedEvent.destinationIds.includes(d.id))
@@ -203,7 +211,7 @@ export default function RepLoginPage() {
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-colors ${
                       selectedDestId === d.id
                         ? "border-[#C21FAF] bg-[#C21FAF] text-white"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                        : "border-white/20 bg-white/5 text-white/80 hover:bg-white/10"
                     }`}
                   >
                     {d.name}
@@ -213,7 +221,7 @@ export default function RepLoginPage() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-slate-900 mb-3">2. Which school?</h2>
+            <h2 className="text-base font-bold text-white mb-3">2. Which school?</h2>
             <select
               value={selectedUniId || ""}
               onChange={(e) => {
@@ -221,8 +229,8 @@ export default function RepLoginPage() {
                 setError("");
               }}
               disabled={!selectedDestId}
-              className={`w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-white ${
-                !selectedDestId ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed border-dashed" : "border-slate-200 text-slate-800"
+              className={`w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] ${
+                !selectedDestId ? "border-white/10 border-dashed bg-white/5 text-white/30 cursor-not-allowed" : "border-white/20 bg-white/5 text-white"
               }`}
             >
               <option value="" disabled>
@@ -239,7 +247,7 @@ export default function RepLoginPage() {
 
         <div className="mt-8 pt-4">
           {error && (
-            <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-rose-50 text-rose-700 text-sm">
+            <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-rose-400/10 text-rose-200 text-sm">
               <AlertCircle size={15} className="mt-0.5 shrink-0" />
               {error}
             </div>
@@ -249,7 +257,7 @@ export default function RepLoginPage() {
             onClick={handleStart}
             disabled={!isFormValid || submitting}
             className={`w-full py-4 rounded-xl font-medium text-base transition-colors ${
-              isFormValid && !submitting ? "bg-[#C21FAF] text-white hover:bg-[#93147D]" : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              isFormValid && !submitting ? "bg-[#C21FAF] text-white hover:bg-[#93147D]" : "bg-white/10 text-white/30 cursor-not-allowed"
             }`}
           >
             {submitting ? "Checking in…" : "Check-In"}
@@ -258,5 +266,6 @@ export default function RepLoginPage() {
         </div>
       </div>
     </div>
+    </DarkAuroraShell>
   );
 }
