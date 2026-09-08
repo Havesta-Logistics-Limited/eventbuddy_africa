@@ -6,6 +6,7 @@ import { Calendar, MapPin, Video, Search, CalendarX } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { formatDate, formatTime } from "@/lib/utils";
 import { formatNaira } from "@/lib/billing";
+import { getEventStatus } from "@/lib/capture-window";
 
 type DiscoverEvent = {
   id: string;
@@ -15,6 +16,7 @@ type DiscoverEvent = {
   endDate?: string;
   startTime?: string;
   endTime?: string;
+  timezone?: string;
   location: string;
   venue: string;
   description: string;
@@ -26,6 +28,13 @@ type DiscoverEvent = {
   orgSlug: string;
   minPriceNaira: number | null;
 };
+
+const STATUS_LABEL = { upcoming: "Upcoming", active: "Happening now", completed: "Past" } as const;
+const STATUS_CLS = {
+  upcoming: "text-brand-600",
+  active: "text-emerald-600",
+  completed: "text-slate-400",
+} as const;
 
 /** A booth-only event (no online registration — leads captured at the door)
  *  still gets listed for promotion/awareness, but "Free" would misleadingly
@@ -217,6 +226,7 @@ export default function DiscoverEventsPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {filtered.map((event, i) => {
               const badge = priceBadge(event);
+              const status = getEventStatus(event);
               return (
                 <Link
                   key={event.id}
@@ -239,7 +249,10 @@ export default function DiscoverEventsPage() {
                     <span className={`absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full ${badge.cls}`}>{badge.label}</span>
                   </div>
                   <div className="p-5">
-                    <p className="text-xs font-medium text-brand-600 uppercase tracking-wide mb-1.5">Eventbuddy</p>
+                    <p className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide mb-1.5 ${STATUS_CLS[status]}`}>
+                      {status === "active" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                      {STATUS_LABEL[status]}
+                    </p>
                     <h2 className="font-semibold text-slate-900 mb-2 line-clamp-2">{event.name}</h2>
                     <div className="space-y-1.5 text-sm text-slate-500">
                       <p className="flex items-center gap-1.5 min-w-0">

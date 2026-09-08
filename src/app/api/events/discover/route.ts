@@ -9,6 +9,7 @@ type DiscoverEventRow = {
   end_date: string | null;
   start_time: string | null;
   end_time: string | null;
+  timezone: string | null;
   location: string;
   venue: string;
   description: string | null;
@@ -54,6 +55,7 @@ export async function GET() {
       endDate: e.end_date ?? undefined,
       startTime: e.start_time ?? undefined,
       endTime: e.end_time ?? undefined,
+      timezone: e.timezone ?? undefined,
       location: e.location,
       venue: e.venue,
       description: e.description ?? "",
