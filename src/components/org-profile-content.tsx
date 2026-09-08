@@ -23,18 +23,23 @@ type OrgProfileEvent = {
   coverImage?: string;
   eventFormat: "physical" | "virtual";
   virtualPlatform?: string;
+  selfRegistrationEnabled: boolean;
   minPriceNaira: number | null;
 };
 
 type OrgProfile = { name: string; slug: string; bio: string; logoUrl?: string; isVerified: boolean };
 
-function priceBadge(minPriceNaira: number | null) {
-  if (minPriceNaira == null || minPriceNaira === 0) return { label: "Free", cls: "bg-slate-100 text-slate-600" };
-  return { label: `From ${formatNaira(minPriceNaira)}`, cls: "bg-emerald-50 text-emerald-700" };
+/** A booth-only event (no online registration — leads captured at the door)
+ *  still gets listed for promotion/awareness, but "Free" would misleadingly
+ *  imply there's something to sign up for. */
+function priceBadge(event: OrgProfileEvent) {
+  if (!event.selfRegistrationEnabled) return { label: "Booth only", cls: "bg-amber-50 text-amber-700" };
+  if (event.minPriceNaira == null || event.minPriceNaira === 0) return { label: "Free", cls: "bg-slate-100 text-slate-600" };
+  return { label: `From ${formatNaira(event.minPriceNaira)}`, cls: "bg-emerald-50 text-emerald-700" };
 }
 
 function EventCard({ event, orgSlug, i }: { event: OrgProfileEvent; orgSlug: string; i: number }) {
-  const badge = priceBadge(event.minPriceNaira);
+  const badge = priceBadge(event);
   return (
     <Link
       href={event.slug ? `/${event.slug}` : `/${orgSlug}/events/${event.id}/register`}

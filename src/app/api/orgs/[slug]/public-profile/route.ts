@@ -16,6 +16,7 @@ type OrgEventRow = {
   cover_image: string | null;
   event_format: string | null;
   virtual_platform: string | null;
+  self_registration_enabled: boolean | null;
 };
 
 /**
@@ -60,6 +61,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       coverImage: e.cover_image ?? undefined,
       eventFormat: (e.event_format as "physical" | "virtual" | null) ?? "physical",
       virtualPlatform: e.virtual_platform ?? undefined,
+      selfRegistrationEnabled: e.self_registration_enabled ?? true,
       minPriceNaira: priceByEventId.has(e.id) ? priceByEventId.get(e.id) : null,
     })),
   });

@@ -15,17 +15,20 @@ type DiscoverEventRow = {
   cover_image: string | null;
   event_format: string | null;
   virtual_platform: string | null;
+  self_registration_enabled: boolean | null;
   org_name: string;
   org_slug: string;
 };
 
 /**
- * Every currently-active, self-service-registerable event across every
- * organization — powers the public "Discover" page. No session, no
- * rate limiting (pure read, no side effect, same as public_org_events'
- * other callers) — see public_discover_events for the actual filtering
- * (published, not suspended, not invite-only, self-registration enabled,
- * not yet ended).
+ * Every currently-active event across every organization — powers the public
+ * "Discover" page. Includes booth-only events (self_registration_enabled
+ * false) too, purely for promotion/visibility — the frontend shows a "Booth
+ * only" indicator instead of a price for those, since there's nothing to
+ * register for online. No session, no rate limiting (pure read, no side
+ * effect, same as public_org_events' other callers) — see
+ * public_discover_events for the actual filtering (published, not suspended,
+ * not invite-only, not yet ended).
  */
 export async function GET() {
   const supabase = createAnonClient();
@@ -57,6 +60,7 @@ export async function GET() {
       coverImage: e.cover_image ?? undefined,
       eventFormat: (e.event_format as "physical" | "virtual" | null) ?? "physical",
       virtualPlatform: e.virtual_platform ?? undefined,
+      selfRegistrationEnabled: e.self_registration_enabled ?? true,
       orgName: e.org_name,
       orgSlug: e.org_slug,
       minPriceNaira: priceByEventId.has(e.id) ? priceByEventId.get(e.id) : null,

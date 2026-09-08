@@ -21,15 +21,19 @@ type DiscoverEvent = {
   coverImage?: string;
   eventFormat: "physical" | "virtual";
   virtualPlatform?: string;
+  selfRegistrationEnabled: boolean;
   orgName: string;
   orgSlug: string;
   minPriceNaira: number | null;
 };
 
-function priceBadge(minPriceNaira: number | null) {
-  if (minPriceNaira == null) return { label: "Free", cls: "bg-slate-100 text-slate-600" };
-  if (minPriceNaira === 0) return { label: "Free", cls: "bg-slate-100 text-slate-600" };
-  return { label: `From ${formatNaira(minPriceNaira)}`, cls: "bg-emerald-50 text-emerald-700" };
+/** A booth-only event (no online registration — leads captured at the door)
+ *  still gets listed for promotion/awareness, but "Free" would misleadingly
+ *  imply there's something to sign up for. */
+function priceBadge(event: DiscoverEvent) {
+  if (!event.selfRegistrationEnabled) return { label: "Booth only", cls: "bg-amber-50 text-amber-700" };
+  if (event.minPriceNaira == null || event.minPriceNaira === 0) return { label: "Free", cls: "bg-slate-100 text-slate-600" };
+  return { label: `From ${formatNaira(event.minPriceNaira)}`, cls: "bg-emerald-50 text-emerald-700" };
 }
 
 function isFree(minPriceNaira: number | null) {
@@ -77,6 +81,9 @@ export default function DiscoverEventsPage() {
   const cities = Array.from(new Set(events.map((e) => e.location).filter(Boolean))).sort();
 
   const filtered = events.filter((e) => {
+    // Booth-only events have no price at all (free or paid) — only show them
+    // under "All events", never under a specific price filter.
+    if (priceFilter !== "all" && !e.selfRegistrationEnabled) return false;
     if (priceFilter === "free" && !isFree(e.minPriceNaira)) return false;
     if (priceFilter === "paid" && isFree(e.minPriceNaira)) return false;
     if (typeFilter !== "all" && e.eventFormat !== typeFilter) return false;
@@ -209,7 +216,7 @@ export default function DiscoverEventsPage() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {filtered.map((event, i) => {
-              const badge = priceBadge(event.minPriceNaira);
+              const badge = priceBadge(event);
               return (
                 <Link
                   key={event.id}
