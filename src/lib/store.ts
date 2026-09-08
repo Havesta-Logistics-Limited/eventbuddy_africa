@@ -1047,8 +1047,11 @@ export async function duplicateEvent(id: string): Promise<EventRecord | undefine
   if (!source) return undefined;
   // Cleared, not carried over — otherwise addEvent would try to reuse the source
   // event's own slug as its base candidate instead of deriving a fresh one from
-  // the "(Copy)" name.
-  return addEvent({ ...source, name: `${source.name} (Copy)`, published: true, slug: undefined });
+  // the "(Copy)" name. checkinSlug is cleared for the same reason (it has its
+  // own unique constraint, events_checkin_slug_key, and addEvent's retry-on-
+  // conflict logic only ever varies `slug`) — the copy just falls back to its
+  // own id for check-in links until the organizer sets a new one.
+  return addEvent({ ...source, name: `${source.name} (Copy)`, published: true, slug: undefined, checkinSlug: undefined });
 }
 
 /** Deletes an event and, via the DB's cascading foreign key, every lead collected for
