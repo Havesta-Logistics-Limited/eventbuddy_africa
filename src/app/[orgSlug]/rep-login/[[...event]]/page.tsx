@@ -157,6 +157,7 @@ export default function RepLoginPage() {
   return (
     <DarkAuroraShell>
     <div className="min-h-screen pb-10">
+      <div className="max-w-xl mx-auto px-6">
       <EventSignInHero
         eyebrow="Rep sign-in"
         event={selectedEvent}
@@ -174,7 +175,7 @@ export default function RepLoginPage() {
         }
         variant="rep"
       />
-      <div className="relative max-w-xl mx-auto px-4 -mt-8">
+      <div className="relative -mt-8">
         <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl p-6">
         <div className="space-y-8">
           {codeRequired && (
@@ -264,6 +265,7 @@ export default function RepLoginPage() {
           </button>
         </div>
         </div>
+      </div>
       </div>
     </div>
     </DarkAuroraShell>

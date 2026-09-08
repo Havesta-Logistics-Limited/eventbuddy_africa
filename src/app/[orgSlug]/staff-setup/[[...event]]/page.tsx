@@ -175,6 +175,7 @@ export default function StaffSetupPage() {
   return (
     <DarkAuroraShell>
     <div className="min-h-screen pb-10">
+      <div className="max-w-xl mx-auto px-6">
       <EventSignInHero
         eyebrow="Staff sign-in"
         event={selectedEvent}
@@ -182,7 +183,7 @@ export default function StaffSetupPage() {
         secondaryAction={pinnedEvent ? undefined : { label: "Back to events", onClick: () => setSelectedEventId(null) }}
         variant="staff"
       />
-      <div className="relative max-w-xl mx-auto px-4 -mt-8">
+      <div className="relative -mt-8">
         <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl p-6">
         <div className="space-y-8">
           {codeRequired && (
@@ -325,6 +326,7 @@ export default function StaffSetupPage() {
           </p>
         </div>
         </div>
+      </div>
       </div>
     </div>
     </DarkAuroraShell>

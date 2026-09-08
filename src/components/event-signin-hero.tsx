@@ -29,41 +29,44 @@ export function EventSignInHero({
 }) {
   const theme = VARIANTS[variant];
   return (
-    <div className="relative px-6 pt-6 pb-16 text-white">
-      <div className="relative max-w-xl mx-auto">
-        <div className="flex items-center justify-between">
-          <Logo tone="white" height={14} />
-          {secondaryAction && (
-            <button type="button" onClick={secondaryAction.onClick} className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-              {secondaryAction.label}
-            </button>
-          )}
-        </div>
-        <p className={`mt-8 font-mono text-xs font-semibold uppercase tracking-widest ${theme.eyebrow}`}>{eyebrow}</p>
-        <h1 className="mt-2 font-display text-2xl sm:text-3xl leading-tight" style={{ textWrap: "balance" }}>
-          {event.name}
-        </h1>
-        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/70">
-          <span className="inline-flex items-center gap-1.5">
-            {event.eventFormat === "virtual" ? (
-              <>
-                <Presentation size={13} /> {event.virtualPlatform || "Online"} (Virtual)
-              </>
-            ) : (
-              <>
-                <MapPin size={13} /> {event.venue}, {event.location}
-              </>
-            )}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Calendar size={13} />
-            {formatDate(event.date)}
-            {event.startTime && `, ${formatTime(event.startTime)}`}
-            {event.endTime && ` - ${formatTime(event.endTime)}`}
-          </span>
-        </p>
-        <p className="mt-3 text-white/60 text-sm max-w-sm">{instruction}</p>
+    <div className="relative pt-6 pb-16 text-white">
+      <div className="flex items-center justify-between">
+        <span className="hidden sm:block">
+          <Logo tone="white" height={26} />
+        </span>
+        <span className="sm:hidden">
+          <Logo tone="white" height={18} />
+        </span>
+        {secondaryAction && (
+          <button type="button" onClick={secondaryAction.onClick} className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+            {secondaryAction.label}
+          </button>
+        )}
       </div>
+      <p className={`mt-8 font-mono text-xs font-semibold uppercase tracking-widest ${theme.eyebrow}`}>{eyebrow}</p>
+      <h1 className="mt-2 font-display text-2xl sm:text-3xl leading-tight" style={{ textWrap: "balance" }}>
+        {event.name}
+      </h1>
+      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/70">
+        <span className="inline-flex items-center gap-1.5">
+          {event.eventFormat === "virtual" ? (
+            <>
+              <Presentation size={13} /> {event.virtualPlatform || "Online"} (Virtual)
+            </>
+          ) : (
+            <>
+              <MapPin size={13} /> {event.venue}, {event.location}
+            </>
+          )}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Calendar size={13} />
+          {formatDate(event.date)}
+          {event.startTime && `, ${formatTime(event.startTime)}`}
+          {event.endTime && ` - ${formatTime(event.endTime)}`}
+        </span>
+      </p>
+      <p className="mt-3 text-white/60 text-sm max-w-sm">{instruction}</p>
     </div>
   );
 }
