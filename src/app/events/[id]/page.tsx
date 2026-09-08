@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { AlertCircle, ArrowLeft, Calendar, Copy, Eye, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, RefreshCw, Repeat, Trash2, Video, X, Search } from "lucide-react";
+import { AlertCircle, ArrowLeft, Calendar, Copy, Eye, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, RefreshCw, Repeat, Trash2, Undo2, Video, X, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import {
@@ -241,6 +241,19 @@ export default function EventDetailPage() {
     }
   }
 
+  async function handleUnpublish() {
+    if (!event) return;
+    setPublishing(true);
+    try {
+      await updateEvent(event.id, { published: false });
+      toast.success("Reverted to draft — it's no longer visible to attendees");
+    } catch (err) {
+      toast.error(err instanceof PersistError ? err.message : "Couldn't revert this event to a draft. Please try again.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
   // The short universal format once a slug is set (no org segment, no
   // /discover prefix — see src/app/[orgSlug]/page.tsx); falls back to the
   // older org-scoped form for an event with no slug.
@@ -463,6 +476,17 @@ export default function EventDetailPage() {
                     style={{ background: "#C21FAF" }}
                   >
                     {publishing ? "Publishing…" : "Publish Event"}
+                  </button>
+                )}
+                {event.published !== false && (
+                  <button
+                    onClick={handleUnpublish}
+                    disabled={publishing}
+                    title="Hides it from attendees and closes registration again — you can publish it again anytime."
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-amber-200 bg-white/60 backdrop-blur-md text-sm font-medium text-amber-700 transition-all hover:bg-amber-50 hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
+                  >
+                    <Undo2 size={14} />
+                    {publishing ? "Reverting…" : "Revert to draft"}
                   </button>
                 )}
                 <QrCodesMenu onRegistrationQr={() => setShowRegQr(true)} onHubQr={() => setShowHubQr(true)} onCheckinQr={() => setShowCheckinQr(true)} />
