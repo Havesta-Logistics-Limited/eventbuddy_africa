@@ -63,20 +63,24 @@ function EventCard({ event, orgSlug, i }: { event: OrgProfileEvent; orgSlug: str
       <div className="p-5">
         <h2 className="font-semibold text-slate-900 mb-2 line-clamp-2">{event.name}</h2>
         <div className="space-y-1.5 text-sm text-slate-500">
-          <p className="flex items-center gap-1.5">
+          <p className="flex items-center gap-1.5 min-w-0">
             <Calendar size={13} className="text-slate-400 shrink-0" />
-            {formatDate(event.date)}
-            {event.startTime && ` · ${formatTime(event.startTime)}`}
+            <span className="truncate">
+              {formatDate(event.date)}
+              {event.startTime && ` · ${formatTime(event.startTime)}`}
+            </span>
           </p>
           {event.eventFormat === "virtual" ? (
-            <p className="flex items-center gap-1.5">
+            <p className="flex items-center gap-1.5 min-w-0">
               <Video size={13} className="text-slate-400 shrink-0" />
-              {event.virtualPlatform || "Virtual event"}
+              <span className="truncate">{event.virtualPlatform || "Virtual event"}</span>
             </p>
           ) : (
-            <p className="flex items-center gap-1.5 truncate">
+            <p className="flex items-center gap-1.5 min-w-0">
               <MapPin size={13} className="text-slate-400 shrink-0" />
-              {event.venue}, {event.location}
+              <span className="truncate">
+                {event.venue}, {event.location}
+              </span>
             </p>
           )}
         </div>
