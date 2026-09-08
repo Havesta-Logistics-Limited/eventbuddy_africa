@@ -6,6 +6,7 @@ type OrgRow = { id: string; name: string; slug: string; logo_url: string | null 
 type EventRow = {
   id: string;
   slug: string | null;
+  checkin_slug: string | null;
   name: string;
   date: string;
   end_date: string | null;
@@ -28,16 +29,19 @@ type EventRow = {
   allow_rep_access: boolean | null;
   self_registration_enabled: boolean | null;
   published: boolean | null;
+  has_staff_code: boolean | null;
+  has_rep_code: boolean | null;
 };
 
 /**
- * Fallback lookup RegisterPageContent uses when an event isn't in the org's
- * normal /events list — which only ever returns published events. Unlike that
- * list, public_event_by_ref has no published/date filter at all, so this is
- * what lets a still-draft event's registration page render at its own real
- * URL (id or slug) before publishing, in the page's own view-only mode. No
- * separate secret: knowing the event's id/slug is the same amount of access
- * the real post-publish link already grants.
+ * Fallback lookup for when an event isn't in the org's normal /events list —
+ * which only ever returns published events. Unlike that list,
+ * public_event_by_ref has no published/date filter at all, so this is what
+ * lets a still-draft event's registration page (RegisterPageContent) AND its
+ * staff-setup/rep-login check-in links render at their real URLs (id, slug,
+ * or checkin_slug) before publishing. No separate secret: knowing the event's
+ * id/slug/checkin_slug is the same amount of access the real post-publish
+ * link already grants.
  */
 export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]/events/[eventId]/preview">) {
   const { slug, eventId } = await ctx.params;
@@ -55,6 +59,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
     event: {
       id: event.id,
       slug: event.slug ?? undefined,
+      checkinSlug: event.checkin_slug ?? undefined,
       name: event.name,
       date: event.date,
       endDate: event.end_date ?? undefined,
@@ -77,8 +82,8 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       allowRepAccess: event.allow_rep_access ?? true,
       selfRegistrationEnabled: event.self_registration_enabled ?? true,
       published: event.published ?? true,
-      hasStaffCode: false,
-      hasRepCode: false,
+      hasStaffCode: event.has_staff_code ?? false,
+      hasRepCode: event.has_rep_code ?? false,
     },
   });
 }

@@ -37,7 +37,7 @@ export default function RepLoginPage() {
   useEffect(() => {
     fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events`)
       .then((res) => res.json())
-      .then((data) => {
+      .then(async (data) => {
         if (data.error) {
           setLoadError(data.error);
           return;
@@ -52,7 +52,22 @@ export default function RepLoginPage() {
           events.find(
             (e) => (e.id === pinnedEvent || e.checkinSlug === pinnedEvent || e.slug === pinnedEvent) && getTemplate(e.templateId).usesDestinations && e.allowRepAccess !== false
           );
-        if (pinnedMatch) setSelectedEventId(pinnedMatch.id);
+        if (pinnedMatch) {
+          setSelectedEventId(pinnedMatch.id);
+          return;
+        }
+        // The pinned event isn't in the org's normal (published-only) list —
+        // still let a draft event's own rep link work, same fallback the
+        // register page uses, so an organizer can set up/test it before
+        // publishing.
+        if (pinnedEvent) {
+          const previewData = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(pinnedEvent)}/preview`).then((res) => res.json());
+          const draftEvent = previewData.event as CheckinEvent | undefined;
+          if (draftEvent && getTemplate(draftEvent.templateId).usesDestinations && draftEvent.allowRepAccess !== false) {
+            setEvents((prev) => [...prev, draftEvent]);
+            setSelectedEventId(draftEvent.id);
+          }
+        }
       })
       .catch(() => setLoadError("Couldn't load this page. Check your connection and try again."))
       .finally(() => setLoading(false));

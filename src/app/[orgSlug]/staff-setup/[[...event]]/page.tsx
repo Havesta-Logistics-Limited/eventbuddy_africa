@@ -46,7 +46,7 @@ export default function StaffSetupPage() {
   useEffect(() => {
     fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events`)
       .then((res) => res.json())
-      .then((data) => {
+      .then(async (data) => {
         if (data.error) {
           setLoadError(data.error);
           return;
@@ -57,7 +57,22 @@ export default function StaffSetupPage() {
         setUniversities(data.universities);
         setStaffMembers(data.staff);
         const pinnedMatch = pinnedEvent && data.events.find((e: CheckinEvent) => e.id === pinnedEvent || e.checkinSlug === pinnedEvent || e.slug === pinnedEvent);
-        if (pinnedMatch) setSelectedEventId(pinnedMatch.id);
+        if (pinnedMatch) {
+          setSelectedEventId(pinnedMatch.id);
+          return;
+        }
+        // The pinned event isn't in the org's normal (published-only) list —
+        // still let a draft event's own check-in link work, same fallback the
+        // register page uses, so an organizer can set up/test check-in before
+        // publishing.
+        if (pinnedEvent) {
+          const previewData = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(pinnedEvent)}/preview`).then((res) => res.json());
+          if (!previewData.error) {
+            const draftEvent = previewData.event as CheckinEvent;
+            setEvents((prev) => [...prev, draftEvent]);
+            setSelectedEventId(draftEvent.id);
+          }
+        }
       })
       .catch(() => setLoadError("Couldn't load this page. Check your connection and try again."))
       .finally(() => setLoading(false));
