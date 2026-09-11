@@ -16,6 +16,7 @@ import { MfaNagBanner } from "@/components/mfa-nag-banner";
 import { ImageCropperModal } from "@/components/image-cropper-modal";
 import { ActiveDevicesSection } from "@/components/active-devices";
 import { compressImageFile } from "@/lib/utils";
+import { deleteEventMedia, uploadEventMedia } from "@/lib/supabase/storage";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -228,10 +229,11 @@ export default function AdminPage() {
     if (!orgId) return;
     setSavingLogo(true);
     try {
+      const url = await uploadEventMedia(`${orgId}/logo`, dataUrl);
       const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.from("organizations").update({ logo_url: dataUrl }).eq("id", orgId);
+      const { error } = await supabase.from("organizations").update({ logo_url: url }).eq("id", orgId);
       if (error) throw error;
-      setOrgLogoUrl(dataUrl);
+      setOrgLogoUrl(url);
       toast.success("Logo updated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't save your logo.");
@@ -247,6 +249,7 @@ export default function AdminPage() {
       const supabase = createSupabaseBrowserClient();
       const { error } = await supabase.from("organizations").update({ logo_url: null }).eq("id", orgId);
       if (error) throw error;
+      await deleteEventMedia(`${orgId}/logo`);
       setOrgLogoUrl("");
       toast.success("Logo removed");
     } catch (err) {

@@ -6,7 +6,8 @@ type OrgRow = { id: string; name: string; slug: string; logo_url: string | null 
 type EventRow = {
   id: string;
   slug: string | null;
-  checkin_slug: string | null;
+  staff_checkin_slug: string | null;
+  rep_checkin_slug: string | null;
   name: string;
   date: string;
   end_date: string | null;
@@ -39,9 +40,9 @@ type EventRow = {
  * public_event_by_ref has no published/date filter at all, so this is what
  * lets a still-draft event's registration page (RegisterPageContent) AND its
  * staff-setup/rep-login check-in links render at their real URLs (id, slug,
- * or checkin_slug) before publishing. No separate secret: knowing the event's
- * id/slug/checkin_slug is the same amount of access the real post-publish
- * link already grants.
+ * staff_checkin_slug, or rep_checkin_slug) before publishing. No separate
+ * secret: knowing the event's id/slug/checkin-slug is the same amount of
+ * access the real post-publish link already grants.
  */
 export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]/events/[eventId]/preview">) {
   const { slug, eventId } = await ctx.params;
@@ -59,7 +60,8 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
     event: {
       id: event.id,
       slug: event.slug ?? undefined,
-      checkinSlug: event.checkin_slug ?? undefined,
+      staffCheckinSlug: event.staff_checkin_slug ?? undefined,
+      repCheckinSlug: event.rep_checkin_slug ?? undefined,
       name: event.name,
       date: event.date,
       endDate: event.end_date ?? undefined,

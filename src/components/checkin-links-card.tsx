@@ -4,15 +4,17 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Link2 } from "lucide-react";
 import { EventRecord } from "@/lib/types";
+import { checkinLinkPath } from "@/lib/utils";
 import { EventSlugEditor } from "@/components/event-slug-editor";
 
 /** Per-event check-in links — the trailing path segment locks staff-setup/rep-login
  *  to this one event and skips the "which event are you at?" picker, so a link
  *  shared for one fair can never be used to check in against a different one. Uses
- *  the event's own `checkinSlug` when it has one, independent of the registration
- *  link's `slug` — editable right here via EventSlugEditor bound to that separate
- *  field, so customizing one link never touches the other. Shown on the event
- *  detail page, scoped to whether that event's template uses reps. */
+ *  the event's own staffCheckinSlug/repCheckinSlug when set (as a short root-level
+ *  link, same trick as the registration link — see checkinLinkPath), independent
+ *  of the registration link's `slug` and of each other — each editable right here
+ *  via its own EventSlugEditor, so customizing one link never touches another.
+ *  Shown on the event detail page, scoped to whether that event's template uses reps. */
 export function CheckinLinksCard({
   orgSlug,
   event,
@@ -26,10 +28,9 @@ export function CheckinLinksCard({
 }) {
   const [copied, setCopied] = useState<"staff" | "rep" | null>(null);
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const eventParam = encodeURIComponent(event.checkinSlug || event.id);
   const links = [
-    ...(showStaffLink ? [{ key: "staff" as const, label: "Staff check-in link", path: `/${orgSlug}/staff-setup/${eventParam}` }] : []),
-    ...(showRepLink ? [{ key: "rep" as const, label: "Rep check-in link", path: `/${orgSlug}/rep-login/${eventParam}` }] : []),
+    ...(showStaffLink ? [{ key: "staff" as const, label: "Staff check-in link", path: checkinLinkPath("staff", event, orgSlug) }] : []),
+    ...(showRepLink ? [{ key: "rep" as const, label: "Rep check-in link", path: checkinLinkPath("rep", event, orgSlug) }] : []),
   ];
 
   function copy(key: "staff" | "rep", url: string) {
@@ -61,7 +62,10 @@ export function CheckinLinksCard({
           </button>
         ))}
       </div>
-      <EventSlugEditor event={event} field="checkinSlug" />
+      <div className="space-y-1.5">
+        {showStaffLink && <EventSlugEditor event={event} field="staffCheckinSlug" label={showRepLink ? "staff" : undefined} />}
+        {showRepLink && <EventSlugEditor event={event} field="repCheckinSlug" label={showStaffLink ? "rep" : undefined} />}
+      </div>
     </div>
   );
 }

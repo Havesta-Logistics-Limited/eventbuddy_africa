@@ -16,9 +16,11 @@ export default function RepLoginPage() {
   const params = useParams<{ orgSlug: string; event?: string[] }>();
   const orgSlug = params.orgSlug;
   const router = useRouter();
-  // A per-event share link (/rep-login/<checkin-slug-or-id>) locks the flow to
-  // that one event and skips the "which event are you viewing?" picker entirely —
-  // see CheckinLinksCard, which prefers the event's own checkinSlug when it has one.
+  // A per-event share link (/rep-login/<rep-checkin-slug-or-id>, or the short
+  // root-level /<rep-checkin-slug> form once one's set — see [orgSlug]/page.tsx)
+  // locks the flow to that one event and skips the "which event are you
+  // viewing?" picker entirely — see CheckinLinksCard, which prefers the
+  // event's own repCheckinSlug when it has one.
   const pinnedEvent = params.event?.[0] ?? null;
 
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ export default function RepLoginPage() {
         const pinnedMatch =
           pinnedEvent &&
           events.find(
-            (e) => (e.id === pinnedEvent || e.checkinSlug === pinnedEvent || e.slug === pinnedEvent) && getTemplate(e.templateId).usesDestinations && e.allowRepAccess !== false
+            (e) => (e.id === pinnedEvent || e.repCheckinSlug === pinnedEvent || e.slug === pinnedEvent) && getTemplate(e.templateId).usesDestinations && e.allowRepAccess !== false
           );
         if (pinnedMatch) {
           setSelectedEventId(pinnedMatch.id);

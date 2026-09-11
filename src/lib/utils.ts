@@ -99,6 +99,18 @@ export function formatDate(date: string) {
   return new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
+/** Path (no origin) for an event's staff or rep check-in link. Once the
+ *  organizer sets a custom staffCheckinSlug/repCheckinSlug, this is the short
+ *  root-level form (/{slug}, resolved by [orgSlug]/page.tsx — same trick as
+ *  the registration link's /[slug]) since that's what gets copied/shown;
+ *  until then it falls back to the nested /{orgSlug}/staff-setup|rep-login/{id}
+ *  form, which always works regardless of whether a custom slug is set. */
+export function checkinLinkPath(kind: "staff" | "rep", event: Pick<EventRecord, "id" | "staffCheckinSlug" | "repCheckinSlug">, orgSlug: string): string {
+  const slug = kind === "staff" ? event.staffCheckinSlug : event.repCheckinSlug;
+  if (slug) return `/${encodeURIComponent(slug)}`;
+  return `/${orgSlug}/${kind === "staff" ? "staff-setup" : "rep-login"}/${encodeURIComponent(event.id)}`;
+}
+
 /** "September 2026" style label used for the Event month filter. */
 export function getEventMonthLabel(event: Pick<EventRecord, "date">) {
   return new Date(event.date).toLocaleDateString("en-GB", { month: "long", year: "numeric" });

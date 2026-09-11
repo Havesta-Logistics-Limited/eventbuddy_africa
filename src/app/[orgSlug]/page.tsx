@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { OrgProfileContent } from "@/components/org-profile-content";
 import { PublicHeader, RegisterPageContent } from "@/components/register-page-content";
@@ -8,12 +9,20 @@ import { formatDate, formatTime } from "@/lib/utils";
 type Params = { orgSlug: string };
 type OrgProfileRow = { name: string; bio: string | null };
 
-/** This one root segment resolves two different kinds of thing by the same slug:
- *  an organizer's public profile, or — since events also got a short /[slug] link
- *  once they have a global slug (migration 0057) — an event's own register page.
- *  They can't collide: events.slug and organizations.slug are different columns
- *  in different tables, checked one after the other, org first. A slug that
- *  matches neither renders a plain not-found state below. */
+/** This one root segment resolves four different kinds of thing by the same
+ *  slug, checked in this order (first match wins — org first, since losing a
+ *  profile link to some unrelated event's chosen slug would be the more
+ *  disruptive collision): an organizer's public profile; an event's own
+ *  register page, once it has a global slug (migration 0057); an event's
+ *  short staff check-in link; or its short rep check-in link (migration 0087
+ *  — both redirect straight into the existing /staff-setup or /rep-login
+ *  flow rather than rendering anything here). Each lives in its own table
+ *  column with its own uniqueness constraint, so nothing prevents two of
+ *  these from colliding on the same literal string — same accepted
+ *  trade-off as the registration slug already documented below: a
+ *  collision is just a dead/misrouted link the organizer would notice
+ *  immediately, not a security issue. A slug that matches none of the four
+ *  renders a plain not-found state below. */
 async function resolveOrgProfile(slug: string): Promise<OrgProfileRow | null> {
   const supabase = createAnonClient();
   const { data } = await supabase.rpc("public_organization_profile", { org_slug: slug }).maybeSingle<OrgProfileRow>();
@@ -23,6 +32,18 @@ async function resolveOrgProfile(slug: string): Promise<OrgProfileRow | null> {
 async function resolveEventOrgSlug(slug: string): Promise<string | null> {
   const supabase = createAnonClient();
   const { data } = await supabase.rpc("public_event_by_slug", { p_slug: slug }).maybeSingle<{ event_id: string; org_slug: string }>();
+  return data?.org_slug ?? null;
+}
+
+async function resolveStaffCheckinOrgSlug(slug: string): Promise<string | null> {
+  const supabase = createAnonClient();
+  const { data } = await supabase.rpc("public_event_by_staff_checkin_slug", { p_slug: slug }).maybeSingle<{ event_id: string; org_slug: string }>();
+  return data?.org_slug ?? null;
+}
+
+async function resolveRepCheckinOrgSlug(slug: string): Promise<string | null> {
+  const supabase = createAnonClient();
+  const { data } = await supabase.rpc("public_event_by_rep_checkin_slug", { p_slug: slug }).maybeSingle<{ event_id: string; org_slug: string }>();
   return data?.org_slug ?? null;
 }
 
@@ -81,6 +102,16 @@ export default async function RootSlugPage({ params }: { params: Promise<Params>
         <RegisterPageContent orgSlug={eventOrgSlug} eventIdOrSlug={slug} />
       </>
     );
+  }
+
+  const staffOrgSlug = await resolveStaffCheckinOrgSlug(slug);
+  if (staffOrgSlug) {
+    redirect(`/${staffOrgSlug}/staff-setup/${encodeURIComponent(slug)}`);
+  }
+
+  const repOrgSlug = await resolveRepCheckinOrgSlug(slug);
+  if (repOrgSlug) {
+    redirect(`/${repOrgSlug}/rep-login/${encodeURIComponent(slug)}`);
   }
 
   return (

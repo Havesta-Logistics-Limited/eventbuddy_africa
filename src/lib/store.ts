@@ -26,6 +26,7 @@ import {
   University,
 } from "./types";
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
+import { copyEventMedia, deleteEventMedia, isEventMediaUrl, uploadEventMedia } from "./supabase/storage";
 import { newId } from "./utils";
 
 const SESSION_KEY = "eventpal:session:v1";
@@ -113,7 +114,8 @@ function mapUniversityRow(u: { id: string; destination_id: string; name: string;
 function mapEventRow(e: {
   id: string;
   slug: string | null;
-  checkin_slug: string | null;
+  staff_checkin_slug: string | null;
+  rep_checkin_slug: string | null;
   name: string;
   date: string;
   end_date: string | null;
@@ -154,7 +156,8 @@ function mapEventRow(e: {
   return {
     id: e.id,
     slug: e.slug ?? undefined,
-    checkinSlug: e.checkin_slug ?? undefined,
+    staffCheckinSlug: e.staff_checkin_slug ?? undefined,
+    repCheckinSlug: e.rep_checkin_slug ?? undefined,
     name: e.name,
     date: e.date,
     endDate: e.end_date ?? undefined,
@@ -196,7 +199,8 @@ function mapEventRow(e: {
 function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   const row: Record<string, unknown> = {};
   if (input.slug !== undefined) row.slug = input.slug || null;
-  if (input.checkinSlug !== undefined) row.checkin_slug = input.checkinSlug || null;
+  if (input.staffCheckinSlug !== undefined) row.staff_checkin_slug = input.staffCheckinSlug || null;
+  if (input.repCheckinSlug !== undefined) row.rep_checkin_slug = input.repCheckinSlug || null;
   if (input.name !== undefined) row.name = input.name;
   if (input.date !== undefined) row.date = input.date;
   if (input.endDate !== undefined) row.end_date = input.endDate || null;
@@ -1008,16 +1012,31 @@ export async function addEventSeries(name: string): Promise<string> {
  *  manual slug editor already does for the update path. */
 export async function addEvent(input: Omit<EventRecord, "id" | "createdAt">): Promise<EventRecord> {
   const supabase = createSupabaseBrowserClient();
+  // A brand-new event has no id yet, so a freshly-picked cover (still a data:
+  // URL at this point) can't be uploaded to its `{orgId}/covers/{eventId}` path
+  // until after the insert — held back from this first write and patched in
+  // once the row (and its id) exist, so the events table never receives a
+  // multi-hundred-KB base64 payload even transiently.
+  const pendingCoverImage = input.coverImage?.startsWith("data:") ? input.coverImage : undefined;
+  const insertInput = pendingCoverImage ? { ...input, coverImage: undefined } : input;
   const baseSlug = input.slug ? slugifyEventName(input.slug) : slugifyEventName(input.name);
   let candidate = baseSlug;
   for (let attempt = 1; attempt <= 6; attempt++) {
     const { data, error } = await supabase
       .from("events")
-      .insert(eventToRow({ ...input, slug: candidate }))
+      .insert(eventToRow({ ...insertInput, slug: candidate }))
       .select()
       .single();
     if (data) {
-      const record = mapEventRow(data);
+      let record = mapEventRow(data);
+      if (pendingCoverImage) {
+        const orgId = await resolveMyOrgId(supabase);
+        if (orgId) {
+          const url = await uploadEventMedia(`${orgId}/covers/${record.id}`, pendingCoverImage);
+          await supabase.from("events").update({ cover_image: url }).eq("id", record.id);
+          record = { ...record, coverImage: url };
+        }
+      }
       eventsCache = [...eventsCache, record];
       emitChange();
       return record;
@@ -1032,7 +1051,22 @@ export async function addEvent(input: Omit<EventRecord, "id" | "createdAt">): Pr
 }
 export async function updateEvent(id: string, patch: Partial<Omit<EventRecord, "id" | "createdAt">>): Promise<void> {
   const supabase = createSupabaseBrowserClient();
-  const { data, error } = await supabase.from("events").update(eventToRow(patch)).eq("id", id).select().single();
+  const existing = eventsCache.find((e) => e.id === id);
+  let finalPatch = patch;
+  if (patch.coverImage?.startsWith("data:")) {
+    const orgId = await resolveMyOrgId(supabase);
+    if (orgId) {
+      const url = await uploadEventMedia(`${orgId}/covers/${id}`, patch.coverImage);
+      finalPatch = { ...patch, coverImage: url };
+    }
+  } else if (patch.coverImage !== undefined && patch.coverImage !== existing?.coverImage && existing?.coverImage && isEventMediaUrl(existing.coverImage)) {
+    // Cleared, or swapped for a pasted external URL — the file this event had
+    // previously uploaded is now unreferenced, so it's cleaned up rather than
+    // left as dead weight in the bucket.
+    const orgId = await resolveMyOrgId(supabase);
+    if (orgId) await deleteEventMedia(`${orgId}/covers/${id}`);
+  }
+  const { data, error } = await supabase.from("events").update(eventToRow(finalPatch)).eq("id", id).select().single();
   if (error || !data) throw new PersistError(error);
   const record = mapEventRow(data);
   eventsCache = eventsCache.map((e) => (e.id === id ? record : e));
@@ -1047,11 +1081,35 @@ export async function duplicateEvent(id: string): Promise<EventRecord | undefine
   if (!source) return undefined;
   // Cleared, not carried over — otherwise addEvent would try to reuse the source
   // event's own slug as its base candidate instead of deriving a fresh one from
-  // the "(Copy)" name. checkinSlug is cleared for the same reason (it has its
-  // own unique constraint, events_checkin_slug_key, and addEvent's retry-on-
+  // the "(Copy)" name. staffCheckinSlug/repCheckinSlug are cleared for the same
+  // reason (each has its own unique constraint, and addEvent's retry-on-
   // conflict logic only ever varies `slug`) — the copy just falls back to its
-  // own id for check-in links until the organizer sets a new one.
-  return addEvent({ ...source, name: `${source.name} (Copy)`, published: true, slug: undefined, checkinSlug: undefined });
+  // own id for check-in links until the organizer sets new ones.
+  const created = await addEvent({ ...source, name: `${source.name} (Copy)`, published: true, slug: undefined, staffCheckinSlug: undefined, repCheckinSlug: undefined });
+  // addEvent just carried over the source's cover image *URL* unchanged (it only
+  // uploads when handed a data: URL) — so at this point both events point at the
+  // same underlying file. Give the copy its own file so deleting either event
+  // later can't break the other's cover image.
+  if (source.coverImage && isEventMediaUrl(source.coverImage)) {
+    const supabase = createSupabaseBrowserClient();
+    const orgId = await resolveMyOrgId(supabase);
+    if (orgId) {
+      const url = await copyEventMedia(`${orgId}/covers/${source.id}`, `${orgId}/covers/${created.id}`);
+      if (url) {
+        // A direct row patch, not updateEvent(...) — its cleanup heuristic assumes
+        // an event's previous cover lives at its own `{orgId}/covers/{id}` path,
+        // which isn't true here: the "previous" value is the source event's URL,
+        // and the file at this event's own path is the copy we just made above,
+        // not something to delete.
+        await supabase.from("events").update({ cover_image: url }).eq("id", created.id);
+        const updated = { ...created, coverImage: url };
+        eventsCache = eventsCache.map((e) => (e.id === created.id ? updated : e));
+        emitChange();
+        return updated;
+      }
+    }
+  }
+  return created;
 }
 
 /** Deletes an event and, via the DB's cascading foreign key, every lead collected for
@@ -1059,8 +1117,13 @@ export async function duplicateEvent(id: string): Promise<EventRecord | undefine
  *  deleted. Callers must confirm with the admin before calling this. */
 export async function deleteEvent(id: string): Promise<void> {
   const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  const ownSpeakerIds = eventSpeakersCache.filter((s) => s.eventId === id).map((s) => s.id);
   const { error } = await supabase.from("events").delete().eq("id", id);
   if (error) throw new PersistError(error);
+  if (orgId) {
+    await Promise.all([deleteEventMedia(`${orgId}/covers/${id}`), ...ownSpeakerIds.map((sid) => deleteEventMedia(`${orgId}/speakers/${sid}`))]);
+  }
   eventsCache = eventsCache.filter((e) => e.id !== id);
   leadsCache = leadsCache.filter((l) => l.eventId !== id);
   registrationsCache = registrationsCache.filter((r) => r.eventId !== id);
@@ -1186,16 +1249,40 @@ export async function deleteEventSession(id: string): Promise<void> {
 
 export async function addEventSpeaker(input: Omit<EventSpeaker, "id" | "createdAt">): Promise<EventSpeaker> {
   const supabase = createSupabaseBrowserClient();
-  const { data, error } = await supabase.from("event_speakers").insert(eventSpeakerToRow(input)).select().single();
+  // Same reasoning as addEvent's pendingCoverImage: no speaker id exists to build
+  // the `{orgId}/speakers/{speakerId}` path until after the insert.
+  const pendingPhoto = input.photoUrl?.startsWith("data:") ? input.photoUrl : undefined;
+  const insertInput = pendingPhoto ? { ...input, photoUrl: undefined } : input;
+  const { data, error } = await supabase.from("event_speakers").insert(eventSpeakerToRow(insertInput)).select().single();
   if (error || !data) throw new PersistError(error);
-  const record = mapEventSpeakerRow(data);
+  let record = mapEventSpeakerRow(data);
+  if (pendingPhoto) {
+    const orgId = await resolveMyOrgId(supabase);
+    if (orgId) {
+      const url = await uploadEventMedia(`${orgId}/speakers/${record.id}`, pendingPhoto);
+      await supabase.from("event_speakers").update({ photo_url: url }).eq("id", record.id);
+      record = { ...record, photoUrl: url };
+    }
+  }
   eventSpeakersCache = [...eventSpeakersCache, record];
   emitChange();
   return record;
 }
 export async function updateEventSpeaker(id: string, patch: Partial<Omit<EventSpeaker, "id" | "createdAt">>): Promise<void> {
   const supabase = createSupabaseBrowserClient();
-  const { error } = await supabase.from("event_speakers").update(eventSpeakerToRow(patch)).eq("id", id);
+  const existing = eventSpeakersCache.find((s) => s.id === id);
+  let finalPatch = patch;
+  if (patch.photoUrl?.startsWith("data:")) {
+    const orgId = await resolveMyOrgId(supabase);
+    if (orgId) {
+      const url = await uploadEventMedia(`${orgId}/speakers/${id}`, patch.photoUrl);
+      finalPatch = { ...patch, photoUrl: url };
+    }
+  } else if (patch.photoUrl !== undefined && patch.photoUrl !== existing?.photoUrl && existing?.photoUrl && isEventMediaUrl(existing.photoUrl)) {
+    const orgId = await resolveMyOrgId(supabase);
+    if (orgId) await deleteEventMedia(`${orgId}/speakers/${id}`);
+  }
+  const { error } = await supabase.from("event_speakers").update(eventSpeakerToRow(finalPatch)).eq("id", id);
   if (error) throw new PersistError(error);
   // A speaker's name/photo is denormalized onto every session they're assigned to —
   // refetch rather than hand-patch every affected EventSession.speakers entry.
@@ -1203,8 +1290,10 @@ export async function updateEventSpeaker(id: string, patch: Partial<Omit<EventSp
 }
 export async function deleteEventSpeaker(id: string): Promise<void> {
   const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
   const { error } = await supabase.from("event_speakers").delete().eq("id", id);
   if (error) throw new PersistError(error);
+  if (orgId) await deleteEventMedia(`${orgId}/speakers/${id}`);
   await refetchSessionsAndSpeakers();
 }
 

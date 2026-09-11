@@ -15,18 +15,33 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-/** Edits one of an event's two independent custom slugs: `slug` (the public
- *  registration link, /[slug]) or `checkinSlug` (the staff/rep check-in
- *  link) — kept as separate columns on purpose, since a check-in link is
- *  shared with staff and a registration link with attendees, and editing
- *  one must never silently change the other. */
-export function EventSlugEditor({ event, field = "slug" }: { event: EventRecord; field?: "slug" | "checkinSlug" }) {
+/** Edits one of an event's three independent custom slugs: `slug` (the public
+ *  registration link, /[slug]), `staffCheckinSlug`, or `repCheckinSlug` (the
+ *  short staff/rep check-in links, also /[slug] — see checkinLinkPath) — kept
+ *  as separate columns on purpose, since each link is shared with a
+ *  different audience and editing one must never silently change another.
+ *  All three live at the same root /[orgSlug] segment (see [orgSlug]/page.tsx),
+ *  so all three are checked against RESERVED_SLUGS the same way. */
+export function EventSlugEditor({
+  event,
+  field = "slug",
+  label,
+  prefix = "eventbuddy.africa/",
+}: {
+  event: EventRecord;
+  field?: "slug" | "staffCheckinSlug" | "repCheckinSlug";
+  /** Shown in the button text ("Customize this {label} link") — needed when
+   *  two editors for the same event appear together (CheckinLinksCard), so
+   *  it's clear which link each one edits. */
+  label?: string;
+  prefix?: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const currentValue = field === "slug" ? event.slug : event.checkinSlug;
+  const currentValue = field === "slug" ? event.slug : field === "staffCheckinSlug" ? event.staffCheckinSlug : event.repCheckinSlug;
 
   async function handleSave() {
     const cleaned = slugify(input);
@@ -35,7 +50,7 @@ export function EventSlugEditor({ event, field = "slug" }: { event: EventRecord;
     // another org's own slug can't be checked here (RLS only lets this browser
     // client see its own org's rows), but that failure mode is just a dead
     // link the organizer would notice immediately, not a security issue.
-    if (cleaned && field === "slug" && RESERVED_SLUGS.has(cleaned)) {
+    if (cleaned && RESERVED_SLUGS.has(cleaned)) {
       setError("That link is reserved — try another.");
       return;
     }
@@ -46,7 +61,7 @@ export function EventSlugEditor({ event, field = "slug" }: { event: EventRecord;
       // eventToRow's `!== undefined` check fires and an empty value actually nulls
       // the column out — passing undefined would make it skip the field entirely,
       // silently failing to clear a previously-set custom link.
-      await updateEvent(event.id, field === "slug" ? { slug: cleaned } : { checkinSlug: cleaned });
+      await updateEvent(event.id, { [field]: cleaned });
       setEditing(false);
       toast.success(cleaned ? "Custom link saved" : "Custom link removed");
     } catch (err) {
@@ -68,7 +83,7 @@ export function EventSlugEditor({ event, field = "slug" }: { event: EventRecord;
         className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 hover:text-brand-600"
       >
         <Edit2 size={10} />
-        {currentValue ? "Edit custom link" : "Customize this link"}
+        {currentValue ? `Edit custom ${label ? `${label} ` : ""}link` : `Customize this ${label ? `${label} ` : ""}link`}
       </button>
     );
   }
@@ -76,7 +91,7 @@ export function EventSlugEditor({ event, field = "slug" }: { event: EventRecord;
   return (
     <div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-400 shrink-0 hidden sm:inline">eventbuddy.africa/</span>
+        <span className="text-xs text-slate-400 shrink-0 hidden sm:inline">{prefix}</span>
         <input
           autoFocus
           value={input}

@@ -39,7 +39,7 @@ import {
 } from "@/lib/store";
 import { Role } from "@/lib/types";
 import { downloadCsv, eventLeadsToCsv, leadsToCsv } from "@/lib/csv";
-import { formatTime, safeHttpUrl } from "@/lib/utils";
+import { checkinLinkPath, formatTime, safeHttpUrl } from "@/lib/utils";
 import { getCaptureGate, getEventStatus, windowFromEvent } from "@/lib/capture-window";
 import { getTemplate } from "@/lib/event-templates";
 import { EventWizard, type EventWizardData } from "@/components/event-wizard";
@@ -946,7 +946,7 @@ export default function EventDetailPage() {
           <EventQrModal
             title="Staff Check-in QR Code"
             description={`Scanning this takes staff straight to the ${event.name} check-in sign-in page — no admin login needed.`}
-            url={`${window.location.origin}/${session.orgSlug}/staff-setup/${encodeURIComponent(event.checkinSlug || event.id)}`}
+            url={`${window.location.origin}${checkinLinkPath("staff", event, session.orgSlug!)}`}
             downloadName={`${event.name.replace(/[^a-z0-9]/gi, "_")}_checkin_qr.png`}
             onClose={() => setShowCheckinQr(false)}
           />
