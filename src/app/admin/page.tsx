@@ -18,6 +18,7 @@ import { ImageCropperModal } from "@/components/image-cropper-modal";
 import { ActiveDevicesSection } from "@/components/active-devices";
 import { compressImageFile } from "@/lib/utils";
 import { deleteEventMedia, uploadEventMedia } from "@/lib/supabase/storage";
+import { isValidEmail } from "@/lib/validation";
 import { StaffCard } from "@/components/admin-staff-card";
 
 const ADMIN_ONLY: Role[] = ["admin"];
@@ -174,6 +175,10 @@ function AdminPageContent() {
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
     if (!session?.orgSlug || !inviteEmail.trim()) return;
+    if (!isValidEmail(inviteEmail)) {
+      setInviteError("Enter a valid email address.");
+      return;
+    }
     if (inviteRole === "event_support" && !inviteEventId) {
       setInviteError("Pick the event this person will support.");
       return;
@@ -223,6 +228,10 @@ function AdminPageContent() {
   async function handleRequestEmailChange(e: React.FormEvent) {
     e.preventDefault();
     if (!orgId || !loginEmailDraft.trim()) return;
+    if (!isValidEmail(loginEmailDraft)) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
     setSavingLoginEmail(true);
     try {
       const supabase = createSupabaseBrowserClient();
@@ -549,6 +558,10 @@ function AdminPageContent() {
 
   const handleAddStaff = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidEmail(staffForm.email)) {
+      setFormError("Enter a valid email address.");
+      return;
+    }
     runSave(
       () => (staffForm.id ? updateStaff(staffForm.id, staffForm) : addStaff(staffForm)),
       () => {

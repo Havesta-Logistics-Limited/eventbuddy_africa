@@ -49,6 +49,7 @@ import { downloadCsv } from "@/lib/csv";
 import { TICKET_FEE_PERCENTAGE, formatNaira, updateTicketFeePercentage } from "@/lib/billing";
 import { DEFAULT_MAINTENANCE_MESSAGE, DEFAULT_MAINTENANCE_TITLE, updateMaintenanceState } from "@/lib/maintenance";
 import { getTemplate } from "@/lib/event-templates";
+import { isValidEmail } from "@/lib/validation";
 import { PlatformDocumentsTab } from "@/components/platform-documents-tab";
 
 const SIDEBAR_BG = "#22103A";
@@ -763,6 +764,10 @@ export default function PlatformDashboard() {
     setAddAdminError("");
     const email = newAdminEmail.trim();
     if (!email) return;
+    if (!isValidEmail(email)) {
+      setAddAdminError("Enter a valid email address.");
+      return;
+    }
     setAddingAdmin(true);
     const supabase = createClient();
     const { data, error } = await supabase.rpc("add_platform_admin", { target_email: email }).single();
@@ -799,6 +804,10 @@ export default function PlatformDashboard() {
 
   async function handleCreateAccount(e: React.FormEvent) {
     e.preventDefault();
+    if (!isValidEmail(newAccountEmail)) {
+      setCreateAccountError("Enter a valid email address.");
+      return;
+    }
     setCreateAccountError("");
     setCreateAccountSuccess("");
     setCreatingAccount(true);

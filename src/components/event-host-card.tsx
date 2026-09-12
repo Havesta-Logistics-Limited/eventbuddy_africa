@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Flag, Mail, X } from "lucide-react";
 import { FollowOrgButton } from "@/components/follow-org-button";
+import { isValidEmail } from "@/lib/validation";
 
 const AVATAR_COLORS = ["#FCE7F3", "#FEF3C7", "#DBEAFE", "#D1FAE5", "#EDE9FE", "#FFE4E6", "#FFEDD5", "#E0F2FE"];
 const AVATAR_TEXT = ["#BE185D", "#B45309", "#1D4ED8", "#047857", "#6D28D9", "#BE123C", "#C2410C", "#0369A1"];
@@ -42,6 +43,10 @@ function ContactModal({ title, placeholder, needsName, onClose, onSubmit }: { ti
     e.preventDefault();
     if ((needsName && !name.trim()) || !message.trim()) {
       setError("Please fill in the required fields.");
+      return;
+    }
+    if (email.trim() && !isValidEmail(email)) {
+      setError("Enter a valid email address, or leave it blank.");
       return;
     }
     setError("");

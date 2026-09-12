@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Check, UserPlus } from "lucide-react";
+import { isValidEmail } from "@/lib/validation";
 
 /** Lets a visitor join an org's audience without registering for anything — the
  *  Contact/Report actions right below this on the register page are one-off;
@@ -19,6 +20,10 @@ export function FollowOrgButton({ orgSlug, theme = "light" }: { orgSlug: string;
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
+    if (!isValidEmail(email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {

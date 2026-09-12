@@ -13,6 +13,7 @@ import { EventLeadsCard } from "@/components/event-leads-card";
 import { Reveal } from "@/components/reveal";
 import { RowSkeleton } from "@/components/skeleton";
 import { AuthLoading } from "@/components/auth-loading";
+import { isValidEmail } from "@/lib/validation";
 
 const ADMIN_OR_REP: Role[] = ["admin", "rep"];
 
@@ -86,6 +87,10 @@ export default function LeadsPage() {
   }
 
   async function sendEmail() {
+    if (!isValidEmail(emailTo)) {
+      setSendError("Enter a valid email address.");
+      return;
+    }
     setSending(true);
     setSendError("");
     try {

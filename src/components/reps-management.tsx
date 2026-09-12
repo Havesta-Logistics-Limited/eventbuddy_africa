@@ -6,6 +6,7 @@ import { AlertCircle, Edit2, LogOut, Plus, Trash2, X } from "lucide-react";
 import { Destination, StaffRecord, University } from "@/lib/types";
 import { PersistError, addStaff, deleteStaff, forceLogoutRep, updateStaff } from "@/lib/store";
 import { Reveal } from "@/components/reveal";
+import { isValidEmail } from "@/lib/validation";
 
 /** University-rep account management — moved here from the old org-wide Settings
  *  page since reps only exist for the Education Fair template (destination +
@@ -33,6 +34,10 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
 
   const handleAddRep = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidEmail(repForm.email)) {
+      setFormError("Enter a valid email address.");
+      return;
+    }
     const payload = { ...repForm, role: "rep" as const, isOnline: false };
     setFormError("");
     setSaving(true);

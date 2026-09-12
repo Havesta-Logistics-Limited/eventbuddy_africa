@@ -13,6 +13,7 @@ import {
   updatePlatformDocumentStatus,
 } from "@/lib/platform-documents";
 import { PlatformDocumentPdf } from "./platform-document-pdf";
+import { isValidEmail } from "@/lib/validation";
 
 function formatNaira(n: number): string {
   return `₦${Math.round(n).toLocaleString("en-NG")}`;
@@ -81,6 +82,10 @@ export function PlatformDocumentsTab() {
       .map((item) => ({ ...item, quantity: item.quantity || 1, unitPriceNaira: item.unitPriceNaira || 0 }));
     if (cleanedItems.length === 0) {
       setFormError("Add at least one line item.");
+      return;
+    }
+    if (form.clientEmail.trim() && !isValidEmail(form.clientEmail)) {
+      setFormError("Enter a valid client email address, or leave it blank.");
       return;
     }
     setFormError("");

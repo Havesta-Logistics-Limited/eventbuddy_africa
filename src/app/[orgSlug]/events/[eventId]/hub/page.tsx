@@ -8,6 +8,7 @@ import { formatDate, formatTime } from "@/lib/utils";
 import { RichTextDisplay } from "@/components/rich-text-display";
 import { SurveyForm, type SurveyAnswers } from "@/components/survey-form";
 import { FieldDef } from "@/lib/types";
+import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
 
 type HubSession = {
   id: string;
@@ -122,6 +123,10 @@ export default function EventHubPage() {
     e.preventDefault();
     if (!lookupEmail.trim() && !lookupRefId.trim()) {
       setLookupError("Enter your email or reference ID.");
+      return;
+    }
+    if (lookupEmail.trim() && !isValidEmail(lookupEmail)) {
+      setLookupError("Enter a valid email address.");
       return;
     }
     setLookupError("");
@@ -256,6 +261,14 @@ export default function EventHubPage() {
     e.preventDefault();
     if (!transferName.trim() || !transferEmail.trim()) {
       setTransferError("Enter the new attendee's name and email.");
+      return;
+    }
+    if (!isValidEmail(transferEmail)) {
+      setTransferError("Enter a valid email address.");
+      return;
+    }
+    if (transferPhone.trim() && !isValidPhone(transferPhone)) {
+      setTransferError("Enter a valid phone number.");
       return;
     }
     setTransferError("");
@@ -691,7 +704,7 @@ export default function EventHubPage() {
                     <input
                       type="tel"
                       value={transferPhone}
-                      onChange={(e) => setTransferPhone(e.target.value)}
+                      onChange={(e) => setTransferPhone(sanitizePhoneInput(e.target.value))}
                       className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                     />
                   </div>

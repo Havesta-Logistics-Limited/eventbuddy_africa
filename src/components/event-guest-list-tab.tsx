@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Mail, Plus, Send, Trash2, Upload, Users, X } from "lucide-react";
 import { EventGuest, GuestStatus } from "@/lib/types";
 import { PersistError, addEventGuest, bulkAddEventGuests, deleteEventGuest, markGuestsInvited } from "@/lib/store";
+import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
 
 const STATUS_STYLE: Record<GuestStatus, string> = {
   pending: "bg-slate-100 text-slate-500",
@@ -36,7 +37,7 @@ function parseGuestLines(text: string): { fullName: string; email: string; phone
       const n = plusOnes ? parseInt(plusOnes, 10) : 0;
       return { fullName: fullName || "", email: email || "", phone: phone || undefined, plusOnesAllowed: Number.isFinite(n) && n > 0 ? n : 0 };
     })
-    .filter((g) => g.fullName && g.email.includes("@"));
+    .filter((g) => g.fullName && isValidEmail(g.email));
 }
 
 export function GuestListTab({ eventId, orgSlug, guests }: { eventId: string; orgSlug: string; guests: EventGuest[] }) {
@@ -66,6 +67,14 @@ export function GuestListTab({ eventId, orgSlug, guests }: { eventId: string; or
     e.preventDefault();
     if (!form.fullName.trim() || !form.email.trim()) {
       setFormError("Name and email are required.");
+      return;
+    }
+    if (!isValidEmail(form.email)) {
+      setFormError("Enter a valid email address.");
+      return;
+    }
+    if (form.phone.trim() && !isValidPhone(form.phone)) {
+      setFormError("Enter a valid phone number, or leave it blank.");
       return;
     }
     setFormError("");
@@ -301,6 +310,7 @@ export function GuestListTab({ eventId, orgSlug, guests }: { eventId: string; or
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1">Email</label>
                 <input
+                  required
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
@@ -311,8 +321,9 @@ export function GuestListTab({ eventId, orgSlug, guests }: { eventId: string; or
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">Phone (optional)</label>
                   <input
+                    type="tel"
                     value={form.phone}
-                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                    onChange={(e) => setForm((f) => ({ ...f, phone: sanitizePhoneInput(e.target.value) }))}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>

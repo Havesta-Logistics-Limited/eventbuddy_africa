@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FieldDef } from "@/lib/types";
+import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
 
 const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600";
 const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
@@ -55,7 +56,7 @@ function SurveyField({ field, value, onChange }: { field: FieldDef; value: strin
         <input
           type={field.type === "email" ? "email" : field.type === "phone" ? "tel" : field.type === "date" ? "date" : "text"}
           value={(value as string) ?? ""}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(field.type === "phone" ? sanitizePhoneInput(e.target.value) : e.target.value)}
           className={fieldClass}
         />
       )}
@@ -80,10 +81,19 @@ export function SurveyForm({ fields, onSubmit, submitting, submitError }: { fiel
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     for (const f of fields) {
-      if (!f.required) continue;
       const v = answers[f.id];
-      if (!v || (Array.isArray(v) && v.length === 0) || (typeof v === "string" && !v.trim())) {
+      const isEmpty = !v || (Array.isArray(v) && v.length === 0) || (typeof v === "string" && !v.trim());
+      if (f.required && isEmpty) {
         setValidationError(`"${f.label || "Untitled question"}" is required.`);
+        return;
+      }
+      if (isEmpty || typeof v !== "string") continue;
+      if (f.type === "email" && !isValidEmail(v)) {
+        setValidationError(`Enter a valid email address for "${f.label || "that question"}".`);
+        return;
+      }
+      if (f.type === "phone" && !isValidPhone(v)) {
+        setValidationError(`Enter a valid phone number for "${f.label || "that question"}".`);
         return;
       }
     }
