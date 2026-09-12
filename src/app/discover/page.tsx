@@ -51,6 +51,7 @@ function isFree(minPriceNaira: number | null) {
 
 type PriceFilter = "all" | "free" | "paid";
 type TypeFilter = "all" | "physical" | "virtual";
+type WhenFilter = "upcoming" | "past";
 
 const PRICE_FILTERS: { key: PriceFilter; label: string }[] = [
   { key: "all", label: "All events" },
@@ -64,6 +65,15 @@ const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
   { key: "virtual", label: "Virtual" },
 ];
 
+// Its own category, not a badge mixed into the same grid as everything still
+// open for registration — a past event (only ever listed here at all via an
+// organizer's explicit capture_override) belongs behind an intentional click,
+// not the default view.
+const WHEN_FILTERS: { key: WhenFilter; label: string }[] = [
+  { key: "upcoming", label: "Upcoming" },
+  { key: "past", label: "Past" },
+];
+
 export default function DiscoverEventsPage() {
   const [events, setEvents] = useState<DiscoverEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +81,7 @@ export default function DiscoverEventsPage() {
   const [search, setSearch] = useState("");
   const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [whenFilter, setWhenFilter] = useState<WhenFilter>("upcoming");
   const [cityFilter, setCityFilter] = useState("all");
 
   useEffect(() => {
@@ -96,6 +107,9 @@ export default function DiscoverEventsPage() {
     if (priceFilter === "free" && !isFree(e.minPriceNaira)) return false;
     if (priceFilter === "paid" && isFree(e.minPriceNaira)) return false;
     if (typeFilter !== "all" && e.eventFormat !== typeFilter) return false;
+    const isPast = getEventStatus(e) === "completed";
+    if (whenFilter === "upcoming" && isPast) return false;
+    if (whenFilter === "past" && !isPast) return false;
     if (cityFilter !== "all" && e.location !== cityFilter) return false;
     const q = search.trim().toLowerCase();
     if (!q) return true;
@@ -169,6 +183,21 @@ export default function DiscoverEventsPage() {
               onClick={() => setTypeFilter(f.key)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                 typeFilter === f.key
+                  ? "bg-brand-600 border-brand-600 text-white"
+                  : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+          <span className="w-px h-5 bg-slate-200 mx-1" />
+          {WHEN_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setWhenFilter(f.key)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                whenFilter === f.key
                   ? "bg-brand-600 border-brand-600 text-white"
                   : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
               }`}

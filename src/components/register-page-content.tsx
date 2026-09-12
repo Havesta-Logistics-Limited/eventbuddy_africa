@@ -627,6 +627,27 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
     );
   }
 
+  const status = getEventStatus({ date: event.date, endDate: event.endDate, startTime: event.startTime, endTime: event.endTime, timezone: event.timezone });
+
+  // A past event still renders a fully live-looking registration page unless
+  // stopped here — the server-side gate (getRegistrationGate) only rejects the
+  // actual submit, after a visitor has filled out the whole form. Respects an
+  // organizer's explicit capture_override: 'open' (e.g. collecting late
+  // responses after the fact), same override the server-side gate honors.
+  if (status === "completed" && event.captureOverride !== "open") {
+    return (
+      <div className="min-h-screen bg-[#22103A]">
+        <PublicHeader />
+        <div className="flex items-center justify-center p-6 py-32">
+          <div className="text-center text-white/60 max-w-sm">
+            <p className="font-medium text-white">{event.name} has already happened.</p>
+            <p className="text-sm mt-1">This event ended on {formatDate(event.endDate || event.date)} — registration is no longer open.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const selectedTicket = ticketTypes.find((t) => t.id === selectedTicketId);
   const discountedPrice =
     selectedTicket && appliedDiscount ? applyDiscount(selectedTicket.priceNaira, appliedDiscount.discountType, appliedDiscount.discountValue, appliedDiscount.maxDiscountNaira) : null;
@@ -634,7 +655,6 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const minPriceNaira = ticketTypes.length > 0 ? Math.min(...ticketTypes.map((t) => t.priceNaira)) : 0;
   const isFreeEvent = ticketTypes.length === 0 || minPriceNaira === 0;
   const priceLabel = isFreeEvent ? "Free" : ticketTypes.length > 1 ? `From ${formatNaira(minPriceNaira)}` : formatNaira(minPriceNaira);
-  const status = getEventStatus({ date: event.date, endDate: event.endDate, startTime: event.startTime, endTime: event.endTime, timezone: event.timezone });
 
   const badges = [STATUS_LABEL[status], event.eventFormat === "virtual" ? "Virtual" : "In Person", event.category].filter(Boolean) as string[];
 
