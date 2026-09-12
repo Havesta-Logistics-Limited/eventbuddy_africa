@@ -17,6 +17,7 @@ import { Reveal } from "@/components/reveal";
 import { EventCardSkeleton, StatTileSkeleton } from "@/components/skeleton";
 import { AuthLoading } from "@/components/auth-loading";
 import { AmbientBackground } from "@/components/ambient-background";
+import { FreeStartBanner } from "@/components/free-start-banner";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -256,6 +257,8 @@ export default function DashboardPage() {
             New Event
           </button>
         </div>
+
+        {dataReady && events.length === 0 && <FreeStartBanner />}
 
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           {!dataReady
