@@ -32,8 +32,11 @@ export default function StaffSetupPage() {
   const [universities, setUniversities] = useState<University[]>([]);
   // Names only — never the staff row's real id. That id is a bearer credential (see
   // store.ts's session model), so the public "who are you?" picker must never expose
-  // it pre-auth; check-in resolves name -> row server-side, access-code gated.
-  const [staffMembers, setStaffMembers] = useState<{ name: string }[]>([]);
+  // it pre-auth; check-in resolves name -> row server-side, access-code gated. Each
+  // name carries its current eventId (last event that person checked into) so the
+  // picker below can be filtered to this event — otherwise it'd show every staff
+  // member the org has ever had check in, for any event, forever.
+  const [staffMembers, setStaffMembers] = useState<{ name: string; eventId?: string }[]>([]);
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedStaffName, setSelectedStaffName] = useState<string | null>(null);
@@ -87,6 +90,7 @@ export default function StaffSetupPage() {
   const usesDestinations = template?.usesDestinations ?? true;
   const availableUnis = selectedDestId ? universities.filter((u) => u.destinationId === selectedDestId) : [];
   const codeRequired = !!selectedEvent?.hasStaffCode;
+  const eventStaffMembers = staffMembers.filter((s) => s.eventId === selectedEventId);
 
   const handleStart = async () => {
     if (!selectedEventId) return;
@@ -209,7 +213,7 @@ export default function StaffSetupPage() {
           <section>
             <h2 className="text-base font-bold text-white mb-3">1. Who are you?</h2>
             <div className="flex flex-wrap gap-2.5">
-              {staffMembers.map((s) => (
+              {eventStaffMembers.map((s) => (
                 <button
                   key={s.name}
                   onClick={() => {

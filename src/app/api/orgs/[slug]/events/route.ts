@@ -34,7 +34,7 @@ type EventRow = {
 };
 type DestinationRow = { id: string; name: string; flag: string };
 type UniversityRow = { id: string; destination_id: string; name: string; short_name: string };
-type StaffNameRow = { name: string };
+type StaffNameRow = { name: string; event_id: string | null };
 
 /**
  * Everything the org-scoped check-in picker (/[orgSlug]/staff-setup, /[orgSlug]/rep-login)
@@ -44,9 +44,10 @@ type StaffNameRow = { name: string };
  * check-in, never sent to the browser. Maps Postgres's snake_case columns to the
  * camelCase shapes the rest of the app already uses (EventRecord, Destination, University).
  *
- * Staff names are name-only too — never the row's real id, which is a permanent bearer
- * session credential (see staff-checkin/route.ts and store.ts's session model); handing
- * it out here, pre-auth, would let anyone skip the access-code check entirely and call
+ * Staff names carry their current eventId (so the picker can filter to "checked in
+ * for this event") but never the row's real id, which is a permanent bearer session
+ * credential (see staff-checkin/route.ts and store.ts's session model); handing it
+ * out here, pre-auth, would let anyone skip the access-code check entirely and call
  * /api/session-data, /api/checkin, etc. directly as that staff member.
  */
 export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]/events">) {
@@ -119,6 +120,6 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       name: u.name,
       shortName: u.short_name,
     })),
-    staff: staffRows.map((s) => ({ name: s.name })),
+    staff: staffRows.map((s) => ({ name: s.name, eventId: s.event_id ?? undefined })),
   });
 }
