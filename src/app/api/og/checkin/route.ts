@@ -14,8 +14,9 @@ import { buildEventOgImage, resolveEventForOg } from "@/lib/event-og-image";
 export async function GET(request: NextRequest) {
   const orgSlug = request.nextUrl.searchParams.get("orgSlug");
   const eventIdOrSlug = request.nextUrl.searchParams.get("event");
+  const kind = request.nextUrl.searchParams.get("kind");
   if (!orgSlug || !eventIdOrSlug) return DefaultImage();
   const event = await resolveEventForOg(orgSlug, eventIdOrSlug);
   if (!event) return DefaultImage();
-  return buildEventOgImage(event);
+  return buildEventOgImage(event, kind === "rep" ? "Rep Check-in" : "Staff Check-in");
 }

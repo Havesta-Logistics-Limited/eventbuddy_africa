@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { stripHtml } from "@/lib/rich-text";
+import { formatDate, formatTime } from "@/lib/utils";
 
 export const eventOgImageSize = { width: 1200, height: 630 };
 
@@ -92,6 +93,20 @@ export function canonicalEventUrl(orgSlug: string, event: OgEvent) {
   return `${siteUrl}${canonicalEventPath(orgSlug, event)}`;
 }
 
+/** Shared og:title / description text — "date · time — venue, location" (or
+ *  "— Virtual event"/the platform name for a virtual event) — used wherever a
+ *  shared link should carry the actual event's own name/schedule instead of
+ *  the site's generic default title/description. */
+export function eventOgTitleAndDescription(event: OgEvent): { title: string; description: string } {
+  const description = [
+    `${formatDate(event.date)}${event.startTime ? ` · ${formatTime(event.startTime)}` : ""}`,
+    event.eventFormat === "virtual" ? event.virtualPlatform || "Virtual event" : [event.venue, event.location].filter(Boolean).join(", "),
+  ]
+    .filter(Boolean)
+    .join(" — ");
+  return { title: event.name, description };
+}
+
 /** Real Event structured data (schema.org), not filled with placeholders — omits
  *  `image`/`description` when there's nothing genuine to put there. `image` is
  *  skipped entirely for a data: URI cover photo (an uploaded file): schema.org and
@@ -134,12 +149,14 @@ export function safeJsonLdString(jsonLd: unknown): string {
 /** Builds the actual share-card image (Satori/next-og, so only a constrained CSS
  *  subset applies — flexbox only, `display: flex` on every box) — a two-panel card
  *  matching Luma's own share-card composition: a branded panel with the event name
- *  and a Register cue on the left, the event's own cover photo shown plainly (not
- *  cropped full-bleed or overlaid) in a rounded inset on the right. A data: URI cover
- *  photo renders fine here even though a browser fetching og:image directly could
- *  never load one — Satori renders it as image content, not a URL a client fetches.
- *  No cover image falls back to the brand gradient alone filling the right panel. */
-export function buildEventOgImage(event: OgEvent) {
+ *  and a cue pill (ctaLabel — "Register" for a registration link, "Staff Check-in"/
+ *  "Rep Check-in" for a check-in link, since the two point at very different pages)
+ *  on the left, the event's own cover photo shown plainly (not cropped full-bleed or
+ *  overlaid) in a rounded inset on the right. A data: URI cover photo renders fine
+ *  here even though a browser fetching og:image directly could never load one —
+ *  Satori renders it as image content, not a URL a client fetches. No cover image
+ *  falls back to the brand gradient alone filling the right panel. */
+export function buildEventOgImage(event: OgEvent, ctaLabel = "Register") {
   return new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", background: "#170821" }}>
@@ -161,7 +178,7 @@ export function buildEventOgImage(event: OgEvent) {
           </div>
           <div style={{ display: "flex", color: "white", fontSize: 46, fontWeight: 700, lineHeight: 1.15 }}>{event.name}</div>
           <div style={{ display: "flex" }}>
-            <div style={{ display: "flex", background: "white", color: "#170821", fontSize: 22, fontWeight: 700, padding: "14px 32px", borderRadius: 999 }}>Register</div>
+            <div style={{ display: "flex", background: "white", color: "#170821", fontSize: 22, fontWeight: 700, padding: "14px 32px", borderRadius: 999 }}>{ctaLabel}</div>
           </div>
         </div>
         <div style={{ flex: 1, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
