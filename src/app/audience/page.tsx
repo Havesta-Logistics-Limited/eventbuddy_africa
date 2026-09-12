@@ -19,7 +19,8 @@ const ADMIN_ONLY: Role[] = ["admin"];
 type AudienceMember = { email: string; fullName: string; source: "registered" | "follower"; joinedAt: string };
 type StatusFilter = "registered" | "checked_in" | "no_show";
 
-const AUDIENCE_PAGE_SIZE = 50;
+type AudiencePageSize = 25 | 50 | 100 | "all";
+const AUDIENCE_PAGE_SIZE_OPTIONS: AudiencePageSize[] = [25, 50, 100, "all"];
 
 function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; recipientCount: number; onClose: () => void }) {
   const events = useEvents();
@@ -378,6 +379,7 @@ export default function AudiencePage() {
   const [members, setMembers] = useState<AudienceMember[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<AudiencePageSize>(50);
   const [showBlast, setShowBlast] = useState(false);
   const [blastRefreshKey, setBlastRefreshKey] = useState(0);
   const [orgId, setOrgId] = useState<string | null>(null);
@@ -414,10 +416,10 @@ export default function AudiencePage() {
   });
   const followerCount = members.filter((m) => m.source === "follower").length;
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / AUDIENCE_PAGE_SIZE));
+  const totalPages = pageSize === "all" ? 1 : Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const pageStart = (currentPage - 1) * AUDIENCE_PAGE_SIZE;
-  const pageItems = filtered.slice(pageStart, pageStart + AUDIENCE_PAGE_SIZE);
+  const pageStart = pageSize === "all" ? 0 : (currentPage - 1) * pageSize;
+  const pageItems = pageSize === "all" ? filtered : filtered.slice(pageStart, pageStart + pageSize);
 
   function exportAudience() {
     const headers = ["Name", "Email", "Source", "Joined"];
@@ -533,11 +535,32 @@ export default function AudiencePage() {
                 </tbody>
               </table>
             </div>
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-100">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-100">
+              <div className="flex items-center gap-2">
                 <p className="text-xs text-slate-500">
-                  Showing {pageStart + 1}–{Math.min(pageStart + AUDIENCE_PAGE_SIZE, filtered.length)} of {filtered.length}
+                  Showing {pageStart + 1}–{pageSize === "all" ? filtered.length : Math.min(pageStart + pageSize, filtered.length)} of{" "}
+                  {filtered.length}
                 </p>
+                <span className="text-slate-300">·</span>
+                <label className="text-xs text-slate-500 flex items-center gap-1.5">
+                  Rows per page
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(e.target.value === "all" ? "all" : (Number(e.target.value) as AudiencePageSize));
+                      setPage(1);
+                    }}
+                    className="px-2 py-1 rounded-md border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  >
+                    {AUDIENCE_PAGE_SIZE_OPTIONS.map((size) => (
+                      <option key={size} value={size}>
+                        {size === "all" ? "All" : size}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {totalPages > 1 && (
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -561,8 +584,8 @@ export default function AudiencePage() {
                     <ChevronRight size={13} />
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
 
