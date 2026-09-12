@@ -29,10 +29,16 @@ export type OgEvent = {
  *  columns the register page itself already shows everyone), via the anon client
  *  since this runs at request time with no session. Matches by real id or either
  *  kind of slug, same as RegisterPageContent. Shared by the OG image, canonical-URL
- *  metadata, and JSON-LD structured data, so it carries everything all three need. */
+ *  metadata, and JSON-LD structured data, so it carries everything all three need.
+ *
+ *  Goes through public_event_by_ref (not public_org_events, which this used to call)
+ *  specifically because that one has no published/upcoming-only filter — a draft or
+ *  already-ended event's registration page renders fine via that same RPC (see
+ *  RegisterPageContent/the draft-preview API), but this function used to fall back to
+ *  null for exactly those events, silently dropping their real cover image/title/
+ *  description in favor of the generic branded share card and default metadata. */
 export async function resolveEventForOg(orgSlug: string, eventIdOrSlug: string): Promise<OgEvent | null> {
   const supabase = createAnonClient();
-  const { data: events } = await supabase.rpc("public_org_events", { org_slug: orgSlug });
   type Row = {
     id: string;
     slug: string | null;
@@ -48,7 +54,7 @@ export async function resolveEventForOg(orgSlug: string, eventIdOrSlug: string):
     virtual_platform: string | null;
     description: string | null;
   };
-  const event = ((events ?? []) as Row[]).find((e) => e.id === eventIdOrSlug || (e.slug && e.slug === eventIdOrSlug));
+  const { data: event } = await supabase.rpc("public_event_by_ref", { org_slug: orgSlug, id_or_slug: eventIdOrSlug }).maybeSingle<Row>();
   if (!event) return null;
   return {
     id: event.id,
