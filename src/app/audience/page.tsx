@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, ChevronDown, Download, Megaphone, Search, Send, UserCheck, UserMinus, Users, X } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronLeft, ChevronRight, Download, Megaphone, Search, Send, UserCheck, UserMinus, Users, X } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { resolveMyOrgId, useEvents, useLeads, useRegistrations } from "@/lib/store";
@@ -18,6 +18,8 @@ const ADMIN_ONLY: Role[] = ["admin"];
 
 type AudienceMember = { email: string; fullName: string; source: "registered" | "follower"; joinedAt: string };
 type StatusFilter = "registered" | "checked_in" | "no_show";
+
+const AUDIENCE_PAGE_SIZE = 50;
 
 function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; recipientCount: number; onClose: () => void }) {
   const events = useEvents();
@@ -375,6 +377,7 @@ export default function AudiencePage() {
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState<AudienceMember[]>([]);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [showBlast, setShowBlast] = useState(false);
   const [blastRefreshKey, setBlastRefreshKey] = useState(0);
   const [orgId, setOrgId] = useState<string | null>(null);
@@ -410,6 +413,11 @@ export default function AudiencePage() {
     return m.email.toLowerCase().includes(q) || m.fullName.toLowerCase().includes(q);
   });
   const followerCount = members.filter((m) => m.source === "follower").length;
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / AUDIENCE_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * AUDIENCE_PAGE_SIZE;
+  const pageItems = filtered.slice(pageStart, pageStart + AUDIENCE_PAGE_SIZE);
 
   function exportAudience() {
     const headers = ["Name", "Email", "Source", "Joined"];
@@ -469,7 +477,10 @@ export default function AudiencePage() {
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             placeholder="Search your audience…"
             className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
@@ -503,7 +514,7 @@ export default function AudiencePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filtered.map((m) => (
+                  {pageItems.map((m) => (
                     <tr key={m.email}>
                       <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">{m.fullName || "—"}</td>
                       <td className="px-4 py-3 text-slate-500">{m.email}</td>
@@ -522,6 +533,36 @@ export default function AudiencePage() {
                 </tbody>
               </table>
             </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-100">
+                <p className="text-xs text-slate-500">
+                  Showing {pageStart + 1}–{Math.min(pageStart + AUDIENCE_PAGE_SIZE, filtered.length)} of {filtered.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={13} />
+                    Previous
+                  </button>
+                  <span className="text-xs text-slate-500 tabular-nums px-1">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Next
+                    <ChevronRight size={13} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
