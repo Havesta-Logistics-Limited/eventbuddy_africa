@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, Plus, Users, X, Edit2, Trash2, Landmark, ShieldCheck, UserCircle, Loader2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, Plus, Users, X, Landmark, ShieldCheck, UserCircle, Loader2 } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -18,6 +18,7 @@ import { ImageCropperModal } from "@/components/image-cropper-modal";
 import { ActiveDevicesSection } from "@/components/active-devices";
 import { compressImageFile } from "@/lib/utils";
 import { deleteEventMedia, uploadEventMedia } from "@/lib/supabase/storage";
+import { StaffCard } from "@/components/admin-staff-card";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -43,6 +44,14 @@ function AdminPageContent() {
   const universities = useUniversities();
   const destinations = useDestinations();
   const events = useEvents();
+  // Same `staff` table row shape, but two very different origins: a row you add
+  // here yourself (this form requires a real email) vs. a row created the moment
+  // someone types just their name on an event's public check-in link (no email
+  // collected there at all — see staff-checkin/route.ts). Splitting on "has an
+  // email" keeps them from reading as the same kind of thing; editing a
+  // check-in-only row and giving it a real email promotes it into Team Members.
+  const teamMembers = staff.filter((s) => s.role !== "rep" && !!s.email);
+  const checkinOnly = staff.filter((s) => s.role !== "rep" && !s.email);
   const searchParams = useSearchParams();
   // Lets a "Set up payouts" link elsewhere (the Tickets tab's payout-required
   // error) deep-link straight here instead of leaving the organizer to find
@@ -1062,7 +1071,10 @@ function AdminPageContent() {
         {tab === "staff" && (
           <div key="staff" className="animate-tab-fade">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h2 className="font-semibold text-slate-800 min-w-0">Team Members ({staff.filter((s) => s.role !== "rep").length})</h2>
+              <div>
+                <h2 className="font-semibold text-slate-800 min-w-0">Team Members ({teamMembers.length})</h2>
+                <p className="text-xs text-slate-400 mt-0.5">People you&apos;ve added yourself — not anyone who&apos;s just checked in to collect leads.</p>
+              </div>
               <button
                 onClick={() => {
                   setStaffForm(EMPTY_STAFF);
@@ -1076,58 +1088,65 @@ function AdminPageContent() {
               </button>
             </div>
             <div className="space-y-3">
-              {staff
-                .filter((s) => s.role !== "rep")
-                .map((s, i) => {
-                  const dest = s.destinationId ? destinations.find((d) => d.id === s.destinationId) : null;
-                  const uni = s.universityId ? universities.find((u) => u.id === s.universityId) : null;
-                  const ev = s.eventId ? events.find((e) => e.id === s.eventId) : null;
-                  return (
-                    <Reveal key={s.id} index={i}>
-                    <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#C21FAF]/30 hover:shadow-sm transition-all">
-                      <div className="w-10 h-10 rounded-full bg-[#C21FAF]/10 flex items-center justify-center text-[#C21FAF] font-semibold shrink-0">{s.name.charAt(0)}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-900">{s.name}</p>
-                        {s.email && <p className="text-sm text-slate-500">{s.email}</p>}
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        <span
-                          className="px-2 py-0.5 rounded-full font-medium"
-                          style={s.role === "admin" ? { background: "#e8f0fe", color: "#1a3a6e" } : { background: "#f1f5f9", color: "#475569" }}
-                        >
-                          {s.role}
-                        </span>
-                        {dest && <span className="px-2 py-0.5 rounded-full bg-[#C21FAF]/10 text-[#C21FAF] hidden sm:inline-block">{dest.flag} {dest.name}</span>}
-                        {uni && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hidden sm:inline-block">{uni.shortName}</span>}
-                        {ev && <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 max-w-[120px] sm:max-w-[160px] truncate">{ev.name.split("—")[0].trim()}</span>}
-                      </div>
-                      <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
-                        <button
-                          onClick={() => {
-                            setStaffForm({
-                              id: s.id,
-                              name: s.name,
-                              email: s.email || "",
-                              role: "staff",
-                              destinationId: s.destinationId || "",
-                              universityId: s.universityId || "",
-                              eventId: s.eventId || "",
-                            });
-                            setShowStaffForm(true);
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-[#C21FAF] rounded-md hover:bg-slate-100"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button onClick={() => handleDelete(() => deleteStaff(s.id), `${s.name} removed`)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    </Reveal>
-                  );
-                })}
+              {teamMembers.map((s, i) => (
+                <Reveal key={s.id} index={i}>
+                  <StaffCard
+                    staff={s}
+                    destinations={destinations}
+                    universities={universities}
+                    events={events}
+                    onEdit={() => {
+                      setStaffForm({
+                        id: s.id,
+                        name: s.name,
+                        email: s.email || "",
+                        role: "staff",
+                        destinationId: s.destinationId || "",
+                        universityId: s.universityId || "",
+                        eventId: s.eventId || "",
+                      });
+                      setShowStaffForm(true);
+                    }}
+                    onDelete={() => handleDelete(() => deleteStaff(s.id), `${s.name} removed`)}
+                  />
+                </Reveal>
+              ))}
             </div>
+
+            {checkinOnly.length > 0 && (
+              <div className="mt-8">
+                <h2 className="font-semibold text-slate-800 min-w-0">Checked in without an account ({checkinOnly.length})</h2>
+                <p className="text-xs text-slate-400 mt-0.5 mb-4">
+                  Signed in with just their name on an event&apos;s check-in link — not people you added. Edit one and give it a real email to
+                  move it up to Team Members.
+                </p>
+                <div className="space-y-3">
+                  {checkinOnly.map((s, i) => (
+                    <Reveal key={s.id} index={i}>
+                      <StaffCard
+                        staff={s}
+                        destinations={destinations}
+                        universities={universities}
+                        events={events}
+                        onEdit={() => {
+                          setStaffForm({
+                            id: s.id,
+                            name: s.name,
+                            email: s.email || "",
+                            role: "staff",
+                            destinationId: s.destinationId || "",
+                            universityId: s.universityId || "",
+                            eventId: s.eventId || "",
+                          });
+                          setShowStaffForm(true);
+                        }}
+                        onDelete={() => handleDelete(() => deleteStaff(s.id), `${s.name} removed`)}
+                      />
+                    </Reveal>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {showStaffForm && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
