@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { AlertCircle, AlertTriangle, Plus, Users, X, Edit2, Trash2, Landmark, ShieldCheck, UserCircle, Loader2 } from "lucide-react";
 import { Shell } from "@/components/shell";
@@ -34,13 +35,19 @@ type OrgPayout = {
 
 const EMPTY_STAFF = { id: "", name: "", email: "", role: "staff" as const, destinationId: "", universityId: "", eventId: "" };
 
-export default function AdminPage() {
+/** useSearchParams below (for the ?tab=payouts deep link) opts this out of static
+ *  rendering unless wrapped in Suspense — see the default export at the bottom. */
+function AdminPageContent() {
   const session = useRequireRole(ADMIN_ONLY);
   const staff = useStaff();
   const universities = useUniversities();
   const destinations = useDestinations();
   const events = useEvents();
-  const [tab, setTab] = useState<Tab>("staff");
+  const searchParams = useSearchParams();
+  // Lets a "Set up payouts" link elsewhere (the Tickets tab's payout-required
+  // error) deep-link straight here instead of leaving the organizer to find
+  // Settings → Payouts on their own.
+  const [tab, setTab] = useState<Tab>(() => (searchParams.get("tab") === "payouts" ? "payouts" : "staff"));
 
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
   const [showStaffForm, setShowStaffForm] = useState(false);
@@ -1351,5 +1358,13 @@ export default function AdminPage() {
         )}
       </div>
     </Shell>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<AuthLoading />}>
+      <AdminPageContent />
+    </Suspense>
   );
 }

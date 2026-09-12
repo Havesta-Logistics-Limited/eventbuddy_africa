@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { AlertCircle, ChevronDown, Clock, Copy, DollarSign, Edit2, FileEdit, Percent, Plus, Tag, Ticket, TrendingUp, Trash2, Users, X } from "lucide-react";
 import { DiscountCode, DiscountRedemption, EventRecord, RegistrationFormStart, TicketPurchaseAttempt, TicketType } from "@/lib/types";
@@ -277,8 +278,13 @@ export function TicketsTab({
       {!hasPayoutsConfigured && (
         <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-amber-50 text-amber-800 text-sm">
           <AlertCircle size={15} className="mt-0.5 shrink-0" />
-          Payouts aren&apos;t set up for this organization yet — free tickets still work, but a paid ticket type can&apos;t be created until you add
-          a payout bank account in Settings → Payouts.
+          <span className="flex-1">
+            Payouts aren&apos;t set up for this organization yet — free tickets still work, but a paid ticket type can&apos;t be created until you add
+            a payout bank account.{" "}
+            <Link href="/admin?tab=payouts" className="font-medium underline hover:no-underline">
+              Set up payouts now
+            </Link>
+          </span>
         </div>
       )}
 
