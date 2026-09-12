@@ -107,8 +107,8 @@ export default function ManagedEventsContent() {
         </p>
       </section>
 
-      <section className="max-w-5xl mx-auto px-6 py-14 grid lg:grid-cols-[1fr_1.1fr] gap-10 items-start">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-1 gap-5">
+      <section className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-10 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-5">
           {INCLUDED.map(({ icon: Icon, title, body }) => (
             <div key={title} className="flex gap-4 bg-white rounded-2xl border border-slate-200 p-5 hover:border-brand-600/30 hover:shadow-sm transition-all">
               <div className="w-11 h-11 rounded-xl bg-brand-600 flex items-center justify-center shrink-0">
@@ -142,7 +142,7 @@ export default function ManagedEventsContent() {
               <h2 className="font-display text-xl text-slate-900 mb-1">Request a quote</h2>
               <p className="text-sm text-slate-500 mb-5">No pricing is charged here — we&apos;ll reach out with a quote based on your event.</p>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Your name</label>
                   <input required value={form.contactName} onChange={(e) => set("contactName", e.target.value)} className={fieldClass} />
@@ -153,7 +153,7 @@ export default function ManagedEventsContent() {
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Phone (optional)</label>
                   <input type="tel" value={form.contactPhone} onChange={(e) => set("contactPhone", sanitizePhoneInput(e.target.value))} className={fieldClass} />
@@ -169,7 +169,7 @@ export default function ManagedEventsContent() {
                 <input required value={form.eventName} onChange={(e) => set("eventName", e.target.value)} className={fieldClass} />
               </div>
 
-              <div className="grid sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className={labelClass}>Event date (optional)</label>
                   <input type="date" value={form.eventDate} onChange={(e) => set("eventDate", e.target.value)} className={fieldClass} />
@@ -205,7 +205,7 @@ export default function ManagedEventsContent() {
       </section>
 
       <footer className="text-white" style={{ background: "#170821" }}>
-        <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
+        <div className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
             <Logo tone="white" variant="full" height={16} />
             <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">

@@ -257,7 +257,7 @@ export function RegistrantDetailModal({
             {customFields.length === 0 ? (
               <p className="text-sm text-slate-400">This event&apos;s registration form has no additional questions.</p>
             ) : (
-              <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                 {customFields.map((f) => {
                   const v = registration.customAnswers?.[f.id];
                   return (
@@ -275,7 +275,7 @@ export function RegistrantDetailModal({
             <div className="pt-5 border-t border-slate-100">
               <h3 className="text-sm font-semibold text-slate-800 mb-1">Lead captured at this event</h3>
               <p className="text-xs text-slate-400 mb-3">Collected by staff when this attendee&apos;s code was scanned at a booth.</p>
-              <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 {destination && (
                   <div>
                     <p className="text-xs text-slate-400 flex items-center gap-1">

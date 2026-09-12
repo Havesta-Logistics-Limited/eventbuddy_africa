@@ -109,7 +109,7 @@ export default function ContactContent() {
       </section>
 
       <section className="max-w-5xl mx-auto px-6 pb-24">
-        <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6">
           {/* Form */}
           <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 animate-fade-in-up" style={{ animationDelay: "80ms" }}>
             {sent ? (
@@ -137,7 +137,7 @@ export default function ContactContent() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
                     <input
@@ -257,7 +257,7 @@ export default function ContactContent() {
       </section>
 
       <footer className="text-white" style={{ background: "#170821" }}>
-        <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
+        <div className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
             <Logo tone="white" variant="full" height={16} />
             <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">

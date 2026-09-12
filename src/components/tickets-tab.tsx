@@ -291,7 +291,7 @@ export function TicketsTab({
       {hasPaidTicketTypes && !loadingTransactions && (
         <div className="mb-6">
           <h2 className="font-semibold text-slate-800 mb-3">Sales overview</h2>
-          <div className="grid sm:grid-cols-2 gap-3 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div className="bg-white rounded-xl border border-slate-200 p-4">
               <p className="text-xs text-slate-500 flex items-center gap-1.5 mb-1">
                 <TrendingUp size={13} />

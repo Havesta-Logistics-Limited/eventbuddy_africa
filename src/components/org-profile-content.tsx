@@ -319,7 +319,7 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                           Happening now
                         </h2>
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                           {ongoing.map((event, i) => (
                             <EventCard key={event.id} event={event} orgSlug={orgSlug} i={i} />
                           ))}
@@ -329,7 +329,7 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
                     {upcoming.length > 0 && (
                       <div className="mb-10">
                         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-4">Upcoming</h2>
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                           {upcoming.map((event, i) => (
                             <EventCard key={event.id} event={event} orgSlug={orgSlug} i={i} />
                           ))}
@@ -339,7 +339,7 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
                     {past.length > 0 && (
                       <div>
                         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-4">Past events</h2>
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 opacity-80">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 opacity-80">
                           {past.map((event, i) => (
                             <EventCard key={event.id} event={event} orgSlug={orgSlug} i={i} />
                           ))}
@@ -355,7 +355,7 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
       )}
 
       <footer className="text-white" style={{ background: "#170821" }}>
-        <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
+        <div className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
             <Logo tone="white" variant="full" height={16} />
             <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">

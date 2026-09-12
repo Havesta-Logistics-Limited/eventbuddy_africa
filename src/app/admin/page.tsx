@@ -716,7 +716,7 @@ function AdminPageContent() {
                   </div>
                 ) : null}
                 <form onSubmit={handleInvite} className="pt-2 border-t border-slate-100 space-y-3">
-                  <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-slate-700 mb-1.5">Email</label>
                       <input

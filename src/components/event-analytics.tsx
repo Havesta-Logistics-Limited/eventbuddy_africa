@@ -228,7 +228,7 @@ export function EventAnalytics({
       </div>
 
       {registrations.length > 0 && (
-        <div className="grid md:grid-cols-2 gap-5 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Ticket size={16} className="text-brand-600" />
@@ -267,7 +267,7 @@ export function EventAnalytics({
       )}
 
       {isEducationFair && leads.length > 0 && (
-        <div className="grid md:grid-cols-2 gap-5 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Globe2 size={16} className="text-brand-600" />
@@ -324,7 +324,7 @@ export function EventAnalytics({
       )}
 
       {isEducationFair && leads.length > 0 && (
-        <div className="grid md:grid-cols-2 gap-5 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Award size={16} className="text-brand-600" />
@@ -365,7 +365,7 @@ export function EventAnalytics({
       )}
 
       {customBreakdowns.length > 0 && (
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {customBreakdowns.map(({ field, options }, i) => {
             const total = options.reduce((sum, o) => sum + o.count, 0);
             return (

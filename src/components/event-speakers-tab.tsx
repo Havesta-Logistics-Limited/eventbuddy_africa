@@ -97,7 +97,7 @@ export function SpeakersTab({ eventId, speakers }: { eventId: string; speakers: 
           <p className="text-sm">No speakers yet — add your first one, then assign them to a session.</p>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {speakers.map((s) => (
             <div key={s.id} className="bg-white rounded-xl border border-slate-200 p-4">
               <div className="flex items-start gap-3">

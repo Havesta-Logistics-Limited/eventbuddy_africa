@@ -144,7 +144,7 @@ export function DestinationsUniversitiesManagement({
             <p className="text-sm text-slate-500">No destinations yet — add the countries this fair covers, or copy them from a past event above.</p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {destinations.map((d, i) => {
               const uniCount = universities.filter((u) => u.destinationId === d.id).length;
               return (
@@ -211,7 +211,7 @@ export function DestinationsUniversitiesManagement({
                 <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">
                   {dest.flag} {dest.name}
                 </h3>
-                <div className="grid sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {unis.map((u, i) => (
                     <Reveal key={u.id} index={i}>
                       <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3 group hover:border-[#C21FAF]/30 hover:shadow-sm transition-all">

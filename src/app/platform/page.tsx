@@ -1713,7 +1713,7 @@ export default function PlatformDashboard() {
                 </div>
               </div>
 
-              <div className="grid lg:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <div className="bg-white rounded-2xl border border-slate-200 p-5">
                   <h2 className="font-semibold text-slate-900 mb-4">Ticket commission revenue by month</h2>
                   {ticketRevenueByMonth.length === 0 ? (
@@ -2054,7 +2054,7 @@ export default function PlatformDashboard() {
                             ))}
                           </select>
                         </div>
-                        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-3">
                           <p className="flex items-center gap-1.5 text-slate-600">
                             <Mail size={13} className="text-slate-400 shrink-0" />
                             <a href={`mailto:${req.contact_email}`} className="hover:text-brand-600 hover:underline truncate">
@@ -2355,7 +2355,7 @@ export default function PlatformDashboard() {
                 <p className="text-slate-500 text-sm mt-0.5">People with this same super-admin access, separate from any organization account.</p>
               </div>
 
-              <div className="grid lg:grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                 <div className="bg-white rounded-xl border border-slate-200 p-4">
                   <h2 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
                     <UserPlus size={14} />

@@ -191,7 +191,7 @@ export default function MarketingHomePage() {
           className="absolute inset-0 opacity-[0.07]"
           style={{ backgroundImage: "radial-gradient(circle at center, rgba(255,255,255,0.4) 1px, transparent 1px)", backgroundSize: "28px 28px" }}
         />
-        <div className="relative max-w-6xl mx-auto px-6 pt-16 sm:pt-20 pb-16 lg:pb-28 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
+        <div className="relative max-w-6xl mx-auto px-6 pt-16 sm:pt-20 pb-16 lg:pb-28 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
           <div>
             <h1 className="font-display text-4xl sm:text-5xl leading-tight text-balance">
               Africa&apos;s #1 event digital infrastructure.
@@ -364,7 +364,7 @@ export default function MarketingHomePage() {
       <section className="max-w-5xl mx-auto px-6 py-20">
         <h2 className="font-display text-3xl text-slate-900 text-center mb-2">Two ways to bring eventbuddy to your event</h2>
         <p className="text-slate-500 text-center max-w-lg mx-auto mb-12">Run it yourself, or let our own team take the whole day off your hands.</p>
-        <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-6 items-stretch">
           <div className="rounded-3xl border border-slate-200 p-8 flex flex-col">
             <div className="w-11 h-11 rounded-xl bg-brand-600 flex items-center justify-center mb-4">
               <Settings2 size={19} className="text-white" />
@@ -397,7 +397,7 @@ export default function MarketingHomePage() {
                 No staff to train, no devices to source, no last-minute panic — our own team lands at your venue and
                 owns the entire day.
               </p>
-              <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 mb-8">
                 {[
                   "On-site staff running your check-in desk",
                   "Devices and QR badge printing, handled for you",
@@ -452,7 +452,7 @@ export default function MarketingHomePage() {
         <p className="text-slate-500 max-w-lg mx-auto mb-16">
           Skip the group chats and the last-minute panic — set it up once, and the rest runs itself.
         </p>
-        <div className="grid sm:grid-cols-3 gap-10 sm:gap-6 relative">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-6 relative">
           <div className="hidden sm:block absolute top-7 left-[16.5%] right-[16.5%] h-px bg-brand-100" />
           {STEPS.map((s, i) => (
             <div key={s.title} className="relative">
@@ -482,7 +482,7 @@ export default function MarketingHomePage() {
           language (the green header band, the tab bar) rather than a generic
           illustration, matching how the hero mockup mirrors the real dashboard. */}
       <section className="bg-white border-y border-slate-200">
-        <div className="max-w-5xl mx-auto px-6 py-20 grid lg:grid-cols-[1.05fr_0.95fr] gap-14 items-center">
+        <div className="max-w-5xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-14 items-center">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-600 mb-3">The Event Hub</p>
             <h2 className="font-display text-3xl sm:text-4xl text-slate-900 leading-tight mb-4">
@@ -495,7 +495,7 @@ export default function MarketingHomePage() {
               updates, all in one place. You stay in control of what goes live; they stay engaged from the first
               session to the last.
             </p>
-            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-7">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-7">
               {[
                 { icon: Calendar, title: "Full schedule & speakers", body: "Every session, time, and speaker — searchable in seconds, so nobody's asking where they need to be." },
                 { icon: Send, title: "Live, moderated Q&A", body: "Attendees ask questions aimed at a specific speaker or session. Nothing reaches the room until you approve it." },
@@ -590,7 +590,7 @@ export default function MarketingHomePage() {
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-x-10 gap-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
             {FEATURES.slice(1).map(({ icon: Icon, title, body }, i) => {
               const colors = ["text-brand-600", "text-accent-purple-600", "text-accent-green-600", "text-accent-yellow-700", "text-brand-600", "text-accent-purple-600"];
               return (
@@ -711,7 +711,7 @@ export default function MarketingHomePage() {
       {/* Footer — brand + two real link columns, nothing invented (no blog, no
           "company" page). */}
       <footer className="text-white" style={{ background: "#170821" }}>
-        <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
+        <div className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
             <Logo tone="white" variant="full" height={16} />
             <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">

@@ -136,7 +136,7 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <footer className="text-white" style={{ background: "#170821" }}>
-        <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
+        <div className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
             <Logo tone="white" variant="full" height={16} />
             <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">

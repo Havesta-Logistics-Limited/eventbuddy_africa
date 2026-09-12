@@ -186,7 +186,7 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
                     Remove
                   </button>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <input
                     value={ctaLabel}
                     onChange={(e) => setCtaLabel(e.target.value)}
@@ -458,7 +458,7 @@ export default function AudiencePage() {
           </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
             <div className="flex items-center gap-2 mb-2">
               <Users size={15} className="text-slate-400" />

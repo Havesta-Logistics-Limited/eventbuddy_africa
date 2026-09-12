@@ -684,7 +684,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-14">
         {/* Hero — cover image + title/badges/CTA, matching the composition of a real
             event landing page rather than the plain header band this used to be. */}
-        <div className="grid lg:grid-cols-[1.15fr_1fr] gap-8 items-start animate-fade-in-up">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-8 items-start animate-fade-in-up">
           <div className="aspect-video rounded-2xl overflow-hidden bg-slate-100 shadow-sm">
             {event.coverImage ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -762,7 +762,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         </div>
 
         {/* Body: details on the left, registration panel on the right */}
-        <div className="grid lg:grid-cols-[1fr_400px] gap-8 mt-10 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 mt-10 items-start">
           <div className="space-y-5 min-w-0">
             {event.description && (
               <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up" style={{ animationDelay: "0ms" }}>
@@ -1096,7 +1096,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
       </div>
 
       <footer className="text-white mt-16" style={{ background: "#170821" }}>
-        <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
+        <div className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
             <Logo tone="white" variant="full" height={16} />
             <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">

@@ -86,7 +86,7 @@ export default function PricingContent() {
             className="absolute inset-0 opacity-10"
             style={{ backgroundImage: "radial-gradient(circle at center, rgba(255,255,255,0.4) 1px, transparent 1px)", backgroundSize: "26px 26px" }}
           />
-          <div className="relative grid sm:grid-cols-[1fr_auto] gap-8 sm:items-end">
+          <div className="relative grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-8 sm:items-end">
             <div>
               <p className="text-sm text-white/70 font-medium mb-2 flex items-center gap-1.5">
                 <Sparkles size={14} />
@@ -106,7 +106,7 @@ export default function PricingContent() {
               <ArrowRight size={16} />
             </Link>
           </div>
-          <div className="relative mt-8 pt-8 border-t border-white/15 grid sm:grid-cols-2 gap-x-8 gap-y-3">
+          <div className="relative mt-8 pt-8 border-t border-white/15 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
             {SELF_SERVE_INCLUDED.map((item) => (
               <div key={item} className="flex items-start gap-2.5 text-sm text-white/85">
                 <Check size={16} className="text-white shrink-0 mt-0.5" />
@@ -119,7 +119,7 @@ export default function PricingContent() {
         {/* Full-Service and Enterprise — both quote-based and structurally similar
             (on-site team, no self-serve price to show), so equal-weight cards here
             are the honest shape, not a lazy default. */}
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-3xl border border-slate-200 bg-white p-8 flex flex-col">
             <p className="text-sm text-brand-600 font-medium mb-2 flex items-center gap-1.5">
               <Users2 size={14} />
@@ -172,7 +172,7 @@ export default function PricingContent() {
 
       <section className="max-w-3xl mx-auto px-6 py-16">
         <h2 className="font-display text-3xl text-slate-900 mb-10">Questions, answered</h2>
-        <div className="grid sm:grid-cols-2 gap-x-10 gap-y-7">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-7">
           {FAQS.map(({ q, a }) => (
             <div key={q} className="pt-5 border-t border-slate-200">
               <h3 className="font-semibold text-slate-900 text-sm mb-1.5">{q}</h3>
@@ -183,7 +183,7 @@ export default function PricingContent() {
       </section>
 
       <footer className="text-white" style={{ background: "#170821" }}>
-        <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
+        <div className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
             <Logo tone="white" variant="full" height={16} />
             <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">

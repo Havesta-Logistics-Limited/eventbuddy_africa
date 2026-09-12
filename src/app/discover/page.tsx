@@ -227,7 +227,7 @@ export default function DiscoverEventsPage() {
         </div>
 
         {loading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="rounded-2xl border border-slate-200 bg-white overflow-hidden animate-pulse">
                 <div className="aspect-[16/9] bg-slate-100" />
@@ -252,7 +252,7 @@ export default function DiscoverEventsPage() {
             </p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {filtered.map((event, i) => {
               const badge = priceBadge(event);
               const status = getEventStatus(event);
@@ -314,7 +314,7 @@ export default function DiscoverEventsPage() {
       </section>
 
       <footer className="text-white" style={{ background: "#170821" }}>
-        <div className="max-w-5xl mx-auto px-6 py-14 grid sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
+        <div className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
           <div>
             <Logo tone="white" variant="full" height={16} />
             <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">
