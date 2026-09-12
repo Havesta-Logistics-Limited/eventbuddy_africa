@@ -52,7 +52,7 @@ export function StaffRosterTab({
                       </span>
                     )}
                   </p>
-                  <p className="text-sm text-slate-500">{s.email}</p>
+                  {s.email && <p className="text-sm text-slate-500">{s.email}</p>}
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs shrink-0">
                   {dest && (

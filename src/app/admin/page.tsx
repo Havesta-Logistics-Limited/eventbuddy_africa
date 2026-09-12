@@ -1081,7 +1081,7 @@ export default function AdminPage() {
                       <div className="w-10 h-10 rounded-full bg-[#C21FAF]/10 flex items-center justify-center text-[#C21FAF] font-semibold shrink-0">{s.name.charAt(0)}</div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-slate-900">{s.name}</p>
-                        <p className="text-sm text-slate-500">{s.email}</p>
+                        {s.email && <p className="text-sm text-slate-500">{s.email}</p>}
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs">
                         <span
@@ -1100,7 +1100,7 @@ export default function AdminPage() {
                             setStaffForm({
                               id: s.id,
                               name: s.name,
-                              email: s.email,
+                              email: s.email || "",
                               role: "staff",
                               destinationId: s.destinationId || "",
                               universityId: s.universityId || "",

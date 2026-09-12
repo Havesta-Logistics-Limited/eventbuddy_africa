@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     staff: {
       id: staffRow.id,
       name: staffRow.name,
-      email: staffRow.email,
+      email: staffRow.email ?? undefined,
       role: staffRow.role,
       destinationId: staffRow.destination_id,
       universityId: staffRow.university_id,

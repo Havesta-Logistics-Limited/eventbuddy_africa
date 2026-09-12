@@ -91,7 +91,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       .insert({
         organization_id: org.id,
         name: trimmedName,
-        email: `${trimmedName.replace(/\s+/g, ".").toLowerCase()}@eventpal.com`,
         role: "staff",
         ...checkinPatch,
       })
@@ -105,7 +104,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     staff: {
       id: staffRow.id,
       name: staffRow.name,
-      email: staffRow.email,
+      email: staffRow.email ?? undefined,
       role: "staff",
       destinationId: staffRow.destination_id,
       universityId: staffRow.university_id,

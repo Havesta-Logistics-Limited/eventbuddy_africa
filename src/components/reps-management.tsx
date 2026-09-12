@@ -88,7 +88,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                         </span>
                       )}
                     </p>
-                    <p className="text-sm text-slate-500">{s.email}</p>
+                    {s.email && <p className="text-sm text-slate-500">{s.email}</p>}
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs">
                     <span className="px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700">Rep</span>
@@ -103,7 +103,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                     )}
                     <button
                       onClick={() => {
-                        setRepForm({ id: s.id, name: s.name, email: s.email, destinationId: s.destinationId || "", universityId: s.universityId || "", eventId });
+                        setRepForm({ id: s.id, name: s.name, email: s.email || "", destinationId: s.destinationId || "", universityId: s.universityId || "", eventId });
                         setShowRepForm(true);
                       }}
                       className="p-1.5 text-slate-400 hover:text-[#C21FAF] rounded-md hover:bg-slate-100"

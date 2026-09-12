@@ -178,7 +178,10 @@ export interface EventRecord {
 export interface StaffRecord {
   id: string;
   name: string;
-  email: string;
+  /** Admin-provisioned staff/reps always have one. Someone who self-checked-in
+   *  via the public staff link never entered an email at all, so it's unset —
+   *  never a fake placeholder address. */
+  email?: string;
   role: Role;
   destinationId?: string;
   universityId?: string;
