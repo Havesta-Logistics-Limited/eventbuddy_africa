@@ -249,7 +249,7 @@ function mapStaffRow(s: {
   return {
     id: s.id,
     name: s.name,
-    email: s.email ?? "",
+    email: s.email ?? undefined,
     role: s.role as StaffRecord["role"],
     destinationId: s.destination_id ?? undefined,
     universityId: s.university_id ?? undefined,
@@ -1053,18 +1053,25 @@ export async function updateEvent(id: string, patch: Partial<Omit<EventRecord, "
   const supabase = createSupabaseBrowserClient();
   const existing = eventsCache.find((e) => e.id === id);
   let finalPatch = patch;
-  if (patch.coverImage?.startsWith("data:")) {
-    const orgId = await resolveMyOrgId(supabase);
-    if (orgId) {
-      const url = await uploadEventMedia(`${orgId}/covers/${id}`, patch.coverImage);
-      finalPatch = { ...patch, coverImage: url };
+  // Gated on the value actually changing, not just on "is it a data: URL" — the
+  // edit wizard resubmits the event's full form state on every save, including
+  // an untouched coverImage, and a pre-Storage-wiring event's cover is still a
+  // (potentially multi-MB) base64 data: URL in the DB. Without this guard, every
+  // unrelated edit to such an event would re-upload that unchanged image.
+  if (patch.coverImage !== undefined && patch.coverImage !== existing?.coverImage) {
+    if (patch.coverImage.startsWith("data:")) {
+      const orgId = await resolveMyOrgId(supabase);
+      if (orgId) {
+        const url = await uploadEventMedia(`${orgId}/covers/${id}`, patch.coverImage);
+        finalPatch = { ...patch, coverImage: url };
+      }
+    } else if (existing?.coverImage && isEventMediaUrl(existing.coverImage)) {
+      // Cleared, or swapped for a pasted external URL — the file this event had
+      // previously uploaded is now unreferenced, so it's cleaned up rather than
+      // left as dead weight in the bucket.
+      const orgId = await resolveMyOrgId(supabase);
+      if (orgId) await deleteEventMedia(`${orgId}/covers/${id}`);
     }
-  } else if (patch.coverImage !== undefined && patch.coverImage !== existing?.coverImage && existing?.coverImage && isEventMediaUrl(existing.coverImage)) {
-    // Cleared, or swapped for a pasted external URL — the file this event had
-    // previously uploaded is now unreferenced, so it's cleaned up rather than
-    // left as dead weight in the bucket.
-    const orgId = await resolveMyOrgId(supabase);
-    if (orgId) await deleteEventMedia(`${orgId}/covers/${id}`);
   }
   const { data, error } = await supabase.from("events").update(eventToRow(finalPatch)).eq("id", id).select().single();
   if (error || !data) throw new PersistError(error);
@@ -1272,15 +1279,19 @@ export async function updateEventSpeaker(id: string, patch: Partial<Omit<EventSp
   const supabase = createSupabaseBrowserClient();
   const existing = eventSpeakersCache.find((s) => s.id === id);
   let finalPatch = patch;
-  if (patch.photoUrl?.startsWith("data:")) {
-    const orgId = await resolveMyOrgId(supabase);
-    if (orgId) {
-      const url = await uploadEventMedia(`${orgId}/speakers/${id}`, patch.photoUrl);
-      finalPatch = { ...patch, photoUrl: url };
+  // Gated on the value actually changing — see the matching comment in
+  // updateEvent above; the speaker edit form resubmits photoUrl unchanged too.
+  if (patch.photoUrl !== undefined && patch.photoUrl !== existing?.photoUrl) {
+    if (patch.photoUrl.startsWith("data:")) {
+      const orgId = await resolveMyOrgId(supabase);
+      if (orgId) {
+        const url = await uploadEventMedia(`${orgId}/speakers/${id}`, patch.photoUrl);
+        finalPatch = { ...patch, photoUrl: url };
+      }
+    } else if (existing?.photoUrl && isEventMediaUrl(existing.photoUrl)) {
+      const orgId = await resolveMyOrgId(supabase);
+      if (orgId) await deleteEventMedia(`${orgId}/speakers/${id}`);
     }
-  } else if (patch.photoUrl !== undefined && patch.photoUrl !== existing?.photoUrl && existing?.photoUrl && isEventMediaUrl(existing.photoUrl)) {
-    const orgId = await resolveMyOrgId(supabase);
-    if (orgId) await deleteEventMedia(`${orgId}/speakers/${id}`);
   }
   const { error } = await supabase.from("event_speakers").update(eventSpeakerToRow(finalPatch)).eq("id", id);
   if (error) throw new PersistError(error);
