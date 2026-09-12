@@ -116,10 +116,14 @@ export function EventWizard(props: {
     setSubmitting(intent);
     try {
       await onSubmit(
+        // Trimmed, but deliberately never coerced to undefined: eventToRow only
+        // clears staff_access_code/rep_access_code when it's handed an actual
+        // empty string — undefined means "leave this field alone," which used to
+        // make clearing a code in the wizard silently no-op on save.
         {
           ...data,
-          staffAccessCode: data.staffAccessCode?.trim() || undefined,
-          repAccessCode: data.repAccessCode?.trim() || undefined,
+          staffAccessCode: data.staffAccessCode?.trim() ?? "",
+          repAccessCode: data.repAccessCode?.trim() ?? "",
         },
         intent,
         mode === "create" && repeats ? recurrence : undefined

@@ -42,9 +42,13 @@ export function SpeakersTab({ eventId, speakers }: { eventId: string; speakers: 
       const payload = {
         eventId,
         name: form.name.trim(),
-        title: form.title.trim() || undefined,
-        company: form.company.trim() || undefined,
-        bio: form.bio.trim() || undefined,
+        // Trimmed, never coerced to undefined — eventSpeakerToRow only clears
+        // title/company/bio when handed an actual empty string; undefined means
+        // "leave alone," which silently kept the old value when editing one of
+        // these back to blank.
+        title: form.title.trim(),
+        company: form.company.trim(),
+        bio: form.bio.trim(),
         photoUrl: form.photoUrl || undefined,
       };
       if (form.id) {

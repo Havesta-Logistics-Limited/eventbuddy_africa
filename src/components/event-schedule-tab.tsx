@@ -72,10 +72,14 @@ export function ScheduleTab({ eventId, sessions, speakers }: { eventId: string; 
       const payload = {
         eventId,
         title: form.title.trim(),
-        description: form.description.trim() || undefined,
+        // None of these three coerced to undefined — eventSessionToRow only
+        // clears description/end_time/track when handed an actual empty
+        // string; undefined means "leave alone," which silently kept the old
+        // value when editing one of these back to blank.
+        description: form.description.trim(),
         startTime: new Date(form.startTime).toISOString(),
-        endTime: form.endTime ? new Date(form.endTime).toISOString() : undefined,
-        track: form.track.trim() || undefined,
+        endTime: form.endTime ? new Date(form.endTime).toISOString() : "",
+        track: form.track.trim(),
         sessionType: form.sessionType,
         qaOpen: false,
       };
