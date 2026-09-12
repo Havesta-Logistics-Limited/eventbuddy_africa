@@ -208,7 +208,7 @@ export default function MarketingHomePage() {
                 href="/signup"
                 className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-white text-brand-600 hover:bg-white/90 transition-colors"
               >
-                Get Started
+                Sell Tickets
                 <ArrowRight size={16} />
               </Link>
               <Link
