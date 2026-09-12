@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, Eye, EyeOff, MailCheck } from "lucide-react";
 import { AttendeeBadgeArt } from "@/components/attendee-badge-art";
 import { Logo } from "@/components/logo";
+import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -21,6 +22,14 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidEmail(email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      setError("Enter a valid phone number.");
+      return;
+    }
     setError("");
     setLoading(true);
     try {
@@ -150,7 +159,7 @@ export default function SignupPage() {
             </div>
             <div>
               <label className={labelClass}>Phone number</label>
-              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+234 801 234 5678" required className={fieldClass} />
+              <input type="tel" value={phone} onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))} placeholder="+234 801 234 5678" required className={fieldClass} />
             </div>
             <div>
               <label className={labelClass}>Password</label>

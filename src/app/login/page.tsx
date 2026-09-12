@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { completeMfaLogin, login, useSession } from "@/lib/store";
 import { Logo } from "@/components/logo";
+import { isValidEmail } from "@/lib/validation";
 
 export default function LoginPage() {
   const session = useSession();
@@ -25,6 +26,10 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidEmail(email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
     setError("");
     setLoading(true);
     const result = await login(email, password);

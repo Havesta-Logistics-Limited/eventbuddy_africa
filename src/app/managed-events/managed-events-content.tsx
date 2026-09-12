@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Users2, Tablet, QrCode, ClipboardCheck, CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
 
 const INCLUDED = [
   { icon: Users2, title: "On-site staff", body: "Our team runs your check-in desk in person — you don't need to train or bring your own staff." },
@@ -48,6 +49,14 @@ export default function ManagedEventsContent() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isValidEmail(form.contactEmail)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    if (form.contactPhone.trim() && !isValidPhone(form.contactPhone)) {
+      setError("Enter a valid phone number.");
+      return;
+    }
     setError("");
     setSubmitting(true);
     try {
@@ -147,7 +156,7 @@ export default function ManagedEventsContent() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Phone (optional)</label>
-                  <input value={form.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} className={fieldClass} />
+                  <input type="tel" value={form.contactPhone} onChange={(e) => set("contactPhone", sanitizePhoneInput(e.target.value))} className={fieldClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Organization (optional)</label>

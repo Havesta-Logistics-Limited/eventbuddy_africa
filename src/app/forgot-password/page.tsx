@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { isValidEmail } from "@/lib/validation";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -14,6 +15,10 @@ export default function ForgotPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isValidEmail(email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
     setError("");
     setLoading(true);
     try {

@@ -12,6 +12,7 @@ import { formatDate, formatTime } from "@/lib/utils";
 import { DynamicLeadForm, type DynamicLeadFormValues } from "@/components/dynamic-lead-form";
 import { QrScannerPanel } from "@/components/qr-scanner-panel";
 import { AuthLoading } from "@/components/auth-loading";
+import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
 
 const STAFF_ONLY: Role[] = ["staff"];
 
@@ -187,6 +188,14 @@ export default function LeadCollectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session.destinationId || !session.universityId || !session.eventId) return;
+    if (!isValidEmail(form.email)) {
+      setSubmitError("Enter a valid email address.");
+      return;
+    }
+    if (!isValidPhone(form.phone)) {
+      setSubmitError("Enter a valid phone number.");
+      return;
+    }
     setSubmitError("");
     setSubmitting(true);
     try {
@@ -358,7 +367,14 @@ export default function LeadCollectPage() {
               </div>
               <div>
                 <label className={labelClass}>Phone Number *</label>
-                <input required type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} className={fieldClass} placeholder="+234 800 000 0000" />
+                <input
+                  required
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => set("phone", sanitizePhoneInput(e.target.value))}
+                  className={fieldClass}
+                  placeholder="+234 800 000 0000"
+                />
               </div>
             </div>
 

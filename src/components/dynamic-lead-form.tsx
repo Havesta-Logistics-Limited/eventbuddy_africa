@@ -5,13 +5,14 @@ import { useForm, type UseFormRegister, type FieldErrors, type Resolver } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FieldDef } from "@/lib/types";
 import { buildCustomFieldsSchema } from "@/lib/dynamic-form-schema";
+import { PHONE_REGEX, sanitizePhoneInput } from "@/lib/validation";
 
 const baseSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
   middleName: z.string().optional(),
   lastName: z.string().min(1, "Last name is required."),
   email: z.string().email("Enter a valid email address."),
-  phone: z.string().min(1, "Phone number is required."),
+  phone: z.string().min(1, "Phone number is required.").regex(PHONE_REGEX, "Enter a valid phone number."),
   comments: z.string().optional(),
 });
 
@@ -86,7 +87,7 @@ function DynamicField({ field, register, errors }: { field: FieldDef; register: 
       ) : (
         <input
           type={field.type === "email" ? "email" : field.type === "phone" ? "tel" : field.type === "date" ? "date" : field.type === "number" ? "text" : "text"}
-          {...register(path)}
+          {...register(path, field.type === "phone" ? { onChange: (e) => (e.target.value = sanitizePhoneInput(e.target.value)) } : undefined)}
           className={fieldClass}
         />
       )}
@@ -167,7 +168,12 @@ export function DynamicLeadForm(props: {
         </div>
         <div>
           <label className={labelClass}>Phone Number *</label>
-          <input type="tel" {...register("phone")} className={fieldClass} placeholder="+234 800 000 0000" />
+          <input
+            type="tel"
+            {...register("phone", { onChange: (e) => (e.target.value = sanitizePhoneInput(e.target.value)) })}
+            className={fieldClass}
+            placeholder="+234 800 000 0000"
+          />
           {errors.phone && <p className={errorClass}>{errors.phone.message}</p>}
         </div>
       </div>

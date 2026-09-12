@@ -7,6 +7,7 @@ import QRCode from "qrcode";
 import { AlertCircle, Calendar, Check, Copy, ExternalLink, HelpCircle, MapPin, MapPinCheckInside, ThumbsDown, ThumbsUp, Video, X } from "lucide-react";
 import { FieldDef } from "@/lib/types";
 import { formatDate, formatTime, safeHttpUrl } from "@/lib/utils";
+import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
 import { RichTextDisplay } from "@/components/rich-text-display";
 
 type RsvpEvent = {
@@ -101,7 +102,7 @@ function CustomFieldInput({ field, value, onChange }: { field: FieldDef; value: 
       <input
         type={field.type === "email" ? "email" : field.type === "phone" ? "tel" : field.type === "date" ? "date" : "text"}
         value={(value as string) || ""}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange(field.type === "phone" ? sanitizePhoneInput(e.target.value) : e.target.value)}
         className={fieldClass}
       />
     </div>
@@ -162,6 +163,26 @@ export default function RsvpPage() {
   }
 
   async function submitResponse(response: "accepted" | "declined" | "maybe") {
+    if (response === "accepted" && event) {
+      for (const p of plusOnes) {
+        if (p.name.trim() && p.email.trim() && !isValidEmail(p.email)) {
+          setSubmitError(`Enter a valid email address for ${p.name.trim()}, or leave it blank.`);
+          return;
+        }
+      }
+      for (const f of event.customFields) {
+        const v = customAnswers[f.id];
+        if (typeof v !== "string" || !v) continue;
+        if (f.type === "email" && !isValidEmail(v)) {
+          setSubmitError(`Enter a valid email address for "${f.label || "that question"}".`);
+          return;
+        }
+        if (f.type === "phone" && !isValidPhone(v)) {
+          setSubmitError(`Enter a valid phone number for "${f.label || "that question"}".`);
+          return;
+        }
+      }
+    }
     setSubmitError("");
     setSubmitting(response);
     try {
@@ -348,6 +369,7 @@ export default function RsvpPage() {
                             className={fieldClass}
                           />
                           <input
+                            type="email"
                             value={row.email}
                             onChange={(e) => updatePlusOneRow(i, { email: e.target.value })}
                             placeholder="Their email (optional)"

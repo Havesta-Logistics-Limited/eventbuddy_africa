@@ -6,12 +6,18 @@ import { useForm, useWatch, type UseFormRegister, type FieldErrors, type Resolve
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FieldDef } from "@/lib/types";
 import { buildCustomFieldsSchema } from "@/lib/dynamic-form-schema";
+import { PHONE_REGEX, sanitizePhoneInput } from "@/lib/validation";
 
 const baseSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
   lastName: z.string().min(1, "Last name is required."),
   email: z.string().email("Enter a valid email address."),
-  phone: z.string().optional(),
+  // Optional — "" (left blank) must stay valid, so format is checked via
+  // .refine() rather than .regex() (which would reject "" outright).
+  phone: z
+    .string()
+    .refine((v) => !v || PHONE_REGEX.test(v), "Enter a valid phone number.")
+    .optional(),
 });
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -83,7 +89,7 @@ function DynamicField({ field, register, errors }: { field: FieldDef; register: 
       ) : (
         <input
           type={field.type === "email" ? "email" : field.type === "phone" ? "tel" : field.type === "date" ? "date" : field.type === "number" ? "text" : "text"}
-          {...register(path)}
+          {...register(path, field.type === "phone" ? { onChange: (e) => (e.target.value = sanitizePhoneInput(e.target.value)) } : undefined)}
           className={fieldClass}
         />
       )}
@@ -178,7 +184,12 @@ export function DynamicRegistrationForm(props: {
         </div>
         <div>
           <label className={labelClass}>Phone Number</label>
-          <input type="tel" {...register("phone")} className={fieldClass} placeholder="+234 800 000 0000" />
+          <input
+            type="tel"
+            {...register("phone", { onChange: (e) => (e.target.value = sanitizePhoneInput(e.target.value)) })}
+            className={fieldClass}
+            placeholder="+234 800 000 0000"
+          />
         </div>
       </div>
 

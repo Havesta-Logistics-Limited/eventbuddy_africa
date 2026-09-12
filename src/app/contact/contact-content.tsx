@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Mail, MapPin, AlertCircle } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { isValidEmail } from "@/lib/validation";
 
 const DIRECT_LINES = [
   {
@@ -47,6 +48,10 @@ export default function ContactContent() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isValidEmail(email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
     setError("");
     setLoading(true);
     try {

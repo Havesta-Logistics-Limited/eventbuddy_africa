@@ -6,6 +6,7 @@ import { Eye, EyeOff, AlertCircle, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { challengeAndVerify } from "@/lib/mfa";
 import { Logo } from "@/components/logo";
+import { isValidEmail } from "@/lib/validation";
 
 /**
  * Deliberately separate from /login and store.ts's login(). Platform admin is its
@@ -26,6 +27,10 @@ export default function PlatformLoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isValidEmail(email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
     setError("");
     setLoading(true);
 
