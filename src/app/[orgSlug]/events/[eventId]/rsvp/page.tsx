@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import QRCode from "qrcode";
+import { brandedQrDataUrl } from "@/lib/branded-qr";
 import { AlertCircle, Calendar, Check, Copy, ExternalLink, HelpCircle, MapPin, MapPinCheckInside, ThumbsDown, ThumbsUp, Video, X } from "lucide-react";
 import { FieldDef } from "@/lib/types";
 import { formatDate, formatTime, safeHttpUrl } from "@/lib/utils";
@@ -153,7 +153,7 @@ export default function RsvpPage() {
   useEffect(() => {
     const refs = (confirmation?.attendees ?? []).filter((a) => a.referenceId).map((a) => a.referenceId!);
     if (refs.length === 0) return;
-    Promise.all(refs.map((ref) => QRCode.toDataURL(ref, { width: 200, margin: 1, color: { dark: "#1e1b2e", light: "#ffffff" } }).then((url) => [ref, url] as const))).then(
+    Promise.all(refs.map((ref) => brandedQrDataUrl(ref, { width: 200, margin: 1 }).then((url) => [ref, url] as const))).then(
       (pairs) => setQrDataUrls(Object.fromEntries(pairs))
     );
   }, [confirmation]);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import QRCode from "qrcode";
+import { brandedQrDataUrl } from "@/lib/branded-qr";
 import { toast } from "sonner";
 import { X, QrCode, Mail, Phone, Calendar, CheckCircle2, MapPin, BookMarked, GraduationCap, Globe2, Building2, MessageSquare, Ticket, Send, Check, ArrowUpCircle, Undo2, AlertCircle } from "lucide-react";
 import { Destination, EventRecord, LeadRecord, RegistrationRecord, TicketType, University } from "@/lib/types";
@@ -66,7 +66,7 @@ export function RegistrantDetailModal({
   }
 
   useEffect(() => {
-    QRCode.toDataURL(registration.referenceId, { width: 220, margin: 1, color: { dark: "#1e1b2e", light: "#ffffff" } })
+    brandedQrDataUrl(registration.referenceId, { width: 220, margin: 1 })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(""));
   }, [registration.referenceId]);

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import QRCode from "qrcode";
+import { brandedQrDataUrl } from "@/lib/branded-qr";
 import {
   AlertCircle,
   Calendar,
@@ -384,7 +384,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   useEffect(() => {
     if (!confirmation?.referenceId) return;
-    QRCode.toDataURL(confirmation.referenceId, { width: 220, margin: 1, color: { dark: "#1e1b2e", light: "#ffffff" } })
+    brandedQrDataUrl(confirmation.referenceId, { width: 220, margin: 1 })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(""));
   }, [confirmation]);

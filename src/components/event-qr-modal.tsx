@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import QRCode from "qrcode";
 import { Download, X } from "lucide-react";
+import { brandedQrDataUrl } from "@/lib/branded-qr";
 
 /** A generic, per-event QR code (no personal token baked in) that any device can
  *  scan straight to a given URL — for posters/screens at the venue, or as a
@@ -24,7 +24,7 @@ export function EventQrModal({
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   useEffect(() => {
-    QRCode.toDataURL(url, { width: 480, margin: 2, color: { dark: "#1e1b2e", light: "#ffffff" } })
+    brandedQrDataUrl(url, { width: 480, margin: 2 })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(""));
   }, [url]);
