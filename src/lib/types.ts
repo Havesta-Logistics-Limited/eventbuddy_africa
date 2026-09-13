@@ -347,9 +347,9 @@ export interface TicketPurchaseAttempt {
   createdAt: string;
 }
 
-/** One line of a Wallet's per-event breakdown — every successful ticket sale for that
+/** One line of the Ledger's per-event breakdown — every successful ticket sale for that
  *  event, rolled up. Gross/fee/net mirror the columns on paystack_transactions. */
-export interface WalletEventBreakdown {
+export interface LedgerEventBreakdown {
   eventId: string;
   eventName: string;
   grossNaira: number;
@@ -358,8 +358,8 @@ export interface WalletEventBreakdown {
   salesCount: number;
 }
 
-/** One successful sale, for the Wallet's recent-activity list. */
-export interface WalletTransaction {
+/** One successful sale, for the Ledger's recent-activity list. */
+export interface LedgerTransaction {
   id: string;
   eventName: string;
   amountNaira: number;
@@ -372,13 +372,13 @@ export interface WalletTransaction {
  *  actually settled to the organizer's bank — purely informational, since Paystack
  *  already pays out every sale automatically via the subaccount split (see paystack.ts).
  *  There is no held balance and nothing to withdraw; this is a ledger view, not custody. */
-export interface WalletSummary {
+export interface LedgerSummary {
   totalGrossNaira: number;
   totalFeeNaira: number;
   totalNetNaira: number;
   salesCount: number;
-  events: WalletEventBreakdown[];
-  recentTransactions: WalletTransaction[];
+  events: LedgerEventBreakdown[];
+  recentTransactions: LedgerTransaction[];
 }
 
 export type RegistrationStatus = "registered" | "checked_in" | "cancelled" | "pending" | "waitlisted" | "declined";

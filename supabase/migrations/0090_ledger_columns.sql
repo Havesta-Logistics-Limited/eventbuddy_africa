@@ -1,7 +1,7 @@
--- First-class ledger numbers for the Wallet view. Today the platform's commission on a
+-- First-class ledger numbers for the Ledger view. Today the platform's commission on a
 -- sale is never stored — it only exists buried in paystack_event->'fees_split'->>'integration'
 -- (mined live, on every render, by the platform admin dashboard). Promoting it to real
--- columns at the moment a transaction is finalized means the Wallet view (and anything
+-- columns at the moment a transaction is finalized means the Ledger view (and anything
 -- else that needs it later) reads a plain number instead of re-parsing Paystack's raw
 -- webhook/verify payload every time.
 --
@@ -14,7 +14,7 @@ alter table public.paystack_transactions
   add column if not exists net_amount_naira numeric(12, 2);
 
 -- Backfill every already-settled ticket sale from the raw payload captured at
--- verification time, so the Wallet view has real numbers for historical sales too.
+-- verification time, so the Ledger view has real numbers for historical sales too.
 update public.paystack_transactions
 set
   platform_fee_naira = round(coalesce((paystack_event -> 'fees_split' ->> 'integration')::numeric, 0) / 100.0, 2),

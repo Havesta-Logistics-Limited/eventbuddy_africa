@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { resolveRouteUser } from "@/lib/supabase/route-auth";
 
 /**
- * Bearer-token-friendly counterpart to getWalletSummary() in src/lib/store.ts (which the
+ * Bearer-token-friendly counterpart to getLedgerSummary() in src/lib/store.ts (which the
  * web admin page calls directly against the browser Supabase client via RLS) — mobile has
  * no shared cookies with the web domain, so it needs this route instead. Same org
  * resolution as /api/paystack/subaccount (owner, then an active admin member); same

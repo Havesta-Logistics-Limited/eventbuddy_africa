@@ -24,7 +24,7 @@ import {
   TicketPurchaseAttempt,
   TicketType,
   University,
-  WalletSummary,
+  LedgerSummary,
 } from "./types";
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { copyEventMedia, deleteEventMedia, isEventMediaUrl, uploadEventMedia } from "./supabase/storage";
@@ -1597,8 +1597,8 @@ export async function getEventTicketTransactions(eventId: string): Promise<Ticke
  *  platform_fee_naira/net_amount_naira columns directly (populated at finalize time by
  *  finalizePaystackTransaction) rather than re-parsing the raw Paystack payload on
  *  every render, the way the platform admin dashboard's older commission math does. */
-export async function getWalletSummary(): Promise<WalletSummary> {
-  const empty: WalletSummary = { totalGrossNaira: 0, totalFeeNaira: 0, totalNetNaira: 0, salesCount: 0, events: [], recentTransactions: [] };
+export async function getLedgerSummary(): Promise<LedgerSummary> {
+  const empty: LedgerSummary = { totalGrossNaira: 0, totalFeeNaira: 0, totalNetNaira: 0, salesCount: 0, events: [], recentTransactions: [] };
   const supabase = createSupabaseBrowserClient();
   const orgId = await resolveMyOrgId(supabase);
   if (!orgId) return empty;
