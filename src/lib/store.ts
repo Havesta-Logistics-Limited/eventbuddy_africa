@@ -1011,33 +1011,29 @@ export async function addEventSeries(name: string): Promise<string> {
  *  orgs' rows to pre-check a candidate under RLS — so it just attempts the insert and
  *  retries with a numeric suffix on a real 23505 conflict, exactly like the dashboard's
  *  manual slug editor already does for the update path. */
+/** TEMPORARY: cover_image is written straight through (a base64 data: URL, same
+ *  as every event's cover already works today) instead of being uploaded to the
+ *  event-media Storage bucket first. That bucket's write policies are rejecting
+ *  every authenticated upload right now — verified directly against the database
+ *  (correct RLS policies, correct grants, no blocking triggers — even a policy
+ *  with zero ownership logic, `with check (bucket_id = 'event-media')`, is
+ *  denied) and via this exact client library, so it isn't fixable from the app
+ *  side; it needs Supabase support. Revert to uploadEventMedia
+ *  (./supabase/storage) in both addEvent and updateEvent once that's resolved —
+ *  the two-phase "upload after insert" dance and the update-time upload/cleanup
+ *  logic it replaced are both still in git history. */
 export async function addEvent(input: Omit<EventRecord, "id" | "createdAt">): Promise<EventRecord> {
   const supabase = createSupabaseBrowserClient();
-  // A brand-new event has no id yet, so a freshly-picked cover (still a data:
-  // URL at this point) can't be uploaded to its `{orgId}/covers/{eventId}` path
-  // until after the insert — held back from this first write and patched in
-  // once the row (and its id) exist, so the events table never receives a
-  // multi-hundred-KB base64 payload even transiently.
-  const pendingCoverImage = input.coverImage?.startsWith("data:") ? input.coverImage : undefined;
-  const insertInput = pendingCoverImage ? { ...input, coverImage: undefined } : input;
   const baseSlug = input.slug ? slugifyEventName(input.slug) : slugifyEventName(input.name);
   let candidate = baseSlug;
   for (let attempt = 1; attempt <= 6; attempt++) {
     const { data, error } = await supabase
       .from("events")
-      .insert(eventToRow({ ...insertInput, slug: candidate }))
+      .insert(eventToRow({ ...input, slug: candidate }))
       .select()
       .single();
     if (data) {
-      let record = mapEventRow(data);
-      if (pendingCoverImage) {
-        const orgId = await resolveMyOrgId(supabase);
-        if (orgId) {
-          const url = await uploadEventMedia(`${orgId}/covers/${record.id}`, pendingCoverImage);
-          await supabase.from("events").update({ cover_image: url }).eq("id", record.id);
-          record = { ...record, coverImage: url };
-        }
-      }
+      const record = mapEventRow(data);
       eventsCache = [...eventsCache, record];
       emitChange();
       return record;
@@ -1052,29 +1048,7 @@ export async function addEvent(input: Omit<EventRecord, "id" | "createdAt">): Pr
 }
 export async function updateEvent(id: string, patch: Partial<Omit<EventRecord, "id" | "createdAt">>): Promise<void> {
   const supabase = createSupabaseBrowserClient();
-  const existing = eventsCache.find((e) => e.id === id);
-  let finalPatch = patch;
-  // Gated on the value actually changing, not just on "is it a data: URL" — the
-  // edit wizard resubmits the event's full form state on every save, including
-  // an untouched coverImage, and a pre-Storage-wiring event's cover is still a
-  // (potentially multi-MB) base64 data: URL in the DB. Without this guard, every
-  // unrelated edit to such an event would re-upload that unchanged image.
-  if (patch.coverImage !== undefined && patch.coverImage !== existing?.coverImage) {
-    if (patch.coverImage.startsWith("data:")) {
-      const orgId = await resolveMyOrgId(supabase);
-      if (orgId) {
-        const url = await uploadEventMedia(`${orgId}/covers/${id}`, patch.coverImage);
-        finalPatch = { ...patch, coverImage: url };
-      }
-    } else if (existing?.coverImage && isEventMediaUrl(existing.coverImage)) {
-      // Cleared, or swapped for a pasted external URL — the file this event had
-      // previously uploaded is now unreferenced, so it's cleaned up rather than
-      // left as dead weight in the bucket.
-      const orgId = await resolveMyOrgId(supabase);
-      if (orgId) await deleteEventMedia(`${orgId}/covers/${id}`);
-    }
-  }
-  const { data, error } = await supabase.from("events").update(eventToRow(finalPatch)).eq("id", id).select().single();
+  const { data, error } = await supabase.from("events").update(eventToRow(patch)).eq("id", id).select().single();
   if (error || !data) throw new PersistError(error);
   const record = mapEventRow(data);
   eventsCache = eventsCache.map((e) => (e.id === id ? record : e));
