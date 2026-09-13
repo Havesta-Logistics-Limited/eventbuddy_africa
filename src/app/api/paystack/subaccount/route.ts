@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { resolveRouteUser } from "@/lib/supabase/route-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolvePaystackAccount, createPaystackSubaccount } from "@/lib/paystack";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
@@ -49,10 +49,7 @@ async function sendPayoutsConfiguredEmail(to: string, firstName: string, bankNam
  * Paystack Subaccount that all of this org's future ticket sales split into.
  */
 export async function POST(request: Request) {
-  const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, supabase } = await resolveRouteUser(request);
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const body = (await request.json()) as Partial<Body>;
