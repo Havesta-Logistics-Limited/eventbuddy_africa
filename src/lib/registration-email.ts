@@ -1,4 +1,4 @@
-import QRCode from "qrcode";
+import { brandedQrBuffer } from "@/lib/branded-qr-server";
 import { Resend } from "resend";
 import { formatTime, safeHttpUrl } from "@/lib/utils";
 import { emailButton, escapeHtml } from "@/lib/email-template";
@@ -41,7 +41,7 @@ export async function sendRegistrationEmail(to: string, referenceId: string, eve
   if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
 
   try {
-    const qrBase64 = (await QRCode.toBuffer(referenceId, { width: 320, margin: 1 })).toString("base64");
+    const qrBase64 = (await brandedQrBuffer(referenceId, { width: 320, margin: 1 })).toString("base64");
     const { eventDate, eventTime } = eventDateTimeLine(event);
     const safeName = escapeHtml(event.name);
 
