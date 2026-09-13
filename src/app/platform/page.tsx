@@ -14,6 +14,7 @@ import {
   LogOut,
   ShieldOff,
   ShieldCheck,
+  BadgeCheck,
   Copy,
   Check,
   UserPlus,
@@ -361,6 +362,27 @@ export default function PlatformDashboard() {
     if (!error) {
       setOrgs((prev) => prev.map((o) => (o.id === org.id ? { ...o, is_suspended: !o.is_suspended } : o)));
       toast.success(org.is_suspended ? `${org.name} reactivated` : `${org.name} suspended`);
+    } else {
+      toast.error(error.message);
+    }
+    setBusyOrgId(null);
+  }
+
+  /** Manual override — is_verified normally only flips true automatically (a
+   *  trigger reacting to the owner confirming their signup email), but that
+   *  trigger can only react to an auth.users change; it has nothing to update if
+   *  the owner's email was already confirmed *before* this organization even
+   *  existed (the self-serve organizer flow lets any already-confirmed attendee
+   *  spin up an org at any time), which permanently stuck real orgs on
+   *  "Unverified" with no way to fix themselves. One-directional on purpose —
+   *  there's no legitimate reason to force an org back to "unverified". */
+  async function forceVerify(org: OrgRow) {
+    setBusyOrgId(org.id);
+    const supabase = createClient();
+    const { error } = await supabase.from("organizations").update({ is_verified: true }).eq("id", org.id);
+    if (!error) {
+      setOrgs((prev) => prev.map((o) => (o.id === org.id ? { ...o, is_verified: true } : o)));
+      toast.success(`${org.name} marked verified`);
     } else {
       toast.error(error.message);
     }
@@ -1334,6 +1356,18 @@ export default function PlatformDashboard() {
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center justify-end gap-1">
+                                  {!org.is_verified && (
+                                    <button
+                                      type="button"
+                                      onClick={() => forceVerify(org)}
+                                      disabled={busyOrgId === org.id}
+                                      title="Manually mark verified"
+                                      aria-label="Manually mark verified"
+                                      className="p-2 rounded-lg border border-brand-200 text-brand-700 hover:bg-brand-50 transition-colors disabled:opacity-50"
+                                    >
+                                      <BadgeCheck size={14} />
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => toggleFeeExempt(org)}

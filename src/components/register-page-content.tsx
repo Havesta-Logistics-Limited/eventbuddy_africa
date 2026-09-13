@@ -210,9 +210,9 @@ function buildGoogleCalendarUrl(event: PublicEvent) {
 }
 
 /** Collapses the two calendar-export options behind one button so the hero CTA
- *  row (Register / Add to calendar) always fits on one line without needing
- *  horizontal scroll, even on a narrow phone — three separate buttons here
- *  (Register, Google Calendar, Apple/Outlook) genuinely didn't fit at once. */
+ *  row (Register / Add to calendar) needs at most one wrap on a narrow phone
+ *  instead of clipping off-screen — three separate buttons here (Register,
+ *  Google Calendar, Apple/Outlook) genuinely didn't fit at once. */
 function AddToCalendarMenu({ event, orgSlug }: { event: PublicEvent; orgSlug: string }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -733,10 +733,10 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 )}
               </p>
             </div>
-            <div className="flex flex-nowrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <a
                 href="#register-panel"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity shrink-0 whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity whitespace-nowrap"
                 style={{ background: "#C21FAF" }}
               >
                 <Ticket size={16} />
