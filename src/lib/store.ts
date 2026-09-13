@@ -24,6 +24,7 @@ import {
   TicketPurchaseAttempt,
   TicketType,
   University,
+  WalletSummary,
 } from "./types";
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { copyEventMedia, deleteEventMedia, isEventMediaUrl, uploadEventMedia } from "./supabase/storage";
@@ -1587,6 +1588,71 @@ export async function getEventTicketTransactions(eventId: string): Promise<Ticke
       createdAt: t.created_at,
     };
   });
+}
+
+/** On-demand, not cached — an org-wide, all-time roll-up of every successful ticket
+ *  sale: gross revenue, eventbuddy's fee, and what actually settled to the organizer's
+ *  bank (Paystack pays this out automatically via the subaccount split at charge time —
+ *  see paystack.ts — so this is a ledger view, not a held balance). Reads the
+ *  platform_fee_naira/net_amount_naira columns directly (populated at finalize time by
+ *  finalizePaystackTransaction) rather than re-parsing the raw Paystack payload on
+ *  every render, the way the platform admin dashboard's older commission math does. */
+export async function getWalletSummary(): Promise<WalletSummary> {
+  const empty: WalletSummary = { totalGrossNaira: 0, totalFeeNaira: 0, totalNetNaira: 0, salesCount: 0, events: [], recentTransactions: [] };
+  const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) return empty;
+
+  const { data, error } = await supabase
+    .from("paystack_transactions")
+    .select("id, event_id, amount_naira, platform_fee_naira, net_amount_naira, created_at")
+    .eq("organization_id", orgId)
+    .eq("purpose", "ticket_purchase")
+    .eq("status", "success")
+    .order("created_at", { ascending: false });
+  if (error) throw new PersistError(error);
+  if (!data || data.length === 0) return empty;
+
+  const eventIds = Array.from(new Set(data.map((t) => t.event_id)));
+  const { data: eventRows } = await supabase.from("events").select("id, name").in("id", eventIds);
+  const eventNames = new Map((eventRows ?? []).map((e) => [e.id, e.name]));
+
+  const byEvent = new Map<string, { grossNaira: number; feeNaira: number; netNaira: number; salesCount: number }>();
+  let totalGrossNaira = 0;
+  let totalFeeNaira = 0;
+  let totalNetNaira = 0;
+  for (const t of data) {
+    const gross = Number(t.amount_naira);
+    const fee = Number(t.platform_fee_naira ?? 0);
+    const net = Number(t.net_amount_naira ?? gross - fee);
+    totalGrossNaira += gross;
+    totalFeeNaira += fee;
+    totalNetNaira += net;
+    const bucket = byEvent.get(t.event_id) ?? { grossNaira: 0, feeNaira: 0, netNaira: 0, salesCount: 0 };
+    bucket.grossNaira += gross;
+    bucket.feeNaira += fee;
+    bucket.netNaira += net;
+    bucket.salesCount += 1;
+    byEvent.set(t.event_id, bucket);
+  }
+
+  return {
+    totalGrossNaira,
+    totalFeeNaira,
+    totalNetNaira,
+    salesCount: data.length,
+    events: Array.from(byEvent.entries())
+      .map(([eventId, b]) => ({ eventId, eventName: eventNames.get(eventId) ?? "Deleted event", ...b }))
+      .sort((a, b) => b.grossNaira - a.grossNaira),
+    recentTransactions: data.slice(0, 20).map((t) => ({
+      id: t.id,
+      eventName: eventNames.get(t.event_id) ?? "Deleted event",
+      amountNaira: Number(t.amount_naira),
+      platformFeeNaira: Number(t.platform_fee_naira ?? 0),
+      netAmountNaira: Number(t.net_amount_naira ?? Number(t.amount_naira) - Number(t.platform_fee_naira ?? 0)),
+      createdAt: t.created_at,
+    })),
+  };
 }
 
 /** On-demand, not cached — every visitor who typed a plausible email into this

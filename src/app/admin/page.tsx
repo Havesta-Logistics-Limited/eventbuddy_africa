@@ -3,12 +3,13 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, Plus, Users, X, Landmark, ShieldCheck, UserCircle, Loader2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, Plus, Users, X, Landmark, ShieldCheck, UserCircle, Loader2, Wallet as WalletIcon } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { PersistError, addStaff, deleteStaff, updateStaff, resolveMyOrgId, useDestinations, useEvents, useStaff, useUniversities } from "@/lib/store";
-import { Role } from "@/lib/types";
+import { PersistError, addStaff, deleteStaff, updateStaff, getWalletSummary, resolveMyOrgId, useDestinations, useEvents, useStaff, useUniversities } from "@/lib/store";
+import { Role, WalletSummary } from "@/lib/types";
+import { formatNaira } from "@/lib/billing";
 import { getTemplate } from "@/lib/event-templates";
 import { Reveal } from "@/components/reveal";
 import { AuthLoading } from "@/components/auth-loading";
@@ -23,7 +24,7 @@ import { StaffCard } from "@/components/admin-staff-card";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
-type Tab = "profile" | "staff" | "payouts";
+type Tab = "profile" | "staff" | "wallet" | "payouts";
 
 type PayoutChangeStatus = "none" | "requested" | "approved";
 
@@ -57,7 +58,10 @@ function AdminPageContent() {
   // Lets a "Set up payouts" link elsewhere (the Tickets tab's payout-required
   // error) deep-link straight here instead of leaving the organizer to find
   // Settings → Payouts on their own.
-  const [tab, setTab] = useState<Tab>(() => (searchParams.get("tab") === "payouts" ? "payouts" : "staff"));
+  const [tab, setTab] = useState<Tab>(() => {
+    const requested = searchParams.get("tab");
+    return requested === "payouts" || requested === "wallet" ? requested : "staff";
+  });
 
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
   const [showStaffForm, setShowStaffForm] = useState(false);
@@ -472,6 +476,19 @@ function AdminPageContent() {
       .finally(() => setLoadingBanks(false));
   }, [tab, banks.length, loadingBanks]);
 
+  const [wallet, setWallet] = useState<WalletSummary | null>(null);
+  const [loadingWallet, setLoadingWallet] = useState(false);
+
+  useEffect(() => {
+    if (tab !== "wallet" || wallet || loadingWallet) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoadingWallet(true);
+    getWalletSummary()
+      .then(setWallet)
+      .catch(() => toast.error("Couldn't load your wallet."))
+      .finally(() => setLoadingWallet(false));
+  }, [tab, wallet, loadingWallet]);
+
   async function handleResolveAccount() {
     setPayoutError("");
     setResolvedAccountName("");
@@ -575,6 +592,7 @@ function AdminPageContent() {
   const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
     { id: "profile", label: "Profile", icon: UserCircle },
     { id: "staff", label: "Staff", icon: Users },
+    { id: "wallet", label: "Wallet", icon: WalletIcon },
     { id: "payouts", label: "Payouts", icon: Landmark },
   ];
 
@@ -1263,6 +1281,76 @@ function AdminPageContent() {
                       </button>
                     </div>
                   </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === "wallet" && (
+          <div key="wallet" className="animate-tab-fade">
+            <div className="mb-4">
+              <h2 className="font-semibold text-slate-800">Wallet</h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                A running ledger of every ticket sale. Paystack settles each sale straight into your bank account automatically — this is a summary of
+                what&apos;s already been paid out, not a balance you withdraw from.
+              </p>
+            </div>
+
+            {loadingWallet ? (
+              <div className="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-400">Loading…</div>
+            ) : !wallet || wallet.salesCount === 0 ? (
+              <div className="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-400">No ticket sales yet.</div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="bg-white rounded-xl border border-slate-200 p-4">
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Gross revenue</p>
+                    <p className="text-xl font-semibold text-slate-900 mt-1">{formatNaira(wallet.totalGrossNaira)}</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-slate-200 p-4">
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">eventbuddy fee</p>
+                    <p className="text-xl font-semibold text-slate-900 mt-1">{formatNaira(wallet.totalFeeNaira)}</p>
+                  </div>
+                  <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4">
+                    <p className="text-xs font-medium text-emerald-700 uppercase tracking-wide">Paid to your bank</p>
+                    <p className="text-xl font-semibold text-emerald-800 mt-1">{formatNaira(wallet.totalNetNaira)}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-slate-700 mb-2">By event</h3>
+                  <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+                    {wallet.events.map((e) => (
+                      <div key={e.eventId} className="flex items-center justify-between gap-4 px-4 py-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-900 truncate">{e.eventName}</p>
+                          <p className="text-xs text-slate-400">
+                            {e.salesCount} sale{e.salesCount === 1 ? "" : "s"} · fee {formatNaira(e.feeNaira)}
+                          </p>
+                        </div>
+                        <p className="text-sm font-semibold text-slate-900 shrink-0">{formatNaira(e.netNaira)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-slate-700 mb-2">Recent sales</h3>
+                  <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+                    {wallet.recentTransactions.map((t) => (
+                      <div key={t.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-900 truncate">{t.eventName}</p>
+                          <p className="text-xs text-slate-400">{new Date(t.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-semibold text-slate-900">{formatNaira(t.netAmountNaira)}</p>
+                          <p className="text-xs text-slate-400">of {formatNaira(t.amountNaira)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

@@ -292,13 +292,28 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
     return { ok: false, reason: "amount_mismatch" };
   }
 
+  // eventbuddy's cut of this sale, as Paystack itself computed and deducted it via the
+  // subaccount split — not recomputed from platform_settings, since a fee-exempt org or
+  // a since-changed percentage_charge could otherwise disagree with what actually
+  // happened on this specific charge. Absent entirely (no subaccount, a pre-payout-setup
+  // historical row) reads as a 0 fee rather than failing the whole finalize.
+  const feeMinor = Number((verified as { fees_split?: { integration?: number } }).fees_split?.integration ?? 0);
+  const platformFeeNaira = Math.round((feeMinor / 100) * 100) / 100;
+  const netAmountNaira = Math.round((Number(txn.amount_naira) - platformFeeNaira) * 100) / 100;
+
   // The idempotency boundary: this UPDATE only ever matches a row while it's still
   // 'pending'. If two callers race (webhook + callback page both verifying at once),
   // exactly one of these succeeds and returns the updated row; the other matches zero
   // rows and falls through to alreadyProcessed below.
   const { data: updated } = await supabase
     .from("paystack_transactions")
-    .update({ status: "success", verified_at: new Date().toISOString(), paystack_event: verified })
+    .update({
+      status: "success",
+      verified_at: new Date().toISOString(),
+      paystack_event: verified,
+      platform_fee_naira: platformFeeNaira,
+      net_amount_naira: netAmountNaira,
+    })
     .eq("reference", reference)
     .eq("status", "pending")
     .select()

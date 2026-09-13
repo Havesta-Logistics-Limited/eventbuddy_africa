@@ -347,6 +347,40 @@ export interface TicketPurchaseAttempt {
   createdAt: string;
 }
 
+/** One line of a Wallet's per-event breakdown — every successful ticket sale for that
+ *  event, rolled up. Gross/fee/net mirror the columns on paystack_transactions. */
+export interface WalletEventBreakdown {
+  eventId: string;
+  eventName: string;
+  grossNaira: number;
+  feeNaira: number;
+  netNaira: number;
+  salesCount: number;
+}
+
+/** One successful sale, for the Wallet's recent-activity list. */
+export interface WalletTransaction {
+  id: string;
+  eventName: string;
+  amountNaira: number;
+  platformFeeNaira: number;
+  netAmountNaira: number;
+  createdAt: string;
+}
+
+/** An org-wide, all-time summary of ticket revenue, eventbuddy's cut, and what's
+ *  actually settled to the organizer's bank — purely informational, since Paystack
+ *  already pays out every sale automatically via the subaccount split (see paystack.ts).
+ *  There is no held balance and nothing to withdraw; this is a ledger view, not custody. */
+export interface WalletSummary {
+  totalGrossNaira: number;
+  totalFeeNaira: number;
+  totalNetNaira: number;
+  salesCount: number;
+  events: WalletEventBreakdown[];
+  recentTransactions: WalletTransaction[];
+}
+
 export type RegistrationStatus = "registered" | "checked_in" | "cancelled" | "pending" | "waitlisted" | "declined";
 
 /** A self-service attendee sign-up via an event's public registration link — distinct
