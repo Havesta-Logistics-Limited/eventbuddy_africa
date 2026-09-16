@@ -634,7 +634,7 @@ export default function EventDetailPage() {
 
         {activeTab === "universities" && (
           <div key="universities" className="space-y-10 animate-tab-fade">
-            <DestinationsUniversitiesManagement eventId={event.id} destinations={eventDests} universities={eventUnis} otherEvents={otherEducationFairEvents} />
+            <DestinationsUniversitiesManagement eventId={event.id} destinations={eventDests} universities={eventUnis} leads={leads} otherEvents={otherEducationFairEvents} />
             <div className="pt-8 border-t border-slate-200">
               <h2 className="font-semibold text-slate-800 mb-4">Leads by university</h2>
               <UniversitiesTab

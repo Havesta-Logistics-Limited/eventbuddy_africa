@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { AlertCircle, Copy, Edit2, Plus, Trash2, X } from "lucide-react";
-import { Destination, University } from "@/lib/types";
+import { Destination, LeadRecord, University } from "@/lib/types";
 import { PersistError, addDestination, addUniversity, copyDestinationsFromEvent, deleteDestination, deleteUniversity, updateDestination, updateUniversity } from "@/lib/store";
 import { Reveal } from "@/components/reveal";
 import { flagForCountryName } from "@/lib/country-flags";
@@ -20,11 +20,18 @@ export function DestinationsUniversitiesManagement({
   eventId,
   destinations,
   universities,
+  leads,
   otherEvents,
 }: {
   eventId: string;
   destinations: Destination[];
   universities: University[];
+  /** This event's leads — used only to warn how many would be permanently lost
+   *  before deleting a destination or university (both cascade-delete every lead
+   *  that references them; see leads.destination_id / leads.university_id in
+   *  0001_init.sql). Optional so callers that don't already have leads loaded
+   *  (none currently) aren't forced to fetch them just for this. */
+  leads?: Pick<LeadRecord, "destinationId" | "universityId">[];
   otherEvents: { id: string; name: string }[];
 }) {
   const emptyDest = { id: "", name: "", flag: "", eventId };
@@ -36,6 +43,8 @@ export function DestinationsUniversitiesManagement({
   const [saving, setSaving] = useState(false);
   const [copySourceId, setCopySourceId] = useState("");
   const [copying, setCopying] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ kind: "destination" | "university"; id: string; name: string; leadCount: number } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleDelete(action: () => Promise<void>, successMessage: string) {
     try {
@@ -43,6 +52,35 @@ export function DestinationsUniversitiesManagement({
       toast.success(successMessage);
     } catch (err) {
       toast.error(err instanceof PersistError ? err.message : "Couldn't complete that action. Please try again.");
+    }
+  }
+
+  /** Deleting a destination or university cascade-deletes every lead attached to
+   *  it — permanently, with no undo (confirmed directly: leads.destination_id and
+   *  leads.university_id are both `references ... on delete cascade`). Routes
+   *  through a real confirmation whenever that count is nonzero instead of the
+   *  instant one-click delete below; a destination/university with zero leads
+   *  stays a single click, since there's nothing at risk. */
+  function requestDelete(kind: "destination" | "university", id: string, name: string) {
+    const leadCount = (leads ?? []).filter((l) => (kind === "destination" ? l.destinationId === id : l.universityId === id)).length;
+    if (leadCount === 0) {
+      handleDelete(() => (kind === "destination" ? deleteDestination(id) : deleteUniversity(id)), `${name} removed`);
+      return;
+    }
+    setPendingDelete({ kind, id, name, leadCount });
+  }
+
+  async function confirmPendingDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await (pendingDelete.kind === "destination" ? deleteDestination(pendingDelete.id) : deleteUniversity(pendingDelete.id));
+      toast.success(`${pendingDelete.name} and ${pendingDelete.leadCount} lead${pendingDelete.leadCount !== 1 ? "s" : ""} removed`);
+      setPendingDelete(null);
+    } catch (err) {
+      toast.error(err instanceof PersistError ? err.message : "Couldn't complete that action. Please try again.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -168,7 +206,7 @@ export function DestinationsUniversitiesManagement({
                       >
                         <Edit2 size={14} />
                       </button>
-                      <button onClick={() => handleDelete(() => deleteDestination(d.id), `${d.name} removed`)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
+                      <button onClick={() => requestDelete("destination", d.id, d.name)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -231,7 +269,7 @@ export function DestinationsUniversitiesManagement({
                           >
                             <Edit2 size={14} />
                           </button>
-                          <button onClick={() => handleDelete(() => deleteUniversity(u.id), `${u.name} removed`)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
+                          <button onClick={() => requestDelete("university", u.id, u.name)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -371,6 +409,39 @@ export function DestinationsUniversitiesManagement({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {pendingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
+          <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
+            <h2 className="font-semibold text-slate-900 text-lg mb-2">Delete {pendingDelete.kind === "destination" ? "this destination" : "this university"}?</h2>
+            <p className="text-sm text-slate-600">
+              This permanently deletes <span className="font-semibold">{pendingDelete.name}</span> and{" "}
+              <span className="font-semibold">
+                {pendingDelete.leadCount} collected lead{pendingDelete.leadCount !== 1 ? "s" : ""}
+              </span>{" "}
+              attached to it. This can&apos;t be undone.
+            </p>
+            <div className="flex gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmPendingDelete}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-60"
+              >
+                {deleting ? "Deleting…" : "Delete Anyway"}
+              </button>
+            </div>
           </div>
         </div>
       )}
