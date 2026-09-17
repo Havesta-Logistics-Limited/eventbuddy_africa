@@ -389,6 +389,27 @@ export default function PlatformDashboard() {
     setBusyOrgId(null);
   }
 
+  /** Re-sends the owner's original signup confirmation email — for someone stuck
+   *  Unverified who missed or lost it, with no "resend" control of their own (see
+   *  /api/platform/resend-verification). */
+  async function resendVerification(org: OrgRow) {
+    setBusyOrgId(org.id);
+    try {
+      const res = await fetch("/api/platform/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId: org.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Couldn't resend the verification email.");
+      toast.success(`Verification email resent to ${json.email}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't resend the verification email.");
+    } finally {
+      setBusyOrgId(null);
+    }
+  }
+
   async function toggleFeeExempt(org: OrgRow) {
     setBusyOrgId(org.id);
     const nextExempt = !org.is_fee_exempt;
@@ -1384,16 +1405,28 @@ export default function PlatformDashboard() {
                               <td className="px-4 py-3">
                                 <div className="flex items-center justify-end gap-1">
                                   {!org.is_verified && (
-                                    <button
-                                      type="button"
-                                      onClick={() => forceVerify(org)}
-                                      disabled={busyOrgId === org.id}
-                                      title="Manually mark verified"
-                                      aria-label="Manually mark verified"
-                                      className="p-2 rounded-lg border border-brand-200 text-brand-700 hover:bg-brand-50 transition-colors disabled:opacity-50"
-                                    >
-                                      <BadgeCheck size={14} />
-                                    </button>
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => resendVerification(org)}
+                                        disabled={busyOrgId === org.id}
+                                        title="Resend verification email"
+                                        aria-label="Resend verification email"
+                                        className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                      >
+                                        <Mail size={14} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => forceVerify(org)}
+                                        disabled={busyOrgId === org.id}
+                                        title="Manually mark verified"
+                                        aria-label="Manually mark verified"
+                                        className="p-2 rounded-lg border border-brand-200 text-brand-700 hover:bg-brand-50 transition-colors disabled:opacity-50"
+                                      >
+                                        <BadgeCheck size={14} />
+                                      </button>
+                                    </>
                                   )}
                                   <button
                                     type="button"
