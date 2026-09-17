@@ -775,6 +775,14 @@ export default function PlatformDashboard() {
     });
   }
 
+  function copyEmail(email: string) {
+    navigator.clipboard.writeText(email).then(() => {
+      setCopiedId(email);
+      toast.success("Email copied");
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  }
+
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -1321,7 +1329,18 @@ export default function PlatformDashboard() {
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-xs text-slate-500 max-w-[180px]">
-                                {org.email && <p className="truncate">{org.email}</p>}
+                                {org.email && (
+                                  <span
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => copyEmail(org.email!)}
+                                    className="flex items-center gap-1 truncate hover:text-slate-700"
+                                    title={`${org.email} — click to copy`}
+                                  >
+                                    {copiedId === org.email ? <Check size={10} className="shrink-0 text-teal-600" /> : <Copy size={10} className="shrink-0" />}
+                                    <span className="truncate">{org.email}</span>
+                                  </span>
+                                )}
                                 {org.phone && <p className="text-slate-400 whitespace-nowrap">{org.phone}</p>}
                                 {!org.email && !org.phone && <span className="text-slate-300">—</span>}
                               </td>
@@ -1348,6 +1367,14 @@ export default function PlatformDashboard() {
                                     title={org.is_verified ? "Owner has verified their email" : "Owner hasn't verified their email yet"}
                                   >
                                     {org.is_verified ? "Verified" : "Unverified"}
+                                  </span>
+                                  <span
+                                    className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap ${
+                                      org.paystack_subaccount_code ? "text-sky-700 bg-sky-100" : "text-slate-500 bg-slate-100"
+                                    }`}
+                                    title={org.paystack_subaccount_code ? `Payouts linked — ${org.payout_bank_name || "bank on file"}` : "No bank account linked yet — can't sell paid tickets"}
+                                  >
+                                    {org.paystack_subaccount_code ? "Payouts linked" : "No payouts"}
                                   </span>
                                 </div>
                               </td>
