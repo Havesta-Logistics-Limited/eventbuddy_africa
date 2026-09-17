@@ -733,9 +733,21 @@ async function fetchSessionData() {
   }
 }
 
+// admin and event_support are both real Supabase Auth sessions backed by
+// organizations/organization_members — fetchAdminData(), with RLS (specifically
+// accessible_event_ids()/member_organization_ids(), see 0070_organization_members.sql)
+// doing the real narrowing down to an event_support member's one assigned event.
+// staff/rep are the separate device-local QR check-in session type with no
+// Supabase Auth user at all — those go through fetchSessionData()'s
+// /api/session-data lookup instead. Routing event_support through
+// fetchSessionData() by mistake made a member's assigned event (and everything
+// else — tickets, staff roster, leads) permanently invisible to them: that POST
+// looks up sessionCache.id in the `staff` table, but an event_support member's
+// id is their Supabase Auth user id, which no staff row has, so it always 404s
+// and every cache stays empty with no error surfaced.
 function ensureDataFetched() {
   if (orgDataFetched || orgDataFetching || !sessionCache) return;
-  if (sessionCache.role === "admin") fetchAdminData();
+  if (sessionCache.role === "admin" || sessionCache.role === "event_support") fetchAdminData();
   else fetchSessionData();
 }
 
@@ -746,7 +758,7 @@ function ensureDataFetched() {
 export async function refreshData(): Promise<void> {
   if (!sessionCache || orgDataFetching) return;
   orgDataFetched = false;
-  if (sessionCache.role === "admin") await fetchAdminData();
+  if (sessionCache.role === "admin" || sessionCache.role === "event_support") await fetchAdminData();
   else await fetchSessionData();
 }
 
