@@ -26,12 +26,19 @@ export function DestinationsUniversitiesManagement({
   eventId: string;
   destinations: Destination[];
   universities: University[];
-  /** This event's leads — used only to warn how many would be permanently lost
-   *  before deleting a destination or university (both cascade-delete every lead
-   *  that references them; see leads.destination_id / leads.university_id in
-   *  0001_init.sql). Optional so callers that don't already have leads loaded
-   *  (none currently) aren't forced to fetch them just for this. */
-  leads?: Pick<LeadRecord, "destinationId" | "universityId">[];
+  /** Every lead across the WHOLE organization, not just this event's — a
+   *  destination/university row is only supposed to belong to one event, but a
+   *  real production bug in the old duplicateEvent() let a duplicate silently
+   *  reference the source event's own destination rows instead of copying them
+   *  (fixed — see duplicateEvent's own comment in store.ts), which means some
+   *  already-existing events still have destinations/universities they don't
+   *  truly own. Scoping this count to "just this event's leads" would then
+   *  undercount — or show zero — for a delete that actually destroys another
+   *  event's leads too. Counting org-wide is the only way this warning is ever
+   *  accurate regardless of that legacy entanglement. Optional so callers that
+   *  don't already have leads loaded (none currently) aren't forced to fetch
+   *  them just for this. */
+  leads?: Pick<LeadRecord, "eventId" | "destinationId" | "universityId">[];
   otherEvents: { id: string; name: string }[];
 }) {
   const emptyDest = { id: "", name: "", flag: "", eventId };
@@ -43,7 +50,7 @@ export function DestinationsUniversitiesManagement({
   const [saving, setSaving] = useState(false);
   const [copySourceId, setCopySourceId] = useState("");
   const [copying, setCopying] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<{ kind: "destination" | "university"; id: string; name: string; leadCount: number } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ kind: "destination" | "university"; id: string; name: string; leadCount: number; affectsOtherEvents: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   async function handleDelete(action: () => Promise<void>, successMessage: string) {
@@ -62,12 +69,13 @@ export function DestinationsUniversitiesManagement({
    *  instant one-click delete below; a destination/university with zero leads
    *  stays a single click, since there's nothing at risk. */
   function requestDelete(kind: "destination" | "university", id: string, name: string) {
-    const leadCount = (leads ?? []).filter((l) => (kind === "destination" ? l.destinationId === id : l.universityId === id)).length;
-    if (leadCount === 0) {
+    const matching = (leads ?? []).filter((l) => (kind === "destination" ? l.destinationId === id : l.universityId === id));
+    if (matching.length === 0) {
       handleDelete(() => (kind === "destination" ? deleteDestination(id) : deleteUniversity(id)), `${name} removed`);
       return;
     }
-    setPendingDelete({ kind, id, name, leadCount });
+    const affectsOtherEvents = matching.some((l) => l.eventId !== eventId);
+    setPendingDelete({ kind, id, name, leadCount: matching.length, affectsOtherEvents });
   }
 
   async function confirmPendingDelete() {
@@ -424,6 +432,12 @@ export function DestinationsUniversitiesManagement({
               </span>{" "}
               attached to it. This can&apos;t be undone.
             </p>
+            {pendingDelete.affectsOtherEvents && (
+              <div className="flex items-start gap-2 p-3 mt-3 rounded-lg bg-amber-50 text-amber-800 text-sm">
+                <AlertCircle size={15} className="mt-0.5 shrink-0" />
+                Some of these leads belong to other events, not just this one — this will delete leads from those events too.
+              </div>
+            )}
             <div className="flex gap-3 mt-5">
               <button
                 type="button"

@@ -1055,9 +1055,24 @@ export async function updateEvent(id: string, patch: Partial<Omit<EventRecord, "
   emitChange();
 }
 
-/** Clones an event (destinations, venue, cover image, description) as a new
- *  event — deliberately not its leads, since those belong to the original
- *  fair, not the copy. */
+/** Clones an event's full configuration — venue, cover image, description,
+ *  ticket types, discount codes, and (deep-copied, not shared — see the note
+ *  below) its destinations/universities — as a new event, deliberately not its
+ *  leads or registrations, since those belong to the original fair, not the copy.
+ *
+ *  Destinations/universities are deep-copied into fresh rows owned by the new
+ *  event, via the same logic as copyDestinationsFromEvent, rather than the old
+ *  behavior of carrying the source's `destinationIds` array over unchanged. That
+ *  old behavior silently created a duplicate event whose "own" destinations were
+ *  actually still owned by the SOURCE event — invisible in the UI (both events'
+ *  Universities tabs looked identical) but with a real, dangerous consequence:
+ *  deleting a destination from the DUPLICATE's Universities tab deleted the
+ *  SOURCE event's own row, cascading to delete every lead the source event had
+ *  ever collected under it — confirmed as the actual root cause of a real
+ *  ~190-lead loss on a published event that had been used as a duplication
+ *  source. Every event created by this function from here on owns 100%
+ *  independent destination/university rows, so editing or deleting anything on
+ *  it can never again reach into another event's data. */
 export async function duplicateEvent(id: string): Promise<EventRecord | undefined> {
   const source = eventsCache.find((e) => e.id === id);
   if (!source) return undefined;
@@ -1066,8 +1081,18 @@ export async function duplicateEvent(id: string): Promise<EventRecord | undefine
   // the "(Copy)" name. staffCheckinSlug/repCheckinSlug are cleared for the same
   // reason (each has its own unique constraint, and addEvent's retry-on-
   // conflict logic only ever varies `slug`) — the copy just falls back to its
-  // own id for check-in links until the organizer sets new ones.
-  const created = await addEvent({ ...source, name: `${source.name} (Copy)`, published: true, slug: undefined, staffCheckinSlug: undefined, repCheckinSlug: undefined });
+  // own id for check-in links until the organizer sets new ones. destinationIds
+  // starts empty — copyDestinationsFromEvent below populates it with the new,
+  // independently-owned copies once they exist, never the source's own ids.
+  let created = await addEvent({
+    ...source,
+    name: `${source.name} (Copy)`,
+    published: true,
+    slug: undefined,
+    staffCheckinSlug: undefined,
+    repCheckinSlug: undefined,
+    destinationIds: [],
+  });
   // addEvent just carried over the source's cover image *URL* unchanged (it only
   // uploads when handed a data: URL) — so at this point both events point at the
   // same underlying file. Give the copy its own file so deleting either event
@@ -1084,13 +1109,50 @@ export async function duplicateEvent(id: string): Promise<EventRecord | undefine
         // and the file at this event's own path is the copy we just made above,
         // not something to delete.
         await supabase.from("events").update({ cover_image: url }).eq("id", created.id);
-        const updated = { ...created, coverImage: url };
-        eventsCache = eventsCache.map((e) => (e.id === created.id ? updated : e));
-        emitChange();
-        return updated;
+        created = { ...created, coverImage: url };
+        eventsCache = eventsCache.map((e) => (e.id === created.id ? created : e));
       }
     }
   }
+
+  if (source.destinationIds.length > 0) {
+    await copyDestinationsFromEvent(source.id, created.id);
+    created = eventsCache.find((e) => e.id === created.id) ?? created;
+  }
+
+  const sourceTicketTypes = ticketTypesCache.filter((t) => t.eventId === source.id);
+  const ticketTypeIdMap = new Map<string, string>();
+  for (const t of sourceTicketTypes) {
+    const copy = await addTicketType({
+      eventId: created.id,
+      name: t.name,
+      description: t.description,
+      priceNaira: t.priceNaira,
+      quantityAvailable: t.quantityAvailable,
+      salesStart: t.salesStart,
+      salesEnd: t.salesEnd,
+    });
+    ticketTypeIdMap.set(t.id, copy.id);
+  }
+
+  const sourceDiscountCodes = discountCodesCache.filter((d) => d.eventId === source.id);
+  for (const d of sourceDiscountCodes) {
+    await addDiscountCode({
+      eventId: created.id,
+      code: d.code,
+      discountType: d.discountType,
+      discountValue: d.discountValue,
+      ticketTypeIds: d.ticketTypeIds ? d.ticketTypeIds.map((tid) => ticketTypeIdMap.get(tid)).filter((v): v is string => !!v) : d.ticketTypeIds,
+      perCustomerLimit: d.perCustomerLimit,
+      maxUses: d.maxUses,
+      minSpendNaira: d.minSpendNaira,
+      maxDiscountNaira: d.maxDiscountNaira,
+      startsAt: d.startsAt,
+      endsAt: d.endsAt,
+    });
+  }
+
+  emitChange();
   return created;
 }
 
