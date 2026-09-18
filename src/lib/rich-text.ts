@@ -36,6 +36,16 @@ const ALT_RE = /alt\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
 // "width:55%" — confirmed against the real Tiptap output, not assumed.
 const IMG_WIDTH_RE = /style\s*=\s*(?:"width:\s*(\d{1,3})%|'width:\s*(\d{1,3})%)/i;
 
+// HREF_RE/SRC_RE/ALT_RE's single-quote branch permits an embedded `"` in the
+// captured value (e.g. href='https://x.com" onmouseover="y') — not exploitable
+// today only because every insertion site below escapes `"` before splicing
+// the value into a double-quoted output attribute. Escaping `<`/`>`/`&` too
+// (not just `"`) means that stays true even if a future edit here ever
+// forgets the quote-escaping step on one of these three call sites.
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 /** Safe to pass straight to dangerouslySetInnerHTML. */
 export function sanitizeRichTextHtml(html: string): string {
   return html.replace(TAG_RE, (full, tagNameRaw: string, attrs: string) => {
@@ -47,23 +57,28 @@ export function sanitizeRichTextHtml(html: string): string {
       const match = HREF_RE.exec(attrs);
       const href = match ? match[1] ?? match[2] ?? "" : "";
       if (/^https?:\/\//i.test(href)) {
-        return `<a href="${href.replace(/"/g, "&quot;")}" target="_blank" rel="noreferrer noopener">`;
+        return `<a href="${escapeAttr(href)}" target="_blank" rel="noreferrer noopener">`;
       }
       return "<a>";
     }
     if (tagName === "img") {
       const srcMatch = SRC_RE.exec(attrs);
       const src = srcMatch ? srcMatch[1] ?? srcMatch[2] ?? "" : "";
-      if (!/^(https:\/\/|data:image\/)/i.test(src)) return "";
+      // Raster types only — data:image/svg+xml is deliberately excluded even
+      // though modern browsers don't execute <script>/on*-handlers inside an
+      // SVG loaded via <img src>: that's a browser sandbox this code doesn't
+      // control, and there's no legitimate reason a pasted/uploaded image
+      // needs SVG here in the first place.
+      if (!/^(https:\/\/|data:image\/(png|jpe?g|gif|webp)[;,])/i.test(src)) return "";
       const altMatch = ALT_RE.exec(attrs);
-      const alt = (altMatch ? altMatch[1] ?? altMatch[2] ?? "" : "").replace(/"/g, "&quot;");
+      const alt = escapeAttr(altMatch ? altMatch[1] ?? altMatch[2] ?? "" : "");
       // Only a plain "NN%" width survives — never the raw style string — so a
       // resized image keeps its size without opening up arbitrary CSS injection
       // via the style attribute.
       const widthMatch = IMG_WIDTH_RE.exec(attrs);
       const widthPct = widthMatch ? widthMatch[1] ?? widthMatch[2] : null;
       const width = widthPct ? `${Math.min(100, Math.max(5, Number(widthPct)))}%` : "55%";
-      return `<img src="${src.replace(/"/g, "&quot;")}" alt="${alt}" style="width:${width};max-width:100%;height:auto;">`;
+      return `<img src="${escapeAttr(src)}" alt="${alt}" style="width:${width};max-width:100%;height:auto;">`;
     }
     return `<${tagName}>`;
   });
