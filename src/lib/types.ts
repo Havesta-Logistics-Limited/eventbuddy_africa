@@ -506,6 +506,14 @@ export interface EventAnnouncement {
 
 export type GuestStatus = "pending" | "accepted" | "declined" | "maybe";
 
+export interface PendingLead {
+  id: string;
+  data: Omit<LeadRecord, "id" | "createdAt">;
+  timestamp: string;
+  attempts: number;
+  lastAttempt?: string;
+}
+
 /** A named invite for an invite-only (RSVP) event — see events.isInviteOnly.
  *  registrationId is set the moment a guest accepts: that's the real
  *  registrations/leads row check-in and the Event Hub actually run on, this

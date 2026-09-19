@@ -15,6 +15,7 @@ import {
   EventSpeaker,
   FieldDef,
   LeadRecord,
+  PendingLead,
   PollStatus,
   RegistrationRecord,
   Session,
@@ -31,6 +32,7 @@ import { copyEventMedia, deleteEventMedia, isEventMediaUrl, uploadEventMedia } f
 import { newId } from "./utils";
 
 const SESSION_KEY = "eventpal:session:v1";
+const PENDING_LEADS_KEY = "eventpal:pending_leads:v1";
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -1729,21 +1731,79 @@ export async function getEventFormStarts(eventId: string): Promise<RegistrationF
 
 // ---- lead CRUD ----
 
+/** Local queue management for offline-first lead sync. */
+export function getPendingLeads(): PendingLead[] {
+  if (!isBrowser()) return [];
+  try {
+    const raw = window.localStorage.getItem(PENDING_LEADS_KEY);
+    return raw ? (JSON.parse(raw) as PendingLead[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setPendingLeads(leads: PendingLead[]): void {
+  if (isBrowser()) {
+    window.localStorage.setItem(PENDING_LEADS_KEY, JSON.stringify(leads));
+    emitChange();
+  }
+}
+
 /** Admin path (reading via the RLS-scoped browser client, e.g. for a manual re-fetch)
  *  isn't used to submit leads — only staff does that, via the /api/leads route below
  *  since staff isn't a Supabase Auth user. */
 export async function addLead(input: Omit<LeadRecord, "id" | "createdAt">): Promise<LeadRecord> {
-  const res = await fetch("/api/leads", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  const json = await res.json();
-  if (!res.ok) throw new PersistError(json.error);
-  const record: LeadRecord = { ...input, id: json.id, createdAt: new Date().toISOString() };
-  leadsCache = [...leadsCache, record];
-  emitChange();
-  return record;
+  const leadId = newId("lead");
+  const pendingLead: PendingLead = {
+    id: leadId,
+    data: input,
+    timestamp: new Date().toISOString(),
+    attempts: 0,
+  };
+
+  // 1. Persist locally first (Zero Data Loss)
+  const queue = getPendingLeads();
+  setPendingLeads([...queue, pendingLead]);
+
+  try {
+    const res = await fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const json = await res.json();
+
+    if (res.ok) {
+      // 2. Remove from queue on success
+      setPendingLeads(getPendingLeads().filter((l) => l.id !== leadId));
+
+      const record: LeadRecord = { ...input, id: json.id, createdAt: new Date().toISOString() };
+      leadsCache = [...leadsCache, record];
+      emitChange();
+      return record;
+    }
+
+    // 3. Handle errors
+    if (res.status === 403) {
+      // Capture gate closed or manually closed — keep in queue for background sync
+      throw new PersistError(json.error || "Capture gate closed. Saved locally.");
+    }
+
+    if (res.status === 400) {
+      // Validation error — remove from queue as it will never succeed without changes
+      setPendingLeads(getPendingLeads().filter((l) => l.id !== leadId));
+      throw new PersistError(json.error || "Invalid lead data.");
+    }
+
+    throw new PersistError(json.error || "Server error. Saved locally.");
+  } catch (e) {
+    // If it's a network error or a 403/500, we keep it in the queue
+    if (e instanceof PersistError && e.message.includes("Invalid lead data")) {
+      throw e;
+    }
+    throw new PersistError(e instanceof Error ? e.message : "Network error. Saved locally.");
+  }
 }
 
 // ---- staff / rep CRUD (admin only — managing the roster in Settings) ----

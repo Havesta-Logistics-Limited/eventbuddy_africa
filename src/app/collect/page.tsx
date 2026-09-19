@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle2, Lock, ScanLine } from "lucide-react";
+import { AlertCircle, CheckCircle2, Lock, ScanLine, Timer } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import { PersistError, addLead, useDestinations, useEvents, useUniversities } from "@/lib/store";
+import { PersistError, addLead, useDestinations, useEvents, useUniversities, getPendingLeads } from "@/lib/store";
 import { HighestEducation, IeltsStatus, LevelOfInterest, Role } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
@@ -13,6 +13,7 @@ import { DynamicLeadForm, type DynamicLeadFormValues } from "@/components/dynami
 import { QrScannerPanel } from "@/components/qr-scanner-panel";
 import { AuthLoading } from "@/components/auth-loading";
 import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
+import { useLeadSync } from "@/hooks/useLeadSync";
 
 const STAFF_ONLY: Role[] = ["staff"];
 
@@ -48,6 +49,7 @@ const emptyForm: FormState = {
 
 export default function LeadCollectPage() {
   const session = useRequireRole(STAFF_ONLY);
+  useLeadSync();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitted, setSubmitted] = useState(false);
   const [count, setCount] = useState(0);
@@ -230,6 +232,7 @@ export default function LeadCollectPage() {
   const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
 
   if (submitted) {
+    const pendingCount = getPendingLeads().length;
     return (
       <Shell>
         <div className="min-h-screen flex items-center justify-center p-6">
@@ -238,7 +241,9 @@ export default function LeadCollectPage() {
               <CheckCircle2 size={40} className="text-sky-500" />
             </div>
             <h2 className="font-display text-2xl text-slate-900 mb-2">Lead captured!</h2>
-            <p className="text-slate-500 mb-1">Record saved successfully.</p>
+            <p className="text-slate-500 mb-1">
+              {pendingCount > 0 ? "Saved locally (pending sync)" : "Record saved successfully."}
+            </p>
             <p className="text-sky-600 font-semibold text-lg">
               {count} lead{count !== 1 ? "s" : ""} collected today
             </p>
