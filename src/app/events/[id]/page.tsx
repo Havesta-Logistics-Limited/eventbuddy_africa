@@ -172,6 +172,13 @@ export default function EventDetailPage() {
     };
   }, [activeTab, refreshTick]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRefreshTick((t) => t + 1);
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
   // The status pill (Upcoming/Active/Completed) is computed fresh on every render from
   // the current time, but nothing else re-renders this page as time passes — a tab left
   // open past the event's end time would keep showing "Active" forever. Deliberately a
