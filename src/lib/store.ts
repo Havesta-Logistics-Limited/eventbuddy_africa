@@ -777,6 +777,15 @@ function useRevalidateOnFocus() {
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!sessionCache) return;
+      orgDataFetched = false;
+      ensureDataFetched();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 }
 
 function useEnsureDataFetched() {
