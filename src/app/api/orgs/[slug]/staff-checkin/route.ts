@@ -34,9 +34,12 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   // The access code is a short, org-chosen string — without this, an unlimited
   // number of guesses is just as brute-forceable as the discount-code oracle this
   // same pattern already guards against.
-  if (!(await checkRateLimit(`staff-checkin:ip:${clientIp(request)}`, 20, 10 * 60))) {
+  // RATE LIMIT REMOVED TEMPORARILY FOR LIVE EVENT (2026-09-24)
+  /*
+  if (!(await checkRateLimit(`staff-checkin:ip:${clientIp(request)}`, 100, 10 * 60))) {
     return rateLimitedResponse();
   }
+  */
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!apiKey || apiKey === "paste_your_supabase_service_role_key_here") {
