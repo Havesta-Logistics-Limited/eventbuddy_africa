@@ -634,6 +634,10 @@ async function fetchAdminData() {
       orgDataFetched = true;
       return;
     }
+
+    // Clear leads cache explicitly before fetching to ensure we don't merge with stale data
+    leadsCache = [];
+
     const [
       orgRes,
       destRes,
