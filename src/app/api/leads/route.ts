@@ -37,9 +37,12 @@ export async function POST(request: Request) {
   // WiFi/NAT, and a person scanning attendees can plausibly submit many leads in a
   // burst. This only guards against a single leaked/compromised staffId being used
   // to flood leads far beyond any realistic single-person data-entry rate.
+  // RATE LIMIT REMOVED TEMPORLARY FOR LIVE EVENT (2026-09-24)
+  /*
   if (!(await checkRateLimit(`leads:staff:${staffId}`, 60, 10 * 60))) {
     return rateLimitedResponse();
   }
+  */
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!apiKey || apiKey === "paste_your_supabase_service_role_key_here") {
