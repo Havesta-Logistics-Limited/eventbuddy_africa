@@ -30,6 +30,7 @@ import {
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { copyEventMedia, deleteEventMedia, isEventMediaUrl, uploadEventMedia } from "./supabase/storage";
 import { newId } from "./utils";
+import { fetchAllRows } from "./fetch-all-rows";
 
 const SESSION_KEY = "eventpal:session:v1";
 const PENDING_LEADS_KEY = "eventpal:pending_leads:v1";
@@ -635,9 +636,6 @@ async function fetchAdminData() {
       return;
     }
 
-    // Clear leads cache explicitly before fetching to ensure we don't merge with stale data
-    leadsCache = [];
-
     const [
       orgRes,
       destRes,
@@ -665,7 +663,9 @@ async function fetchAdminData() {
       supabase.from("universities").select("*").eq("organization_id", orgId),
       supabase.from("events").select("*").eq("organization_id", orgId),
       supabase.from("staff").select("*").eq("organization_id", orgId),
-      supabase.from("leads").select("*").eq("organization_id", orgId),
+      // Paged: a single select is silently capped at 1000 rows, which under-counted
+      // leads once an org collected more than that.
+      fetchAllRows((from, to) => supabase.from("leads").select("*").eq("organization_id", orgId).order("id").range(from, to)),
       supabase.from("registrations").select("*").eq("organization_id", orgId),
       supabase.from("ticket_types").select("*").eq("organization_id", orgId),
       supabase.from("discount_codes").select("*").eq("organization_id", orgId),
@@ -686,7 +686,9 @@ async function fetchAdminData() {
     universitiesCache = (uniRes.data ?? []).map(mapUniversityRow);
     eventsCache = (eventRes.data ?? []).map(mapEventRow);
     staffCache = (staffRes.data ?? []).map(mapStaffRow);
-    leadsCache = (leadRes.data ?? []).map(mapLeadRow);
+    // On a failed/partial page fetch keep the last good list rather than showing a
+    // truncated count.
+    if (!leadRes.error) leadsCache = leadRes.data.map(mapLeadRow);
     registrationsCache = (registrationRes.data ?? []).map(mapRegistrationRow);
     ticketTypesCache = (ticketTypeRes.data ?? []).map(mapTicketTypeRow);
     discountCodesCache = (discountCodeRes.data ?? []).map(mapDiscountCodeRow);

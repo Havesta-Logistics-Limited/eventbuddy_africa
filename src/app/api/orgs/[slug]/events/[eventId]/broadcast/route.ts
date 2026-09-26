@@ -5,6 +5,7 @@ import { sendBroadcastEmail, BROADCAST_RECIPIENT_CAP } from "@/lib/broadcast-ema
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 import { stripHtml } from "@/lib/rich-text";
 import { resolveOrgAccess } from "@/lib/org-access";
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 
 type Body = { subject?: string; body?: string };
 
@@ -45,8 +46,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const admin = createAdminClient();
   const [{ data: registrations }, { data: leads }] = await Promise.all([
-    admin.from("registrations").select("email").eq("event_id", event.id).eq("organization_id", org.id).in("status", ["registered", "checked_in"]),
-    admin.from("leads").select("email").eq("event_id", event.id).eq("organization_id", org.id).eq("status", "registered"),
+    fetchAllRows((from, to) => admin.from("registrations").select("email").eq("event_id", event.id).eq("organization_id", org.id).in("status", ["registered", "checked_in"]).order("id").range(from, to)),
+    fetchAllRows((from, to) => admin.from("leads").select("email").eq("event_id", event.id).eq("organization_id", org.id).eq("status", "registered").order("id").range(from, to)),
   ]);
 
   const seen = new Set<string>();

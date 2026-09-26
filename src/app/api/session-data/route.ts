@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 /**
@@ -38,10 +39,14 @@ export async function POST(request: Request) {
 
   const orgId = staffRow.organization_id;
 
-  const leadsQuery =
-    staffRow.role === "rep"
+  const leadsQuery = fetchAllRows((from, to) =>
+    (staffRow.role === "rep"
       ? supabase.from("leads").select("*").eq("organization_id", orgId).eq("university_id", staffRow.university_id)
-      : supabase.from("leads").select("*").eq("organization_id", orgId).eq("staff_id", staffRow.id);
+      : supabase.from("leads").select("*").eq("organization_id", orgId).eq("staff_id", staffRow.id)
+    )
+      .order("id")
+      .range(from, to)
+  );
 
   const [destRes, uniRes, eventRes, leadRes] = await Promise.all([
     supabase.from("destinations").select("*").eq("organization_id", orgId),

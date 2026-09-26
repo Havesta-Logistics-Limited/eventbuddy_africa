@@ -10,6 +10,7 @@ import { unsubscribeUrl } from "@/lib/unsubscribe";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 import { sanitizeRichTextHtml, stripHtml } from "@/lib/rich-text";
 import { getEventStatus } from "@/lib/capture-window";
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 
 const TargetSchema = z.object({
   eventId: z.string().uuid(),
@@ -93,7 +94,7 @@ async function eventRecipients(
 
   if (event.event_format === "virtual") {
     if (status !== "registered") return { error: "Virtual events only support the Registered segment — there's no check-in for a virtual event." };
-    const { data } = await admin.from("leads").select("email, first_name, last_name").eq("event_id", eventId).eq("status", "registered");
+    const { data } = await fetchAllRows((from, to) => admin.from("leads").select("email, first_name, last_name").eq("event_id", eventId).eq("status", "registered").order("id").range(from, to));
     return { recipients: (data ?? []).map((l) => ({ email: l.email.toLowerCase(), fullName: `${l.first_name} ${l.last_name}`.trim() })) };
   }
 
@@ -107,7 +108,7 @@ async function eventRecipients(
   } else {
     query = query.in("status", ["registered", "checked_in"]);
   }
-  const { data } = await query;
+  const { data } = await fetchAllRows((from, to) => query.order("id").range(from, to));
   return { recipients: (data ?? []).map((r) => ({ email: r.email.toLowerCase(), fullName: r.full_name })) };
 }
 

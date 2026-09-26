@@ -52,6 +52,7 @@ import { DEFAULT_MAINTENANCE_MESSAGE, DEFAULT_MAINTENANCE_TITLE, updateMaintenan
 import { getTemplate } from "@/lib/event-templates";
 import { isValidEmail } from "@/lib/validation";
 import { PlatformDocumentsTab } from "@/components/platform-documents-tab";
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 
 const SIDEBAR_BG = "#22103A";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -261,8 +262,8 @@ export default function PlatformDashboard() {
         .select(
           "id, organization_id, name, date, end_date, start_time, end_time, timezone, template_id, event_format, payment_status, price_naira, capture_override, created_at"
         ),
-      supabase.from("leads").select("id, organization_id, event_id, source"),
-      supabase.from("registrations").select("id, organization_id, event_id, status, created_at, source"),
+      fetchAllRows((from, to) => supabase.from("leads").select("id, organization_id, event_id, source").order("id").range(from, to)),
+      fetchAllRows((from, to) => supabase.from("registrations").select("id, organization_id, event_id, status, created_at, source").order("id").range(from, to)),
       supabase.from("platform_admins").select("user_id, email, created_at").order("created_at", { ascending: true }),
       supabase
         .from("platform_settings")
@@ -701,7 +702,7 @@ export default function PlatformDashboard() {
     setExportError("");
     setExportingEventId(ev.id);
     const supabase = createClient();
-    const { data, error } = await supabase.from("leads").select("*").eq("event_id", ev.id).order("created_at", { ascending: true });
+    const { data, error } = await fetchAllRows((from, to) => supabase.from("leads").select("*").eq("event_id", ev.id).order("created_at", { ascending: true }).order("id").range(from, to));
     setExportingEventId(null);
     if (error) {
       setExportError(error.message);
@@ -734,7 +735,7 @@ export default function PlatformDashboard() {
     setExportError("");
     setExportingEventId(ev.id);
     const supabase = createClient();
-    const { data, error } = await supabase.from("registrations").select("*").eq("event_id", ev.id).order("created_at", { ascending: true });
+    const { data, error } = await fetchAllRows((from, to) => supabase.from("registrations").select("*").eq("event_id", ev.id).order("created_at", { ascending: true }).order("id").range(from, to));
     setExportingEventId(null);
     if (error) {
       setExportError(error.message);
