@@ -609,6 +609,52 @@ export async function resolveMyOrgId(supabase: ReturnType<typeof createSupabaseB
   return myOrgId;
 }
 
+/** Which org's leads are in leadsCache, and when they were last pulled in full. */
+let leadsLoadedForOrg: string | null = null;
+let leadsFullFetchAt = 0;
+const LEADS_FULL_REFRESH_MS = 5 * 60 * 1000;
+
+/** Leads is far the largest table on the dashboard, and fetchAdminData re-runs
+ *  every 30s (useRevalidateOnFocus's heartbeat) plus on every window focus.
+ *  Re-downloading every row each time is what made a 2,900-lead org sluggish —
+ *  ~1.3 MB per tick, per open tab, growing with the table.
+ *
+ *  So the heartbeat asks the cheap question first: a head-only `count`, which
+ *  transfers no rows, and the full paged read runs only when the count moved.
+ *  A count alone can't see an in-place edit (a status changed on another
+ *  device), so a full pull still happens every LEADS_FULL_REFRESH_MS to
+ *  self-heal; this session's own edits update leadsCache directly anyway.
+ *
+ *  Returns rows === null to mean "unchanged, keep the cache". */
+type LeadRow = Parameters<typeof mapLeadRow>[0];
+
+async function fetchOrgLeads(
+  supabase: ReturnType<typeof createSupabaseBrowserClient>,
+  orgId: string
+): Promise<{ rows: LeadRow[] | null; error: { message: string } | null }> {
+  const sameOrg = leadsLoadedForOrg === orgId;
+  const dueForFull = Date.now() - leadsFullFetchAt > LEADS_FULL_REFRESH_MS;
+
+  if (sameOrg && !dueForFull) {
+    const { count, error } = await supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId);
+    if (!error && count === leadsCache.length) return { rows: null, error: null };
+  }
+
+  // Paged: a single select is silently capped at 1000 rows, which under-counted
+  // leads once an org collected more than that.
+  const res = await fetchAllRows<LeadRow>((from, to) =>
+    supabase.from("leads").select("*").eq("organization_id", orgId).order("id").range(from, to)
+  );
+  if (!res.error) {
+    leadsLoadedForOrg = orgId;
+    leadsFullFetchAt = Date.now();
+  }
+  return { rows: res.data, error: res.error };
+}
+
 async function fetchAdminData() {
   if (!supabaseConfigured()) return;
   orgDataFetching = true;
@@ -624,6 +670,7 @@ async function fetchAdminData() {
       eventsCache = [];
       staffCache = [];
       leadsCache = [];
+      leadsLoadedForOrg = null;
       registrationsCache = [];
       ticketTypesCache = [];
       discountCodesCache = [];
@@ -663,9 +710,7 @@ async function fetchAdminData() {
       supabase.from("universities").select("*").eq("organization_id", orgId),
       supabase.from("events").select("*").eq("organization_id", orgId),
       supabase.from("staff").select("*").eq("organization_id", orgId),
-      // Paged: a single select is silently capped at 1000 rows, which under-counted
-      // leads once an org collected more than that.
-      fetchAllRows((from, to) => supabase.from("leads").select("*").eq("organization_id", orgId).order("id").range(from, to)),
+      fetchOrgLeads(supabase, orgId),
       supabase.from("registrations").select("*").eq("organization_id", orgId),
       supabase.from("ticket_types").select("*").eq("organization_id", orgId),
       supabase.from("discount_codes").select("*").eq("organization_id", orgId),
@@ -686,9 +731,10 @@ async function fetchAdminData() {
     universitiesCache = (uniRes.data ?? []).map(mapUniversityRow);
     eventsCache = (eventRes.data ?? []).map(mapEventRow);
     staffCache = (staffRes.data ?? []).map(mapStaffRow);
-    // On a failed/partial page fetch keep the last good list rather than showing a
-    // truncated count.
-    if (!leadRes.error) leadsCache = leadRes.data.map(mapLeadRow);
+    // rows === null means the count probe said nothing changed, so the cache
+    // still stands. On a failed/partial page fetch keep the last good list too,
+    // rather than showing a truncated count.
+    if (!leadRes.error && leadRes.rows) leadsCache = leadRes.rows.map(mapLeadRow);
     registrationsCache = (registrationRes.data ?? []).map(mapRegistrationRow);
     ticketTypesCache = (ticketTypeRes.data ?? []).map(mapTicketTypeRow);
     discountCodesCache = (discountCodeRes.data ?? []).map(mapDiscountCodeRow);
@@ -766,6 +812,9 @@ function ensureDataFetched() {
 export async function refreshData(): Promise<void> {
   if (!sessionCache || orgDataFetching) return;
   orgDataFetched = false;
+  // An explicit refresh means "get me the truth", so skip the count probe in
+  // fetchOrgLeads and pull the rows.
+  leadsFullFetchAt = 0;
   if (sessionCache.role === "admin" || sessionCache.role === "event_support") await fetchAdminData();
   else await fetchSessionData();
 }
@@ -2193,6 +2242,7 @@ export async function logout(): Promise<void> {
   eventsCache = [];
   staffCache = [];
   leadsCache = [];
+  leadsLoadedForOrg = null;   // next login re-reads leads instead of trusting an empty cache
   registrationsCache = [];
   persistSession();
 }
