@@ -35,6 +35,7 @@ import { stripHtml } from "@/lib/rich-text";
 import { formatDate, formatTime, safeHttpUrl } from "@/lib/utils";
 import { applyDiscount, formatNaira } from "@/lib/billing";
 import { getEventStatus, zonedTimeToUtc } from "@/lib/capture-window";
+import { captureRef, storedRef } from "@/lib/referral-capture";
 
 /** Same sticky public header as /discover — a shared visual identity across every
  *  public-facing page, and a visitor's only way back to the rest of the site from a
@@ -355,6 +356,9 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
           const tickets = (ticketsData.ticketTypes as PublicTicketType[]) || [];
           setTicketTypes(tickets);
           if (tickets.length === 1) setSelectedTicketId(tickets[0].id);
+          // Remember which partner's link brought this visitor, now that the
+          // event id is known. Survives navigating away and coming back.
+          captureRef(found.id);
           fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/register/view`, { method: "POST" }).catch(() => {});
           fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/attendee-summary`)
             .then((res) => res.json())
@@ -521,7 +525,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/ticket-purchase/initialize`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket.id, discountCode: appliedDiscount?.code, ...values }),
+          body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket.id, discountCode: appliedDiscount?.code, ref: storedRef(event.id), ...values }),
         });
         const json = await res.json();
         if (!res.ok || !json.authorizationUrl) {
@@ -536,7 +540,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
       const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket?.id, ...values }),
+        body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket?.id, ref: storedRef(event.id), ...values }),
       });
       const json = await res.json();
       if (!res.ok) {

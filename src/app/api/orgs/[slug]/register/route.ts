@@ -5,6 +5,7 @@ import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail, sendPendingApprovalEmail, sendWaitlistEmail } from "@/lib/registration-email";
 import { sendPushToAttendee } from "@/lib/push";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
+import { resolveReferralId } from "@/lib/referrals";
 import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
 import { incrementTicketQuantitySold, decrementTicketQuantitySold } from "@/lib/ticket-capacity";
 
@@ -28,6 +29,11 @@ type RegisterBody = {
    *  attendee out of the public "N Going" name sample (they still count toward the
    *  aggregate number). See public_event_attendee_summary in 0061. */
   hideFromGuestList?: boolean;
+  /** Referral code from the ?ref= on the share link the attendee arrived through.
+   *  Resolved server-side against this event's active partners — a code that is
+   *  unknown, inactive, or belongs to another event simply attributes to nobody,
+   *  and never blocks the registration. See migration 0097. */
+  ref?: string;
 };
 
 /**
@@ -43,7 +49,7 @@ type RegisterBody = {
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/register">) {
   const { slug } = await ctx.params;
   const body = (await request.json()) as Partial<RegisterBody>;
-  const { eventId, firstName, lastName, email, phone, customAnswers, ticketTypeId, source, hideFromGuestList } = body;
+  const { eventId, firstName, lastName, email, phone, customAnswers, ticketTypeId, source, hideFromGuestList, ref } = body;
   const resolvedSource = source === "mobile" ? "mobile" : "web";
 
   if (!eventId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
@@ -152,6 +158,11 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     }
   }
 
+  // Attribution for the share link this attendee arrived through. Resolved
+  // once, here, so both the virtual-event lead path and the registration path
+  // below record the same partner. Never blocks the signup.
+  const referralId = await resolveReferralId(supabase, event.id, ref);
+
   const responseEvent = {
     name: event.name,
     date: event.date,
@@ -178,6 +189,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
         start_year: "",
         highest_education: "",
         taken_ielts: "",
+        referral_id: referralId,
         comments: "",
         custom_answers: customAnswers || {},
         source: resolvedSource,
@@ -225,6 +237,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
         source: resolvedSource,
         status: resolvedStatus,
         hide_from_guest_list: Boolean(hideFromGuestList),
+        referral_id: referralId,
       })
       .select()
       .single();

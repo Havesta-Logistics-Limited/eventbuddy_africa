@@ -17,6 +17,7 @@ import {
   LeadRecord,
   PendingLead,
   PollStatus,
+  ReferralPartner,
   RegistrationRecord,
   Session,
   SessionSpeaker,
@@ -31,6 +32,7 @@ import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { copyEventMedia, deleteEventMedia, isEventMediaUrl, uploadEventMedia } from "./supabase/storage";
 import { newId } from "./utils";
 import { fetchAllRows } from "./fetch-all-rows";
+import { commissionFor, type ReferralTally } from "./referrals";
 import { dequeue, enqueue, queueSnapshot } from "./offline-queue";
 import { requestBackgroundSync } from "./sw-register";
 
@@ -63,6 +65,7 @@ let leadsCache: LeadRecord[] = [];
 let registrationsCache: RegistrationRecord[] = [];
 let ticketTypesCache: TicketType[] = [];
 let discountCodesCache: DiscountCode[] = [];
+let referralsCache: ReferralPartner[] = [];
 let eventSessionsCache: EventSession[] = [];
 let eventSpeakersCache: EventSpeaker[] = [];
 let eventOneOnOneRequestsCache: EventOneOnOneRequest[] = [];
@@ -380,6 +383,36 @@ function ticketTypeToRow(input: Partial<Omit<TicketType, "id" | "createdAt" | "q
   if (input.salesEnd !== undefined) row.sales_end = input.salesEnd || null;
   return row;
 }
+function mapReferralRow(r: {
+  id: string;
+  event_id: string;
+  code: string;
+  partner_name: string;
+  partner_email: string | null;
+  partner_phone: string | null;
+  commission_type: string;
+  commission_rate: number | string;
+  is_active: boolean;
+  click_count: number;
+  notes: string | null;
+  created_at: string;
+}): ReferralPartner {
+  return {
+    id: r.id,
+    eventId: r.event_id,
+    code: r.code,
+    partnerName: r.partner_name,
+    partnerEmail: r.partner_email ?? undefined,
+    partnerPhone: r.partner_phone ?? undefined,
+    commissionType: r.commission_type as ReferralPartner["commissionType"],
+    commissionRate: Number(r.commission_rate) || 0,
+    isActive: r.is_active,
+    clickCount: r.click_count ?? 0,
+    notes: r.notes ?? undefined,
+    createdAt: r.created_at,
+  };
+}
+
 function mapDiscountCodeRow(d: {
   id: string;
   event_id: string;
@@ -679,6 +712,7 @@ async function fetchAdminData() {
       registrationsCache = [];
       ticketTypesCache = [];
       discountCodesCache = [];
+      referralsCache = [];
       eventSessionsCache = [];
       eventSpeakersCache = [];
       eventOneOnOneRequestsCache = [];
@@ -698,6 +732,7 @@ async function fetchAdminData() {
       registrationRes,
       ticketTypeRes,
       discountCodeRes,
+      referralRes,
       sessionRes,
       speakerRes,
       sessionSpeakerRes,
@@ -719,6 +754,7 @@ async function fetchAdminData() {
       supabase.from("registrations").select("*").eq("organization_id", orgId),
       supabase.from("ticket_types").select("*").eq("organization_id", orgId),
       supabase.from("discount_codes").select("*").eq("organization_id", orgId),
+      supabase.from("event_referrals").select("*").eq("organization_id", orgId),
       supabase.from("event_sessions").select("*").eq("organization_id", orgId),
       supabase.from("event_speakers").select("*").eq("organization_id", orgId),
       // No organization_id column on this join table — scoped below via the
@@ -743,6 +779,9 @@ async function fetchAdminData() {
     registrationsCache = (registrationRes.data ?? []).map(mapRegistrationRow);
     ticketTypesCache = (ticketTypeRes.data ?? []).map(mapTicketTypeRow);
     discountCodesCache = (discountCodeRes.data ?? []).map(mapDiscountCodeRow);
+    // Tolerates migration 0097 not being applied yet: the error is ignored and
+    // the Referrals tab simply shows nothing rather than breaking the dashboard.
+    if (!referralRes.error) referralsCache = (referralRes.data ?? []).map(mapReferralRow);
     eventSpeakersCache = (speakerRes.data ?? []).map(mapEventSpeakerRow);
     const speakersById = new Map(eventSpeakersCache.map((s) => [s.id, s]));
     const ownSessionIds = new Set((sessionRes.data ?? []).map((s: { id: string }) => s.id));
@@ -887,6 +926,7 @@ const leadsSnap = snap(() => leadsCache, [] as LeadRecord[]);
 const registrationsSnap = snap(() => registrationsCache, [] as RegistrationRecord[]);
 const ticketTypesSnap = snap(() => ticketTypesCache, [] as TicketType[]);
 const discountCodesSnap = snap(() => discountCodesCache, [] as DiscountCode[]);
+const referralsSnap = snap(() => referralsCache, [] as ReferralPartner[]);
 const eventSessionsSnap = snap(() => eventSessionsCache, [] as EventSession[]);
 const eventSpeakersSnap = snap(() => eventSpeakersCache, [] as EventSpeaker[]);
 const eventOneOnOneRequestsSnap = snap(() => eventOneOnOneRequestsCache, [] as EventOneOnOneRequest[]);
@@ -928,6 +968,10 @@ export function useTicketTypes() {
 export function useDiscountCodes() {
   useEnsureDataFetched();
   return useSyncExternalStore(subscribe, discountCodesSnap.client, discountCodesSnap.server);
+}
+export function useReferrals() {
+  useEnsureDataFetched();
+  return useSyncExternalStore(subscribe, referralsSnap.client, referralsSnap.server);
 }
 export function useEventSessions() {
   useEnsureDataFetched();
@@ -1293,6 +1337,104 @@ export async function deleteTicketType(id: string): Promise<void> {
 }
 
 // ---- discount code CRUD (admin only — browser client, RLS + auto-filled organization_id) ----
+
+// ---- referral partners ----
+
+function referralToRow(p: Partial<Omit<ReferralPartner, "id" | "createdAt" | "clickCount">>) {
+  const row: Record<string, unknown> = {};
+  if (p.eventId !== undefined) row.event_id = p.eventId;
+  if (p.code !== undefined) row.code = p.code.trim();
+  if (p.partnerName !== undefined) row.partner_name = p.partnerName.trim();
+  if (p.partnerEmail !== undefined) row.partner_email = p.partnerEmail?.trim() || null;
+  if (p.partnerPhone !== undefined) row.partner_phone = p.partnerPhone?.trim() || null;
+  if (p.commissionType !== undefined) row.commission_type = p.commissionType;
+  if (p.commissionRate !== undefined) row.commission_rate = p.commissionRate;
+  if (p.isActive !== undefined) row.is_active = p.isActive;
+  if (p.notes !== undefined) row.notes = p.notes?.trim() || null;
+  return row;
+}
+
+export async function addReferral(input: Omit<ReferralPartner, "id" | "createdAt" | "clickCount">): Promise<ReferralPartner> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("event_referrals").insert(referralToRow(input)).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapReferralRow(data);
+  referralsCache = [...referralsCache, record];
+  emitChange();
+  return record;
+}
+
+export async function updateReferral(
+  id: string,
+  patch: Partial<Omit<ReferralPartner, "id" | "createdAt" | "clickCount">>
+): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("event_referrals").update(referralToRow(patch)).eq("id", id).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapReferralRow(data);
+  referralsCache = referralsCache.map((r) => (r.id === id ? record : r));
+  emitChange();
+}
+
+/** Deleting a partner leaves their attributed rows in place (the FK is ON DELETE
+ *  SET NULL), so the registrations and payments survive — only the credit for
+ *  them is lost. Deactivating is almost always what the organizer wants. */
+export async function deleteReferral(id: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("event_referrals").delete().eq("id", id);
+  if (error) throw new PersistError(error);
+  referralsCache = referralsCache.filter((r) => r.id !== id);
+  emitChange();
+}
+
+/** Per-partner totals for one event, read straight from the database rather than
+ *  from the dashboard caches: money lives on paystack_transactions, which the
+ *  admin store never loads, and only settled ('success') ticket purchases count. */
+export async function fetchReferralTallies(eventId: string): Promise<Record<string, ReferralTally>> {
+  const supabase = createSupabaseBrowserClient();
+  const [regRes, leadRes, txnRes] = await Promise.all([
+    fetchAllRows<{ referral_id: string | null }>((from, to) =>
+      supabase.from("registrations").select("referral_id").eq("event_id", eventId).not("referral_id", "is", null).order("id").range(from, to)
+    ),
+    fetchAllRows<{ referral_id: string | null }>((from, to) =>
+      supabase.from("leads").select("referral_id").eq("event_id", eventId).not("referral_id", "is", null).order("id").range(from, to)
+    ),
+    fetchAllRows<{ referral_id: string | null; amount_naira: number | string | null; net_amount_naira: number | string | null }>((from, to) =>
+      supabase
+        .from("paystack_transactions")
+        .select("referral_id, amount_naira, net_amount_naira")
+        .eq("event_id", eventId)
+        .eq("purpose", "ticket_purchase")
+        .eq("status", "success")
+        .not("referral_id", "is", null)
+        .order("id")
+        .range(from, to)
+    ),
+  ]);
+
+  const tallies: Record<string, ReferralTally> = {};
+  const bucket = (id: string) =>
+    (tallies[id] ??= { registrations: 0, paidTickets: 0, grossNaira: 0, netNaira: 0, commissionNaira: 0 });
+
+  for (const r of [...regRes.data, ...leadRes.data]) {
+    if (r.referral_id) bucket(r.referral_id).registrations++;
+  }
+  for (const t of txnRes.data) {
+    if (!t.referral_id) continue;
+    const b = bucket(t.referral_id);
+    b.paidTickets++;
+    b.grossNaira += Number(t.amount_naira) || 0;
+    // net_amount_naira is only backfilled for settled sales; fall back to gross
+    // so a missing value under-reports the fee rather than the revenue.
+    b.netNaira += Number(t.net_amount_naira ?? t.amount_naira) || 0;
+  }
+
+  for (const [id, tally] of Object.entries(tallies)) {
+    const partner = referralsCache.find((r) => r.id === id);
+    tally.commissionNaira = partner ? commissionFor(partner, tally) : 0;
+  }
+  return tallies;
+}
 
 export async function addDiscountCode(input: Omit<DiscountCode, "id" | "createdAt" | "usesCount">): Promise<DiscountCode> {
   const supabase = createSupabaseBrowserClient();

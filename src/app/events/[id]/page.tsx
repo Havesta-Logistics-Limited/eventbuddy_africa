@@ -34,6 +34,7 @@ import {
   useLeads,
   useRegistrations,
   useStaff,
+  useReferrals,
   useTicketTypes,
   useUniversities,
 } from "@/lib/store";
@@ -50,6 +51,7 @@ import { DestinationsUniversitiesManagement } from "@/components/destinations-un
 import { ProspectsTab } from "@/components/prospects-tab";
 import { StaffRosterTab } from "@/components/staff-roster-tab";
 import { OfflineDevicesNotice } from "@/components/offline-devices-notice";
+import { ReferralsTab } from "@/components/referrals-tab";
 import { EventSlugEditor } from "@/components/event-slug-editor";
 import { RepsManagement } from "@/components/reps-management";
 import { TicketsTab } from "@/components/tickets-tab";
@@ -78,6 +80,7 @@ type TabId =
   | "tickets"
   | "leads"
   | "checkin-staff"
+  | "referrals"
   | "representatives"
   | "schedule"
   | "speakers"
@@ -106,6 +109,7 @@ export default function EventDetailPage() {
   const leads = allOrgLeads.filter((l) => l.eventId === params.id);
   const registrations = useRegistrations().filter((r) => r.eventId === params.id);
   const staff = useStaff();
+  const referrals = useReferrals();
   const destinations = useDestinations();
   const universities = useUniversities();
   useTicketTypes(); // subscribe so ticket-type edits refresh this view
@@ -367,6 +371,9 @@ export default function EventDetailPage() {
     ...(event.eventFormat === "virtual" || event.selfRegistrationEnabled !== false ? ([{ id: "tickets", label: "Tickets" }] as const) : []),
     { id: "leads", label: "Leads" },
     { id: "checkin-staff", label: "Check-in Staff" },
+    ...(event.selfRegistrationEnabled !== false || event.eventFormat === "virtual"
+      ? ([{ id: "referrals", label: "Referrals" }] as const)
+      : []),
     // Reps are an org-wide resource managed from here now (see RepsManagement) — the
     // tab itself only needs usesDestinations (is this an Education Fair event at
     // all), not allowRepAccess, since "this specific event doesn't let reps check
@@ -679,6 +686,12 @@ export default function EventDetailPage() {
         {activeTab === "tickets" && (
           <div key="tickets" className="animate-tab-fade">
             <TicketsTab event={event} ticketTypes={ticketTypes} discountCodes={discountCodes} hasPayoutsConfigured={hasPayoutsConfigured} />
+          </div>
+        )}
+
+        {activeTab === "referrals" && (
+          <div key="referrals" className="animate-tab-fade">
+            <ReferralsTab event={event} orgSlug={session.orgSlug!} referrals={referrals} />
           </div>
         )}
 

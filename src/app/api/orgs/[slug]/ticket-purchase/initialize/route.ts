@@ -5,6 +5,7 @@ import { applyDiscount } from "@/lib/billing";
 import { nairaToChargeAmount, paystackInitialize } from "@/lib/paystack";
 import { newId } from "@/lib/utils";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
+import { resolveReferralId } from "@/lib/referrals";
 
 type InitializeBody = {
   eventId: string;
@@ -20,6 +21,10 @@ type InitializeBody = {
    *  registrations/leads row once payment succeeds. */
   source?: "web" | "mobile";
   hideFromGuestList?: boolean;
+  /** Referral code from the ?ref= on the share link. Recorded on the
+   *  transaction now and copied onto the registration when the payment
+   *  finalizes, so an abandoned checkout stays attributable too. */
+  ref?: string;
 };
 
 /**
@@ -32,7 +37,7 @@ type InitializeBody = {
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/ticket-purchase/initialize">) {
   const { slug } = await ctx.params;
   const body = (await request.json()) as Partial<InitializeBody>;
-  const { eventId, ticketTypeId, firstName, lastName, email, phone, customAnswers, discountCode, source, hideFromGuestList } = body;
+  const { eventId, ticketTypeId, firstName, lastName, email, phone, customAnswers, discountCode, source, hideFromGuestList, ref } = body;
   const resolvedSource = source === "mobile" ? "mobile" : "web";
 
   if (!eventId || !ticketTypeId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
@@ -147,7 +152,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { currency, amountMinor } = nairaToChargeAmount(amountNaira);
 
+  const referralId = await resolveReferralId(admin, event.id, ref);
+
   const { error: insertError } = await admin.from("paystack_transactions").insert({
+    referral_id: referralId,
     organization_id: org.id,
     event_id: event.id,
     reference,

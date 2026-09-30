@@ -1,4 +1,5 @@
-import { EventRecord, FieldDef, LeadRecord, RegistrationRecord } from "./types";
+import { EventRecord, FieldDef, LeadRecord, ReferralPartner, RegistrationRecord } from "./types";
+import type { ReferralTally } from "./referrals";
 import { getDestinationById, getEventById, getUniversityById } from "./store";
 import { formatCustomAnswers } from "./utils";
 import { getTemplate } from "./event-templates";
@@ -117,6 +118,39 @@ export function surveyResponsesToCsv(responses: { answers: Record<string, string
       return Array.isArray(v) ? v.join(", ") : (v ?? "");
     }),
   ]);
+  return [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
+}
+
+/** Referral partners with what each brought in and what they are owed — the
+ *  sheet an organizer settles against after the event. Money columns are raw
+ *  numbers, not formatted naira, so the file can be summed in a spreadsheet. */
+export function referralsToCsv(
+  partners: ReferralPartner[],
+  tallies: Record<string, ReferralTally>,
+  commissionLabels: Record<string, string>
+): string {
+  const headers = [
+    "Partner", "Code", "Email", "Phone", "Commission basis", "Rate",
+    "Clicks", "Signups", "Paid tickets", "Gross NGN", "Net NGN", "Commission NGN", "Status",
+  ];
+  const rows = partners.map((p) => {
+    const t = tallies[p.id];
+    return [
+      p.partnerName,
+      p.code,
+      p.partnerEmail ?? "",
+      p.partnerPhone ?? "",
+      commissionLabels[p.commissionType] ?? p.commissionType,
+      p.commissionType === "none" ? "" : p.commissionRate,
+      p.clickCount,
+      t?.registrations ?? 0,
+      t?.paidTickets ?? 0,
+      (t?.grossNaira ?? 0).toFixed(2),
+      (t?.netNaira ?? 0).toFixed(2),
+      (t?.commissionNaira ?? 0).toFixed(2),
+      p.isActive ? "Active" : "Inactive",
+    ];
+  });
   return [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
 }
 

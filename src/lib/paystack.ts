@@ -334,6 +334,9 @@ type PendingTicketTxn = {
   event_id: string;
   ticket_type_id: string | null;
   discount_code_id: string | null;
+  /** Set at checkout from the share link's ?ref=; copied onto the registration
+   *  (or lead) this transaction materializes. See migration 0097. */
+  referral_id?: string | null;
   registrant_data: {
     firstName: string;
     lastName: string;
@@ -425,6 +428,9 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
       source: info.source === "mobile" ? "mobile" : "web",
       status: "registered",
       hide_from_guest_list: Boolean(info.hideFromGuestList),
+      // A paid virtual ticket lands as a lead, not a registration, so the
+      // referral has to be carried here too or virtual sales attribute to nobody.
+      referral_id: txn.referral_id ?? null,
     });
     if (leadErr) {
       console.error(`[ticket-purchase] paid ticket for ${info.email} on event ${txn.event_id} succeeded but no lead could be created:`, leadErr.message);
@@ -454,6 +460,10 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
         custom_answers: info.customAnswers || {},
         source: info.source === "mobile" ? "mobile" : "web",
         hide_from_guest_list: Boolean(info.hideFromGuestList),
+        // Carried over from the transaction: the referral was known at
+        // checkout, but this registration only exists now that the payment
+        // settled.
+        referral_id: txn.referral_id ?? null,
       })
       .select()
       .single();

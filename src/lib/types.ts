@@ -521,6 +521,34 @@ export interface PendingLead {
   lastAttempt?: string;
 }
 
+/** How a referral partner is paid. See migration 0097 and lib/referrals.ts. */
+export type CommissionType =
+  | "percent_gross"
+  | "percent_net"
+  | "fixed_per_sale"
+  | "fixed_per_reg"
+  | "none";
+
+/** A referral partner for one event: their share link, and what they earn from
+ *  what it brings in. Deactivating stops new attribution but keeps everything
+ *  already credited to them. */
+export interface ReferralPartner {
+  id: string;
+  eventId: string;
+  code: string;
+  partnerName: string;
+  partnerEmail?: string;
+  partnerPhone?: string;
+  commissionType: CommissionType;
+  /** Percent (0-100) for the percent_* types, naira per unit for the fixed_* ones. */
+  commissionRate: number;
+  isActive: boolean;
+  /** Best-effort traffic signal, counted once per browser session. Never money. */
+  clickCount: number;
+  notes?: string;
+  createdAt: string;
+}
+
 /** A named invite for an invite-only (RSVP) event — see events.isInviteOnly.
  *  registrationId is set the moment a guest accepts: that's the real
  *  registrations/leads row check-in and the Event Hub actually run on, this
