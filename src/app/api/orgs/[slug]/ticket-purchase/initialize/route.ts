@@ -41,7 +41,14 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   // Each call creates a paystack_transactions row and a real Paystack checkout
   // session even before the buyer pays — unlimited requests would spam both.
-  if (!(await checkRateLimit(`ticket-purchase:ip:${clientIp(request)}`, 10, 10 * 60))) {
+  // Same venue-NAT problem as /register, and worse here: 10/10min meant the
+  // 11th person buying at the door was refused. Per-person control is the
+  // email — which is also the right key against card testing, since that
+  // burns many attempts per identity — with IP left as a flood ceiling.
+  if (!(await checkRateLimit(`ticket-purchase:email:${email.trim().toLowerCase()}`, 10, 10 * 60))) {
+    return rateLimitedResponse();
+  }
+  if (!(await checkRateLimit(`ticket-purchase:ip:${clientIp(request)}`, 300, 10 * 60))) {
     return rateLimitedResponse();
   }
 

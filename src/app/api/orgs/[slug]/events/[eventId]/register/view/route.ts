@@ -10,7 +10,10 @@ import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit"
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/events/[eventId]/register/view">) {
   const { slug, eventId } = await ctx.params;
 
-  if (!(await checkRateLimit(`register-view:ip:${clientIp(request)}`, 60, 10 * 60))) {
+  // A view counter, keyed per IP — and a venue is one IP, so 60/10min meant the
+  // 61st person to OPEN the registration form was refused. Only a flood ceiling
+  // is wanted here; an undercounted view is harmless, a blocked form is not.
+  if (!(await checkRateLimit(`register-view:ip:${clientIp(request)}`, 1000, 10 * 60))) {
     return rateLimitedResponse();
   }
 

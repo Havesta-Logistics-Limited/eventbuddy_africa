@@ -53,7 +53,15 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   // Generous enough for a real rush of attendees registering for the same popular
   // event from behind one shared IP (a campus, an office), but stops a script from
   // mass-registering fake attendees to exhaust a limited-capacity free ticket.
-  if (!(await checkRateLimit(`register:ip:${clientIp(request)}`, 20, 10 * 60))) {
+  // Venue NAT puts an entire audience behind one IP, so an IP key is a
+  // per-VENUE limit, not a per-person one: at 20/10min the 21st person through
+  // the door could not register, which is what forced this off on 2026-09-24.
+  // The per-person control is the email; IP stays only as a flood ceiling set
+  // far above what a real venue produces.
+  if (!(await checkRateLimit(`register:email:${email.trim().toLowerCase()}`, 6, 10 * 60))) {
+    return rateLimitedResponse();
+  }
+  if (!(await checkRateLimit(`register:ip:${clientIp(request)}`, 400, 10 * 60))) {
     return rateLimitedResponse();
   }
 

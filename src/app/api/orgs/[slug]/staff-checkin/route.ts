@@ -31,15 +31,14 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
 
-  // The access code is a short, org-chosen string — without this, an unlimited
-  // number of guesses is just as brute-forceable as the discount-code oracle this
-  // same pattern already guards against.
-  // RATE LIMIT REMOVED TEMPORARILY FOR LIVE EVENT (2026-09-24)
-  /*
-  if (!(await checkRateLimit(`staff-checkin:ip:${clientIp(request)}`, 100, 10 * 60))) {
+  // A whole event's staff sign in from one venue WiFi, so an IP key here is a
+  // per-venue limit — which is why 20, then 100, both had to come off mid-event
+  // on 2026-09-24. This IP ceiling is only a flood guard now, set far above
+  // what a real venue produces; the brute-force control moved to the failed
+  // access-code counter below, where it belongs.
+  if (!(await checkRateLimit(`staff-checkin:ip:${clientIp(request)}`, 600, 10 * 60))) {
     return rateLimitedResponse();
   }
-  */
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!apiKey || apiKey === "paste_your_supabase_service_role_key_here") {
@@ -62,6 +61,14 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   if (!event.published) return NextResponse.json({ error: "This event isn't live yet." }, { status: 403 });
 
   if (event.staff_access_code && !accessCodeMatches(event.staff_access_code, code || "")) {
+    // Charged only on a WRONG code, so staff signing in correctly never spend
+    // the budget — the old limit charged every attempt, successful ones
+    // included, which is exactly how a legitimate rush looked like an attack.
+    // 40 wrong codes per event per 10 minutes is far past a room full of people
+    // mistyping, and it throttles guessing without ever locking out someone who
+    // has the right code.
+    const withinBudget = await checkRateLimit(`staff-checkin-fail:event:${event.id}`, 40, 10 * 60);
+    if (!withinBudget) return rateLimitedResponse();
     return NextResponse.json({ error: "That access code doesn't match this event. Check with your coordinator and try again." }, { status: 403 });
   }
 

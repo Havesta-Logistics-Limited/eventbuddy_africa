@@ -33,16 +33,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
 
-  // Keyed by staffId, not IP — a busy booth's staff devices often share one venue
-  // WiFi/NAT, and a person scanning attendees can plausibly submit many leads in a
-  // burst. This only guards against a single leaked/compromised staffId being used
-  // to flood leads far beyond any realistic single-person data-entry rate.
-  // RATE LIMIT REMOVED TEMPORLARY FOR LIVE EVENT (2026-09-24)
-  /*
-  if (!(await checkRateLimit(`leads:staff:${staffId}`, 60, 10 * 60))) {
+  // Keyed by staffId, not IP — a busy booth's staff devices share one venue
+  // WiFi/NAT, so an IP key would make this a per-venue limit instead of a
+  // per-device one. This only guards against a leaked staffId being used to
+  // flood leads; it must never catch a human.
+  //
+  // 300 / 10 min is one every two seconds, sustained, from a single device —
+  // beyond any hand-entry rate, but with room for an offline queue that has
+  // been collecting for hours flushing all at once when signal returns. The
+  // old limit of 60 was inside human range at a busy stand, which is why it
+  // had to be switched off mid-event on 2026-09-24.
+  if (!(await checkRateLimit(`leads:staff:${staffId}`, 300, 10 * 60))) {
     return rateLimitedResponse();
   }
-  */
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!apiKey || apiKey === "paste_your_supabase_service_role_key_here") {

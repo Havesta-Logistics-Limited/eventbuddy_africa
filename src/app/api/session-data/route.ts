@@ -23,7 +23,10 @@ export async function POST(request: Request) {
   if (!(await checkRateLimit(`session-data:staff:${staffId}`, 60, 10 * 60))) {
     return rateLimitedResponse();
   }
-  if (!(await checkRateLimit(`session-data:ip:${clientIp(request)}`, 120, 10 * 60))) {
+  // Per-device (staff) above is the real control. The IP ceiling has to clear
+  // a whole event's staff phones on one venue WiFi, each polling on mount,
+  // focus and a 30s heartbeat — 120 was well inside what 30 devices generate.
+  if (!(await checkRateLimit(`session-data:ip:${clientIp(request)}`, 2000, 10 * 60))) {
     return rateLimitedResponse();
   }
 
