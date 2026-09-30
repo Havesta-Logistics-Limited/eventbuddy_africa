@@ -49,6 +49,7 @@ import { UniversitiesTab } from "@/components/universities-tab";
 import { DestinationsUniversitiesManagement } from "@/components/destinations-universities-management";
 import { ProspectsTab } from "@/components/prospects-tab";
 import { StaffRosterTab } from "@/components/staff-roster-tab";
+import { OfflineDevicesNotice } from "@/components/offline-devices-notice";
 import { EventSlugEditor } from "@/components/event-slug-editor";
 import { RepsManagement } from "@/components/reps-management";
 import { TicketsTab } from "@/components/tickets-tab";
@@ -661,6 +662,7 @@ export default function EventDetailPage() {
 
         {activeTab === "prospects" && (
           <div key="prospects" className="animate-tab-fade">
+            <OfflineDevicesNotice staff={staff.filter((s) => s.eventId === event.id)} />
             <ProspectsTab
               event={event}
               orgSlug={session.orgSlug!}

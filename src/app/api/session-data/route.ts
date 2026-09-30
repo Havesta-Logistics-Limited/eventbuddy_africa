@@ -16,7 +16,7 @@ import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit"
  * this credential wasn't already kept out of.
  */
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as { staffId?: string } | null;
+  const body = (await request.json().catch(() => null)) as { staffId?: string; pendingCount?: number } | null;
   const staffId = body?.staffId;
   if (!staffId) return NextResponse.json({ error: "Missing staffId." }, { status: 400 });
 
@@ -41,6 +41,22 @@ export async function POST(request: Request) {
   if (!staffRow) return NextResponse.json({ error: "Session not found." }, { status: 404 });
 
   const orgId = staffRow.organization_id;
+
+  // This device telling us what it is still holding. Leads that haven't synced
+  // have never reached the server, so this report is the only way an organizer
+  // can see them at all. Best-effort on purpose: it must never fail the data
+  // this request actually exists to return, and it no-ops cleanly on a
+  // deployment where migration 0096 hasn't been applied yet.
+  const reported = Number(body?.pendingCount);
+  if (Number.isFinite(reported) && reported >= 0) {
+    void supabase
+      .from("staff")
+      .update({ pending_leads_count: Math.min(Math.trunc(reported), 100000), last_sync_at: new Date().toISOString() })
+      .eq("id", staffRow.id)
+      .then(({ error }) => {
+        if (error) console.warn("[session-data] queue status not recorded:", error.message);
+      });
+  }
 
   const leadsQuery = fetchAllRows((from, to) =>
     (staffRow.role === "rep"

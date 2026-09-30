@@ -188,6 +188,13 @@ export interface StaffRecord {
   eventId?: string;
   /** Reps only — prevents two people signing in as the same rep at once. */
   isOnline?: boolean;
+  /** Leads this device last reported as still queued offline, with when it last
+   *  reached us. Un-synced leads have never touched the server, so this report
+   *  is the only visibility an organizer gets — and it is stale by nature: a
+   *  device that is offline cannot update it. A non-zero count beside an old
+   *  lastSyncAt is the signal to go find that phone. See migration 0096. */
+  pendingLeadsCount?: number;
+  lastSyncAt?: string;
   /** Admin only — the org's slug, e.g. for building /[orgSlug]/staff-setup links to share. */
   orgSlug?: string;
 }

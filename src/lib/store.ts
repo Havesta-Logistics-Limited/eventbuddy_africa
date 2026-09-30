@@ -250,6 +250,8 @@ function mapStaffRow(s: {
   university_id: string | null;
   event_id: string | null;
   is_online: boolean;
+  pending_leads_count?: number | null;
+  last_sync_at?: string | null;
 }): StaffRecord {
   return {
     id: s.id,
@@ -260,6 +262,8 @@ function mapStaffRow(s: {
     universityId: s.university_id ?? undefined,
     eventId: s.event_id ?? undefined,
     isOnline: s.is_online,
+    pendingLeadsCount: s.pending_leads_count ?? 0,
+    lastSyncAt: s.last_sync_at ?? undefined,
   };
 }
 function mapLeadRow(l: {
@@ -772,7 +776,10 @@ async function fetchSessionData() {
     const res = await fetch("/api/session-data", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ staffId: sessionCache.id }),
+      // pendingCount rides along on a call this device already makes on mount,
+      // focus and a 30s heartbeat — no extra request — so an organizer can see
+      // which devices are still holding un-synced leads.
+      body: JSON.stringify({ staffId: sessionCache.id, pendingCount: queueSnapshot().length }),
     });
     const json = await res.json();
     if (res.ok) {
