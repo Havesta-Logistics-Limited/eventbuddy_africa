@@ -31,9 +31,10 @@ import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { copyEventMedia, deleteEventMedia, isEventMediaUrl, uploadEventMedia } from "./supabase/storage";
 import { newId } from "./utils";
 import { fetchAllRows } from "./fetch-all-rows";
+import { dequeue, enqueue, queueSnapshot } from "./offline-queue";
+import { requestBackgroundSync } from "./sw-register";
 
 const SESSION_KEY = "eventpal:session:v1";
-const PENDING_LEADS_KEY = "eventpal:pending_leads:v1";
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -1795,22 +1796,11 @@ export async function getEventFormStarts(eventId: string): Promise<RegistrationF
 
 // ---- lead CRUD ----
 
-/** Local queue management for offline-first lead sync. */
+/** Synchronous snapshot of the offline queue, for rendering a pending count.
+ *  The queue itself lives in IndexedDB — see lib/offline-queue.ts. */
 export function getPendingLeads(): PendingLead[] {
   if (!isBrowser()) return [];
-  try {
-    const raw = window.localStorage.getItem(PENDING_LEADS_KEY);
-    return raw ? (JSON.parse(raw) as PendingLead[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function setPendingLeads(leads: PendingLead[]): void {
-  if (isBrowser()) {
-    window.localStorage.setItem(PENDING_LEADS_KEY, JSON.stringify(leads));
-    emitChange();
-  }
+  return queueSnapshot();
 }
 
 /** Admin path (reading via the RLS-scoped browser client, e.g. for a manual re-fetch)
@@ -1826,8 +1816,9 @@ export async function addLead(input: Omit<LeadRecord, "id" | "createdAt">): Prom
   };
 
   // 1. Persist locally first (Zero Data Loss)
-  const queue = getPendingLeads();
-  setPendingLeads([...queue, pendingLead]);
+  await enqueue(pendingLead);
+  // Ask the service worker to flush if this tab goes away before we do.
+  requestBackgroundSync();
 
   try {
     const res = await fetch("/api/leads", {
@@ -1840,7 +1831,7 @@ export async function addLead(input: Omit<LeadRecord, "id" | "createdAt">): Prom
 
     if (res.ok) {
       // 2. Remove from queue on success
-      setPendingLeads(getPendingLeads().filter((l) => l.id !== leadId));
+      await dequeue(leadId);
 
       const record: LeadRecord = { ...input, id: json.id, createdAt: new Date().toISOString() };
       leadsCache = [...leadsCache, record];
@@ -1856,7 +1847,7 @@ export async function addLead(input: Omit<LeadRecord, "id" | "createdAt">): Prom
 
     if (res.status === 400) {
       // Validation error — remove from queue as it will never succeed without changes
-      setPendingLeads(getPendingLeads().filter((l) => l.id !== leadId));
+      await dequeue(leadId);
       throw new PersistError(json.error || "Invalid lead data.");
     }
 

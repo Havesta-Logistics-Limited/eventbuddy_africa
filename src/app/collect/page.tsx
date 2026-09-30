@@ -13,7 +13,6 @@ import { DynamicLeadForm, type DynamicLeadFormValues } from "@/components/dynami
 import { QrScannerPanel } from "@/components/qr-scanner-panel";
 import { AuthLoading } from "@/components/auth-loading";
 import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
-import { useLeadSync } from "@/hooks/useLeadSync";
 
 const STAFF_ONLY: Role[] = ["staff"];
 
@@ -49,7 +48,8 @@ const emptyForm: FormState = {
 
 export default function LeadCollectPage() {
   const session = useRequireRole(STAFF_ONLY);
-  useLeadSync();
+  // Sync runs app-wide from OfflineSupport in the root layout now — mounting it
+  // here too would start a second loop racing the first over the same queue.
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitted, setSubmitted] = useState(false);
   const [count, setCount] = useState(0);
