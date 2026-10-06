@@ -149,10 +149,11 @@ export function WristbandObject({ className = "" }: { className?: string }) {
   );
 }
 
+// Same order as the logo mark: orange, deep pink, light orchid pink, indigo.
 const ORBS = [
   { cx: 38, cy: 60, r: 34, a: "#FFC08F", b: "#FF7D2D", c: "#B8460A" },
   { cx: 78, cy: 46, r: 40, a: "#FF9CF6", b: "#ED1CDC", c: "#8A0D74" },
-  { cx: 116, cy: 64, r: 38, a: "#C4A8FF", b: "#8B5CF6", c: "#4C1D95" },
+  { cx: 116, cy: 64, r: 38, a: "#FFE3FB", b: "#FF8AF5", c: "#C21FAF" },
   { cx: 150, cy: 50, r: 30, a: "#A5A8FF", b: "#5B4BF0", c: "#2A1C8F" },
 ];
 

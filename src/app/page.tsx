@@ -24,7 +24,7 @@ import {
 import { Logo } from "@/components/logo";
 import { LandingHero, LandingNav } from "@/components/landing/landing-hero";
 import { TrustedBy } from "@/components/landing/trusted-by";
-import { LandingStats } from "@/components/landing/landing-stats";
+import { LandingWays } from "@/components/landing/landing-ways";
 import { DEFAULT_TICKET_FEE, fetchCurrentTicketFee, formatTicketFee } from "@/lib/billing";
 import { faqs } from "@/app/pricing/faqs";
 
@@ -60,23 +60,6 @@ function getFeatures(feeLabel: string) {
   ];
 }
 
-// A wider set for the hero marquee — the first four are dedicated templates, the
-// rest are genuinely just as supported through the custom/blank form builder, so
-// naming them isn't a promise the product doesn't keep, just a longer honest list.
-const MARQUEE_EVENT_TYPES = [
-  "Education Fairs",
-  "Job Fairs",
-  "Conferences",
-  "Trade Shows",
-  "Corporate Events",
-  "Summits",
-  "Festivals",
-  "Community Events",
-  "Government Events",
-  "Churches",
-  "Custom Events",
-];
-
 // Every capability check here is real and verifiable against the actual product —
 // nothing implies a fabricated usage stat or customer count, only what the software
 // and the patchwork of tools it replaces actually do or don't do. "Spreadsheet +
@@ -99,11 +82,6 @@ const HOME_FAQ_QUESTIONS = [
   "Can I try it before paying for anything?",
 ];
 
-// The one organization currently running real events on eventbuddy — its own
-// published event names are pulled live into the "events powered" marquee below,
-// growing automatically as it creates more. Revisit once there's more than one
-// org worth featuring here.
-const FEATURED_ORG_SLUG = "dregon-j-z-techbase-limited";
 
 export default function MarketingHomePage() {
   // Every visible fee on this page mirrors platform_settings (percentage + flat
@@ -118,26 +96,6 @@ export default function MarketingHomePage() {
   const FEATURES = getFeatures(feeLabel);
   const homeFaqs = faqs(feeLabel).filter((f) => HOME_FAQ_QUESTIONS.includes(f.q));
 
-  // Real event names, fetched live from the featured org's own hosted-events list
-  // (any published event, past or upcoming — see 0037_marquee_hosted_events.sql) —
-  // never hardcoded copy, so this can never drift into showing a stale or made-up
-  // name. Deduped since the same event name can recur across an org's history.
-  // Falls back to generic category labels if the featured org has no events at
-  // all yet — this strip must never render empty and disappear (it did once,
-  // when it borrowed the upcoming-only query the staff/rep pickers use, and the
-  // featured org's events all finished at the same time).
-  const [eventNames, setEventNames] = useState<string[]>(MARQUEE_EVENT_TYPES.slice(0, 6));
-  useEffect(() => {
-    fetch(`/api/orgs/${FEATURED_ORG_SLUG}/hosted-events`)
-      .then((res) => res.json())
-      .then((data) => {
-        const names: string[] = data.names || [];
-        if (names.length > 0) setEventNames(names);
-      })
-      .catch(() => {
-        /* keep the fallback names already set */
-      });
-  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -146,72 +104,7 @@ export default function MarketingHomePage() {
 
       <TrustedBy />
 
-      <LandingStats eventNames={eventNames} />
-
-      {/* Two ways to work with us — deliberately unequal weight: Self-Serve is a
-          quiet, plain-text option; Full-Service & Enterprise gets the featured
-          gradient card, since that's the option this section needs to sell hardest
-          at a glance, not a neutral side-by-side comparison. */}
-      <section className="max-w-5xl mx-auto px-6 py-20">
-        <h2 className="font-display text-3xl text-slate-900 text-center mb-2">Two ways to bring eventbuddy to your event</h2>
-        <p className="text-slate-500 text-center max-w-lg mx-auto mb-12">Run it yourself, or let our own team take the whole day off your hands.</p>
-        <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-6 items-stretch">
-          <div className="rounded-3xl border border-slate-200 p-8 flex flex-col">
-            <div className="w-11 h-11 rounded-xl bg-brand-600 flex items-center justify-center mb-4">
-              <Settings2 size={19} className="text-white" />
-            </div>
-            <h3 className="font-display text-xl text-slate-900 mb-2">Run it yourself — Self-Serve</h3>
-            <p className="text-sm text-slate-500 leading-relaxed mb-5">
-              Set up registration and ticketing yourself, virtual or in person, and manage it all from your
-              dashboard — free to start, and you only pay when a ticket sells.
-            </p>
-            <Link href="/signup" className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:underline mt-auto">
-              Get Started
-              <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          <div
-            className="relative overflow-hidden rounded-3xl p-8 sm:p-10 text-white flex flex-col"
-            style={{ background: "radial-gradient(ellipse 150% 130% at 85% -10%, #FF8AF5 0%, #C21FAF 60%, #170821 140%)" }}
-          >
-            <div
-              className="absolute inset-0 opacity-[0.07]"
-              style={{ backgroundImage: "radial-gradient(circle at center, rgba(255,255,255,0.4) 1px, transparent 1px)", backgroundSize: "26px 26px" }}
-            />
-            <div className="relative flex flex-col flex-1">
-              <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center mb-5">
-                <Users2 size={22} className="text-white" />
-              </div>
-              <h3 className="font-display text-2xl sm:text-3xl leading-tight mb-3">We run it. You just show up.</h3>
-              <p className="text-white/70 leading-relaxed mb-6 max-w-md">
-                No staff to train, no devices to source, no last-minute panic — our own team lands at your venue and
-                owns the entire day.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 mb-8">
-                {[
-                  "On-site staff running your check-in desk",
-                  "Devices and QR badge printing, handled for you",
-                  "Registration, ticketing, check-in & live event hub, end-to-end",
-                  "Enterprise scales the same team across every event",
-                ].map((item) => (
-                  <div key={item} className="flex items-start gap-2 text-sm text-white/85">
-                    <Check size={15} className="text-white shrink-0 mt-0.5" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-              <Link
-                href="/managed-events"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-white text-brand-700 hover:bg-white/90 transition-colors mt-auto w-fit"
-              >
-                Request a quote
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      <LandingWays feeLabel={feeLabel} />
 
       {/* Product demo — an actual walkthrough embedded right here, so a visitor
           can see eventbuddy working before deciding whether to sign up. */}

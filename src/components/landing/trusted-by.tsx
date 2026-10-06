@@ -9,6 +9,9 @@ import { Pause, Play } from "lucide-react";
  *   Eko Hotels & Suites — ekohotels.com
  *   Abuja Continental   — abujacontinental.com
  *   Mövenpick           — movenpick.accor.com (Mövenpick Ambassador Hotel Accra)
+ *   Marriott            — marriott-hotels.marriott.com (Lagos Marriott Hotel Ikeja;
+ *                         the hotel's own page blocks automated access)
+ *   Lagos Oriental      — lagosoriental.com
  * Los Angeles Event Center has no website and its Instagram is behind a login,
  * so its name is set as plain text until the venue's logo file is supplied. */
 type Venue =
@@ -19,6 +22,8 @@ const VENUES: Venue[] = [
   { name: "Eko Hotels & Suites", kind: "image", src: "/logos/trusted/eko-hotels.png", w: 294, h: 62, height: 34 },
   { name: "Abuja Continental Hotel", kind: "image", src: "/logos/trusted/abuja-continental.png", w: 937, h: 450, height: 50 },
   { name: "Mövenpick Ambassador Hotel Accra", kind: "image", src: "/logos/trusted/movenpick.svg", w: 280, h: 98, height: 40 },
+  { name: "Lagos Marriott Hotel Ikeja", kind: "image", src: "/logos/trusted/marriott.png", w: 650, h: 480, height: 46 },
+  { name: "Lagos Oriental Hotel", kind: "image", src: "/logos/trusted/lagos-oriental.png", w: 240, h: 240, height: 50 },
   { name: "Los Angeles Event Center, Abuja", kind: "text" },
 ];
 

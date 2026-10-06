@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { formatTicketFee, type TicketFee } from "@/lib/billing";
@@ -51,8 +50,6 @@ const STARS = makeStars(90);
 
 export function LandingHero({ fee }: { fee: TicketFee }) {
   const feeLabel = formatTicketFee(fee);
-  const router = useRouter();
-  const [email, setEmail] = useState("");
   const stageRef = useRef<HTMLDivElement>(null);
 
   // Scroll-linked rise: --rise runs 0 → 1 as the product window travels from the
@@ -85,12 +82,6 @@ export function LandingHero({ fee }: { fee: TicketFee }) {
     };
   }, []);
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const v = email.trim();
-    router.push(v ? `/signup?email=${encodeURIComponent(v)}` : "/signup");
-  };
-
   return (
     <section className="lp-hero relative isolate overflow-hidden" aria-labelledby="lp-hero-title">
       {/* the glow pool and its stars */}
@@ -109,32 +100,17 @@ export function LandingHero({ fee }: { fee: TicketFee }) {
         <h1 id="lp-hero-title" className="lp-title mx-auto max-w-[15ch] sm:max-w-none">
           Sell your tickets.
           <br />
-          <span className="lp-title-accent">Then run the whole event.</span>
+          <span className="lp-title-accent">Then we run the whole event.</span>
         </h1>
         <p className="mx-auto mt-6 max-w-[34rem] text-[15px] leading-relaxed text-[#C9BCD6] sm:text-lg">
           Registration, ticketing, check-in and a live event hub for any event: concerts, conferences, festivals,
           meetups. Run it yourself, or bring eventbuddy&apos;s own team on-site.
         </p>
 
-        <div className="mx-auto mt-9 flex max-w-[36rem] flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">
-          <form onSubmit={submit} className="lp-signup flex-1">
-            <label htmlFor="lp-email" className="sr-only">Email address</label>
-            <input
-              id="lp-email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <button type="submit">
-              Start for free
-              <ArrowRight size={15} aria-hidden="true" />
-            </button>
-          </form>
-          <Link href="/pricing" className="lp-ghost">See pricing</Link>
-        </div>
+        <Link href="/signup" className="lp-cta mx-auto mt-9">
+          Create Event
+          <ArrowRight size={17} aria-hidden="true" />
+        </Link>
         <p className="mt-4 text-xs text-[#9D8DAD]">Free to start · {feeLabel} on tickets sold · no subscription</p>
       </div>
 
