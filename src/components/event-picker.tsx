@@ -9,6 +9,7 @@ import { DestinationFlags } from "@/components/destination-flags";
 import { EventFilterModal } from "@/components/event-filter-modal";
 import { Reveal } from "@/components/reveal";
 import { Logo } from "@/components/logo";
+import { DarkAuroraShell } from "@/components/dark-aurora-shell";
 
 const statusStyles: Record<EventStatus, string> = {
   active: "bg-teal-500/15 text-teal-300",
@@ -107,31 +108,24 @@ export function EventPicker({
   const activeFilterCount = destFilter.length + monthFilter.length + locationFilter.length;
 
   return (
-    <div className="min-h-screen bg-canvas">
-      <div className="relative overflow-hidden px-6 pt-6 pb-16 text-white" style={{ background: theme.gradient }}>
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: "radial-gradient(circle at center, rgba(255,255,255,0.4) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-        />
+    <DarkAuroraShell tone={variant}>
+      <div className="relative px-6 pt-6 pb-12 text-white">
         <div className="relative max-w-5xl mx-auto">
           <div className="flex items-center justify-between">
-            <Logo tone="white" height={14} />
+            <Logo tone="white" height={20} />
             <button type="button" onClick={secondaryAction.onClick} className="text-sm font-medium text-white/80 hover:text-white transition-colors">
               {secondaryAction.label}
             </button>
           </div>
-          <p className={`mt-8 font-mono text-xs font-semibold uppercase tracking-widest ${theme.eyebrow}`}>{eyebrow}</p>
-          <h1 className="mt-2 font-display text-3xl leading-tight">{title}</h1>
-          <p className="mt-2 text-white/60 text-sm max-w-sm">{subtitle}</p>
+          <p className="eb-portal-eyebrow mt-10">{eyebrow}</p>
+          <h1 className="mt-3 font-display text-3xl sm:text-4xl leading-tight">{title}</h1>
+          <p className="mt-3 text-white/70 text-[15px] max-w-md">{subtitle}</p>
         </div>
       </div>
 
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 -mt-8 pb-10">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pb-10">
         {events.length === 0 ? (
-          <div className="bg-surface rounded-2xl shadow-sm border border-line p-8 text-center text-muted">
+          <div className="eb-portal-card text-center text-white/70">
             No active events found.
           </div>
         ) : (
@@ -144,27 +138,22 @@ export function EventPicker({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search events, venue, city..."
-                  className={`w-full pl-9 pr-3 py-2.5 rounded-xl border border-line bg-surface text-sm shadow-sm focus:outline-none focus:ring-2 ${theme.focusRing}`}
+                  className="eb-input"
+                  style={{ paddingLeft: "2.25rem" }}
                 />
               </div>
 
               <button
                 type="button"
                 onClick={() => setShowFilterModal(true)}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-sm font-medium shadow-sm transition-colors ${
-                  activeFilterCount > 0
-                    ? variant === "rep"
-                      ? "border-[#C21FAF]/30 bg-[#C21FAF]/5 text-[#C21FAF]"
-                      : "border-[#1098F7]/30 bg-[#1098F7]/5 text-[#1098F7]"
-                    : "border-line bg-surface text-fg-3 hover:border-line-strong"
-                }`}
+                aria-pressed={activeFilterCount > 0}
+                className="eb-chip"
               >
                 <SlidersHorizontal size={14} />
                 Filter
                 {activeFilterCount > 0 && (
                   <span
-                    className="flex items-center justify-center w-4 h-4 rounded-full text-white text-[10px] font-semibold"
-                    style={{ background: variant === "rep" ? "#C21FAF" : "#1098F7" }}
+                    className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold bg-black/25"
                   >
                     {activeFilterCount}
                   </span>
@@ -194,7 +183,7 @@ export function EventPicker({
             />
 
             {sortedEvents.length === 0 ? (
-              <div className="bg-surface rounded-2xl shadow-sm border border-line p-8 text-center text-muted">
+              <div className="eb-portal-card text-center text-white/70">
                 No events match your search.
               </div>
             ) : (
@@ -207,7 +196,8 @@ export function EventPicker({
                     <Reveal key={evt.id} index={i} className="h-full">
                     <button
                       onClick={() => onSelect(evt.id)}
-                      className={`group flex h-full flex-col text-left bg-surface rounded-2xl shadow-sm border border-line overflow-hidden hover:shadow-lg transition-all ${theme.cardHoverBorder}`}
+                      type="button"
+                      className="eb-portal-event group flex h-full w-full flex-col text-left"
                     >
                       <div className="relative aspect-video bg-fill shrink-0">
                         <EventCover event={evt} flag={primaryFlag} gradient={theme.gradient} />
@@ -251,7 +241,7 @@ export function EventPicker({
                         )}
 
                         <div className="mt-auto pt-4">
-                          <span className={`block w-full text-center py-2 rounded-full border border-line-strong text-sm font-medium text-fg-2 transition-colors ${theme.ctaHover}`}>
+                          <span className="eb-portal-event-cta">
                             {selectLabel}
                           </span>
                         </div>
@@ -265,6 +255,6 @@ export function EventPicker({
           </>
         )}
       </div>
-    </div>
+    </DarkAuroraShell>
   );
 }

@@ -15,10 +15,11 @@ const STAFF_ONLY: Role[] = ["staff"];
 
 type Result = { kind: "success" | "already" | "error"; name?: string; message: string };
 
-const resultStyles: Record<Result["kind"], { ring: string; bg: string; icon: React.ReactNode }> = {
-  success: { ring: "ring-teal-500/20", bg: "bg-teal-500/15 text-teal-300", icon: <CheckCircle2 size={26} /> },
-  already: { ring: "ring-amber-500/20", bg: "bg-amber-500/15 text-amber-300", icon: <Clock3 size={26} /> },
-  error: { ring: "ring-rose-500/20", bg: "bg-rose-500/15 text-rose-300", icon: <AlertCircle size={26} /> },
+// Big, solid result states: read at arm's length at a bright venue door.
+const RESULT: Record<Result["kind"], { icon: React.ReactNode; title: string }> = {
+  success: { icon: <CheckCircle2 size={34} strokeWidth={2.4} />, title: "Checked in" },
+  already: { icon: <Clock3 size={34} strokeWidth={2.4} />, title: "Already checked in" },
+  error: { icon: <AlertCircle size={34} strokeWidth={2.4} />, title: "Can't check in" },
 };
 
 export default function CheckinPage() {
@@ -110,29 +111,31 @@ export default function CheckinPage() {
 
   return (
     <Shell>
-      <div className="p-6 max-w-md mx-auto">
+      <div className="eb-staff p-5 sm:p-8 max-w-lg mx-auto">
         <div className="flex items-start justify-between gap-4 mb-5">
           <div>
-            <h1 className="font-display text-2xl text-fg flex items-center gap-2">
-              <ScanLine size={22} className="text-[#1098F7]" />
+            <h1 className="eb-app-title flex items-center gap-2.5">
+              <ScanLine size={26} className="text-[var(--pt-a)]" aria-hidden="true" />
               Check-In
             </h1>
-            <p className="text-muted text-sm mt-1">Scan an attendee&apos;s QR code, or enter their reference ID.</p>
+            <p className="eb-app-sub">Scan an attendee&apos;s QR code, or type their reference ID.</p>
           </div>
-          {sessionCount > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-500/10 text-teal-300 text-xs font-semibold shrink-0">
-              <Users size={13} />
-              {sessionCount}
-            </div>
-          )}
+          <div className="eb-staff-count" aria-live="polite">
+            <Users size={15} aria-hidden="true" />
+            <span>
+              <b>{sessionCount}</b> checked in
+            </span>
+          </div>
         </div>
 
         {result && (
-          <div className={`flex items-center gap-4 p-4 mb-4 rounded-2xl border border-line bg-surface ring-4 ${resultStyles[result.kind].ring}`}>
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${resultStyles[result.kind].bg}`}>{resultStyles[result.kind].icon}</div>
+          // key re-mounts it so the pop plays again for every scan
+          <div key={`${result.kind}-${result.name}-${sessionCount}-${result.message}`} className="eb-scan-result" data-kind={result.kind} role="status" aria-live="assertive">
+            <span className="eb-scan-result-icon" aria-hidden="true">{RESULT[result.kind].icon}</span>
             <div className="min-w-0">
-              {result.name && <p className="text-base font-semibold text-fg truncate">{result.name}</p>}
-              <p className="text-sm text-muted">{result.message}</p>
+              <p className="eb-scan-result-title">{RESULT[result.kind].title}</p>
+              {result.name && <p className="eb-scan-result-name">{result.name}</p>}
+              <p className="eb-scan-result-msg">{result.message}</p>
             </div>
           </div>
         )}
@@ -141,22 +144,21 @@ export default function CheckinPage() {
           <QrScannerPanel onScan={checkIn} label="Camera scan" />
         </div>
 
-        <form onSubmit={handleManualSubmit} className="bg-surface rounded-2xl border border-line p-5">
-          <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Or enter code manually</h2>
-          <div className="flex gap-2">
+        <form onSubmit={handleManualSubmit} className="eb-card p-5">
+          <label htmlFor="ck-ref" className="eb-label">Or enter the reference ID</label>
+          <div className="flex flex-col gap-2.5 sm:flex-row">
             <input
+              id="ck-ref"
               value={referenceId}
               onChange={(e) => setReferenceId(e.target.value)}
               placeholder="e.g. K7QX-4R2M"
-              className="flex-1 px-3.5 py-2.5 rounded-lg border border-line text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#1098F7]"
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              className="eb-input eb-ref-input"
             />
-            <button
-              type="submit"
-              disabled={submitting || !referenceId.trim()}
-              className="px-4 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 shrink-0"
-              style={{ background: "#1098F7" }}
-            >
-              {submitting ? "Checking…" : "Check In"}
+            <button type="submit" disabled={submitting || !referenceId.trim()} className="eb-portal-cta sm:w-auto sm:px-7">
+              {submitting ? "Checking…" : "Check in"}
             </button>
           </div>
         </form>

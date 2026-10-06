@@ -24,6 +24,18 @@ export default function LoginPage() {
     }
   }, [session, router]);
 
+  // An unverified account can ask for a fresh verification link right here.
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
+  async function resendVerification() {
+    setResendState("sending");
+    const res = await fetch("/api/resend-verification", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) }).catch(() => null);
+    if (res?.ok) setResendState("sent");
+    else {
+      setResendState("idle");
+      setError("We couldn't send the email just now. Try again in a minute.");
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidEmail(email)) {
@@ -161,7 +173,14 @@ export default function LoginPage() {
                 {error && (
                   <div className="eb-alert" role="alert">
                     <AlertCircle size={15} className="mt-0.5 shrink-0" />
-                    {error}
+                    <span>
+                      {error}
+                      {/verify your email/i.test(error) && (
+                        <button type="button" onClick={resendVerification} disabled={resendState === "sending"} className="eb-link ml-1 font-semibold">
+                          {resendState === "sending" ? "Sending…" : resendState === "sent" ? "Sent, check your inbox" : "Resend the email"}
+                        </button>
+                      )}
+                    </span>
                   </div>
                 )}
 

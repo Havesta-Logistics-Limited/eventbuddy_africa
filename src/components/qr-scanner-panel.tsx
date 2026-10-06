@@ -93,7 +93,7 @@ export function QrScannerPanel(props: {
   }, [active]);
 
   return (
-    <div className="bg-surface rounded-2xl border border-line overflow-hidden">
+    <div className="eb-card eb-scanner">
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
         <h2 className="flex items-center gap-1.5 text-xs font-semibold text-muted uppercase tracking-wider">
           <ScanLine size={13} className="text-subtle" />

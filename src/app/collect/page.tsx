@@ -227,20 +227,20 @@ export default function LeadCollectPage() {
     }
   };
 
-  const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-staff-600 focus:border-transparent";
-  const selectClass = `${fieldClass} cursor-pointer`;
-  const labelClass = "block text-sm font-medium text-fg-2 mb-1.5";
+  const fieldClass = "eb-input";
+  const selectClass = "eb-input cursor-pointer";
+  const labelClass = "eb-label";
 
   if (submitted) {
     const pendingCount = getPendingLeads().length;
     return (
       <Shell>
-        <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="eb-staff min-h-screen flex items-center justify-center p-6">
           <div className="text-center">
-            <div className="w-20 h-20 rounded-full bg-sky-500/15 flex items-center justify-center mx-auto mb-5">
-              <CheckCircle2 size={40} className="text-sky-400" />
+            <div className="eb-captured-icon">
+              <CheckCircle2 size={44} strokeWidth={2.4} aria-hidden="true" />
             </div>
-            <h2 className="font-display text-2xl text-fg mb-2">Lead captured!</h2>
+            <h2 className="font-display text-3xl text-fg mb-2">Lead captured!</h2>
             <p className="text-muted mb-1">
               {pendingCount > 0 ? "Saved locally (pending sync)" : "Record saved successfully."}
             </p>
@@ -257,8 +257,8 @@ export default function LeadCollectPage() {
   if (event && template.id !== "education-fair") {
     return (
       <Shell>
-        <div className="min-h-screen bg-canvas">
-          <div className="sticky top-0 z-30 bg-[#04223d] text-white px-4 py-3">
+        <div className="eb-staff min-h-screen bg-canvas">
+          <div className="eb-staff-bar sticky top-0 z-30 text-white px-4 py-3">
             <div className="max-w-xl mx-auto flex items-center justify-between">
               <p className="font-semibold text-sm truncate max-w-[200px] sm:max-w-none">{event.name}</p>
               <div className="flex items-center gap-1.5 bg-amber-500/20 px-2.5 py-1 rounded-full">
@@ -270,7 +270,7 @@ export default function LeadCollectPage() {
 
           <div className="max-w-xl mx-auto px-4 py-6">
             <div className="mb-5">
-              <h1 className="font-display text-2xl text-fg">Attendee Registration</h1>
+              <h1 className="eb-app-title">Attendee Registration</h1>
               <p className="text-muted text-sm mt-1">Capture lead details for {event.name}</p>
             </div>
 
@@ -285,8 +285,8 @@ export default function LeadCollectPage() {
 
   return (
     <Shell>
-      <div className="min-h-screen bg-canvas">
-        <div className="sticky top-0 z-30 bg-[#04223d] text-white px-4 py-3">
+      <div className="eb-staff min-h-screen bg-canvas">
+        <div className="eb-staff-bar sticky top-0 z-30 text-white px-4 py-3">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <div>
               {event && <p className="font-semibold text-sm truncate max-w-[200px] sm:max-w-none">{event.name}</p>}
@@ -308,7 +308,7 @@ export default function LeadCollectPage() {
 
         <div className="max-w-xl mx-auto px-4 py-6">
           <div className="mb-5">
-            <h1 className="font-display text-2xl text-fg">Attendee Registration</h1>
+            <h1 className="eb-app-title">Attendee Registration</h1>
             <p className="text-muted text-sm mt-1">Capture lead details for {uni?.name || "your university"}</p>
           </div>
 
@@ -318,7 +318,7 @@ export default function LeadCollectPage() {
               label="Scan to pull attendee details"
               helperText="Scan a registered attendee's QR code to fill in their name, email, and phone — or use manual entry below."
             />
-            <form onSubmit={handleLookupSubmit} className="bg-surface rounded-xl border border-line p-5">
+            <form onSubmit={handleLookupSubmit} className="eb-card p-5">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-muted uppercase tracking-wider mb-3">
                 <ScanLine size={13} className="text-subtle" />
                 Manual reference ID
@@ -328,12 +328,12 @@ export default function LeadCollectPage() {
                   value={lookupRef}
                   onChange={(e) => setLookupRef(e.target.value)}
                   placeholder="e.g. K7QX-4R2M"
-                  className="flex-1 px-3.5 py-2.5 rounded-lg border border-line text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-staff-600"
+                  className="eb-input eb-ref-input"
                 />
                 <button
                   type="submit"
                   disabled={lookupLoading || !lookupRef.trim()}
-                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-staff-600 hover:bg-staff-700 disabled:opacity-60 transition-[transform,background-color] active:scale-[0.97]"
+                  className="eb-portal-cta w-auto px-6"
                 >
                   {lookupLoading ? "Looking up…" : "Pull details"}
                 </button>
@@ -350,7 +350,7 @@ export default function LeadCollectPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="bg-surface rounded-xl border border-line p-5 space-y-4">
+            <div className="eb-card p-5 space-y-4">
               <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Personal Information</h2>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -383,7 +383,7 @@ export default function LeadCollectPage() {
               </div>
             </div>
 
-            <div className="bg-surface rounded-xl border border-line p-5 space-y-4">
+            <div className="eb-card p-5 space-y-4">
               <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Academic Interest</h2>
 
               <div>
@@ -430,7 +430,7 @@ export default function LeadCollectPage() {
               </div>
             </div>
 
-            <div className="bg-surface rounded-xl border border-line p-5 space-y-4">
+            <div className="eb-card p-5 space-y-4">
               <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Qualifications</h2>
               <div>
                 <label className={labelClass}>Highest Level of Education *</label>
@@ -449,7 +449,7 @@ export default function LeadCollectPage() {
                     <label
                       key={val}
                       className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer text-sm transition-colors ${
-                        form.takenIELTS === val ? "border-sky-500 bg-sky-500/10 text-sky-200 font-medium" : "border-line text-fg-2 hover:border-line-strong"
+                        form.takenIELTS === val ? "border-[#4fb3ff] bg-[#4fb3ff] text-[#04121f] font-semibold" : "border-line text-fg-2 hover:border-line-strong"
                       }`}
                     >
                       <input
@@ -468,19 +468,19 @@ export default function LeadCollectPage() {
               </div>
             </div>
 
-            <div className="bg-surface rounded-xl border border-line p-5">
+            <div className="eb-card p-5">
               <label className={labelClass}>Additional Comments</label>
               <textarea
                 rows={3}
                 value={form.comments}
                 onChange={(e) => set("comments", e.target.value)}
                 placeholder="Any notes, questions, or special requirements…"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-staff-600 resize-none"
+                className="eb-input resize-none"
               />
             </div>
 
             {submitError && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
+              <div className="eb-alert" role="alert">
                 <AlertCircle size={15} className="mt-0.5 shrink-0" />
                 {submitError}
               </div>
@@ -488,7 +488,7 @@ export default function LeadCollectPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3.5 rounded-xl font-semibold text-white text-base bg-staff-600 hover:bg-staff-700 disabled:opacity-60 transition-[transform,background-color] active:scale-[0.98]"
+              className="eb-portal-cta"
             >
               {submitting ? "Saving…" : "Save Lead"}
             </button>

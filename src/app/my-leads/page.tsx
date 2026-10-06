@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Users } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
@@ -22,17 +23,28 @@ export default function MyLeadsPage() {
 
   return (
     <Shell>
-      <div className="p-4 sm:p-6 max-w-3xl mx-auto">
-        <div className="mb-6">
-          <h1 className="font-display text-2xl text-fg">My Leads</h1>
-          <p className="text-muted text-sm mt-0.5">{myLeads.length} leads collected by you</p>
+      <div className="eb-staff eb-app-page p-5 sm:p-8 max-w-3xl mx-auto">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="eb-app-title">My Leads</h1>
+            <p className="eb-app-sub">Everyone you&apos;ve added from the lead form, newest first.</p>
+          </div>
+          <div className="eb-staff-count">
+            <Users size={15} aria-hidden="true" />
+            <span>
+              <b>{myLeads.length}</b> {myLeads.length === 1 ? "lead" : "leads"}
+            </span>
+          </div>
         </div>
 
         {myLeads.length === 0 ? (
-          <div className="text-center py-16 text-subtle">
-            <Users size={36} className="mx-auto mb-3 opacity-40" />
-            <p className="font-medium">No leads yet</p>
-            <p className="text-sm mt-1">Start collecting leads from the form</p>
+          <div className="eb-card items-center p-10 text-center">
+            <Users size={30} className="mb-3 text-faint" aria-hidden="true" />
+            <p className="font-medium text-fg-2">No leads yet</p>
+            <p className="mt-1 text-sm text-muted">Everyone you add from the lead form shows up here.</p>
+            <Link href="/collect" className="eb-portal-cta mt-5 max-w-xs">
+              Collect a lead
+            </Link>
           </div>
         ) : (
           <div className="space-y-3">
@@ -42,14 +54,15 @@ export default function MyLeadsPage() {
               const details = formatCustomAnswers(lead.customAnswers, event?.customFields);
               return (
                 <Reveal key={lead.id} index={i}>
-                <div className="bg-surface rounded-xl border border-line p-4 transition-shadow hover:shadow-sm">
+                <div className="eb-lead-row">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <span className="eb-lead-avatar" aria-hidden="true">{(lead.firstName || "?").charAt(0)}</span>
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-fg">
                         {lead.firstName} {lead.middleName ? `${lead.middleName} ` : ""}
                         {lead.lastName}
                       </p>
-                      <p className="text-sm text-muted">
+                      <p className="truncate text-sm text-muted">
                         {lead.email} · {lead.phone}
                       </p>
                     </div>

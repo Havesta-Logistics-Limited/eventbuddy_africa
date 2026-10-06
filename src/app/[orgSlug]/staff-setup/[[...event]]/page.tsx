@@ -190,12 +190,12 @@ export default function StaffSetupPage() {
         variant="staff"
       />
       <div className="relative -mt-8">
-        <div className="bg-surface/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl p-6">
+        <div className="eb-portal-card">
         <div className="space-y-8">
           {codeRequired && (
             <section>
-              <h2 className="flex items-center gap-2 text-base font-bold text-white mb-3">
-                <KeyRound size={16} className="text-white/40" />
+              <h2 className="eb-portal-step">
+                <KeyRound size={16} className="text-white/60" aria-hidden="true" />
                 Event access code
               </h2>
               <input
@@ -206,12 +206,12 @@ export default function StaffSetupPage() {
                   setError("");
                 }}
                 placeholder="Enter the code provided by your event coordinator"
-                className="w-full px-4 py-3 rounded-xl border border-white/20 bg-surface/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-[#1098F7]"
+                className="eb-input"
               />
             </section>
           )}
           <section>
-            <h2 className="text-base font-bold text-white mb-3">1. Who are you?</h2>
+            <h2 className="eb-portal-step"><b>1</b> Who are you?</h2>
             <div className="flex flex-wrap gap-2.5">
               {eventStaffMembers.map((s) => (
                 <button
@@ -220,13 +220,11 @@ export default function StaffSetupPage() {
                     setIsNewStaff(false);
                     setSelectedStaffName(s.name);
                   }}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-colors ${
-                    !isNewStaff && selectedStaffName === s.name
-                      ? "border-[#1098F7] bg-[#1098F7] text-white"
-                      : "border-white/20 bg-surface/5 text-white/80 hover:bg-surface/10"
-                  }`}
+                  type="button"
+                  aria-pressed={!isNewStaff && selectedStaffName === s.name}
+                  className="eb-chip"
                 >
-                  <UserRound size={14} className={!isNewStaff && selectedStaffName === s.name ? "text-white/70" : "text-white/40"} />
+                  <UserRound size={15} aria-hidden="true" />
                   {s.name}
                 </button>
               ))}
@@ -235,13 +233,11 @@ export default function StaffSetupPage() {
                   setIsNewStaff(true);
                   setSelectedStaffName(null);
                 }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full border border-dashed text-sm font-medium transition-colors ${
-                  isNewStaff
-                    ? "border-[#1098F7] bg-[#1098F7] text-white border-solid"
-                    : "border-white/25 bg-transparent text-white/70 hover:bg-surface/5"
-                }`}
+                type="button"
+                aria-pressed={isNewStaff}
+                className={`eb-chip ${isNewStaff ? "" : "eb-chip--dashed"}`}
               >
-                <Plus size={14} className={isNewStaff ? "text-white/70" : "text-white/40"} />
+                <Plus size={15} aria-hidden="true" />
                 New staff member
               </button>
             </div>
@@ -253,7 +249,7 @@ export default function StaffSetupPage() {
                   placeholder="Enter your full name"
                   value={newStaffName}
                   onChange={(e) => setNewStaffName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-white/20 bg-surface/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-[#1098F7]"
+                  className="eb-input"
                   autoFocus
                 />
               </div>
@@ -263,7 +259,7 @@ export default function StaffSetupPage() {
           {usesDestinations && (
             <>
               <section>
-                <h2 className="text-base font-bold text-white mb-3">2. Which destination?</h2>
+                <h2 className="eb-portal-step"><b>2</b> Which destination?</h2>
                 <div className="flex flex-wrap gap-2.5">
                   {destinations
                     .filter((d) => selectedEvent.destinationIds.includes(d.id))
@@ -274,11 +270,9 @@ export default function StaffSetupPage() {
                           setSelectedDestId(d.id);
                           setSelectedUniId(null);
                         }}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-colors ${
-                          selectedDestId === d.id
-                            ? "border-[#1098F7] bg-[#1098F7] text-white"
-                            : "border-white/20 bg-surface/5 text-white/80 hover:bg-surface/10"
-                        }`}
+                        type="button"
+                        aria-pressed={selectedDestId === d.id}
+                        className="eb-chip"
                       >
                         <span className="text-base leading-none">{d.flag}</span>
                         {d.name}
@@ -288,14 +282,12 @@ export default function StaffSetupPage() {
               </section>
 
               <section>
-                <h2 className="text-base font-bold text-white mb-3">3. Which school?</h2>
+                <h2 className="eb-portal-step"><b>3</b> Which school?</h2>
                 <select
                   value={selectedUniId || ""}
                   onChange={(e) => setSelectedUniId(e.target.value)}
                   disabled={!selectedDestId}
-                  className={`w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#1098F7] ${
-                    !selectedDestId ? "border-white/10 border-dashed bg-surface/5 text-white/30 cursor-not-allowed" : "border-white/20 bg-surface/5 text-white"
-                  }`}
+                  className="eb-input disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="" disabled>
                     Select a destination first.
@@ -313,7 +305,7 @@ export default function StaffSetupPage() {
 
         <div className="mt-8 pt-4">
           {error && (
-            <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-rose-400/10 text-rose-200 text-sm">
+            <div className="eb-alert mb-4" role="alert">
               <AlertCircle size={15} className="mt-0.5 shrink-0" />
               {error}
             </div>
@@ -321,13 +313,11 @@ export default function StaffSetupPage() {
           <button
             onClick={handleStart}
             disabled={!isFormValid || submitting}
-            className={`w-full py-4 rounded-xl font-medium text-base transition-colors ${
-              isFormValid && !submitting ? "bg-[#1098F7] text-white hover:bg-[#0b7dd1]" : "bg-surface/10 text-white/30 cursor-not-allowed"
-            }`}
+            className="eb-portal-cta"
           >
             {submitting ? "Checking in…" : "Start collecting leads"}
           </button>
-          <p className="text-center text-xs text-white/50 mt-4 px-4 leading-relaxed">
+          <p className="text-center text-xs text-white/60 mt-4 px-4 leading-relaxed">
             This locks the form so every lead you add is tagged correctly — no password needed on this device.
           </p>
         </div>

@@ -4,8 +4,9 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Eye, EyeOff, MailCheck } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { AuthCentered, AuthSplit } from "@/components/auth/auth-shell";
+import { CheckEmailPanel } from "@/components/auth/check-email-panel";
 import { isValidEmail, isValidPhoneStrict, sanitizePhoneInput } from "@/lib/validation";
 
 // useSearchParams needs a Suspense boundary so the rest of the page can still be
@@ -32,6 +33,7 @@ function SignupForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
+  const [emailSent, setEmailSent] = useState(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +59,7 @@ function SignupForm() {
         setLoading(false);
         return;
       }
+      setEmailSent(data.emailSent !== false);
       setSubmittedEmail(email);
     } catch {
       setError("Couldn't reach the server. Check your connection and try again.");
@@ -67,19 +70,7 @@ function SignupForm() {
   if (submittedEmail) {
     return (
       <AuthCentered>
-        <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl bg-brand-500/15 flex items-center justify-center mx-auto mb-5">
-            <MailCheck size={24} className="text-brand-500" />
-          </div>
-          <h1 className="eb-auth-title mb-2">Check your email</h1>
-          <p className="text-muted text-sm mb-8">
-            We&apos;ve sent a verification link to <span className="font-medium text-fg-2">{submittedEmail}</span>. Verify your email to
-            activate your account — you won&apos;t be able to sign in until it&apos;s confirmed.
-          </p>
-          <button type="button" onClick={() => router.push("/login")} className="eb-link text-sm">
-            Back to sign in
-          </button>
-        </div>
+        <CheckEmailPanel email={submittedEmail} emailSent={emailSent} onBack={() => router.push("/login")} />
       </AuthCentered>
     );
   }

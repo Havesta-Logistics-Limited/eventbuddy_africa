@@ -114,20 +114,24 @@ function MarketplaceContent({ isPromoter }: { isPromoter: boolean }) {
             const isJoined = e.eventId in joined;
             return (
               <article key={e.eventId} className="eb-market-card">
-                <div className="eb-market-cover">
-                  {e.coverImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={e.coverImage} alt="" />
-                  ) : (
-                    <span className="eb-market-cover-ph">{e.name}</span>
-                  )}
+                {/* The rate sits on the seam between poster and details, right-aligned,
+                    so it never covers the poster's own artwork or text. */}
+                <div className="eb-market-top">
+                  <div className="eb-market-cover">
+                    {e.coverImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={e.coverImage} alt="" />
+                    ) : (
+                      <span className="eb-market-cover-ph">{e.name}</span>
+                    )}
+                  </div>
                   <span className="eb-market-rate">
-                    Earn {e.commissionPct}%
-                    {e.commissionCapNaira != null && <small>max {formatNaira(e.commissionCapNaira)}/ticket</small>}
+                    <span className="eb-market-rate-pct">Earn {e.commissionPct}%</span>
+                    <small>{e.commissionCapNaira != null ? `max ${formatNaira(e.commissionCapNaira)}/ticket` : "per ticket sold"}</small>
                   </span>
                 </div>
-                <div className="flex flex-1 flex-col gap-1.5 p-4">
-                  <h2 className="font-semibold leading-snug text-fg">{e.name}</h2>
+                <div className="flex flex-1 flex-col gap-1.5 p-4 pt-5">
+                  <h2 className="pr-32 font-semibold leading-snug text-fg">{e.name}</h2>
                   <p className="text-xs text-muted">by {e.orgName}</p>
                   <p className="mt-1 flex items-center gap-1.5 text-xs text-fg-3">
                     <Calendar size={12} aria-hidden="true" /> {formatDate(e.date)}

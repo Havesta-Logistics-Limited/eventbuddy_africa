@@ -5,11 +5,6 @@ import { EventRecord } from "@/lib/types";
 import { formatDate, formatTime } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 
-const VARIANTS = {
-  staff: { eyebrow: "text-sky-300" },
-  rep: { eyebrow: "text-fuchsia-300" },
-};
-
 /** Sits directly on the shared DarkAuroraShell backdrop (see dark-aurora-shell.tsx)
  *  rather than its own solid color banner — same look as the registration page's
  *  own title block, so a staff/rep check-in link feels like the same product as
@@ -19,15 +14,14 @@ export function EventSignInHero({
   event,
   instruction,
   secondaryAction,
-  variant = "staff",
 }: {
   eyebrow: string;
   event: EventRecord;
   instruction: string;
   secondaryAction?: { label: string; onClick: () => void };
+  /** colour comes from the surrounding DarkAuroraShell tone */
   variant?: "staff" | "rep";
 }) {
-  const theme = VARIANTS[variant];
   return (
     <div className="relative pt-6 pb-16 text-white">
       <div className="flex items-center justify-between">
@@ -43,11 +37,11 @@ export function EventSignInHero({
           </button>
         )}
       </div>
-      <p className={`mt-8 font-mono text-xs font-semibold uppercase tracking-widest ${theme.eyebrow}`}>{eyebrow}</p>
-      <h1 className="mt-2 font-display text-2xl sm:text-3xl leading-tight" style={{ textWrap: "balance" }}>
+      <p className="eb-portal-eyebrow mt-10">{eyebrow}</p>
+      <h1 className="mt-3 font-display text-3xl sm:text-4xl leading-tight" style={{ textWrap: "balance" }}>
         {event.name}
       </h1>
-      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/70">
+      <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/80">
         <span className="inline-flex items-center gap-1.5">
           {event.eventFormat === "virtual" ? (
             <>
@@ -66,7 +60,7 @@ export function EventSignInHero({
           {event.endTime && ` - ${formatTime(event.endTime)}`}
         </span>
       </p>
-      <p className="mt-3 text-white/60 text-sm max-w-sm">{instruction}</p>
+      <p className="mt-3 text-white/70 text-[15px] leading-relaxed max-w-md">{instruction}</p>
     </div>
   );
 }

@@ -38,10 +38,10 @@ export interface DynamicLeadFormValues {
   customAnswers: Record<string, string | string[]>;
 }
 
-const fieldClass =
-  "w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-[#1098F7] focus:border-transparent";
-const selectClass = `${fieldClass} cursor-pointer`;
-const labelClass = "block text-sm font-medium text-fg-2 mb-1.5";
+// Staff lead form (phase 5): the shared dark form primitives, staff blue focus via .eb-staff.
+const fieldClass = "eb-input";
+const selectClass = "eb-input cursor-pointer";
+const labelClass = "eb-label";
 const errorClass = "text-rose-300 text-xs mt-1";
 
 function DynamicField({ field, register, errors }: { field: FieldDef; register: UseFormRegister<FormValues>; errors: FieldErrors<FormValues> }) {
@@ -70,7 +70,7 @@ function DynamicField({ field, register, errors }: { field: FieldDef; register: 
         <div className="grid grid-cols-2 gap-2">
           {(field.options ?? []).map((opt) => (
             <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-line text-sm cursor-pointer hover:border-line-strong">
-              <input type="radio" value={opt} {...register(path)} className="accent-[#1098F7]" />
+              <input type="radio" value={opt} {...register(path)} className="accent-[#4fb3ff]" />
               {opt}
             </label>
           ))}
@@ -79,7 +79,7 @@ function DynamicField({ field, register, errors }: { field: FieldDef; register: 
         <div className="grid grid-cols-2 gap-2">
           {(field.options ?? []).map((opt) => (
             <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-line text-sm cursor-pointer hover:border-line-strong">
-              <input type="checkbox" value={opt} {...register(path)} className="accent-[#1098F7]" />
+              <input type="checkbox" value={opt} {...register(path)} className="accent-[#4fb3ff]" />
               {opt}
             </label>
           ))}
@@ -143,7 +143,7 @@ export function DynamicLeadForm(props: {
 
   return (
     <form onSubmit={submit} className="space-y-5">
-      <div className="bg-surface rounded-xl border border-line p-5 space-y-4">
+      <div className="eb-card p-5 space-y-4">
         <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Contact Information</h2>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -179,7 +179,7 @@ export function DynamicLeadForm(props: {
       </div>
 
       {fields.length > 0 && (
-        <div className="bg-surface rounded-xl border border-line p-5 space-y-4">
+        <div className="eb-card p-5 space-y-4">
           <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Additional Questions</h2>
           {fields.map((f) => (
             <DynamicField key={f.id} field={f} register={register} errors={errors} />
@@ -201,8 +201,7 @@ export function DynamicLeadForm(props: {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full py-3.5 rounded-xl font-semibold text-white text-base disabled:opacity-60"
-        style={{ background: "#1098F7" }}
+        className="eb-portal-cta"
       >
         {submitting ? "Saving…" : "Save Lead"}
       </button>

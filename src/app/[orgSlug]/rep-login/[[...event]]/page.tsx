@@ -99,7 +99,7 @@ export default function RepLoginPage() {
 
   if (loading) {
     return (
-      <DarkAuroraShell>
+      <DarkAuroraShell tone="rep">
         <div className="min-h-screen flex items-center justify-center">
           <MapPinCheckInside size={26} className="text-white/40 animate-pulse" />
         </div>
@@ -109,7 +109,7 @@ export default function RepLoginPage() {
 
   if (loadError) {
     return (
-      <DarkAuroraShell>
+      <DarkAuroraShell tone="rep">
         <div className="min-h-screen flex items-center justify-center p-6">
           <div className="text-center text-white/60">
             <p className="font-medium text-white/90">{loadError}</p>
@@ -126,7 +126,7 @@ export default function RepLoginPage() {
 
   if (pinnedEvent && !selectedEventId) {
     return (
-      <DarkAuroraShell>
+      <DarkAuroraShell tone="rep">
         <div className="min-h-screen flex items-center justify-center p-6">
           <div className="text-center text-white/60">
             <p className="font-medium text-white/90">This event&apos;s check-in link isn&apos;t valid anymore.</p>
@@ -157,7 +157,7 @@ export default function RepLoginPage() {
   if (!selectedEvent) return null;
 
   return (
-    <DarkAuroraShell>
+    <DarkAuroraShell tone="rep">
     <div className="min-h-screen pb-10">
       <div className="max-w-xl mx-auto px-6">
       <EventSignInHero
@@ -178,12 +178,12 @@ export default function RepLoginPage() {
         variant="rep"
       />
       <div className="relative -mt-8">
-        <div className="bg-surface/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl p-6">
+        <div className="eb-portal-card">
         <div className="space-y-8">
           {codeRequired && (
             <section>
-              <h2 className="flex items-center gap-2 text-base font-bold text-white mb-3">
-                <KeyRound size={16} className="text-white/40" />
+              <h2 className="eb-portal-step">
+                <KeyRound size={16} className="text-white/60" aria-hidden="true" />
                 Event access code
               </h2>
               <input
@@ -194,12 +194,12 @@ export default function RepLoginPage() {
                   setError("");
                 }}
                 placeholder="Enter the code provided by your event coordinator"
-                className="w-full px-4 py-3 rounded-xl border border-white/20 bg-surface/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                className="eb-input"
               />
             </section>
           )}
           <section>
-            <h2 className="text-base font-bold text-white mb-3">1. Which destination?</h2>
+            <h2 className="eb-portal-step"><b>1</b> Which destination?</h2>
             <div className="flex flex-wrap gap-2.5">
               {destinations
                 .filter((d) => selectedEvent.destinationIds.includes(d.id))
@@ -211,11 +211,9 @@ export default function RepLoginPage() {
                       setSelectedUniId(null);
                       setError("");
                     }}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-colors ${
-                      selectedDestId === d.id
-                        ? "border-[#C21FAF] bg-[#C21FAF] text-white"
-                        : "border-white/20 bg-surface/5 text-white/80 hover:bg-surface/10"
-                    }`}
+                    type="button"
+                    aria-pressed={selectedDestId === d.id}
+                    className="eb-chip"
                   >
                     {d.name}
                   </button>
@@ -224,7 +222,7 @@ export default function RepLoginPage() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-white mb-3">2. Which school?</h2>
+            <h2 className="eb-portal-step"><b>2</b> Which school?</h2>
             <select
               value={selectedUniId || ""}
               onChange={(e) => {
@@ -232,9 +230,7 @@ export default function RepLoginPage() {
                 setError("");
               }}
               disabled={!selectedDestId}
-              className={`w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] ${
-                !selectedDestId ? "border-white/10 border-dashed bg-surface/5 text-white/30 cursor-not-allowed" : "border-white/20 bg-surface/5 text-white"
-              }`}
+              className="eb-input disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="" disabled>
                 Select a destination first.
@@ -250,7 +246,7 @@ export default function RepLoginPage() {
 
         <div className="mt-8 pt-4">
           {error && (
-            <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-rose-400/10 text-rose-200 text-sm">
+            <div className="eb-alert mb-4" role="alert">
               <AlertCircle size={15} className="mt-0.5 shrink-0" />
               {error}
             </div>
@@ -259,11 +255,9 @@ export default function RepLoginPage() {
           <button
             onClick={handleStart}
             disabled={!isFormValid || submitting}
-            className={`w-full py-4 rounded-xl font-medium text-base transition-colors ${
-              isFormValid && !submitting ? "bg-[#C21FAF] text-white hover:bg-[#93147D]" : "bg-surface/10 text-white/30 cursor-not-allowed"
-            }`}
+            className="eb-portal-cta"
           >
-            {submitting ? "Checking in…" : "Check-In"}
+            {submitting ? "Checking in…" : "View my leads"}
           </button>
         </div>
         </div>
