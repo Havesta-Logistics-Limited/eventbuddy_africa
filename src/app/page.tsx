@@ -3,18 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  LayoutTemplate,
-  Users2,
-  KeyRound,
-  BarChart3,
-  ShieldCheck,
-  Mail,
   ArrowRight,
   Check,
   X,
-  Ticket,
-  Mic2,
-  Send,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { LandingHero, LandingNav } from "@/components/landing/landing-hero";
@@ -23,20 +14,6 @@ import { LandingWays } from "@/components/landing/landing-ways";
 import { LandingHub } from "@/components/landing/landing-hub";
 import { DEFAULT_TICKET_FEE, fetchCurrentTicketFee, formatTicketFee } from "@/lib/billing";
 import { faqs } from "@/app/pricing/faqs";
-
-function getFeatures(feeLabel: string) {
-  return [
-    { icon: Ticket, title: "Registration & ticketing, built in", body: `Free or paid tickets with QR codes, for virtual and in-person events alike. Ticket revenue splits straight to your own bank account — you only pay ${feeLabel} per ticket that actually sells.` },
-    { icon: Send, title: "Invite-only guest lists & RSVPs", body: "Build a private guest list for a corporate or invite-only event, track who's accepted, maybe, or declined, let guests bring named plus-ones, and send reminder nudges automatically." },
-    { icon: Mic2, title: "A live hub for every event", body: "Schedule, speakers, moderated Q&A, and live polls — every attendee gets their own hub automatically the moment they register." },
-    { icon: Users2, title: "Role-based access", body: "Admins run the show, staff capture leads for their event, and — for multi-destination events — reps see only their own university's leads." },
-    { icon: KeyRound, title: "Access codes per event", body: "Gate staff and rep check-in behind a code you set — or leave it open for smaller, trusted teams." },
-    { icon: BarChart3, title: "Live analytics", body: "Registration, ticket sales, and check-in numbers updated live, with destination and course breakdowns for education fairs and custom-question breakdowns for everything else." },
-    { icon: Mail, title: "Export & email leads", body: "Download a CSV or email it straight from the app, filtered by event, destination, or university." },
-    { icon: ShieldCheck, title: "Your data, isolated", body: "Every organization's events, leads, and staff are kept fully separate — nothing is ever shared across accounts." },
-    { icon: LayoutTemplate, title: "Any kind of event", body: "Start from a template — education fair, job fair, conference, trade show — or build a custom registration form from scratch." },
-  ];
-}
 
 // Every capability check here is real and verifiable against the actual product —
 // nothing implies a fabricated usage stat or customer count, only what the software
@@ -71,7 +48,6 @@ export default function MarketingHomePage() {
     fetchCurrentTicketFee().then(setFee);
   }, []);
   const feeLabel = formatTicketFee(fee);
-  const FEATURES = getFeatures(feeLabel);
   const homeFaqs = faqs(feeLabel).filter((f) => HOME_FAQ_QUESTIONS.includes(f.q));
 
 
@@ -85,58 +61,6 @@ export default function MarketingHomePage() {
       <LandingWays feeLabel={feeLabel} />
 
       <LandingHub />
-
-      {/* Features — one wide featured tile plus a plain editorial list beneath it,
-          not a uniform grid of same-size icon+heading+text cards. */}
-      <section className="bg-white border-y border-slate-200">
-        <div className="max-w-5xl mx-auto px-6 py-20">
-          <h2 className="font-display text-3xl text-slate-900 mb-12 max-w-md">Built for the way events actually run</h2>
-
-          <div
-            className="rounded-2xl p-8 flex flex-col sm:flex-row gap-6 sm:items-start text-white mb-10"
-            style={{ background: "radial-gradient(ellipse 150% 130% at 15% -10%, #FF8AF5 0%, #C21FAF 60%, #170821 140%)" }}
-          >
-            <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-              {(() => {
-                const Icon = FEATURES[0].icon;
-                return <Icon size={21} className="text-white" />;
-              })()}
-            </div>
-            <div className="flex-1">
-              <h3 className="font-display text-xl mb-2">{FEATURES[0].title}</h3>
-              <p className="text-sm text-white/70 leading-relaxed max-w-xl mb-5">{FEATURES[0].body}</p>
-              <div className="flex flex-wrap gap-x-8 gap-y-2">
-                {[
-                  { role: "Free tickets", tag: "Always ₦0" },
-                  { role: "Paid tickets", tag: `${feeLabel} fee, rest is yours` },
-                  { role: "Check-in", tag: "One QR code per attendee" },
-                ].map(({ role, tag }) => (
-                  <div key={role} className="flex items-center gap-2 text-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white/60 shrink-0" />
-                    <span className="font-medium text-white">{role}</span>
-                    <span className="text-white/60">— {tag}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
-            {FEATURES.slice(1).map(({ icon: Icon, title, body }, i) => {
-              const colors = ["text-brand-600", "text-accent-purple-600", "text-accent-green-600", "text-accent-yellow-700", "text-brand-600", "text-accent-purple-600"];
-              return (
-                <div key={title} className="flex gap-4">
-                  <Icon size={20} className={`${colors[i % colors.length]} shrink-0 mt-0.5`} />
-                  <div>
-                    <h3 className="font-semibold text-slate-900 text-sm mb-1">{title}</h3>
-                    <p className="text-sm text-slate-500 leading-relaxed">{body}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       {/* Why eventbuddy — a real comparison table (the pattern serious competitors
           use for this claim) instead of two lists stacked in a card. eventbuddy has
