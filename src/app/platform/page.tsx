@@ -47,7 +47,7 @@ import { AuthLoading } from "@/components/auth-loading";
 import { TwoFactorSettings } from "@/components/two-factor-settings";
 import { MfaNagBanner } from "@/components/mfa-nag-banner";
 import { downloadCsv } from "@/lib/csv";
-import { TICKET_FEE_PERCENTAGE, formatNaira, updateTicketFeePercentage } from "@/lib/billing";
+import { TICKET_FEE_FLAT_NAIRA, TICKET_FEE_PERCENTAGE, formatNaira, formatTicketFee, ticketFeeFromSettings, updateTicketFee } from "@/lib/billing";
 import { DEFAULT_MAINTENANCE_MESSAGE, DEFAULT_MAINTENANCE_TITLE, updateMaintenanceState } from "@/lib/maintenance";
 import { getTemplate } from "@/lib/event-templates";
 import { isValidEmail } from "@/lib/validation";
@@ -227,7 +227,9 @@ export default function PlatformDashboard() {
 
 
   const [currentFeePct, setCurrentFeePct] = useState(TICKET_FEE_PERCENTAGE);
+  const [currentFeeFlat, setCurrentFeeFlat] = useState(TICKET_FEE_FLAT_NAIRA);
   const [feePctDraft, setFeePctDraft] = useState("");
+  const [feeFlatDraft, setFeeFlatDraft] = useState("");
   const [editingFeePct, setEditingFeePct] = useState(false);
   const [savingFeePct, setSavingFeePct] = useState(false);
   const [feePctError, setFeePctError] = useState("");
@@ -267,7 +269,7 @@ export default function PlatformDashboard() {
       supabase.from("platform_admins").select("user_id, email, created_at").order("created_at", { ascending: true }),
       supabase
         .from("platform_settings")
-        .select("ticket_fee_percentage, maintenance_mode, maintenance_title, maintenance_message")
+        .select("ticket_fee_percentage, ticket_fee_flat_naira, maintenance_mode, maintenance_title, maintenance_message")
         .eq("id", true)
         .maybeSingle(),
       supabase
@@ -294,7 +296,9 @@ export default function PlatformDashboard() {
     setTransactions((transactionsRes.data as TransactionRow[]) ?? []);
     setManagedRequests((managedRequestsRes.data as ManagedRequestRow[]) ?? []);
     if (settingsRes.data) {
-      setCurrentFeePct(Number(settingsRes.data.ticket_fee_percentage));
+      const liveFee = ticketFeeFromSettings(settingsRes.data);
+      setCurrentFeePct(liveFee.percentage);
+      setCurrentFeeFlat(liveFee.flatNaira);
       setMaintenanceMode(!!settingsRes.data.maintenance_mode);
       setMaintenanceTitle(settingsRes.data.maintenance_title || DEFAULT_MAINTENANCE_TITLE);
       setMaintenanceMessage(settingsRes.data.maintenance_message || DEFAULT_MAINTENANCE_MESSAGE);
@@ -585,17 +589,23 @@ export default function PlatformDashboard() {
 
   async function saveFeePct() {
     const parsed = Number(feePctDraft);
-    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+    const flat = Number(feeFlatDraft);
+    if (feePctDraft.trim() === "" || !Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
       setFeePctError("Enter a valid percentage between 0 and 100.");
+      return;
+    }
+    if (feeFlatDraft.trim() === "" || !Number.isFinite(flat) || flat < 0) {
+      setFeePctError("Enter a flat amount in Naira, 0 or more.");
       return;
     }
     setFeePctError("");
     setSavingFeePct(true);
     try {
-      await updateTicketFeePercentage(parsed);
+      await updateTicketFee({ percentage: parsed, flatNaira: flat });
       setCurrentFeePct(parsed);
+      setCurrentFeeFlat(flat);
       setEditingFeePct(false);
-      toast.success(`Ticket fee updated to ${parsed}%`);
+      toast.success(`Ticket fee updated to ${formatTicketFee({ percentage: parsed, flatNaira: flat })} per ticket`);
     } catch (err) {
       setFeePctError(err instanceof Error ? err.message : "Couldn't save the new fee.");
     } finally {
@@ -1703,6 +1713,7 @@ export default function PlatformDashboard() {
                       type="button"
                       onClick={() => {
                         setFeePctDraft(String(currentFeePct));
+                        setFeeFlatDraft(String(currentFeeFlat));
                         setFeePctError("");
                         setEditingFeePct(true);
                       }}
@@ -1713,9 +1724,9 @@ export default function PlatformDashboard() {
                   )}
                 </div>
                 <p className="text-xs text-slate-500 mb-3">
-                  eventbuddy&apos;s cut of every self-serve ticket sale — the rest settles straight to the organizer&apos;s own bank account via
-                  their Paystack subaccount. Only applies to organizations that set up payouts from now on; existing subaccounts keep the rate
-                  they were created with.
+                  eventbuddy&apos;s cut of every paid self-serve ticket: a percentage of the price paid plus a flat amount per ticket. The rest
+                  settles straight to the organizer&apos;s own bank account via their Paystack subaccount. A change applies to every
+                  organization&apos;s next sale; fee-exempt organizations pay nothing.
                 </p>
                 {editingFeePct ? (
                   <div className="flex flex-wrap items-center gap-2">
@@ -1727,11 +1738,26 @@ export default function PlatformDashboard() {
                         step="0.5"
                         value={feePctDraft}
                         onChange={(e) => setFeePctDraft(e.target.value)}
+                        aria-label="Percentage fee per ticket"
                         autoFocus
                         className="w-24 pl-3 pr-7 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
                     </div>
+                    <span className="text-sm text-slate-400" aria-hidden="true">+</span>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₦</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="10"
+                        value={feeFlatDraft}
+                        onChange={(e) => setFeeFlatDraft(e.target.value)}
+                        aria-label="Flat fee per ticket, in Naira"
+                        className="w-28 pl-7 pr-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      />
+                    </div>
+                    <span className="text-xs text-slate-500">per ticket</span>
                     <button
                       type="button"
                       onClick={saveFeePct}
@@ -1754,7 +1780,10 @@ export default function PlatformDashboard() {
                     {feePctError && <p className="w-full text-xs text-rose-600">{feePctError}</p>}
                   </div>
                 ) : (
-                  <p className="text-3xl font-bold text-slate-900 tabular-nums">{currentFeePct}%</p>
+                  <p className="text-3xl font-bold text-slate-900 tabular-nums">
+                    {formatTicketFee({ percentage: currentFeePct, flatNaira: currentFeeFlat })}
+                    <span className="ml-2 text-sm font-medium text-slate-500">per ticket</span>
+                  </p>
                 )}
               </div>
 

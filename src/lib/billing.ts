@@ -1,22 +1,59 @@
 import { createClient } from "@/lib/supabase/client";
 
+/** eventbuddy's fee on every paid ticket: a percentage of the price actually paid
+ *  plus a flat Naira amount (5% + ₦100 at launch, migration 0098). These constants
+ *  are only fallbacks — the live values come from platform_settings. */
 export const TICKET_FEE_PERCENTAGE = 5;
+export const TICKET_FEE_FLAT_NAIRA = 100;
 
-/** Publicly readable — the pricing page calls this unauthenticated to explain
- *  self-serve's "pay only transaction fees" model. */
-export async function fetchCurrentTicketFeePercentage(): Promise<number> {
-  const supabase = createClient();
-  const { data } = await supabase.from("platform_settings").select("ticket_fee_percentage").eq("id", true).maybeSingle();
-  return data ? Number(data.ticket_fee_percentage) : TICKET_FEE_PERCENTAGE;
+export type TicketFee = { percentage: number; flatNaira: number };
+export const DEFAULT_TICKET_FEE: TicketFee = { percentage: TICKET_FEE_PERCENTAGE, flatNaira: TICKET_FEE_FLAT_NAIRA };
+
+/** Reads a platform_settings row (or null) into a TicketFee, falling back field by
+ *  field so a row from before migration 0098 still yields a sensible fee. */
+export function ticketFeeFromSettings(row: { ticket_fee_percentage?: unknown; ticket_fee_flat_naira?: unknown } | null | undefined): TicketFee {
+  const pct = Number(row?.ticket_fee_percentage);
+  const flat = Number(row?.ticket_fee_flat_naira);
+  return {
+    percentage: Number.isFinite(pct) ? pct : TICKET_FEE_PERCENTAGE,
+    flatNaira: Number.isFinite(flat) && row?.ticket_fee_flat_naira != null ? flat : TICKET_FEE_FLAT_NAIRA,
+  };
 }
 
-/** Platform-admin only — RLS rejects this for anyone else. Only affects the
- *  percentage_charge baked into a NEW organization's Paystack subaccount at payout
- *  onboarding time (see /api/paystack/subaccount) — changing this doesn't retroactively
- *  update organizations that already have a subaccount. */
-export async function updateTicketFeePercentage(newPercentage: number): Promise<void> {
+/** "5% + ₦100", or just "5%" when the flat part is zero. Used everywhere the fee is
+ *  shown so the wording can never drift from what checkout charges. */
+export function formatTicketFee(fee: TicketFee): string {
+  const pct = `${Number(fee.percentage.toFixed(2))}%`;
+  return fee.flatNaira > 0 ? `${pct} + ${formatNaira(fee.flatNaira)}` : pct;
+}
+
+/** eventbuddy's cut of one paid ticket, in kobo — what checkout passes to Paystack
+ *  as transaction_charge. Computed on the price actually paid (after any discount).
+ *  Never more than the payment itself, so a very cheap ticket can't produce a charge
+ *  Paystack would reject; at that point the whole payment is the fee. */
+export function ticketFeeMinor(amountNaira: number, fee: TicketFee): number {
+  const amountMinor = Math.round(amountNaira * 100);
+  if (amountMinor <= 0) return 0;
+  const feeMinor = Math.round(amountMinor * (fee.percentage / 100)) + Math.round(fee.flatNaira * 100);
+  return Math.min(Math.max(0, feeMinor), amountMinor);
+}
+
+/** Publicly readable — the landing and pricing pages call this unauthenticated. */
+export async function fetchCurrentTicketFee(): Promise<TicketFee> {
   const supabase = createClient();
-  const { error } = await supabase.from("platform_settings").update({ ticket_fee_percentage: newPercentage, updated_at: new Date().toISOString() }).eq("id", true);
+  const { data } = await supabase.from("platform_settings").select("ticket_fee_percentage, ticket_fee_flat_naira").eq("id", true).maybeSingle();
+  return ticketFeeFromSettings(data);
+}
+
+/** Platform-admin only — RLS rejects this for anyone else. Takes effect on every
+ *  organization's next paid checkout, since checkout computes the fee per payment
+ *  (see the ticket-purchase initialize route). */
+export async function updateTicketFee(fee: TicketFee): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("platform_settings")
+    .update({ ticket_fee_percentage: fee.percentage, ticket_fee_flat_naira: fee.flatNaira, updated_at: new Date().toISOString() })
+    .eq("id", true);
   if (error) throw error;
 }
 

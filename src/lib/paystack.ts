@@ -53,6 +53,12 @@ export async function paystackInitialize(params: {
    *  that's the shape of a split payment in general, not because any current
    *  caller omits it. */
   subaccount?: string;
+  /** eventbuddy's exact cut of THIS payment, in kobo (Paystack's
+   *  transaction_charge). Overrides the subaccount's stored percentage_charge for
+   *  this one charge — how the percentage + flat fee model is applied per sale.
+   *  Omitted (or 0) leaves the subaccount's own percentage in force, which is 0 for
+   *  fee-exempt organizations. */
+  transactionChargeMinor?: number;
 }): Promise<{ authorizationUrl: string; accessCode: string }> {
   const res = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
     method: "POST",
@@ -65,6 +71,9 @@ export async function paystackInitialize(params: {
       currency: params.currency,
       metadata: params.metadata,
       ...(params.subaccount ? { subaccount: params.subaccount } : {}),
+      ...(params.subaccount && params.transactionChargeMinor && params.transactionChargeMinor > 0
+        ? { transaction_charge: params.transactionChargeMinor }
+        : {}),
     }),
   });
   const json = (await res.json()) as PaystackInitializeResponse;

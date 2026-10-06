@@ -33,7 +33,7 @@ const SECTIONS = [
     body: [
       "Creating and publishing an event on eventbuddy is free, whether it's virtual or physical. There is no subscription, recurring fee, or charge for creating an event.",
       "Editing an existing event's details after creation does not incur any charge.",
-      "If you sell paid tickets through the platform, eventbuddy takes a percentage-based commission on each ticket sold, shown before checkout and deducted automatically from the payment before it reaches your connected bank account. This commission may be waived for specific organizations at eventbuddy's discretion.",
+      "If you sell paid tickets through the platform, eventbuddy takes a commission on each paid ticket sold, made up of a percentage of the ticket price paid plus a fixed amount per ticket, as shown on the pricing page and deducted automatically from the payment before it reaches your connected bank account. This commission may be waived for specific organizations at eventbuddy's discretion.",
     ],
   },
   {
@@ -109,7 +109,7 @@ export default function TermsPage() {
       <section className="max-w-3xl mx-auto px-6 pt-12 pb-4">
         <p className="font-mono text-xs font-semibold uppercase tracking-widest text-brand-600 mb-3">Legal</p>
         <h1 className="font-display text-4xl text-slate-900 mb-2">Terms &amp; Conditions</h1>
-        <p className="text-sm text-slate-400">Last updated September 2, 2026</p>
+        <p className="text-sm text-slate-400">Last updated October 6, 2026</p>
       </section>
 
       <section className="max-w-3xl mx-auto px-6 pb-20">

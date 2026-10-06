@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
-import { applyDiscount } from "@/lib/billing";
+import { applyDiscount, ticketFeeFromSettings, ticketFeeMinor } from "@/lib/billing";
 import { nairaToChargeAmount, paystackInitialize } from "@/lib/paystack";
 import { newId } from "@/lib/utils";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
@@ -64,7 +64,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const admin = createAdminClient();
 
-  const { data: org } = await admin.from("organizations").select("id, is_suspended, paystack_subaccount_code").ilike("slug", slug).maybeSingle();
+  const { data: org } = await admin.from("organizations").select("id, is_suspended, is_fee_exempt, paystack_subaccount_code").ilike("slug", slug).maybeSingle();
   if (!org) return NextResponse.json({ error: "No organization found for that link." }, { status: 404 });
   if (org.is_suspended) return NextResponse.json({ error: "Ticket sales are unavailable for this event right now." }, { status: 403 });
   if (!org.paystack_subaccount_code) {
@@ -152,6 +152,13 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { currency, amountMinor } = nairaToChargeAmount(amountNaira);
 
+  // eventbuddy's fee for this one ticket (percentage of the price paid + flat
+  // amount, migration 0098), read live so a rate change applies to the very next
+  // sale. Fee-exempt organizations pay nothing. Paystack splits the payment by this
+  // exact amount; finalize later records what it actually took (fees_split).
+  const { data: feeSettings } = await admin.from("platform_settings").select("ticket_fee_percentage, ticket_fee_flat_naira").eq("id", true).maybeSingle();
+  const platformFeeMinor = org.is_fee_exempt ? 0 : ticketFeeMinor(amountNaira, ticketFeeFromSettings(feeSettings));
+
   const referralId = await resolveReferralId(admin, event.id, ref);
 
   const { error: insertError } = await admin.from("paystack_transactions").insert({
@@ -188,6 +195,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       callbackUrl,
       currency,
       subaccount: org.paystack_subaccount_code,
+      transactionChargeMinor: platformFeeMinor,
       metadata: { eventId: event.id, organizationId: org.id, ticketTypeId: ticket.id, discountCodeId },
     });
     return NextResponse.json({ authorizationUrl });

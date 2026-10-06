@@ -23,7 +23,7 @@ import {
   Megaphone,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { TICKET_FEE_PERCENTAGE, fetchCurrentTicketFeePercentage } from "@/lib/billing";
+import { DEFAULT_TICKET_FEE, fetchCurrentTicketFee, formatTicketFee } from "@/lib/billing";
 import { faqs } from "@/app/pricing/faqs";
 
 const STEPS = [
@@ -46,7 +46,7 @@ const STEPS = [
 
 function getFeatures(feeLabel: string) {
   return [
-    { icon: Ticket, title: "Registration & ticketing, built in", body: `Free or paid tickets with QR codes, for virtual and in-person events alike. Ticket revenue splits straight to your own bank account — you only pay ${feeLabel} on what actually sells.` },
+    { icon: Ticket, title: "Registration & ticketing, built in", body: `Free or paid tickets with QR codes, for virtual and in-person events alike. Ticket revenue splits straight to your own bank account — you only pay ${feeLabel} per ticket that actually sells.` },
     { icon: Send, title: "Invite-only guest lists & RSVPs", body: "Build a private guest list for a corporate or invite-only event, track who's accepted, maybe, or declined, let guests bring named plus-ones, and send reminder nudges automatically." },
     { icon: Mic2, title: "A live hub for every event", body: "Schedule, speakers, moderated Q&A, and live polls — every attendee gets their own hub automatically the moment they register." },
     { icon: Users2, title: "Role-based access", body: "Admins run the show, staff capture leads for their event, and — for multi-destination events — reps see only their own university's leads." },
@@ -104,15 +104,15 @@ const HOME_FAQ_QUESTIONS = [
 const FEATURED_ORG_SLUG = "dregon-j-z-techbase-limited";
 
 export default function MarketingHomePage() {
-  // Every visible fee on this page mirrors platform_settings.ticket_fee_percentage
-  // (the same value the platform admin's Billing tab edits and Paystack actually
-  // charges) rather than the TICKET_FEE_PERCENTAGE fallback constant, so it can
-  // never drift out of sync with a live rate change.
-  const [feePercent, setFeePercent] = useState(TICKET_FEE_PERCENTAGE);
+  // Every visible fee on this page mirrors platform_settings (percentage + flat
+  // amount — the same values the platform admin's Billing tab edits and checkout
+  // charges) rather than the fallback constants, so it can never drift out of sync
+  // with a live rate change.
+  const [fee, setFee] = useState(DEFAULT_TICKET_FEE);
   useEffect(() => {
-    fetchCurrentTicketFeePercentage().then(setFeePercent);
+    fetchCurrentTicketFee().then(setFee);
   }, []);
-  const feeLabel = `${feePercent}%`;
+  const feeLabel = formatTicketFee(fee);
   const FEATURES = getFeatures(feeLabel);
   const homeFaqs = faqs(feeLabel).filter((f) => HOME_FAQ_QUESTIONS.includes(f.q));
 
@@ -651,7 +651,7 @@ export default function MarketingHomePage() {
           <h2 className="font-display text-3xl mb-3">Simple, honest pricing</h2>
           <p className="text-white/70 max-w-md mx-auto mb-8">No subscription, no per-seat fees, no upfront cost.</p>
           <p className="font-display text-6xl leading-none mb-2">Free to start</p>
-          <p className="text-white/60 text-sm mb-8">plus {feeLabel} on tickets that actually sell — free events and free tickets always cost nothing</p>
+          <p className="text-white/60 text-sm mb-8">plus {feeLabel} per ticket that actually sells — free events and free tickets always cost nothing</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/pricing"

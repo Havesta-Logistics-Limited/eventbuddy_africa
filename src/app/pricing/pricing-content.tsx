@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, ArrowRight, Sparkles, Users2, Building2 } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { TICKET_FEE_PERCENTAGE, fetchCurrentTicketFeePercentage } from "@/lib/billing";
+import { DEFAULT_TICKET_FEE, fetchCurrentTicketFee, formatTicketFee } from "@/lib/billing";
 import { faqs } from "./faqs";
 
 const SELF_SERVE_INCLUDED = [
@@ -32,11 +32,11 @@ const ENTERPRISE_INCLUDED = [
 ];
 
 export default function PricingContent() {
-  const [feePercent, setFeePercent] = useState(TICKET_FEE_PERCENTAGE);
+  const [fee, setFee] = useState(DEFAULT_TICKET_FEE);
   useEffect(() => {
-    fetchCurrentTicketFeePercentage().then(setFeePercent);
+    fetchCurrentTicketFee().then(setFee);
   }, []);
-  const feeLabel = `${feePercent}%`;
+  const feeLabel = formatTicketFee(fee);
   const FAQS = faqs(feeLabel);
 
   return (
@@ -94,7 +94,7 @@ export default function PricingContent() {
               </p>
               <p className="font-display text-5xl leading-none mb-2">Free to start</p>
               <p className="text-white/70 text-sm">
-                Only pay <span className="font-semibold text-white">{feeLabel}</span> on tickets that actually sell — free
+                Only pay <span className="font-semibold text-white">{feeLabel}</span> per ticket that actually sells — free
                 tickets and free events cost nothing.
               </p>
             </div>

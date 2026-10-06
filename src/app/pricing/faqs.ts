@@ -2,11 +2,12 @@
  *  (for FAQPage structured data) and the client pricing-content.tsx (for the
  *  rendered FAQ section). A function exported from a client-marked file can't be
  *  called directly from a Server Component, so this has to live in its own module. */
-export function faqs(feePercent: string) {
+/** feeLabel is the formatted live fee, e.g. "5% + ₦100" (see formatTicketFee). */
+export function faqs(feeLabel: string) {
   return [
     {
       q: "How much does Self-Serve cost?",
-      a: `Nothing to start. Create your account and publish as many virtual or in-person events as you like, free. You only ever pay when a ticket actually sells — ${feePercent} of the ticket price, taken automatically at checkout. Free tickets and free events cost nothing at all.`,
+      a: `Nothing to start. Create your account and publish as many virtual or in-person events as you like, free. You only ever pay when a ticket actually sells — ${feeLabel} per paid ticket, taken automatically at checkout. Free tickets and free events cost nothing at all.`,
     },
     {
       q: "What's the difference between Self-Serve, Full-Service, and Enterprise?",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { TICKET_FEE_PERCENTAGE } from "@/lib/billing";
+import { formatTicketFee, ticketFeeFromSettings } from "@/lib/billing";
 import PricingContent from "./pricing-content";
 import { faqs } from "./faqs";
 
@@ -15,14 +15,14 @@ export const metadata: Metadata = {
 };
 
 /** Server wrapper only — PricingContent is "use client" (it live-updates the fee
- *  percentage after mount) and can't export metadata itself. Also emits FAQPage
+ *  after mount) and can't export metadata itself. Also emits FAQPage
  *  structured data from the exact same faqs() copy the page renders, fetching the
- *  live fee percentage server-side so the schema never shows a stale/wrong number
+ *  live fee (percentage + flat amount) server-side so the schema never shows a stale/wrong number
  *  to a crawler even before the client-side fetch resolves. */
 export default async function PricingPage() {
   const supabase = await createClient();
-  const { data } = await supabase.from("platform_settings").select("ticket_fee_percentage").eq("id", true).maybeSingle();
-  const feeLabel = `${data ? Number(data.ticket_fee_percentage) : TICKET_FEE_PERCENTAGE}%`;
+  const { data } = await supabase.from("platform_settings").select("ticket_fee_percentage, ticket_fee_flat_naira").eq("id", true).maybeSingle();
+  const feeLabel = formatTicketFee(ticketFeeFromSettings(data));
 
   const faqStructuredData = {
     "@context": "https://schema.org",
