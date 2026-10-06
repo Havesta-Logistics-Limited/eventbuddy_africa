@@ -119,10 +119,10 @@ function ResetPasswordForm() {
     setTimeout(() => router.push(platformMembership ? "/platform/login" : "/login"), 2000);
   }
 
-  if (!ready) return <div className="min-h-screen bg-slate-50" />;
+  if (!ready) return <div className="min-h-screen bg-canvas" />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-canvas">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center mb-8">
           <Logo height={16} />
@@ -130,8 +130,8 @@ function ResetPasswordForm() {
 
         {linkError ? (
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-slate-900 mb-1">Link expired</h2>
-            <p className="text-slate-500 text-sm mb-6">
+            <h2 className="text-xl font-semibold text-fg mb-1">Link expired</h2>
+            <p className="text-muted text-sm mb-6">
               This password reset link is invalid or has expired. Request a new one.
             </p>
             <button
@@ -144,19 +144,19 @@ function ResetPasswordForm() {
           </div>
         ) : done ? (
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-slate-900 mb-1">Password updated</h2>
-            <p className="text-slate-500 text-sm">Redirecting you to sign in…</p>
+            <h2 className="text-xl font-semibold text-fg mb-1">Password updated</h2>
+            <p className="text-muted text-sm">Redirecting you to sign in…</p>
           </div>
         ) : mfaFactorId ? (
           <>
-            <h2 className="text-2xl font-semibold text-slate-900 mb-1">Enter your 2FA code</h2>
-            <p className="text-slate-500 text-sm mb-8">
+            <h2 className="text-2xl font-semibold text-fg mb-1">Enter your 2FA code</h2>
+            <p className="text-muted text-sm mb-8">
               This account has two-factor authentication on — open your authenticator app and enter the current 6-digit code to continue.
             </p>
 
             <form onSubmit={handleVerifyMfa} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Verification code</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Verification code</label>
                 <input
                   required
                   autoFocus
@@ -166,12 +166,12 @@ function ResetPasswordForm() {
                   value={mfaCode}
                   onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
                   placeholder="123456"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent bg-white"
+                  className="w-full px-4 py-2.5 rounded-lg border border-line text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent bg-surface"
                 />
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {error}
                 </div>
@@ -188,12 +188,12 @@ function ResetPasswordForm() {
           </>
         ) : (
           <>
-            <h2 className="text-2xl font-semibold text-slate-900 mb-1">Set a new password</h2>
-            <p className="text-slate-500 text-sm mb-8">Choose a new password for your account.</p>
+            <h2 className="text-2xl font-semibold text-fg mb-1">Set a new password</h2>
+            <p className="text-muted text-sm mb-8">Choose a new password for your account.</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">New password</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">New password</label>
                 <div className="relative">
                   <input
                     type={showPw ? "text" : "password"}
@@ -202,12 +202,12 @@ function ResetPasswordForm() {
                     placeholder="At least 8 characters"
                     required
                     minLength={8}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent bg-white pr-10"
+                    className="w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent bg-surface pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPw((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-fg-3"
                     aria-label={showPw ? "Hide password" : "Show password"}
                   >
                     {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -216,7 +216,7 @@ function ResetPasswordForm() {
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {error}
                 </div>
@@ -240,7 +240,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
+    <Suspense fallback={<div className="min-h-screen bg-canvas" />}>
       <ResetPasswordForm />
     </Suspense>
   );

@@ -75,12 +75,12 @@ export default function ManagedEventsContent() {
     }
   }
 
-  const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600";
-  const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
+  const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600";
+  const labelClass = "block text-sm font-medium text-fg-2 mb-1.5";
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
+    <div className="min-h-screen bg-canvas">
+      <header className="sticky top-0 z-30 bg-surface/70 backdrop-blur-md border-b border-line/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <span className="sm:hidden">
             <Logo height={18} />
@@ -88,7 +88,7 @@ export default function ManagedEventsContent() {
           <span className="hidden sm:block">
             <Logo height={26} />
           </span>
-          <Link href="/" className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">
+          <Link href="/" className="flex items-center gap-1.5 text-sm font-medium text-fg-3 hover:text-fg">
             <ArrowLeft size={15} />
             Back home
           </Link>
@@ -96,12 +96,12 @@ export default function ManagedEventsContent() {
       </header>
 
       <section className="max-w-3xl mx-auto px-6 pt-16 pb-4 text-center">
-        <h1 className="font-display text-3xl sm:text-4xl text-slate-900 mb-4 leading-tight">
+        <h1 className="font-display text-3xl sm:text-4xl text-fg mb-4 leading-tight">
           We run your event on-site,
           <br />
           so you don&apos;t have to.
         </h1>
-        <p className="text-slate-500 leading-relaxed max-w-xl mx-auto">
+        <p className="text-muted leading-relaxed max-w-xl mx-auto">
           For teams who want the physical registration and check-in handled entirely for them — our staff, our
           devices, at your venue. Tell us about your event and we&apos;ll get back to you with a quote.
         </p>
@@ -110,37 +110,37 @@ export default function ManagedEventsContent() {
       <section className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-10 items-start">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-5">
           {INCLUDED.map(({ icon: Icon, title, body }) => (
-            <div key={title} className="flex gap-4 bg-white rounded-2xl border border-slate-200 p-5 hover:border-brand-600/30 hover:shadow-sm transition-all">
+            <div key={title} className="flex gap-4 bg-surface rounded-2xl border border-line p-5 hover:border-brand-600/30 hover:shadow-sm transition-all">
               <div className="w-11 h-11 rounded-xl bg-brand-600 flex items-center justify-center shrink-0">
                 <Icon size={19} className="text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900 text-sm mb-1">{title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{body}</p>
+                <h3 className="font-semibold text-fg text-sm mb-1">{title}</h3>
+                <p className="text-sm text-muted leading-relaxed">{body}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8">
+        <div className="bg-surface rounded-3xl border border-line shadow-sm p-6 sm:p-8">
           {submitted ? (
             <div className="text-center py-8">
-              <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 size={26} className="text-emerald-600" />
+              <div className="w-14 h-14 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 size={26} className="text-emerald-300" />
               </div>
-              <h2 className="font-display text-xl text-slate-900 mb-2">Request sent</h2>
-              <p className="text-sm text-slate-500 max-w-sm mx-auto">
+              <h2 className="font-display text-xl text-fg mb-2">Request sent</h2>
+              <p className="text-sm text-muted max-w-sm mx-auto">
                 Thanks — we&apos;ve got your event details and will follow up at {form.contactEmail} with a quote.
               </p>
-              <Link href="/" className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:underline">
+              <Link href="/" className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-brand-500 hover:underline">
                 Back to eventbuddy
                 <ArrowRight size={14} />
               </Link>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <h2 className="font-display text-xl text-slate-900 mb-1">Request a quote</h2>
-              <p className="text-sm text-slate-500 mb-5">No pricing is charged here — we&apos;ll reach out with a quote based on your event.</p>
+              <h2 className="font-display text-xl text-fg mb-1">Request a quote</h2>
+              <p className="text-sm text-muted mb-5">No pricing is charged here — we&apos;ll reach out with a quote based on your event.</p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -189,7 +189,7 @@ export default function ManagedEventsContent() {
                 <textarea rows={3} value={form.message} onChange={(e) => set("message", e.target.value)} className={`${fieldClass} resize-none`} />
               </div>
 
-              {error && <p className="text-sm text-rose-600">{error}</p>}
+              {error && <p className="text-sm text-rose-300">{error}</p>}
 
               <button
                 type="submit"

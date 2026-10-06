@@ -9,10 +9,10 @@ import { downloadCsv, eventLeadsToCsv } from "@/lib/csv";
 import { decideRegistration } from "@/lib/store";
 
 const LEAD_STATUS_STYLES: Record<string, string> = {
-  registered: "bg-amber-100 text-amber-700",
-  pending: "bg-orange-100 text-orange-700",
-  waitlisted: "bg-violet-100 text-violet-700",
-  declined: "bg-rose-100 text-rose-700",
+  registered: "bg-amber-500/15 text-amber-300",
+  pending: "bg-orange-500/15 text-orange-300",
+  waitlisted: "bg-violet-500/15 text-violet-300",
+  declined: "bg-rose-500/15 text-rose-300",
 };
 const LEAD_STATUS_LABELS: Record<string, string> = {
   registered: "Registered",
@@ -49,11 +49,11 @@ export function EventLeadsCard({ event, leads, universities, orgSlug }: { event:
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-4 overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+    <div className="bg-surface rounded-2xl border border-line shadow-sm mb-4 overflow-hidden">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-line-soft">
         <div>
-          <h2 className="font-semibold text-slate-900">{event.name}</h2>
-          <p className="text-xs text-slate-500 tabular-nums">
+          <h2 className="font-semibold text-fg">{event.name}</h2>
+          <p className="text-xs text-muted tabular-nums">
             {leads.length} lead{leads.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -62,7 +62,7 @@ export function EventLeadsCard({ event, leads, universities, orgSlug }: { event:
             downloadCsv(`${event.name.replace(/[^a-z0-9]/gi, "_")}_leads.csv`, eventLeadsToCsv(leads, event));
             toast.success("Leads exported");
           }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas"
         >
           <Download size={12} />
           Export
@@ -70,7 +70,7 @@ export function EventLeadsCard({ event, leads, universities, orgSlug }: { event:
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead className="bg-canvas">
             <tr>
               {[
                 "Name",
@@ -81,34 +81,34 @@ export function EventLeadsCard({ event, leads, universities, orgSlug }: { event:
                 ...(showStatusColumn ? ["Status"] : []),
                 ...(showStatusColumn && orgSlug ? ["Actions"] : []),
               ].map((h, i) => (
-                <th key={i} className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">
+                <th key={i} className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line-soft">
             {leads.map((lead) => (
-              <tr key={lead.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">
+              <tr key={lead.id} className="hover:bg-canvas">
+                <td className="px-4 py-3 font-medium text-fg whitespace-nowrap">
                   {lead.firstName} {lead.lastName}
                 </td>
-                <td className="px-4 py-3 text-slate-500 max-w-[180px] truncate">{lead.email}</td>
-                <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{lead.phone}</td>
+                <td className="px-4 py-3 text-muted max-w-[180px] truncate">{lead.email}</td>
+                <td className="px-4 py-3 text-muted whitespace-nowrap">{lead.phone}</td>
                 {isEducationFair ? (
                   <>
-                    <td className="px-4 py-3 text-slate-600 max-w-[160px] truncate">{universities.find((u) => u.id === lead.universityId)?.shortName}</td>
-                    <td className="px-4 py-3 text-slate-600">{lead.preferredCourse}</td>
+                    <td className="px-4 py-3 text-fg-3 max-w-[160px] truncate">{universities.find((u) => u.id === lead.universityId)?.shortName}</td>
+                    <td className="px-4 py-3 text-fg-3">{lead.preferredCourse}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "#e8f0fe", color: "#1a3a6e" }}>
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "rgba(79, 179, 255, 0.14)", color: "#9fd3ff" }}>
                         {lead.levelOfInterest}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{lead.startYear}</td>
+                    <td className="px-4 py-3 text-muted">{lead.startYear}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                          lead.takenIELTS === "Yes" ? "bg-emerald-100 text-emerald-700" : lead.takenIELTS === "Registered" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"
+                          lead.takenIELTS === "Yes" ? "bg-emerald-500/15 text-emerald-300" : lead.takenIELTS === "Registered" ? "bg-amber-500/15 text-amber-300" : "bg-fill text-fg-3"
                         }`}
                       >
                         {lead.takenIELTS}
@@ -119,13 +119,13 @@ export function EventLeadsCard({ event, leads, universities, orgSlug }: { event:
                   customFields.map((f) => {
                     const v = lead.customAnswers?.[f.id];
                     return (
-                      <td key={f.id} className="px-4 py-3 text-slate-600 max-w-[160px] truncate">
+                      <td key={f.id} className="px-4 py-3 text-fg-3 max-w-[160px] truncate">
                         {Array.isArray(v) ? v.join(", ") : v || "—"}
                       </td>
                     );
                   })
                 )}
-                <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{new Date(lead.createdAt).toLocaleDateString("en-GB")}</td>
+                <td className="px-4 py-3 text-subtle whitespace-nowrap">{new Date(lead.createdAt).toLocaleDateString("en-GB")}</td>
                 {showStatusColumn && (
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${LEAD_STATUS_STYLES[lead.status ?? "registered"]}`}>
@@ -136,18 +136,18 @@ export function EventLeadsCard({ event, leads, universities, orgSlug }: { event:
                 {showStatusColumn && orgSlug && (
                   <td className="px-4 py-3 whitespace-nowrap">
                     {busyId === lead.id ? (
-                      <Loader2 size={15} className="animate-spin text-slate-400" />
+                      <Loader2 size={15} className="animate-spin text-subtle" />
                     ) : lead.status === "pending" ? (
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => decide(lead.id, "approve")}
                           title="Approve"
-                          className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15"
                         >
                           <Check size={13} />
                         </button>
-                        <button type="button" onClick={() => decide(lead.id, "decline")} title="Decline" className="p-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100">
+                        <button type="button" onClick={() => decide(lead.id, "decline")} title="Decline" className="p-1.5 rounded-lg bg-rose-500/10 text-rose-300 hover:bg-rose-500/15">
                           <X size={13} />
                         </button>
                       </div>
@@ -157,16 +157,16 @@ export function EventLeadsCard({ event, leads, universities, orgSlug }: { event:
                           type="button"
                           onClick={() => decide(lead.id, "promote")}
                           title="Promote from waitlist"
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-medium"
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-violet-500/10 text-violet-300 hover:bg-violet-500/15 text-xs font-medium"
                         >
                           <ArrowUpCircle size={13} /> Promote
                         </button>
-                        <button type="button" onClick={() => decide(lead.id, "decline")} title="Decline" className="p-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100">
+                        <button type="button" onClick={() => decide(lead.id, "decline")} title="Decline" className="p-1.5 rounded-lg bg-rose-500/10 text-rose-300 hover:bg-rose-500/15">
                           <X size={13} />
                         </button>
                       </div>
                     ) : (
-                      <span className="text-slate-300">—</span>
+                      <span className="text-faint">—</span>
                     )}
                   </td>
                 )}

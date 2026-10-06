@@ -89,7 +89,7 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-4">
-        <p className="text-sm text-slate-500">{announcements.length} announcement{announcements.length !== 1 ? "s" : ""}</p>
+        <p className="text-sm text-muted">{announcements.length} announcement{announcements.length !== 1 ? "s" : ""}</p>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
@@ -102,11 +102,11 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+        <form onSubmit={handleSubmit} className="bg-surface rounded-xl border border-line p-4 mb-4">
           <RichTextEditor value={body} onChange={setBody} placeholder="Share an update with everyone registered for this event…" minHeightClass="min-h-[70px]" />
-          <label className="flex items-center gap-2 mt-3 text-sm text-slate-600 cursor-pointer">
-            <input type="checkbox" checked={alsoEmail} onChange={(e) => setAlsoEmail(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600" />
-            <Mail size={13} className="text-slate-400" />
+          <label className="flex items-center gap-2 mt-3 text-sm text-fg-3 cursor-pointer">
+            <input type="checkbox" checked={alsoEmail} onChange={(e) => setAlsoEmail(e.target.checked)} className="w-4 h-4 rounded border-line-strong text-brand-500 focus:ring-brand-600" />
+            <Mail size={13} className="text-subtle" />
             Also email every confirmed attendee
           </label>
           {alsoEmail && (
@@ -114,10 +114,10 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder={`Subject (defaults to "Update from your event")`}
-              className="w-full mt-2 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+              className="w-full mt-2 px-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
             />
           )}
-          {formError && <p className="text-sm text-rose-600 mt-2">{formError}</p>}
+          {formError && <p className="text-sm text-rose-300 mt-2">{formError}</p>}
           <div className="flex items-center gap-2 mt-3">
             <button type="submit" disabled={saving} className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60">
               {saving ? (alsoEmail ? "Posting & emailing…" : "Posting…") : alsoEmail ? "Post & Email" : "Post"}
@@ -131,7 +131,7 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
                 setAlsoEmail(false);
                 setFormError("");
               }}
-              className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50"
+              className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-fg-3 border border-line hover:bg-canvas"
             >
               Cancel
             </button>
@@ -140,29 +140,29 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
       )}
 
       {sorted.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="text-center py-16 text-subtle bg-canvas rounded-xl border border-line">
           <Megaphone size={28} className="mx-auto mb-3 opacity-40" />
           <p className="text-sm">No announcements yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {sorted.map((a) => (
-            <div key={a.id} className={`bg-white rounded-xl border p-4 ${a.pinned ? "border-brand-200" : "border-slate-200"}`}>
+            <div key={a.id} className={`bg-surface rounded-xl border p-4 ${a.pinned ? "border-brand-500/30" : "border-line"}`}>
               <div className="flex items-start justify-between gap-3">
-                <RichTextDisplay html={a.body} className="text-sm text-slate-700" />
-                {a.pinned && <Pin size={13} className="text-brand-600 shrink-0 mt-0.5" />}
+                <RichTextDisplay html={a.body} className="text-sm text-fg-2" />
+                {a.pinned && <Pin size={13} className="text-brand-500 shrink-0 mt-0.5" />}
               </div>
-              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-100">
-                <span className="text-[11px] text-slate-400">{new Date(a.createdAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-line-soft">
+                <span className="text-[11px] text-subtle">{new Date(a.createdAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
                 <button
                   onClick={() => handleTogglePin(a)}
                   disabled={busyId === a.id}
-                  className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-brand-600 disabled:opacity-50"
+                  className="flex items-center gap-1 text-xs font-medium text-muted hover:text-brand-500 disabled:opacity-50"
                 >
                   {a.pinned ? <PinOff size={12} /> : <Pin size={12} />}
                   {a.pinned ? "Unpin" : "Pin"}
                 </button>
-                <button onClick={() => handleDelete(a.id)} disabled={busyId === a.id} className="text-slate-400 hover:text-rose-600 disabled:opacity-50 ml-auto">
+                <button onClick={() => handleDelete(a.id)} disabled={busyId === a.id} className="text-subtle hover:text-rose-300 disabled:opacity-50 ml-auto">
                   <Trash2 size={13} />
                 </button>
               </div>

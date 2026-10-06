@@ -32,8 +32,8 @@ type Confirmation = { status: "accepted" | "declined" | "maybe"; attendees?: Att
 
 type PlusOneRow = { name: string; email: string };
 
-const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent";
-const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
+const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent";
+const labelClass = "block text-sm font-medium text-fg-2 mb-1.5";
 
 function CustomFieldInput({ field, value, onChange }: { field: FieldDef; value: string | string[] | undefined; onChange: (v: string | string[]) => void }) {
   const label = `${field.label || "Untitled question"}${field.required ? " *" : ""}`;
@@ -66,7 +66,7 @@ function CustomFieldInput({ field, value, onChange }: { field: FieldDef; value: 
         <label className={labelClass}>{label}</label>
         <div className="grid grid-cols-2 gap-2">
           {(field.options ?? []).map((opt) => (
-            <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-200 text-sm cursor-pointer hover:border-slate-300">
+            <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-line text-sm cursor-pointer hover:border-line-strong">
               <input type="radio" checked={value === opt} onChange={() => onChange(opt)} className="accent-[#C21FAF]" />
               {opt}
             </label>
@@ -82,7 +82,7 @@ function CustomFieldInput({ field, value, onChange }: { field: FieldDef; value: 
         <label className={labelClass}>{label}</label>
         <div className="grid grid-cols-2 gap-2">
           {(field.options ?? []).map((opt) => (
-            <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-200 text-sm cursor-pointer hover:border-slate-300">
+            <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-line text-sm cursor-pointer hover:border-line-strong">
               <input
                 type="checkbox"
                 checked={selected.includes(opt)}
@@ -218,7 +218,7 @@ export default function RsvpPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <MapPinCheckInside size={26} className="text-[#C21FAF]/40 animate-pulse" />
       </div>
     );
@@ -226,9 +226,9 @@ export default function RsvpPage() {
 
   if (loadError || !event || !guest) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="text-center text-slate-500 max-w-sm">
-          <p className="font-medium text-slate-700">{loadError || "This invite couldn't be found."}</p>
+      <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
+        <div className="text-center text-muted max-w-sm">
+          <p className="font-medium text-fg-2">{loadError || "This invite couldn't be found."}</p>
           <p className="text-sm mt-1">Check the link in your invite email and try again.</p>
         </div>
       </div>
@@ -236,7 +236,7 @@ export default function RsvpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-16">
+    <div className="min-h-screen bg-canvas pb-16">
       <div className="pt-12 pb-8 px-4" style={{ background: "#6D28D9" }}>
         <div className="max-w-xl mx-auto text-white">
           <p className="text-xs uppercase tracking-wider text-white/60 mb-2">You&apos;re invited</p>
@@ -265,16 +265,16 @@ export default function RsvpPage() {
 
       <div className="relative max-w-xl mx-auto px-4 -mt-4">
         {confirmation ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center">
+          <div className="bg-surface rounded-2xl shadow-sm border border-line p-6 text-center">
             {confirmation.status === "accepted" ? (
               <>
-                <div className="w-12 h-12 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 rounded-full bg-teal-500/15 text-teal-300 flex items-center justify-center mx-auto mb-4">
                   <Check size={22} />
                 </div>
-                <h2 className="font-semibold text-lg text-slate-900 mb-1">
+                <h2 className="font-semibold text-lg text-fg mb-1">
                   {confirmation.attendees && confirmation.attendees.length > 1 ? "You're all on the list!" : "You're on the list!"}
                 </h2>
-                <p className="text-sm text-slate-500 mb-6">
+                <p className="text-sm text-muted mb-6">
                   {event.eventFormat === "virtual"
                     ? "We've emailed joining details to everyone in your party — just join at the time above, no check-in needed."
                     : "We've emailed a confirmation to each person below — keep these, you'll need them to check in."}
@@ -282,21 +282,21 @@ export default function RsvpPage() {
 
                 <div className="space-y-5 text-left">
                   {(confirmation.attendees ?? []).map((a, i) => (
-                    <div key={i} className={i > 0 ? "pt-5 border-t border-slate-100" : ""}>
-                      <p className="text-sm font-semibold text-slate-800 mb-2 text-center">{a.name}</p>
+                    <div key={i} className={i > 0 ? "pt-5 border-t border-line-soft" : ""}>
+                      <p className="text-sm font-semibold text-fg mb-2 text-center">{a.name}</p>
                       {a.referenceId && (
                         <div className="text-center">
                           {qrDataUrls[a.referenceId] && (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={qrDataUrls[a.referenceId]} alt={`${a.name}'s QR code`} className="mx-auto mb-3 rounded-lg border border-slate-200" width={160} height={160} />
+                            <img src={qrDataUrls[a.referenceId]} alt={`${a.name}'s QR code`} className="mx-auto mb-3 rounded-lg border border-line" width={160} height={160} />
                           )}
                           <button
                             type="button"
                             onClick={() => copyReferenceId(a.referenceId!)}
-                            className="inline-flex items-center gap-2 mx-auto px-4 py-2 rounded-lg border border-slate-200 font-mono text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                            className="inline-flex items-center gap-2 mx-auto px-4 py-2 rounded-lg border border-line font-mono text-sm font-semibold text-fg hover:bg-canvas"
                           >
                             {a.referenceId}
-                            {copiedRef === a.referenceId ? <Check size={14} className="text-teal-600" /> : <Copy size={14} className="text-slate-400" />}
+                            {copiedRef === a.referenceId ? <Check size={14} className="text-teal-300" /> : <Copy size={14} className="text-subtle" />}
                           </button>
                         </div>
                       )}
@@ -315,40 +315,40 @@ export default function RsvpPage() {
                 </div>
 
                 {event.eventFormat === "virtual" && safeHttpUrl(event.virtualJoinUrl) && (
-                  <div className="mt-6 pt-5 border-t border-slate-100 text-left">
-                    <h3 className="text-sm font-semibold text-slate-800 mb-2">Joining details</h3>
+                  <div className="mt-6 pt-5 border-t border-line-soft text-left">
+                    <h3 className="text-sm font-semibold text-fg mb-2">Joining details</h3>
                     <a href={safeHttpUrl(event.virtualJoinUrl)} target="_blank" rel="noreferrer" className="block text-sm text-[#C21FAF] hover:underline break-all">
                       {event.virtualJoinUrl}
                     </a>
-                    {event.virtualAccessNotes && <p className="text-sm text-slate-500 mt-2 whitespace-pre-line">{event.virtualAccessNotes}</p>}
+                    {event.virtualAccessNotes && <p className="text-sm text-muted mt-2 whitespace-pre-line">{event.virtualAccessNotes}</p>}
                   </div>
                 )}
               </>
             ) : confirmation.status === "declined" ? (
               <>
-                <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 rounded-full bg-fill text-muted flex items-center justify-center mx-auto mb-4">
                   <ThumbsDown size={20} />
                 </div>
-                <h2 className="font-semibold text-lg text-slate-900 mb-1">Thanks for letting us know</h2>
-                <p className="text-sm text-slate-500">We&apos;ve marked you as not attending {event.name}. Changed your mind? Just open this link again.</p>
+                <h2 className="font-semibold text-lg text-fg mb-1">Thanks for letting us know</h2>
+                <p className="text-sm text-muted">We&apos;ve marked you as not attending {event.name}. Changed your mind? Just open this link again.</p>
               </>
             ) : (
               <>
-                <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 rounded-full bg-amber-500/15 text-amber-300 flex items-center justify-center mx-auto mb-4">
                   <HelpCircle size={20} />
                 </div>
-                <h2 className="font-semibold text-lg text-slate-900 mb-1">Got it — you&apos;re a maybe</h2>
-                <p className="text-sm text-slate-500">Come back and open this link again whenever you know for sure.</p>
+                <h2 className="font-semibold text-lg text-fg mb-1">Got it — you&apos;re a maybe</h2>
+                <p className="text-sm text-muted">Come back and open this link again whenever you know for sure.</p>
               </>
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <p className="text-sm text-slate-600 mb-1">Hi {guest.fullName.split(" ")[0]},</p>
-            {event.description && <RichTextDisplay html={event.description} className="text-sm text-slate-600 mb-5" />}
+          <div className="bg-surface rounded-2xl shadow-sm border border-line p-6">
+            <p className="text-sm text-fg-3 mb-1">Hi {guest.fullName.split(" ")[0]},</p>
+            {event.description && <RichTextDisplay html={event.description} className="text-sm text-fg-3 mb-5" />}
 
             {submitError && (
-              <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-rose-50 text-rose-700 text-sm">
+              <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                 <AlertCircle size={15} className="mt-0.5 shrink-0" />
                 {submitError}
               </div>
@@ -429,7 +429,7 @@ export default function RsvpPage() {
                   type="button"
                   onClick={() => submitResponse("maybe")}
                   disabled={submitting !== null}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border border-line text-fg-2 hover:bg-canvas disabled:opacity-60"
                 >
                   <HelpCircle size={16} />
                   {submitting === "maybe" ? "Saving…" : "Not sure yet"}
@@ -438,7 +438,7 @@ export default function RsvpPage() {
                   type="button"
                   onClick={() => submitResponse("declined")}
                   disabled={submitting !== null}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border border-line text-muted hover:bg-canvas disabled:opacity-60"
                 >
                   <X size={16} />
                   {submitting === "declined" ? "Saving…" : "Can't make it"}

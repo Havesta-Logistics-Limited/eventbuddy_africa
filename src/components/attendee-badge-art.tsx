@@ -22,7 +22,7 @@ function MiniQr({ size = 64 }: { size?: number }) {
   const modules = QR_ROWS[0].length;
   const cell = size / modules;
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="rounded-[3px] bg-white shrink-0" aria-hidden="true">
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="rounded-[3px] bg-surface shrink-0" aria-hidden="true">
       {QR_ROWS.flatMap((row, y) =>
         [...row].map((bit, x) => (bit === "1" ? <rect key={`${x}-${y}`} x={x * cell} y={y * cell} width={cell} height={cell} fill="#221726" /> : null))
       )}
@@ -37,7 +37,7 @@ export function AttendeeBadgeArt({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`relative ${compact ? "h-36 w-64" : "h-48 w-72"} shrink-0 animate-idle-float hover-bounce`} aria-hidden="true">
       <div
-        className={`absolute left-6 top-2 ${compact ? "w-44" : "w-52"} rounded-2xl bg-white/8 border border-white/15 animate-badge-settle-back`}
+        className={`absolute left-6 top-2 ${compact ? "w-44" : "w-52"} rounded-2xl bg-surface/8 border border-white/15 animate-badge-settle-back`}
         style={{ height: compact ? 118 : 148 }}
       />
       <div
@@ -49,11 +49,11 @@ export function AttendeeBadgeArt({ compact = false }: { compact?: boolean }) {
           </p>
           <p className="text-[13px] font-semibold text-[#221726] mt-1 truncate">Global Careers Expo</p>
         </div>
-        <div className="mx-4 border-t border-dashed border-slate-200" />
+        <div className="mx-4 border-t border-dashed border-line" />
         <div className="px-4 py-3.5 flex items-center gap-3">
           <MiniQr size={compact ? 44 : 52} />
           <div className="min-w-0">
-            <p className="text-[9px] text-slate-400 uppercase tracking-wide">Reference</p>
+            <p className="text-[9px] text-subtle uppercase tracking-wide">Reference</p>
             <p className="font-mono font-bold text-[13px] text-[#221726] tracking-wide">K7QX-4R2M</p>
           </div>
         </div>

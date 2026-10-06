@@ -600,19 +600,19 @@ function AdminPageContent() {
     <Shell>
       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="font-display text-2xl text-slate-900">Settings</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Manage your profile, staff, and ticket payouts</p>
+          <h1 className="font-display text-2xl text-fg">Settings</h1>
+          <p className="text-muted text-sm mt-0.5">Manage your profile, staff, and ticket payouts</p>
         </div>
 
         <MfaNagBanner onSetup={() => setTab("profile")} />
 
-        <div className="flex flex-wrap gap-1 mb-6 bg-slate-100 rounded-lg p-1 w-fit">
+        <div className="flex flex-wrap gap-1 mb-6 bg-fill rounded-lg p-1 w-fit">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                tab === id ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"
+                tab === id ? "bg-surface shadow-sm text-fg" : "text-muted hover:text-fg-2"
               }`}
             >
               <Icon size={14} />
@@ -624,26 +624,26 @@ function AdminPageContent() {
         {tab === "profile" && (
           <div key="profile" className="animate-tab-fade space-y-8 max-w-lg">
             <div>
-              <h2 className="font-semibold text-slate-800 mb-4">Your profile</h2>
+              <h2 className="font-semibold text-fg mb-4">Your profile</h2>
               {loadingProfile ? (
-                <div className="h-32 rounded-xl bg-slate-100 animate-pulse" />
+                <div className="h-32 rounded-xl bg-fill animate-pulse" />
               ) : (
-                <form onSubmit={handleSaveName} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                <form onSubmit={handleSaveName} className="bg-surface rounded-xl border border-line p-5 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Full name</label>
+                    <label className="block text-sm font-medium text-fg-2 mb-1.5">Full name</label>
                     <input
                       required
                       value={profileFullName}
                       onChange={(e) => setProfileFullName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
+                    <label className="block text-sm font-medium text-fg-2 mb-1.5">Email address</label>
                     <input
                       disabled
                       value={profileEmail}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-slate-50 text-slate-500"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-canvas text-muted"
                     />
                   </div>
                   <button
@@ -659,30 +659,30 @@ function AdminPageContent() {
             </div>
 
             <div>
-              <h2 className="font-semibold text-slate-800 mb-4">Your organization</h2>
+              <h2 className="font-semibold text-fg mb-4">Your organization</h2>
               {loadingOrgName ? (
-                <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+                <div className="h-24 rounded-xl bg-fill animate-pulse" />
               ) : orgNameChangeStatus === "requested" ? (
-                <div className="bg-white rounded-xl border border-amber-200 p-5">
-                  <p className="text-sm text-slate-700">
+                <div className="bg-surface rounded-xl border border-amber-500/30 p-5">
+                  <p className="text-sm text-fg-2">
                     Current name: <span className="font-medium">{orgName}</span>
                   </p>
-                  <p className="text-sm text-slate-700 mt-1">
-                    Requested: <span className="font-medium text-amber-700">{orgPendingName}</span>
+                  <p className="text-sm text-fg-2 mt-1">
+                    Requested: <span className="font-medium text-amber-300">{orgPendingName}</span>
                   </p>
-                  <p className="text-xs text-slate-400 mt-2">Awaiting approval from the eventbuddy team — for security, name changes aren&apos;t applied instantly.</p>
+                  <p className="text-xs text-subtle mt-2">Awaiting approval from the eventbuddy team — for security, name changes aren&apos;t applied instantly.</p>
                 </div>
               ) : (
-                <form onSubmit={handleRequestOrgNameChange} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                <form onSubmit={handleRequestOrgNameChange} className="bg-surface rounded-xl border border-line p-5 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Organization name</label>
+                    <label className="block text-sm font-medium text-fg-2 mb-1.5">Organization name</label>
                     <input
                       required
                       value={orgNameDraft}
                       onChange={(e) => setOrgNameDraft(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                     />
-                    <p className="text-xs text-slate-400 mt-1.5">
+                    <p className="text-xs text-subtle mt-1.5">
                       Shown on your registration pages, receipts, and anywhere else attendees see your organization&apos;s name. Changes require
                       approval from the eventbuddy team, for security.
                     </p>
@@ -700,31 +700,31 @@ function AdminPageContent() {
             </div>
 
             <div>
-              <h2 className="font-semibold text-slate-800 mb-4">Team</h2>
-              <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-                <p className="text-xs text-slate-500 -mt-1">
+              <h2 className="font-semibold text-fg mb-4">Team</h2>
+              <div className="bg-surface rounded-xl border border-line p-5 space-y-4">
+                <p className="text-xs text-muted -mt-1">
                   Invite teammates with their own dashboard login — Admins get identical access to you; Event Support is locked to one event.
                 </p>
                 {loadingMembers ? (
-                  <div className="h-16 rounded-lg bg-slate-100 animate-pulse" />
+                  <div className="h-16 rounded-lg bg-fill animate-pulse" />
                 ) : members.length > 0 ? (
                   <div className="space-y-2">
                     {members.map((m) => {
                       const memberEvent = m.eventId ? events.find((e) => e.id === m.eventId) : undefined;
                       return (
-                        <div key={m.id} className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg border border-slate-100 bg-slate-50/60">
+                        <div key={m.id} className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg border border-line-soft bg-canvas/60">
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-slate-800 truncate">{m.email}</p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-sm font-medium text-fg truncate">{m.email}</p>
+                            <p className="text-xs text-muted">
                               {m.role === "admin" ? "Admin" : `Event Support — ${memberEvent?.name ?? "an event"}`}
-                              {m.status === "pending" && <span className="text-amber-600"> · Invite pending</span>}
+                              {m.status === "pending" && <span className="text-amber-300"> · Invite pending</span>}
                             </p>
                           </div>
                           <button
                             type="button"
                             onClick={() => handleRemoveMember(m.id)}
                             disabled={removingMemberId === m.id}
-                            className="text-xs font-medium text-rose-600 hover:underline disabled:opacity-60 shrink-0"
+                            className="text-xs font-medium text-rose-300 hover:underline disabled:opacity-60 shrink-0"
                           >
                             Remove
                           </button>
@@ -733,25 +733,25 @@ function AdminPageContent() {
                     })}
                   </div>
                 ) : null}
-                <form onSubmit={handleInvite} className="pt-2 border-t border-slate-100 space-y-3">
+                <form onSubmit={handleInvite} className="pt-2 border-t border-line-soft space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1.5">Email</label>
+                      <label className="block text-xs font-medium text-fg-2 mb-1.5">Email</label>
                       <input
                         required
                         type="email"
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
                         placeholder="teammate@example.com"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1.5">Role</label>
+                      <label className="block text-xs font-medium text-fg-2 mb-1.5">Role</label>
                       <select
                         value={inviteRole}
                         onChange={(e) => setInviteRole(e.target.value as "admin" | "event_support")}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                       >
                         <option value="admin">Admin</option>
                         <option value="event_support">Event Support</option>
@@ -760,12 +760,12 @@ function AdminPageContent() {
                   </div>
                   {inviteRole === "event_support" && (
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1.5">Event</label>
+                      <label className="block text-xs font-medium text-fg-2 mb-1.5">Event</label>
                       <select
                         required
                         value={inviteEventId}
                         onChange={(e) => setInviteEventId(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                       >
                         <option value="" disabled>
                           Select an event
@@ -778,7 +778,7 @@ function AdminPageContent() {
                       </select>
                     </div>
                   )}
-                  {inviteError && <p className="text-xs text-rose-600">{inviteError}</p>}
+                  {inviteError && <p className="text-xs text-rose-300">{inviteError}</p>}
                   <button
                     type="submit"
                     disabled={inviting}
@@ -792,32 +792,32 @@ function AdminPageContent() {
             </div>
 
             <div>
-              <h2 className="font-semibold text-slate-800 mb-4">Login email</h2>
+              <h2 className="font-semibold text-fg mb-4">Login email</h2>
               {loadingOrgName ? (
-                <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+                <div className="h-24 rounded-xl bg-fill animate-pulse" />
               ) : loginEmailChangeStatus === "requested" ? (
-                <div className="bg-white rounded-xl border border-amber-200 p-5">
-                  <p className="text-sm text-slate-700">
+                <div className="bg-surface rounded-xl border border-amber-500/30 p-5">
+                  <p className="text-sm text-fg-2">
                     Current login email: <span className="font-medium">{profileEmail}</span>
                   </p>
-                  <p className="text-sm text-slate-700 mt-1">
-                    Requested: <span className="font-medium text-amber-700">{pendingLoginEmail}</span>
+                  <p className="text-sm text-fg-2 mt-1">
+                    Requested: <span className="font-medium text-amber-300">{pendingLoginEmail}</span>
                   </p>
-                  <p className="text-xs text-slate-400 mt-2">Awaiting approval from the eventbuddy team — for security, email changes aren&apos;t applied instantly.</p>
+                  <p className="text-xs text-subtle mt-2">Awaiting approval from the eventbuddy team — for security, email changes aren&apos;t applied instantly.</p>
                 </div>
               ) : (
-                <form onSubmit={handleRequestEmailChange} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                <form onSubmit={handleRequestEmailChange} className="bg-surface rounded-xl border border-line p-5 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">New login email</label>
+                    <label className="block text-sm font-medium text-fg-2 mb-1.5">New login email</label>
                     <input
                       required
                       type="email"
                       value={loginEmailDraft}
                       onChange={(e) => setLoginEmailDraft(e.target.value)}
                       placeholder={profileEmail}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                     />
-                    <p className="text-xs text-slate-400 mt-1.5">
+                    <p className="text-xs text-subtle mt-1.5">
                       Lost access to <span className="font-medium">{profileEmail}</span>? Request a switch to a new address here — a platform admin
                       verifies and approves it before it takes effect, since this is what you use to sign in and reset your password.
                     </p>
@@ -836,7 +836,7 @@ function AdminPageContent() {
 
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-slate-800">Public page</h2>
+                <h2 className="font-semibold text-fg">Public page</h2>
                 {session?.orgSlug && (
                   <a href={`/${session.orgSlug}`} target="_blank" rel="noreferrer" className="text-sm font-medium text-[#C21FAF] hover:underline">
                     View public page →
@@ -844,22 +844,22 @@ function AdminPageContent() {
                 )}
               </div>
               {loadingOrgName ? (
-                <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+                <div className="h-24 rounded-xl bg-fill animate-pulse" />
               ) : (
-                <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                <div className="bg-surface rounded-xl border border-line p-5 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Logo</label>
+                    <label className="block text-sm font-medium text-fg-2 mb-1.5">Logo</label>
                     <div className="flex items-center gap-4">
                       {orgLogoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={orgLogoUrl} alt="Organization logo" className="w-16 h-16 rounded-2xl object-cover border border-slate-200 shrink-0" />
+                        <img src={orgLogoUrl} alt="Organization logo" className="w-16 h-16 rounded-2xl object-cover border border-line shrink-0" />
                       ) : (
-                        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-300 shrink-0">
+                        <div className="w-16 h-16 rounded-2xl bg-fill flex items-center justify-center text-faint shrink-0">
                           <UserCircle size={28} />
                         </div>
                       )}
                       <div className="flex items-center gap-2.5">
-                        <label className="cursor-pointer px-3.5 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                        <label className="cursor-pointer px-3.5 py-2 border border-line rounded-lg text-sm font-medium text-fg-3 hover:bg-canvas transition-colors">
                           {savingLogo ? (
                             <span className="inline-flex items-center gap-1.5">
                               <Loader2 size={14} className="animate-spin" />
@@ -894,16 +894,16 @@ function AdminPageContent() {
                             type="button"
                             onClick={handleRemoveLogo}
                             disabled={savingLogo}
-                            className="text-sm font-medium text-rose-600 hover:underline disabled:opacity-60"
+                            className="text-sm font-medium text-rose-300 hover:underline disabled:opacity-60"
                           >
                             Remove
                           </button>
                         )}
                       </div>
                     </div>
-                    <p className="text-xs text-slate-400 mt-2">Shown on your public page and on your event registration pages.</p>
+                    <p className="text-xs text-subtle mt-2">Shown on your public page and on your event registration pages.</p>
                     {logoUploadError && (
-                      <p className="flex items-start gap-1.5 text-xs text-rose-600 mt-2">
+                      <p className="flex items-start gap-1.5 text-xs text-rose-300 mt-2">
                         <AlertCircle size={13} className="mt-0.5 shrink-0" />
                         {logoUploadError}
                       </p>
@@ -923,17 +923,17 @@ function AdminPageContent() {
                 />
               )}
               {loadingOrgName ? null : (
-                <form onSubmit={handleSaveBio} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4 mt-4">
+                <form onSubmit={handleSaveBio} className="bg-surface rounded-xl border border-line p-5 space-y-4 mt-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Bio</label>
+                    <label className="block text-sm font-medium text-fg-2 mb-1.5">Bio</label>
                     <textarea
                       rows={3}
                       value={orgBioDraft}
                       onChange={(e) => setOrgBioDraft(e.target.value)}
                       placeholder="A short line about who you are and what kind of events you run…"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                     />
-                    <p className="text-xs text-slate-400 mt-1.5">Shown at the top of your public page, alongside every event you&apos;ve published.</p>
+                    <p className="text-xs text-subtle mt-1.5">Shown at the top of your public page, alongside every event you&apos;ve published.</p>
                   </div>
                   <button
                     type="submit"
@@ -948,20 +948,20 @@ function AdminPageContent() {
             </div>
 
             <div>
-              <h2 className="font-semibold text-slate-800 mb-4">Change password</h2>
-              <form onSubmit={handleChangePassword} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+              <h2 className="font-semibold text-fg mb-4">Change password</h2>
+              <form onSubmit={handleChangePassword} className="bg-surface rounded-xl border border-line p-5 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Current password</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Current password</label>
                   <input
                     required
                     type="password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">New password</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">New password</label>
                   <input
                     required
                     type="password"
@@ -969,22 +969,22 @@ function AdminPageContent() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="At least 8 characters"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm new password</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Confirm new password</label>
                   <input
                     required
                     type="password"
                     minLength={8}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                   />
                 </div>
                 {passwordError && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                     <AlertCircle size={15} className="mt-0.5 shrink-0" />
                     {passwordError}
                   </div>
@@ -1001,26 +1001,26 @@ function AdminPageContent() {
             </div>
 
             <div>
-              <h2 className="font-semibold text-slate-800 mb-4">Two-factor authentication</h2>
+              <h2 className="font-semibold text-fg mb-4">Two-factor authentication</h2>
               <TwoFactorSettings />
             </div>
 
             <ActiveDevicesSection />
 
             <div>
-              <h2 className="font-semibold text-slate-800 mb-1">Delete account</h2>
+              <h2 className="font-semibold text-fg mb-1">Delete account</h2>
               {accountDeletionStatus === "requested" ? (
-                <div className="bg-white rounded-xl border border-amber-200 p-5">
-                  <p className="text-sm text-slate-700">
+                <div className="bg-surface rounded-xl border border-amber-500/30 p-5">
+                  <p className="text-sm text-fg-2">
                     Deletion requested for <span className="font-medium">{orgName}</span>.
                   </p>
-                  <p className="text-xs text-slate-400 mt-2">
+                  <p className="text-xs text-subtle mt-2">
                     Awaiting approval from the eventbuddy team — for security, account deletion isn&apos;t applied instantly.
                   </p>
                 </div>
               ) : (
                 <>
-                  <p className="text-sm text-slate-500 mb-4">
+                  <p className="text-sm text-muted mb-4">
                     Permanently deletes your account, your organization, and everything under it — events, registrations, leads, and staff. This can&apos;t
                     be undone.
                   </p>
@@ -1040,34 +1040,34 @@ function AdminPageContent() {
 
         {showDeleteAccountModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
-            <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
-              <h2 className="font-semibold text-slate-900 text-lg mb-2">Request account deletion?</h2>
-              <p className="text-sm text-slate-600">
+            <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
+              <h2 className="font-semibold text-fg text-lg mb-2">Request account deletion?</h2>
+              <p className="text-sm text-fg-3">
                 This requests permanent deletion of <span className="font-semibold">{orgName}</span> and everything under it — events, registrations,
                 leads, and staff. A platform admin reviews and approves it before it takes effect.
               </p>
               <div className="mt-4">
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">
                   Type <span className="font-semibold">{orgName}</span> to confirm
                 </label>
                 <input
                   type="text"
                   value={deleteAccountConfirmText}
                   onChange={(e) => setDeleteAccountConfirmText(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>
               <div className="mt-4">
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Your password</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Your password</label>
                 <input
                   type="password"
                   value={deleteAccountPassword}
                   onChange={(e) => setDeleteAccountPassword(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>
               {deleteAccountError && (
-                <div className="flex items-start gap-2 p-3 mt-4 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                <div className="flex items-start gap-2 p-3 mt-4 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {deleteAccountError}
                 </div>
@@ -1082,7 +1082,7 @@ function AdminPageContent() {
                     setDeleteAccountError("");
                   }}
                   disabled={deletingAccount}
-                  className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                  className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas disabled:opacity-60"
                 >
                   Cancel
                 </button>
@@ -1103,8 +1103,8 @@ function AdminPageContent() {
           <div key="staff" className="animate-tab-fade">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div>
-                <h2 className="font-semibold text-slate-800 min-w-0">Team Members ({teamMembers.length})</h2>
-                <p className="text-xs text-slate-400 mt-0.5">People you&apos;ve added yourself — not anyone who&apos;s just checked in to collect leads.</p>
+                <h2 className="font-semibold text-fg min-w-0">Team Members ({teamMembers.length})</h2>
+                <p className="text-xs text-subtle mt-0.5">People you&apos;ve added yourself — not anyone who&apos;s just checked in to collect leads.</p>
               </div>
               <button
                 onClick={() => {
@@ -1146,8 +1146,8 @@ function AdminPageContent() {
 
             {checkinOnly.length > 0 && (
               <div className="mt-8">
-                <h2 className="font-semibold text-slate-800 min-w-0">Checked in without an account ({checkinOnly.length})</h2>
-                <p className="text-xs text-slate-400 mt-0.5 mb-4">
+                <h2 className="font-semibold text-fg min-w-0">Checked in without an account ({checkinOnly.length})</h2>
+                <p className="text-xs text-subtle mt-0.5 mb-4">
                   Signed in with just their name on an event&apos;s check-in link — not people you added. Edit one and give it a real email to
                   move it up to Team Members.
                 </p>
@@ -1181,35 +1181,35 @@ function AdminPageContent() {
 
             {showStaffForm && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
-                <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
-                  <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                    <h2 className="font-semibold text-slate-900">{staffForm.id ? "Edit Staff" : "Add Staff Member"}</h2>
+                <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
+                  <div className="flex items-center justify-between p-6 border-b border-line-soft">
+                    <h2 className="font-semibold text-fg">{staffForm.id ? "Edit Staff" : "Add Staff Member"}</h2>
                     <button onClick={() => setShowStaffForm(false)}>
-                      <X size={20} className="text-slate-400" />
+                      <X size={20} className="text-subtle" />
                     </button>
                   </div>
                   <form onSubmit={handleAddStaff} className="p-6 space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
+                      <label className="block text-sm font-medium text-fg-2 mb-1.5">Full Name</label>
                       <input
                         required
                         value={staffForm.name}
                         onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                      <label className="block text-sm font-medium text-fg-2 mb-1.5">Email</label>
                       <input
                         required
                         type="email"
                         value={staffForm.email}
                         onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Assigned Event</label>
+                      <label className="block text-sm font-medium text-fg-2 mb-1.5">Assigned Event</label>
                       <select
                         value={staffForm.eventId}
                         onChange={(e) => {
@@ -1221,7 +1221,7 @@ function AdminPageContent() {
                             ...(usesDestinations ? {} : { destinationId: "", universityId: "" }),
                           });
                         }}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-white"
+                        className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-surface"
                       >
                         <option value="">Select event</option>
                         {events.map((ev) => (
@@ -1234,11 +1234,11 @@ function AdminPageContent() {
                     {staffEventUsesDestinations && (
                       <>
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1.5">Destination</label>
+                          <label className="block text-sm font-medium text-fg-2 mb-1.5">Destination</label>
                           <select
                             value={staffForm.destinationId}
                             onChange={(e) => setStaffForm({ ...staffForm, destinationId: e.target.value, universityId: "" })}
-                            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-white"
+                            className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-surface"
                           >
                             <option value="">Select destination</option>
                             {destinations.map((d) => (
@@ -1249,12 +1249,12 @@ function AdminPageContent() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1.5">University</label>
+                          <label className="block text-sm font-medium text-fg-2 mb-1.5">University</label>
                           <select
                             value={staffForm.universityId}
                             onChange={(e) => setStaffForm({ ...staffForm, universityId: e.target.value })}
                             disabled={!staffForm.destinationId}
-                            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-white disabled:opacity-50"
+                            className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-surface disabled:opacity-50"
                           >
                             <option value="">Select university</option>
                             {staffUnis.map((u) => (
@@ -1267,13 +1267,13 @@ function AdminPageContent() {
                       </>
                     )}
                     {formError && (
-                      <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                      <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                         <AlertCircle size={15} className="mt-0.5 shrink-0" />
                         {formError}
                       </div>
                     )}
                     <div className="flex gap-3 pt-2">
-                      <button type="button" onClick={() => setShowStaffForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                      <button type="button" onClick={() => setShowStaffForm(false)} className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas">
                         Cancel
                       </button>
                       <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" style={{ background: "#C21FAF" }}>
@@ -1290,63 +1290,63 @@ function AdminPageContent() {
         {tab === "ledger" && (
           <div key="ledger" className="animate-tab-fade">
             <div className="mb-4">
-              <h2 className="font-semibold text-slate-800">Ledger</h2>
-              <p className="text-sm text-slate-500 mt-0.5">
+              <h2 className="font-semibold text-fg">Ledger</h2>
+              <p className="text-sm text-muted mt-0.5">
                 A running record of every ticket sale. Paystack settles each sale straight into your bank account automatically — this is a summary of
                 what&apos;s already been paid out, not a balance you withdraw from.
               </p>
             </div>
 
             {loadingLedger ? (
-              <div className="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-400">Loading…</div>
+              <div className="bg-surface rounded-xl border border-line p-6 text-sm text-subtle">Loading…</div>
             ) : !ledger || ledger.salesCount === 0 ? (
-              <div className="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-400">No ticket sales yet.</div>
+              <div className="bg-surface rounded-xl border border-line p-6 text-sm text-subtle">No ticket sales yet.</div>
             ) : (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="bg-white rounded-xl border border-slate-200 p-4">
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Gross revenue</p>
-                    <p className="text-xl font-semibold text-slate-900 mt-1">{formatNaira(ledger.totalGrossNaira)}</p>
+                  <div className="bg-surface rounded-xl border border-line p-4">
+                    <p className="text-xs font-medium text-subtle uppercase tracking-wide">Gross revenue</p>
+                    <p className="text-xl font-semibold text-fg mt-1">{formatNaira(ledger.totalGrossNaira)}</p>
                   </div>
-                  <div className="bg-white rounded-xl border border-slate-200 p-4">
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">eventbuddy fee</p>
-                    <p className="text-xl font-semibold text-slate-900 mt-1">{formatNaira(ledger.totalFeeNaira)}</p>
+                  <div className="bg-surface rounded-xl border border-line p-4">
+                    <p className="text-xs font-medium text-subtle uppercase tracking-wide">eventbuddy fee</p>
+                    <p className="text-xl font-semibold text-fg mt-1">{formatNaira(ledger.totalFeeNaira)}</p>
                   </div>
-                  <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4">
-                    <p className="text-xs font-medium text-emerald-700 uppercase tracking-wide">Paid to your bank</p>
-                    <p className="text-xl font-semibold text-emerald-800 mt-1">{formatNaira(ledger.totalNetNaira)}</p>
+                  <div className="bg-emerald-500/10 rounded-xl border border-emerald-500/20 p-4">
+                    <p className="text-xs font-medium text-emerald-300 uppercase tracking-wide">Paid to your bank</p>
+                    <p className="text-xl font-semibold text-emerald-200 mt-1">{formatNaira(ledger.totalNetNaira)}</p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-slate-700 mb-2">By event</h3>
-                  <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+                  <h3 className="text-sm font-medium text-fg-2 mb-2">By event</h3>
+                  <div className="bg-surface rounded-xl border border-line divide-y divide-line-soft">
                     {ledger.events.map((e) => (
                       <div key={e.eventId} className="flex items-center justify-between gap-4 px-4 py-3">
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-slate-900 truncate">{e.eventName}</p>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-sm font-medium text-fg truncate">{e.eventName}</p>
+                          <p className="text-xs text-subtle">
                             {e.salesCount} sale{e.salesCount === 1 ? "" : "s"} · fee {formatNaira(e.feeNaira)}
                           </p>
                         </div>
-                        <p className="text-sm font-semibold text-slate-900 shrink-0">{formatNaira(e.netNaira)}</p>
+                        <p className="text-sm font-semibold text-fg shrink-0">{formatNaira(e.netNaira)}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-slate-700 mb-2">Recent sales</h3>
-                  <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+                  <h3 className="text-sm font-medium text-fg-2 mb-2">Recent sales</h3>
+                  <div className="bg-surface rounded-xl border border-line divide-y divide-line-soft">
                     {ledger.recentTransactions.map((t) => (
                       <div key={t.id} className="flex items-center justify-between gap-4 px-4 py-3">
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-slate-900 truncate">{t.eventName}</p>
-                          <p className="text-xs text-slate-400">{new Date(t.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</p>
+                          <p className="text-sm font-medium text-fg truncate">{t.eventName}</p>
+                          <p className="text-xs text-subtle">{new Date(t.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-semibold text-slate-900">{formatNaira(t.netAmountNaira)}</p>
-                          <p className="text-xs text-slate-400">of {formatNaira(t.amountNaira)}</p>
+                          <p className="text-sm font-semibold text-fg">{formatNaira(t.netAmountNaira)}</p>
+                          <p className="text-xs text-subtle">of {formatNaira(t.amountNaira)}</p>
                         </div>
                       </div>
                     ))}
@@ -1360,28 +1360,28 @@ function AdminPageContent() {
         {tab === "payouts" && (
           <div key="payouts" className="animate-tab-fade">
             <div className="mb-4">
-              <h2 className="font-semibold text-slate-800">Ticket payouts</h2>
-              <p className="text-sm text-slate-500 mt-0.5">
+              <h2 className="font-semibold text-fg">Ticket payouts</h2>
+              <p className="text-sm text-muted mt-0.5">
                 Add your bank account once — every paid ticket sold on eventbuddy settles straight into it automatically, minus eventbuddy&apos;s
                 transaction fee. eventbuddy never holds or forwards this money itself.
               </p>
             </div>
 
             {loadingPayout ? (
-              <div className="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-400">Loading…</div>
+              <div className="bg-surface rounded-xl border border-line p-6 text-sm text-subtle">Loading…</div>
             ) : orgPayout?.paystackSubaccountCode && orgPayout.payoutChangeStatus !== "approved" ? (
-              <div className="bg-white rounded-xl border border-slate-200 p-5 flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <div className="bg-surface rounded-xl border border-line p-5 flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center shrink-0">
                   <ShieldCheck size={18} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900">Payouts are set up</p>
-                  <p className="text-sm text-slate-500 mt-0.5">
+                  <p className="font-medium text-fg">Payouts are set up</p>
+                  <p className="text-sm text-muted mt-0.5">
                     {orgPayout.payoutAccountName} · {orgPayout.payoutBankName} · {orgPayout.payoutAccountNumber}
                   </p>
                   <div className="mt-3">
                     {orgPayout.payoutChangeStatus === "requested" ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-full">
                         Change requested — awaiting approval
                       </span>
                     ) : (
@@ -1389,7 +1389,7 @@ function AdminPageContent() {
                         type="button"
                         onClick={handleRequestPayoutChange}
                         disabled={requestingChange}
-                        className="text-xs font-medium text-slate-600 hover:text-slate-900 underline underline-offset-2 disabled:opacity-60"
+                        className="text-xs font-medium text-fg-3 hover:text-fg underline underline-offset-2 disabled:opacity-60"
                       >
                         {requestingChange ? "Requesting…" : "Request a change to these details"}
                       </button>
@@ -1398,15 +1398,15 @@ function AdminPageContent() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-slate-200 p-5 max-w-md space-y-4">
+              <div className="bg-surface rounded-xl border border-line p-5 max-w-md space-y-4">
                 {orgPayout?.payoutChangeStatus === "approved" && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-500/10 text-emerald-300 text-sm">
                     <ShieldCheck size={15} className="mt-0.5 shrink-0" />
                     Your change request was approved — enter your new bank details below.
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Bank</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Bank</label>
                   <select
                     value={payoutBankCode}
                     onChange={(e) => {
@@ -1414,7 +1414,7 @@ function AdminPageContent() {
                       setResolvedAccountName("");
                     }}
                     disabled={loadingBanks}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-white disabled:opacity-50"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-surface disabled:opacity-50"
                   >
                     <option value="">{loadingBanks ? "Loading banks…" : "Select bank"}</option>
                     {banks.map((b) => (
@@ -1425,7 +1425,7 @@ function AdminPageContent() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Account number</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Account number</label>
                   <input
                     value={payoutAccountNumber}
                     onChange={(e) => {
@@ -1433,13 +1433,13 @@ function AdminPageContent() {
                       setResolvedAccountName("");
                     }}
                     inputMode="numeric"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                     placeholder="0123456789"
                   />
                 </div>
 
                 {resolvedAccountName ? (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-500/10 text-emerald-300 text-sm">
                     <ShieldCheck size={15} className="mt-0.5 shrink-0" />
                     Verified: {resolvedAccountName}
                   </div>
@@ -1448,14 +1448,14 @@ function AdminPageContent() {
                     type="button"
                     onClick={handleResolveAccount}
                     disabled={resolvingAccount}
-                    className="w-full py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    className="w-full py-2.5 rounded-lg border border-line text-sm font-medium text-fg-2 hover:bg-canvas disabled:opacity-60"
                   >
                     {resolvingAccount ? "Verifying…" : "Verify account"}
                   </button>
                 )}
 
                 {payoutError && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                     <AlertCircle size={15} className="mt-0.5 shrink-0" />
                     {payoutError}
                   </div>

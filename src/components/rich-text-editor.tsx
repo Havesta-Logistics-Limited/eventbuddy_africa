@@ -55,7 +55,7 @@ function ToolbarButton({
       aria-label={label}
       aria-pressed={active}
       className={`p-1.5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
-        active ? "bg-brand-600/10 text-brand-700" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+        active ? "bg-brand-600/10 text-brand-500" : "text-muted hover:bg-fill hover:text-fg-2"
       }`}
     >
       {children}
@@ -119,7 +119,7 @@ export function RichTextEditor({
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
     editorProps: {
       attributes: {
-        class: `rich-text-content max-w-none text-sm text-slate-700 focus:outline-none ${minHeightClass}`,
+        class: `rich-text-content max-w-none text-sm text-fg-2 focus:outline-none ${minHeightClass}`,
       },
     },
   });
@@ -162,28 +162,28 @@ export function RichTextEditor({
   };
 
   return (
-    <div className={cn("rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-brand-600", className)}>
-      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-slate-100">
+    <div className={cn("rounded-lg border border-line bg-surface focus-within:ring-2 focus-within:ring-brand-600", className)}>
+      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-line-soft">
         <ToolbarButton label="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
           <Bold size={14} />
         </ToolbarButton>
         <ToolbarButton label="Italic" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}>
           <Italic size={14} />
         </ToolbarButton>
-        <span className="w-px h-4 bg-slate-200 mx-1" />
+        <span className="w-px h-4 bg-fill-strong mx-1" />
         <ToolbarButton label="Bullet list" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}>
           <List size={14} />
         </ToolbarButton>
         <ToolbarButton label="Numbered list" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
           <ListOrdered size={14} />
         </ToolbarButton>
-        <span className="w-px h-4 bg-slate-200 mx-1" />
+        <span className="w-px h-4 bg-fill-strong mx-1" />
         <ToolbarButton label="Link" active={editor.isActive("link")} onClick={setLink}>
           <Link2 size={14} />
         </ToolbarButton>
         {allowImages && (
           <>
-            <span className="w-px h-4 bg-slate-200 mx-1" />
+            <span className="w-px h-4 bg-fill-strong mx-1" />
             <ToolbarButton label="Insert image" disabled={uploadingImage} onClick={() => fileInputRef.current?.click()}>
               {uploadingImage ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
             </ToolbarButton>
@@ -204,14 +204,14 @@ export function RichTextEditor({
       <EditorContent editor={editor} className="px-3.5 py-2.5" />
       {allowImages && (
         <BubbleMenu editor={editor} shouldShow={({ editor }) => editor.isActive("image")}>
-          <div className="flex items-center gap-0.5 p-1 rounded-lg border border-slate-200 bg-white shadow-lg">
+          <div className="flex items-center gap-0.5 p-1 rounded-lg border border-line bg-surface shadow-lg">
             {IMAGE_WIDTHS.map((w) => (
               <button
                 key={w.value}
                 type="button"
                 onClick={() => editor.chain().focus().updateAttributes("image", { width: w.value }).run()}
                 className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                  editor.getAttributes("image").width === w.value ? "bg-brand-600/10 text-brand-700" : "text-slate-500 hover:bg-slate-100"
+                  editor.getAttributes("image").width === w.value ? "bg-brand-600/10 text-brand-500" : "text-muted hover:bg-fill"
                 }`}
               >
                 {w.label}

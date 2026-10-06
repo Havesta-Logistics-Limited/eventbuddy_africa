@@ -86,21 +86,21 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0">
-          <h3 className="font-semibold text-slate-900">Send a Blast/Newsletter</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+      <div className="bg-surface rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-line-soft shrink-0">
+          <h3 className="font-semibold text-fg">Send a Blast/Newsletter</h3>
+          <button onClick={onClose} className="text-subtle hover:text-fg-3">
             <X size={18} />
           </button>
         </div>
         <form onSubmit={handleSend} className="p-5 space-y-4 overflow-y-auto">
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1.5">Send to</label>
+            <label className="block text-xs font-medium text-fg-2 mb-1.5">Send to</label>
             <div className="flex flex-wrap items-center gap-2">
               <select
                 value={targetMode}
                 onChange={(e) => setTargetMode(e.target.value as "everyone" | "event")}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+                className="px-3 py-2 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-brand-600"
               >
                 <option value="everyone">Everyone in my audience</option>
                 <option value="event">One event&apos;s attendees</option>
@@ -113,7 +113,7 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
                       setEventId(e.target.value);
                       setStatusFilter("registered");
                     }}
-                    className="min-w-0 flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="min-w-0 flex-1 px-3 py-2 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-brand-600"
                   >
                     <option value="" disabled>
                       Select an event
@@ -128,7 +128,7 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                      className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      className="px-3 py-2 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-brand-600"
                     >
                       <option value="registered">Registered</option>
                       {!isVirtual && <option value="checked_in">Checked-in</option>}
@@ -139,23 +139,23 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
               )}
             </div>
             {targetMode === "event" && selectedEvent && !isVirtual && !eventEnded && statusFilter === "no_show" && (
-              <p className="text-xs text-amber-600 mt-1.5">No-show can only be targeted once this event has ended.</p>
+              <p className="text-xs text-amber-300 mt-1.5">No-show can only be targeted once this event has ended.</p>
             )}
-            <p className="text-xs text-slate-500 mt-1.5">Sends to up to {previewCount.toLocaleString()} people.</p>
+            <p className="text-xs text-muted mt-1.5">Sends to up to {previewCount.toLocaleString()} people.</p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1.5">Subject</label>
+            <label className="block text-xs font-medium text-fg-2 mb-1.5">Subject</label>
             <input
               required
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="e.g. We're back with a new event!"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1.5">Message</label>
+            <label className="block text-xs font-medium text-fg-2 mb-1.5">Message</label>
             <RichTextEditor
               value={messageHtml}
               onChange={setMessageHtml}
@@ -167,13 +167,13 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
 
           <div>
             {!showCta ? (
-              <button type="button" onClick={() => setShowCta(true)} className="text-xs font-medium text-brand-600 hover:underline">
+              <button type="button" onClick={() => setShowCta(true)} className="text-xs font-medium text-brand-500 hover:underline">
                 + Add a button
               </button>
             ) : (
-              <div className="border border-slate-200 rounded-lg p-3.5 space-y-2.5">
+              <div className="border border-line rounded-lg p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-slate-700">Button</label>
+                  <label className="text-xs font-medium text-fg-2">Button</label>
                   <button
                     type="button"
                     onClick={() => {
@@ -181,7 +181,7 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
                       setCtaLabel("");
                       setCtaUrl("");
                     }}
-                    className="text-xs text-slate-400 hover:text-slate-600"
+                    className="text-xs text-subtle hover:text-fg-3"
                   >
                     Remove
                   </button>
@@ -191,14 +191,14 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
                     value={ctaLabel}
                     onChange={(e) => setCtaLabel(e.target.value)}
                     placeholder="Button text, e.g. Register now"
-                    className="px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                   <input
                     type="url"
                     value={ctaUrl}
                     onChange={(e) => setCtaUrl(e.target.value)}
                     placeholder="https://…"
-                    className="px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
               </div>
@@ -206,7 +206,7 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
           </div>
 
           {error && (
-            <p className="flex items-start gap-1.5 text-xs text-rose-600">
+            <p className="flex items-start gap-1.5 text-xs text-rose-300">
               <AlertCircle size={13} className="mt-0.5 shrink-0" />
               {error}
             </p>
@@ -267,43 +267,43 @@ function SentBlastsSection({ orgId }: { orgId: string }) {
   }
 
   return (
-    <div className="mt-8 bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div className="mt-8 bg-surface rounded-2xl border border-line overflow-hidden">
       <button type="button" onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between gap-2 px-4 py-3.5 text-left">
-        <span className="flex items-center gap-2 text-sm font-medium text-slate-700 min-w-0 truncate">
-          <Send size={15} className="text-slate-400 shrink-0" />
+        <span className="flex items-center gap-2 text-sm font-medium text-fg-2 min-w-0 truncate">
+          <Send size={15} className="text-subtle shrink-0" />
           <span className="truncate">Sent Blasts/Newsletters {!loading && `(${rows.length})`}</span>
         </span>
-        <ChevronDown size={15} className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={15} className={`shrink-0 text-subtle transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div className="border-t border-slate-100">
+        <div className="border-t border-line-soft">
           {loading ? (
-            <div className="p-4 text-xs text-slate-400">Loading…</div>
+            <div className="p-4 text-xs text-subtle">Loading…</div>
           ) : rows.length === 0 ? (
-            <div className="p-4 text-xs text-slate-400">No blasts/newsletters sent yet.</div>
+            <div className="p-4 text-xs text-subtle">No blasts/newsletters sent yet.</div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-line-soft">
               {rows.map((r) => (
                 <div key={r.id}>
                   <button
                     type="button"
                     onClick={() => setExpandedId((id) => (id === r.id ? null : r.id))}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-canvas transition-colors"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-800 truncate">{r.subject}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-sm font-medium text-fg truncate">{r.subject}</p>
+                      <p className="text-xs text-subtle mt-0.5">
                         {targetLabel(r)} · {r.sent_count}/{r.recipient_count} delivered ·{" "}
                         {new Date(r.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                       </p>
                     </div>
-                    <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform ${expandedId === r.id ? "rotate-180" : ""}`} />
+                    <ChevronDown size={14} className={`shrink-0 text-subtle transition-transform ${expandedId === r.id ? "rotate-180" : ""}`} />
                   </button>
                   {expandedId === r.id && (
                     <div className="px-4 pb-4">
-                      <RichTextDisplay html={r.message_html} className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3" />
+                      <RichTextDisplay html={r.message_html} className="text-sm text-fg-3 bg-canvas rounded-lg p-3" />
                       {r.cta_label && r.cta_url && (
-                        <p className="text-xs text-slate-500 mt-2">
+                        <p className="text-xs text-muted mt-2">
                           Button: <span className="font-medium">{r.cta_label}</span> → {r.cta_url}
                         </p>
                       )}
@@ -338,26 +338,26 @@ function UnsubscribedSection({ orgId }: { orgId: string }) {
   }, [orgId]);
 
   return (
-    <div className="mt-8 bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div className="mt-8 bg-surface rounded-2xl border border-line overflow-hidden">
       <button type="button" onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
-        <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-          <UserMinus size={15} className="text-slate-400" />
+        <span className="flex items-center gap-2 text-sm font-medium text-fg-2">
+          <UserMinus size={15} className="text-subtle" />
           Unsubscribed {!loading && `(${rows.length})`}
         </span>
-        <ChevronDown size={15} className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={15} className={`text-subtle transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div className="border-t border-slate-100">
+        <div className="border-t border-line-soft">
           {loading ? (
-            <div className="p-4 text-xs text-slate-400">Loading…</div>
+            <div className="p-4 text-xs text-subtle">Loading…</div>
           ) : rows.length === 0 ? (
-            <div className="p-4 text-xs text-slate-400">Nobody has unsubscribed from your blasts/newsletters.</div>
+            <div className="p-4 text-xs text-subtle">Nobody has unsubscribed from your blasts/newsletters.</div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-line-soft">
               {rows.map((r) => (
                 <div key={r.email} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                  <span className="text-slate-700">{r.email}</span>
-                  <span className="text-xs text-slate-400">{new Date(r.createdAt).toLocaleDateString("en-GB")}</span>
+                  <span className="text-fg-2">{r.email}</span>
+                  <span className="text-xs text-subtle">{new Date(r.createdAt).toLocaleDateString("en-GB")}</span>
                 </div>
               ))}
             </div>
@@ -433,8 +433,8 @@ export default function AudiencePage() {
       <div className="p-6 max-w-5xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="font-display text-2xl text-slate-900">Audience</h1>
-            <p className="text-slate-500 text-sm mt-0.5">Everyone who&apos;s registered for one of your events or followed you directly.</p>
+            <h1 className="font-display text-2xl text-fg">Audience</h1>
+            <p className="text-muted text-sm mt-0.5">Everyone who&apos;s registered for one of your events or followed you directly.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -449,7 +449,7 @@ export default function AudiencePage() {
             {members.length > 0 && (
               <button
                 onClick={exportAudience}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium border border-line text-fg-3 hover:bg-canvas"
               >
                 <Download size={14} />
                 Export
@@ -459,24 +459,24 @@ export default function AudiencePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <div className="bg-surface rounded-2xl border border-line shadow-sm p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Users size={15} className="text-slate-400" />
-              <span className="text-xs font-medium text-slate-500">Total audience</span>
+              <Users size={15} className="text-subtle" />
+              <span className="text-xs font-medium text-muted">Total audience</span>
             </div>
-            <p className="text-2xl font-bold text-slate-900 tabular-nums">{loading ? "—" : members.length}</p>
+            <p className="text-2xl font-bold text-fg tabular-nums">{loading ? "—" : members.length}</p>
           </div>
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <div className="bg-surface rounded-2xl border border-line shadow-sm p-4">
             <div className="flex items-center gap-2 mb-2">
-              <UserCheck size={15} className="text-slate-400" />
-              <span className="text-xs font-medium text-slate-500">Direct followers</span>
+              <UserCheck size={15} className="text-subtle" />
+              <span className="text-xs font-medium text-muted">Direct followers</span>
             </div>
-            <p className="text-2xl font-bold text-slate-900 tabular-nums">{loading ? "—" : followerCount}</p>
+            <p className="text-2xl font-bold text-fg tabular-nums">{loading ? "—" : followerCount}</p>
           </div>
         </div>
 
         <div className="relative max-w-sm mb-4">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle" />
           <input
             value={search}
             onChange={(e) => {
@@ -484,65 +484,65 @@ export default function AudiencePage() {
               setPage(1);
             }}
             placeholder="Search your audience…"
-            className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+            className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
         </div>
 
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-12 rounded-xl bg-slate-100 animate-pulse" />
+              <div key={i} className="h-12 rounded-xl bg-fill animate-pulse" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-10 text-center">
-            <Megaphone size={28} className="mx-auto mb-3 text-slate-300" />
-            <p className="font-medium text-slate-500">{members.length === 0 ? "No audience yet" : "No matches"}</p>
-            <p className="text-xs text-slate-400 mt-1.5">
+          <div className="bg-canvas border border-line rounded-xl p-10 text-center">
+            <Megaphone size={28} className="mx-auto mb-3 text-faint" />
+            <p className="font-medium text-muted">{members.length === 0 ? "No audience yet" : "No matches"}</p>
+            <p className="text-xs text-subtle mt-1.5">
               {members.length === 0 ? "Anyone who registers for an event or follows you will show up here." : "Try a different search."}
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+          <div className="bg-surface rounded-2xl border border-line overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50">
+                <thead className="bg-canvas">
                   <tr>
                     {["Name", "Email", "Source", "Joined"].map((h) => (
-                      <th key={h} className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">
+                      <th key={h} className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line-soft">
                   {pageItems.map((m) => (
                     <tr key={m.email}>
-                      <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">{m.fullName || "—"}</td>
-                      <td className="px-4 py-3 text-slate-500">{m.email}</td>
+                      <td className="px-4 py-3 font-medium text-fg whitespace-nowrap">{m.fullName || "—"}</td>
+                      <td className="px-4 py-3 text-muted">{m.email}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                            m.source === "follower" ? "bg-violet-100 text-violet-700" : "bg-amber-100 text-amber-700"
+                            m.source === "follower" ? "bg-violet-500/15 text-violet-300" : "bg-amber-500/15 text-amber-300"
                           }`}
                         >
                           {m.source === "follower" ? "Follower" : "Attendee"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{new Date(m.joinedAt).toLocaleDateString("en-GB")}</td>
+                      <td className="px-4 py-3 text-subtle whitespace-nowrap">{new Date(m.joinedAt).toLocaleDateString("en-GB")}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-100">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-line-soft">
               <div className="flex items-center gap-2">
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted">
                   Showing {pageStart + 1}–{pageSize === "all" ? filtered.length : Math.min(pageStart + pageSize, filtered.length)} of{" "}
                   {filtered.length}
                 </p>
-                <span className="text-slate-300">·</span>
-                <label className="text-xs text-slate-500 flex items-center gap-1.5">
+                <span className="text-faint">·</span>
+                <label className="text-xs text-muted flex items-center gap-1.5">
                   Rows per page
                   <select
                     value={pageSize}
@@ -550,7 +550,7 @@ export default function AudiencePage() {
                       setPageSize(e.target.value === "all" ? "all" : (Number(e.target.value) as AudiencePageSize));
                       setPage(1);
                     }}
-                    className="px-2 py-1 rounded-md border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="px-2 py-1 rounded-md border border-line text-xs bg-surface focus:outline-none focus:ring-2 focus:ring-brand-600"
                   >
                     {AUDIENCE_PAGE_SIZE_OPTIONS.map((size) => (
                       <option key={size} value={size}>
@@ -566,19 +566,19 @@ export default function AudiencePage() {
                     type="button"
                     onClick={() => setPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <ChevronLeft size={13} />
                     Previous
                   </button>
-                  <span className="text-xs text-slate-500 tabular-nums px-1">
+                  <span className="text-xs text-muted tabular-nums px-1">
                     Page {currentPage} of {totalPages}
                   </span>
                   <button
                     type="button"
                     onClick={() => setPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Next
                     <ChevronRight size={13} />

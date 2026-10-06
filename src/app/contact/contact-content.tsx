@@ -74,8 +74,8 @@ export default function ContactContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
+    <div className="min-h-screen bg-canvas">
+      <header className="sticky top-0 z-30 bg-surface/70 backdrop-blur-md border-b border-line/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <span className="sm:hidden">
             <Logo height={18} />
@@ -84,13 +84,13 @@ export default function ContactContent() {
             <Logo height={26} />
           </span>
           <nav className="flex items-center gap-3 sm:gap-6">
-            <Link href="/discover" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
+            <Link href="/discover" className="text-sm font-medium text-fg-3 hover:text-fg hidden sm:block">
               Events
             </Link>
-            <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
+            <Link href="/pricing" className="text-sm font-medium text-fg-3 hover:text-fg hidden sm:block">
               Pricing
             </Link>
-            <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
+            <Link href="/login" className="text-sm font-medium text-fg-3 hover:text-fg">
               Sign in
             </Link>
             <Link href="/signup" className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors">
@@ -101,8 +101,8 @@ export default function ContactContent() {
       </header>
 
       <section className="max-w-3xl mx-auto px-6 pt-14 pb-8 text-center animate-fade-in-up">
-        <h1 className="font-display text-4xl sm:text-5xl text-slate-900 mb-3">Talk to us. A real person replies.</h1>
-        <p className="text-slate-500 max-w-xl mx-auto">
+        <h1 className="font-display text-4xl sm:text-5xl text-fg mb-3">Talk to us. A real person replies.</h1>
+        <p className="text-muted max-w-xl mx-auto">
           Questions about pricing, running a Full-Service event, or something that broke — send it below, or skip the
           form entirely and reach us direct.
         </p>
@@ -111,14 +111,14 @@ export default function ContactContent() {
       <section className="max-w-5xl mx-auto px-6 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6">
           {/* Form */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 animate-fade-in-up" style={{ animationDelay: "80ms" }}>
+          <div className="rounded-3xl border border-line bg-surface p-8 sm:p-10 animate-fade-in-up" style={{ animationDelay: "80ms" }}>
             {sent ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-10">
-                <div className="w-14 h-14 rounded-full bg-teal-50 flex items-center justify-center mb-4">
-                  <CheckCircle2 size={26} className="text-teal-600" />
+                <div className="w-14 h-14 rounded-full bg-teal-500/10 flex items-center justify-center mb-4">
+                  <CheckCircle2 size={26} className="text-teal-300" />
                 </div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-1.5">Message sent</h2>
-                <p className="text-slate-500 text-sm max-w-xs">
+                <h2 className="text-xl font-semibold text-fg mb-1.5">Message sent</h2>
+                <p className="text-muted text-sm max-w-xs">
                   We&apos;ve emailed a copy to {email} — we usually reply within a few hours.
                 </p>
                 <button
@@ -130,7 +130,7 @@ export default function ContactContent() {
                     setSubject("");
                     setMessage("");
                   }}
-                  className="mt-6 text-sm font-medium text-brand-600 hover:underline"
+                  className="mt-6 text-sm font-medium text-brand-500 hover:underline"
                 >
                   Send another message
                 </button>
@@ -139,53 +139,53 @@ export default function ContactContent() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
+                    <label className="block text-sm font-medium text-fg-2 mb-1.5">Name</label>
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Amaka Obi"
                       required
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white"
+                      className="w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-surface"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
+                    <label className="block text-sm font-medium text-fg-2 mb-1.5">Email address</label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
                       required
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white"
+                      className="w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-surface"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Subject</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Subject</label>
                   <input
                     type="text"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder="What's this about?"
                     required
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white"
+                    className="w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-surface"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Message</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Message</label>
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Tell us what you need help with"
                     required
                     rows={5}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white resize-none"
+                    className="w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-surface resize-none"
                   />
                 </div>
 
                 {error && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                     <AlertCircle size={16} className="shrink-0 mt-0.5" />
                     {error}
                   </div>
@@ -239,13 +239,13 @@ export default function ContactContent() {
 
               <div className="pt-6 border-t border-white/15 space-y-4">
                 <a href="mailto:info@eventbuddy.africa" className="flex items-center gap-3 group">
-                  <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-surface/10 flex items-center justify-center shrink-0">
                     <Mail size={16} />
                   </div>
                   <p className="text-sm font-medium group-hover:underline">info@eventbuddy.africa</p>
                 </a>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-surface/10 flex items-center justify-center shrink-0">
                     <MapPin size={16} />
                   </div>
                   <p className="text-sm font-medium text-white/90">Lagos, Nigeria</p>

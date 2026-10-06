@@ -43,7 +43,7 @@ export interface DynamicRegistrationFormValues {
 }
 
 const fieldClass =
-  "w-full px-3.5 py-2.5 rounded-lg border border-white/20 text-sm bg-white/5 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent";
+  "w-full px-3.5 py-2.5 rounded-lg border border-white/20 text-sm bg-surface/5 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent";
 const selectClass = `${fieldClass} cursor-pointer`;
 const labelClass = "block text-sm font-medium text-white/70 mb-1.5";
 const errorClass = "text-rose-300 text-xs mt-1";
@@ -203,7 +203,7 @@ export function DynamicRegistrationForm(props: {
       )}
 
       <label className="flex items-start gap-2.5 text-sm text-white/70 cursor-pointer">
-        <input type="checkbox" {...register("hideFromGuestList")} className="mt-0.5 w-4 h-4 rounded border-white/30 bg-white/5 accent-[#C21FAF]" />
+        <input type="checkbox" {...register("hideFromGuestList")} className="mt-0.5 w-4 h-4 rounded border-white/30 bg-surface/5 accent-[#C21FAF]" />
         Don&apos;t show my name publicly on this event&apos;s guest list
       </label>
 

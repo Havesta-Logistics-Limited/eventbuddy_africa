@@ -2,7 +2,30 @@
 
 @theme {
   --font-hero: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), "Segoe UI", system-ui, sans-serif;
-  --font-display: var(--font-dm-serif), Georgia, serif;
+  /* Headings across the app use the same SF Pro display stack as the landing
+     page (redesign, 2026-10). DM Serif Display is no longer the heading face. */
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), "Segoe UI", system-ui, sans-serif;
+
+  /* ---- Dark app theme (redesign, 2026-10) ---------------------------------
+     Semantic colours every app surface uses. The landing page set the look:
+     a violet-black canvas, slightly lifted surfaces, white-alpha fills and
+     hairlines, and a cool-lavender text ramp. Light islands (QR codes, the
+     landing page's product mocks, printable documents) keep their own colours. */
+  --color-canvas: #07030c;      /* page ground */
+  --color-surface: #100a17;     /* cards, panels, inputs */
+  --color-surface-hi: #1d1426;  /* raised: menus, tooltips, dark buttons */
+  --color-fill: #ffffff0f;      /* subtle fills, chips, hover rows */
+  --color-fill-strong: #ffffff1c;
+  --color-fill-max: #ffffff2e;
+  --color-fg: #f6f0fa;          /* primary text */
+  --color-fg-2: #e2d7ea;
+  --color-fg-3: #c9bcd6;
+  --color-muted: #a796b6;       /* secondary text */
+  --color-subtle: #8c7c9c;      /* tertiary text, icons */
+  --color-faint: #5f5070;       /* disabled, decorative */
+  --color-line-soft: #ffffff0d; /* hairlines */
+  --color-line: #ffffff17;
+  --color-line-strong: #ffffff29;
   /* Default face: SF Pro, via the system stack. Apple's licence doesn't allow
      self-hosting SF Pro on the web, so Apple devices render their own copy
      (macOS/iOS switch to SF Pro Display at large sizes automatically) and
@@ -65,10 +88,13 @@
 
 html {
   font-family: var(--font-sans);
-  background: #f8fafc;
-  color: #1e293b;
+  background: var(--color-canvas);
+  color: var(--color-fg);
+  color-scheme: dark; /* native date pickers, selects, scrollbars follow the theme */
   -webkit-font-smoothing: antialiased;
 }
+::selection { background: #c21faf; color: #fff; }
+:focus-visible { outline-color: #ff8af5; }
 
 ::-webkit-scrollbar {
   width: 6px;
@@ -78,16 +104,16 @@ html {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #ffffff24;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #ffffff40;
 }
 
 select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a796b6' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 2.5rem !important;
@@ -1180,12 +1206,102 @@ select {
   .lp-marquee-track { animation: none !important; }
   .lp-runsheet-tick { transition: none; }
   .lp-acc-body { transition: none; }
+  .eb-nav-pill { transition: none; }
   .lp-bar { animation: none; }
   .lp-marquee-pause { display: none; }
   .lp-rise { transform: none; }
   .lp-scene, .lp-wash, .lp-pop, .lp-caption { animation: none !important; }
   .lp-wash { opacity: 0; }
 }
+
+/* ==========================================================================
+   App shell (redesign, 2026-10): the landing page's dark canvas, hairline
+   edges, a sliding active pill. --accent is brand pink for organizers and the
+   staff portal's own blue for staff.
+   ========================================================================== */
+.eb-shell {
+  --accent: #ff8af5;
+  background: var(--color-canvas);
+  color: var(--color-fg);
+  border-right: 1px solid var(--color-line-soft);
+}
+.eb-shell--staff {
+  background: linear-gradient(180deg, #050d17, var(--color-canvas) 60%);
+}
+.eb-mobilebar {
+  border-right: 0;
+  border-bottom: 1px solid var(--color-line-soft);
+  background: color-mix(in srgb, var(--color-canvas) 86%, transparent);
+  backdrop-filter: saturate(150%) blur(14px);
+  -webkit-backdrop-filter: saturate(150%) blur(14px);
+}
+.eb-nav-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-muted);
+  transition: color 160ms ease, background-color 160ms ease;
+}
+.eb-nav-item:hover { color: var(--color-fg); background: var(--color-fill); }
+.eb-nav-item[data-active] { color: var(--color-fg); background: transparent; }
+.eb-nav-item[data-active] .eb-nav-icon { color: var(--accent); }
+.eb-nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.eb-nav-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+  transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.eb-nav-pill::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+.eb-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 650;
+}
+.eb-iconbtn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  color: var(--color-fg-3);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.eb-iconbtn:hover { background: var(--color-fill); color: var(--color-fg); }
+.eb-iconbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Light islands: content that must stay light on the dark theme (QR codes on
+   white for scannability, printable previews). */
+.eb-light { background: #fff; color: #170821; color-scheme: light; }
 
 /* Single global reduced-motion reset — covers every animation/transition in the
    app (including future ones), not just the classes defined above. */

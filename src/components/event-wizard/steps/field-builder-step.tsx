@@ -38,10 +38,10 @@ export function FieldBuilderStep({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">
+      <label className="block text-sm font-medium text-fg-2 mb-1">
         {alreadyCollectsAcademicFields ? "Anything else this event's lead form should collect?" : "What should this event's lead form collect?"}
       </label>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted mb-3">
         {alreadyCollectsAcademicFields
           ? "Education Fair events already collect name, email, phone, destination, university, preferred course, and IELTS status — no setup needed for those. Only add a question here if you need something on top of that."
           : "Every event already collects name, email, and phone. Add whatever else you need here."}
@@ -58,7 +58,7 @@ export function FieldBuilderStep({
           />
         ))}
         {fields.length === 0 && (
-          <p className="text-sm text-slate-400 text-center py-4">
+          <p className="text-sm text-subtle text-center py-4">
             {alreadyCollectsAcademicFields ? "No extra questions — the standard fields already cover this event." : "No questions yet — add one below."}
           </p>
         )}
@@ -66,7 +66,7 @@ export function FieldBuilderStep({
       <button
         type="button"
         onClick={addField}
-        className="mt-3 flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-dashed border-slate-300 text-sm font-medium text-slate-600 hover:border-[#C21FAF] hover:text-[#C21FAF] transition-colors"
+        className="mt-3 flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-dashed border-line-strong text-sm font-medium text-fg-3 hover:border-[#C21FAF] hover:text-[#C21FAF] transition-colors"
       >
         <Plus size={14} />
         Add question

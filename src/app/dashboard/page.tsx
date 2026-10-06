@@ -25,9 +25,9 @@ const ADMIN_ONLY: Role[] = ["admin"];
 // leftover still used elsewhere) so a live event's status never reads as the
 // same color family as the purple brand accent.
 const statusConfig: Record<EventStatus, { label: string; color: string; icon: typeof AlertCircle; dot: string }> = {
-  active: { label: "Active", color: "bg-emerald-100 text-emerald-700", icon: AlertCircle, dot: "bg-emerald-500" },
-  upcoming: { label: "Upcoming", color: "bg-amber-100 text-amber-700", icon: Clock, dot: "bg-amber-500" },
-  completed: { label: "Completed", color: "bg-slate-100 text-slate-500", icon: CheckCircle2, dot: "bg-slate-400" },
+  active: { label: "Active", color: "bg-emerald-500/15 text-emerald-300", icon: AlertCircle, dot: "bg-emerald-500" },
+  upcoming: { label: "Upcoming", color: "bg-amber-500/15 text-amber-300", icon: Clock, dot: "bg-amber-500" },
+  completed: { label: "Completed", color: "bg-fill text-muted", icon: CheckCircle2, dot: "bg-fill-max" },
 };
 
 function EventCard({ event }: { event: EventRecord }) {
@@ -42,9 +42,9 @@ function EventCard({ event }: { event: EventRecord }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className="h-full bg-white/75 backdrop-blur-xl rounded-xl border border-white/80 shadow-sm overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:border-brand-600/30 active:translate-y-0 active:scale-[0.99] active:shadow-md"
+      className="h-full bg-surface/75 backdrop-blur-xl rounded-xl border border-line shadow-sm overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:border-brand-600/30 active:translate-y-0 active:scale-[0.99] active:shadow-md"
     >
-      <div className="aspect-video bg-slate-100 relative">
+      <div className="aspect-video bg-fill relative">
         {event.coverImage && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={event.coverImage} alt={event.name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
@@ -53,12 +53,12 @@ function EventCard({ event }: { event: EventRecord }) {
         )}
         <div className="absolute top-3 left-3">
           {event.published === false ? (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 shadow-sm bg-white/90 backdrop-blur-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-fill text-fg-3 shadow-sm bg-surface/90 backdrop-blur-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-fill-max" />
               Draft
             </span>
           ) : (
-            <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${cfg.color} shadow-sm bg-white/90 backdrop-blur-sm`}>
+            <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${cfg.color} shadow-sm bg-surface/90 backdrop-blur-sm`}>
               <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
               {cfg.label}
             </span>
@@ -66,20 +66,20 @@ function EventCard({ event }: { event: EventRecord }) {
         </div>
       </div>
       <div className="p-5 flex flex-col flex-1">
-        <h3 className="font-semibold text-slate-900 text-base mb-2 leading-snug">{event.name}</h3>
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
+        <h3 className="font-semibold text-fg text-base mb-2 leading-snug">{event.name}</h3>
+        <div className="flex items-center gap-1.5 text-xs text-muted mb-1">
           <Calendar size={12} className="shrink-0" />
           {new Date(event.date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
           {event.endDate && ` – ${new Date(event.endDate).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`}
         </div>
         {(event.startTime || event.endTime) && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
+          <div className="flex items-center gap-1.5 text-xs text-muted mb-1">
             <Clock size={12} className="shrink-0" />
             {event.startTime && formatTime(event.startTime)}
             {event.endTime && ` - ${formatTime(event.endTime)}`}
           </div>
         )}
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-5">
+        <div className="flex items-center gap-1.5 text-xs text-muted mb-5">
           {event.eventFormat === "virtual" ? (
             <>
               <Presentation size={12} className="shrink-0" />
@@ -94,17 +94,17 @@ function EventCard({ event }: { event: EventRecord }) {
             </>
           )}
         </div>
-        <div className="flex items-center justify-between gap-3 mt-auto pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-between gap-3 mt-auto pt-4 border-t border-line-soft">
           <DestinationFlags destinations={eventDests} />
           <div className="flex items-center gap-3 shrink-0">
             {event.eventFormat !== "virtual" && registrations.length > 0 && (
-              <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 tabular-nums">
-                <QrCode size={14} className="text-slate-400" />
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-fg-2 tabular-nums">
+                <QrCode size={14} className="text-subtle" />
                 {registrations.length}
               </div>
             )}
-            <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 tabular-nums">
-              <Users size={14} className="text-slate-400" />
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-fg-2 tabular-nums">
+              <Users size={14} className="text-subtle" />
               {leads.length} leads
             </div>
           </div>
@@ -246,8 +246,8 @@ export default function DashboardPage() {
       <div className="p-6 max-w-6xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div className="min-w-0">
-            <h1 className="font-display text-2xl text-slate-900">Events</h1>
-            <p className="text-slate-500 text-sm mt-0.5">Manage your event schedule</p>
+            <h1 className="font-display text-2xl text-fg">Events</h1>
+            <p className="text-muted text-sm mt-0.5">Manage your event schedule</p>
           </div>
           <button
             onClick={() => setShowWizard(true)}
@@ -265,22 +265,22 @@ export default function DashboardPage() {
             ? Array.from({ length: 5 }).map((_, i) => <StatTileSkeleton key={i} />)
             : stats.map((s, i) => (
                 <Reveal key={s.label} index={i}>
-                  <div className="rounded-xl bg-white/60 backdrop-blur-xl border border-white/70 shadow-sm p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-md active:translate-y-0 active:scale-[0.98]">
-                    <p className="text-xs text-slate-500 mb-1">{s.label}</p>
-                    <p className="text-2xl font-bold text-slate-900 tabular-nums">{s.value}</p>
+                  <div className="rounded-xl bg-surface/60 backdrop-blur-xl border border-line shadow-sm p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-surface/80 hover:shadow-md active:translate-y-0 active:scale-[0.98]">
+                    <p className="text-xs text-muted mb-1">{s.label}</p>
+                    <p className="text-2xl font-bold text-fg tabular-nums">{s.value}</p>
                   </div>
                 </Reveal>
               ))}
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-5">
-          <div className="flex gap-1 bg-white/60 backdrop-blur-md border border-white/70 rounded-lg p-1 w-fit">
+          <div className="flex gap-1 bg-surface/60 backdrop-blur-md border border-line rounded-lg p-1 w-fit">
             {(["all", "draft", "active", "upcoming", "completed"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-all duration-150 active:scale-[0.95] ${
-                  filter === f ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
+                  filter === f ? "bg-surface shadow-sm text-fg" : "text-muted hover:text-fg-2 hover:bg-surface/50"
                 }`}
               >
                 {f}
@@ -289,13 +289,13 @@ export default function DashboardPage() {
           </div>
 
           <div className="relative flex-1 min-w-[180px] max-w-xs">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search events, venue, city..."
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
             />
           </div>
 
@@ -303,8 +303,8 @@ export default function DashboardPage() {
             onClick={() => setShowFilterModal(true)}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm font-medium transition-all duration-150 active:scale-[0.96] ${
               activeFilterCount > 0
-                ? "border-brand-600/30 bg-brand-600/5 text-brand-600"
-                : "border-slate-200 bg-white/70 backdrop-blur-md text-slate-600 hover:border-slate-300 hover:bg-white"
+                ? "border-brand-600/30 bg-brand-600/5 text-brand-500"
+                : "border-line bg-surface/70 backdrop-blur-md text-fg-3 hover:border-line-strong hover:bg-surface"
             }`}
           >
             <SlidersHorizontal size={14} />
@@ -349,7 +349,7 @@ export default function DashboardPage() {
                 </Reveal>
               ))}
               {sorted.length === 0 && (
-                <div className="col-span-3 text-center py-16 text-slate-400">
+                <div className="col-span-3 text-center py-16 text-subtle">
                   <Calendar size={32} className="mx-auto mb-3 opacity-40" />
                   <p>No events found</p>
                 </div>

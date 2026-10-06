@@ -178,7 +178,7 @@ export default function RepLoginPage() {
         variant="rep"
       />
       <div className="relative -mt-8">
-        <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl p-6">
+        <div className="bg-surface/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl p-6">
         <div className="space-y-8">
           {codeRequired && (
             <section>
@@ -194,7 +194,7 @@ export default function RepLoginPage() {
                   setError("");
                 }}
                 placeholder="Enter the code provided by your event coordinator"
-                className="w-full px-4 py-3 rounded-xl border border-white/20 bg-white/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                className="w-full px-4 py-3 rounded-xl border border-white/20 bg-surface/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
               />
             </section>
           )}
@@ -214,7 +214,7 @@ export default function RepLoginPage() {
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-colors ${
                       selectedDestId === d.id
                         ? "border-[#C21FAF] bg-[#C21FAF] text-white"
-                        : "border-white/20 bg-white/5 text-white/80 hover:bg-white/10"
+                        : "border-white/20 bg-surface/5 text-white/80 hover:bg-surface/10"
                     }`}
                   >
                     {d.name}
@@ -233,7 +233,7 @@ export default function RepLoginPage() {
               }}
               disabled={!selectedDestId}
               className={`w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] ${
-                !selectedDestId ? "border-white/10 border-dashed bg-white/5 text-white/30 cursor-not-allowed" : "border-white/20 bg-white/5 text-white"
+                !selectedDestId ? "border-white/10 border-dashed bg-surface/5 text-white/30 cursor-not-allowed" : "border-white/20 bg-surface/5 text-white"
               }`}
             >
               <option value="" disabled>
@@ -260,7 +260,7 @@ export default function RepLoginPage() {
             onClick={handleStart}
             disabled={!isFormValid || submitting}
             className={`w-full py-4 rounded-xl font-medium text-base transition-colors ${
-              isFormValid && !submitting ? "bg-[#C21FAF] text-white hover:bg-[#93147D]" : "bg-white/10 text-white/30 cursor-not-allowed"
+              isFormValid && !submitting ? "bg-[#C21FAF] text-white hover:bg-[#93147D]" : "bg-surface/10 text-white/30 cursor-not-allowed"
             }`}
           >
             {submitting ? "Checking in…" : "Check-In"}

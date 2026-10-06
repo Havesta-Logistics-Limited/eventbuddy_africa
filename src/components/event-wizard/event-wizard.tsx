@@ -154,15 +154,15 @@ export function EventWizard(props: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
-      <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
+      <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b border-line-soft shrink-0">
           <div>
-            <p className="text-xs text-slate-400 mb-0.5">
+            <p className="text-xs text-subtle mb-0.5">
               Step {stepIndex + 1} of {steps.length}
             </p>
-            <h2 className="font-semibold text-slate-900 text-lg">{titles[step]}</h2>
+            <h2 className="font-semibold text-fg text-lg">{titles[step]}</h2>
           </div>
-          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onCancel} className="text-subtle hover:text-fg-3">
             <X size={20} />
           </button>
         </div>
@@ -173,13 +173,13 @@ export function EventWizard(props: {
             <>
               <BasicsStep data={data} onChange={patch} />
               {mode === "create" && (
-                <div className="pt-4 border-t border-slate-100">
-                  <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
+                <div className="pt-4 border-t border-line-soft">
+                  <label className="flex items-center gap-2.5 text-sm font-medium text-fg-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={repeats}
                       onChange={(e) => setRepeats(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 text-[#C21FAF] focus:ring-[#C21FAF]"
+                      className="w-4 h-4 rounded border-line-strong text-[#C21FAF] focus:ring-[#C21FAF]"
                     />
                     Repeat this event
                   </label>
@@ -188,26 +188,26 @@ export function EventWizard(props: {
                       <select
                         value={recurrence.frequency}
                         onChange={(e) => setRecurrence((r) => ({ ...r, frequency: e.target.value as RecurrenceConfig["frequency"] }))}
-                        className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                        className="px-3 py-2 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                       >
                         <option value="weekly">Weekly</option>
                         <option value="biweekly">Every 2 weeks</option>
                         <option value="monthly">Monthly</option>
                       </select>
-                      <span className="text-sm text-slate-500">for</span>
+                      <span className="text-sm text-muted">for</span>
                       <input
                         type="number"
                         min={2}
                         max={52}
                         value={recurrence.count}
                         onChange={(e) => setRecurrence((r) => ({ ...r, count: Math.max(2, Math.min(52, Number(e.target.value) || 2)) }))}
-                        className="w-16 px-2.5 py-2 rounded-lg border border-slate-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                        className="w-16 px-2.5 py-2 rounded-lg border border-line text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                       />
-                      <span className="text-sm text-slate-500">occurrences</span>
+                      <span className="text-sm text-muted">occurrences</span>
                     </div>
                   )}
                   {repeats && (
-                    <p className="text-xs text-slate-400 mt-2 pl-6">
+                    <p className="text-xs text-subtle mt-2 pl-6">
                       Creates {recurrence.count} separate events, each with its own registrations and tickets — set ticket types up on each one individually.
                     </p>
                   )}
@@ -228,14 +228,14 @@ export function EventWizard(props: {
           {step === "access" && <AccessStep data={data} onChange={patch} showRepCode={template.usesDestinations && data.allowRepAccess !== false} />}
           {step === "review" && <ReviewStep data={data} template={template} />}
 
-          {submitError && step === "review" && <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">{submitError}</div>}
+          {submitError && step === "review" && <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">{submitError}</div>}
         </div>
 
-        <div className="flex gap-3 p-6 pt-4 border-t border-slate-100 shrink-0">
+        <div className="flex gap-3 p-6 pt-4 border-t border-line-soft shrink-0">
           <button
             type="button"
             onClick={back}
-            className={`py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 ${
+            className={`py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas ${
               step === "review" && mode === "create" ? "px-4 shrink-0" : "flex-1"
             }`}
           >
@@ -249,7 +249,7 @@ export function EventWizard(props: {
                   onClick={() => handleSubmit("draft")}
                   disabled={submitting !== null}
                   title="Keep working on this later — it won't be visible or open for registration until you publish it"
-                  className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-2 hover:bg-canvas disabled:opacity-60"
                 >
                   {submitting === "draft" ? "Saving…" : "Save as Draft"}
                 </button>

@@ -80,7 +80,7 @@ export function EventSlugEditor({
           setInput(currentValue ?? "");
           setEditing(true);
         }}
-        className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 hover:text-brand-600"
+        className="flex items-center gap-1.5 text-[11px] font-medium text-subtle hover:text-brand-500"
       >
         <Edit2 size={10} />
         {currentValue ? `Edit custom ${label ? `${label} ` : ""}link` : `Customize this ${label ? `${label} ` : ""}link`}
@@ -91,15 +91,15 @@ export function EventSlugEditor({
   return (
     <div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-400 shrink-0 hidden sm:inline">{prefix}</span>
+        <span className="text-xs text-subtle shrink-0 hidden sm:inline">{prefix}</span>
         <input
           autoFocus
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="your-event-name"
-          className="min-w-0 flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-600"
+          className="min-w-0 flex-1 px-2.5 py-1.5 rounded-lg border border-line text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-600"
         />
-        <button type="button" onClick={handleSave} disabled={saving} className="p-1.5 rounded-lg text-emerald-600 border border-emerald-200 hover:bg-emerald-50 disabled:opacity-50 shrink-0">
+        <button type="button" onClick={handleSave} disabled={saving} className="p-1.5 rounded-lg text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/10 disabled:opacity-50 shrink-0">
           <Check size={13} />
         </button>
         <button
@@ -108,13 +108,13 @@ export function EventSlugEditor({
             setEditing(false);
             setError("");
           }}
-          className="p-1.5 rounded-lg text-slate-500 border border-slate-200 hover:bg-slate-50 shrink-0"
+          className="p-1.5 rounded-lg text-muted border border-line hover:bg-canvas shrink-0"
         >
           <X size={13} />
         </button>
       </div>
-      <p className="text-[11px] text-slate-400 mt-1.5">Leave blank to use the default link. Letters, numbers, and dashes only.</p>
-      {error && <p className="text-xs text-rose-600 mt-1">{error}</p>}
+      <p className="text-[11px] text-subtle mt-1.5">Leave blank to use the default link. Letters, numbers, and dashes only.</p>
+      {error && <p className="text-xs text-rose-300 mt-1">{error}</p>}
     </div>
   );
 }

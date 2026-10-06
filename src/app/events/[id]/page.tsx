@@ -295,8 +295,8 @@ export default function EventDetailPage() {
       return (
         <Shell>
           <div className="p-6 max-w-5xl mx-auto space-y-3">
-            <div className="h-4 w-28 rounded bg-slate-200 animate-pulse mb-2" />
-            <div className="h-40 rounded-2xl bg-slate-200 animate-pulse" />
+            <div className="h-4 w-28 rounded bg-fill-strong animate-pulse mb-2" />
+            <div className="h-40 rounded-2xl bg-fill-strong animate-pulse" />
             {Array.from({ length: 3 }).map((_, i) => (
               <RowSkeleton key={i} />
             ))}
@@ -306,9 +306,9 @@ export default function EventDetailPage() {
     }
     return (
       <Shell>
-        <div className="p-8 text-center text-slate-500">
+        <div className="p-8 text-center text-muted">
           <p>Event not found.</p>
-          <Link href="/dashboard" className="text-brand-600 mt-2 inline-block">
+          <Link href="/dashboard" className="text-brand-500 mt-2 inline-block">
             ← Back to events
           </Link>
         </div>
@@ -357,9 +357,9 @@ export default function EventDetailPage() {
 
   const status = getEventStatus(event);
   const statusColor = {
-    active: "bg-emerald-100 text-emerald-700",
-    upcoming: "bg-amber-100 text-amber-700",
-    completed: "bg-slate-100 text-slate-500",
+    active: "bg-emerald-500/15 text-emerald-300",
+    upcoming: "bg-amber-500/15 text-amber-300",
+    completed: "bg-fill text-muted",
   }[status];
 
   const usesDestinations = getTemplate(event.templateId).usesDestinations;
@@ -397,29 +397,29 @@ export default function EventDetailPage() {
     <Shell>
       <AmbientBackground />
       <div className="p-6 max-w-5xl mx-auto">
-        <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-5">
+        <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg-2 mb-5">
           <ArrowLeft size={15} />
           Back to events
         </Link>
 
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 shadow-sm p-6 mb-6">
+        <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line shadow-sm p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:justify-between">
             <div className="flex-1 min-w-0">
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${
-                  event.published === false ? "bg-slate-100 text-slate-600" : statusColor
+                  event.published === false ? "bg-fill text-fg-3" : statusColor
                 }`}
               >
                 {event.published === false ? "Draft" : status.charAt(0).toUpperCase() + status.slice(1)}
               </span>
-              <h1 className="font-display text-2xl text-slate-900 mb-3">{event.name}</h1>
+              <h1 className="font-display text-2xl text-fg mb-3">{event.name}</h1>
               {event.seriesId &&
                 (() => {
                   const siblings = allEvents
                     .filter((e) => e.seriesId === event.seriesId)
                     .sort((a, b) => (a.seriesOccurrenceIndex ?? 0) - (b.seriesOccurrenceIndex ?? 0));
                   return (
-                    <div className="flex items-center gap-2 mb-3 text-xs text-slate-500">
+                    <div className="flex items-center gap-2 mb-3 text-xs text-muted">
                       <Repeat size={12} />
                       <span>
                         Session {event.seriesOccurrenceIndex} of {siblings.length} in this series
@@ -427,7 +427,7 @@ export default function EventDetailPage() {
                       <select
                         value={event.id}
                         onChange={(e) => router.push(`/events/${e.target.value}`)}
-                        className="px-2 py-0.5 rounded-md border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-brand-600"
+                        className="px-2 py-0.5 rounded-md border border-line text-xs bg-surface focus:outline-none focus:ring-1 focus:ring-brand-600"
                       >
                         {siblings.map((s) => (
                           <option key={s.id} value={s.id}>
@@ -438,7 +438,7 @@ export default function EventDetailPage() {
                     </div>
                   );
                 })()}
-              <div className="flex flex-wrap gap-4 text-sm text-slate-500">
+              <div className="flex flex-wrap gap-4 text-sm text-muted">
                 <span className="flex items-center gap-1.5">
                   <Calendar size={14} className="shrink-0" />
                   <span className="whitespace-nowrap">
@@ -453,11 +453,11 @@ export default function EventDetailPage() {
                     <Video size={14} />
                     {event.virtualPlatform ? `${event.virtualPlatform} — ` : ""}
                     {safeHttpUrl(event.virtualJoinUrl) ? (
-                      <a href={safeHttpUrl(event.virtualJoinUrl)} target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">
+                      <a href={safeHttpUrl(event.virtualJoinUrl)} target="_blank" rel="noreferrer" className="text-brand-500 hover:underline">
                         Join link
                       </a>
                     ) : (
-                      <span className="text-slate-400">No join link set</span>
+                      <span className="text-subtle">No join link set</span>
                     )}
                   </span>
                 ) : (
@@ -468,15 +468,15 @@ export default function EventDetailPage() {
                 )}
               </div>
               {event.eventFormat === "virtual" && event.virtualAccessNotes && (
-                <p className="text-xs text-slate-400 mt-1">{event.virtualAccessNotes}</p>
+                <p className="text-xs text-subtle mt-1">{event.virtualAccessNotes}</p>
               )}
               {event.description && event.description.trim() !== event.name.trim() && (
-                <div className="mt-3 pt-3 border-t border-slate-100">
-                  <RichTextDisplay html={event.description} className="text-slate-600 text-sm" />
+                <div className="mt-3 pt-3 border-t border-line-soft">
+                  <RichTextDisplay html={event.description} className="text-fg-3 text-sm" />
                 </div>
               )}
               {event.published === false && (
-                <p className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-3 w-fit">
+                <p className="flex items-center gap-1.5 text-xs text-amber-300 bg-amber-500/10 rounded-lg px-3 py-2 mt-3 w-fit">
                   <AlertCircle size={13} className="shrink-0" />
                   This event is saved as a draft — it isn&apos;t visible to attendees or open for registration until you publish it.
                 </p>
@@ -499,7 +499,7 @@ export default function EventDetailPage() {
                     onClick={handleUnpublish}
                     disabled={publishing}
                     title="Hides it from attendees and closes registration again — you can publish it again anytime."
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-amber-200 bg-white/60 backdrop-blur-md text-sm font-medium text-amber-700 transition-all hover:bg-amber-50 hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-surface/60 backdrop-blur-md text-sm font-medium text-amber-300 transition-all hover:bg-amber-500/10 hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
                   >
                     <Undo2 size={14} />
                     {publishing ? "Reverting…" : "Revert to draft"}
@@ -509,14 +509,14 @@ export default function EventDetailPage() {
                 <button
                   onClick={handleDuplicate}
                   disabled={duplicating}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white/60 backdrop-blur-md text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-surface/60 backdrop-blur-md text-sm font-medium text-fg-3 transition-all hover:bg-canvas hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
                 >
                   <Copy size={14} />
                   {duplicating ? "Duplicating…" : "Duplicate"}
                 </button>
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white/60 backdrop-blur-md text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 hover:shadow-sm active:scale-[0.96]"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-surface/60 backdrop-blur-md text-sm font-medium text-fg-3 transition-all hover:bg-canvas hover:shadow-sm active:scale-[0.96]"
                 >
                   <Edit2 size={14} />
                   Edit Event
@@ -526,7 +526,7 @@ export default function EventDetailPage() {
                     setDeleteError("");
                     setShowDeleteConfirm(true);
                   }}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-rose-200 bg-white/60 backdrop-blur-md text-sm font-medium text-rose-600 transition-all hover:bg-rose-50 hover:shadow-sm active:scale-[0.96]"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-rose-500/30 bg-surface/60 backdrop-blur-md text-sm font-medium text-rose-300 transition-all hover:bg-rose-500/10 hover:shadow-sm active:scale-[0.96]"
                 >
                   <Trash2 size={14} />
                   Delete
@@ -535,34 +535,34 @@ export default function EventDetailPage() {
               <div className="flex items-start gap-6">
                 {event.selfRegistrationEnabled !== false && (
                   <div className="text-right">
-                    <p className="text-4xl font-bold text-slate-400 tabular-nums">{event.registrationPageViews ?? 0}</p>
-                    <p className="text-xs text-slate-500">registration page views</p>
+                    <p className="text-4xl font-bold text-subtle tabular-nums">{event.registrationPageViews ?? 0}</p>
+                    <p className="text-xs text-muted">registration page views</p>
                   </div>
                 )}
                 <div className="text-right">
-                  <p className="text-4xl font-bold text-slate-900 tabular-nums">{leads.length}</p>
-                  <p className="text-xs text-slate-500">total leads</p>
+                  <p className="text-4xl font-bold text-fg tabular-nums">{leads.length}</p>
+                  <p className="text-xs text-muted">total leads</p>
                 </div>
               </div>
             </div>
           </div>
 
           {event.coverImage && !imgError && (
-            <div className="mt-5 w-full aspect-video rounded-xl overflow-hidden bg-slate-100">
+            <div className="mt-5 w-full aspect-video rounded-xl overflow-hidden bg-fill">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={event.coverImage} alt={event.name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
             </div>
           )}
 
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <h2 className="font-semibold text-slate-800 text-sm mb-1">Lead capture</h2>
-            <p className="text-xs text-slate-500">
+          <div className="mt-6 pt-5 border-t border-line-soft">
+            <h2 className="font-semibold text-fg text-sm mb-1">Lead capture</h2>
+            <p className="text-xs text-muted">
               {gate.open ? (
-                <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
+                <span className="inline-flex items-center gap-1 text-emerald-300 font-medium">
                   <LockOpen size={12} /> Currently accepting leads
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-slate-500 font-medium">
+                <span className="inline-flex items-center gap-1 text-muted font-medium">
                   <Lock size={12} />
                   {gate.reason === "manually_closed" ? "Closed by platform admin" : gate.reason === "not_started" ? "Not open yet" : "Closed — event ended"}
                 </span>
@@ -570,14 +570,14 @@ export default function EventDetailPage() {
             </p>
           </div>
 
-          <div className="mt-6 pt-5 border-t border-slate-100">
+          <div className="mt-6 pt-5 border-t border-line-soft">
             {event.eventFormat === "virtual" || event.selfRegistrationEnabled !== false ? (
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-semibold text-slate-800 text-sm mb-1">
+                  <h2 className="font-semibold text-fg text-sm mb-1">
                     {event.published === false ? "Preview link" : event.eventFormat === "virtual" ? "Lead capture link" : "Attendee registration"}
                   </h2>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted">
                     {event.published === false ? (
                       "This is the same link attendees will use once you publish — for now it only shows a view-only preview, registration isn't open yet."
                     ) : event.eventFormat === "virtual" ? (
@@ -593,7 +593,7 @@ export default function EventDetailPage() {
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas"
                 >
                   {event.published === false ? <Eye size={12} /> : <Link2 size={12} />}
                   {linkCopied ? "Link copied!" : event.published === false ? "Copy preview link" : event.eventFormat === "virtual" ? "Copy link" : "Copy registration link"}
@@ -607,15 +607,15 @@ export default function EventDetailPage() {
             )}
             {!(event.eventFormat === "virtual" || event.selfRegistrationEnabled !== false) && (
               <div>
-                <h2 className="font-semibold text-slate-800 text-sm mb-1">Attendee registration</h2>
-                <p className="text-xs text-slate-500">Off for this event — no public sign-up link. Staff capture every lead directly at the booth.</p>
+                <h2 className="font-semibold text-fg text-sm mb-1">Attendee registration</h2>
+                <p className="text-xs text-muted">Off for this event — no public sign-up link. Staff capture every lead directly at the booth.</p>
               </div>
             )}
           </div>
 
         </div>
 
-        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 border-b border-slate-200 mb-6">
+        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 border-b border-line mb-6">
           <div className="flex flex-wrap gap-x-5 gap-y-1">
             {TABS.map((t) => (
               <button
@@ -623,7 +623,7 @@ export default function EventDetailPage() {
                 type="button"
                 onClick={() => setActiveTab(t.id)}
                 className={`pb-3 -mb-px border-b-2 text-sm font-medium whitespace-nowrap transition-all active:scale-[0.97] ${
-                  activeTab === t.id ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-700"
+                  activeTab === t.id ? "border-brand-600 text-brand-500" : "border-transparent text-muted hover:text-fg-2"
                 }`}
               >
                 {t.label}
@@ -635,7 +635,7 @@ export default function EventDetailPage() {
             onClick={() => setRefreshTick((n) => n + 1)}
             disabled={refreshing}
             title="Refresh — pulls in check-ins and leads captured elsewhere"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 mb-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-60 shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 mb-2 rounded-lg text-xs font-medium text-muted hover:text-fg-2 hover:bg-fill disabled:opacity-60 shrink-0"
           >
             <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
             <span className="hidden sm:inline">Refresh</span>
@@ -651,8 +651,8 @@ export default function EventDetailPage() {
         {activeTab === "universities" && (
           <div key="universities" className="space-y-10 animate-tab-fade">
             <DestinationsUniversitiesManagement eventId={event.id} destinations={eventDests} universities={eventUnis} leads={allOrgLeads} otherEvents={otherEducationFairEvents} />
-            <div className="pt-8 border-t border-slate-200">
-              <h2 className="font-semibold text-slate-800 mb-4">Leads by university</h2>
+            <div className="pt-8 border-t border-line">
+              <h2 className="font-semibold text-fg mb-4">Leads by university</h2>
               <UniversitiesTab
                 eventDests={eventDests}
                 universities={universities}
@@ -711,8 +711,8 @@ export default function EventDetailPage() {
         {activeTab === "representatives" && (
           <div key="representatives" className="space-y-10 animate-tab-fade">
             <RepsManagement eventId={event.id} staff={staff} destinations={eventDests} universities={eventUnis} />
-            <div className="pt-8 border-t border-slate-200">
-              <h2 className="font-semibold text-slate-800 mb-4">Signed in for this event</h2>
+            <div className="pt-8 border-t border-line">
+              <h2 className="font-semibold text-fg mb-4">Signed in for this event</h2>
               {allowRepAccess ? (
                 <StaffRosterTab
                   role="rep"
@@ -723,7 +723,7 @@ export default function EventDetailPage() {
                   event={event}
                 />
               ) : (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-sm text-slate-500">
+                <div className="bg-canvas border border-line rounded-xl p-6 text-sm text-muted">
                   Rep check-in is off for this event — reps above can still be managed, but none can sign in here until you turn it on from Edit
                   Event.
                 </div>
@@ -789,7 +789,7 @@ export default function EventDetailPage() {
         {activeTab === "leads" && (
           <div key="leads" className="animate-tab-fade">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted">
                 {filteredLeads.length} lead{filteredLeads.length !== 1 ? "s" : ""}
               </p>
               <button
@@ -804,15 +804,15 @@ export default function EventDetailPage() {
               </button>
             </div>
 
-            <div className="rounded-xl bg-slate-50 p-4 mb-5">
+            <div className="rounded-xl bg-canvas p-4 mb-5">
               <div className="flex flex-wrap gap-3">
                 <div className="relative flex-1 min-w-[180px]">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle" />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search leads..."
-                    className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
                 {usesDestinations && (
@@ -823,7 +823,7 @@ export default function EventDetailPage() {
                         setFilterDest(e.target.value);
                         setFilterUni("");
                       }}
-                      className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
+                      className="px-3.5 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-surface"
                     >
                       <option value="">All Destinations</option>
                       {eventDests.map((d) => (
@@ -835,7 +835,7 @@ export default function EventDetailPage() {
                     <select
                       value={filterUni}
                       onChange={(e) => setFilterUni(e.target.value)}
-                      className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white min-w-[160px]"
+                      className="px-3.5 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-surface min-w-[160px]"
                     >
                       <option value="">All Universities</option>
                       {availableUnis.map((u) => (
@@ -847,7 +847,7 @@ export default function EventDetailPage() {
                   </>
                 )}
                 {activeFilters > 0 && (
-                  <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-rose-600 hover:bg-rose-50 border border-rose-100">
+                  <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-rose-300 hover:bg-rose-500/10 border border-rose-500/20">
                     <X size={13} />
                     Clear ({activeFilters})
                   </button>
@@ -858,13 +858,13 @@ export default function EventDetailPage() {
             {byDestination.map(({ dest, leads: dLeads }) => {
               if (dLeads.length === 0) return null;
               return (
-                <div key={dest.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-4 overflow-hidden">
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div key={dest.id} className="bg-surface rounded-2xl border border-line shadow-sm mb-4 overflow-hidden">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-line-soft">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{dest.flag}</span>
                       <div>
-                        <h2 className="font-semibold text-slate-900">{dest.name}</h2>
-                        <p className="text-xs text-slate-500">
+                        <h2 className="font-semibold text-fg">{dest.name}</h2>
+                        <p className="text-xs text-muted">
                           {dLeads.length} lead{dLeads.length !== 1 ? "s" : ""}
                         </p>
                       </div>
@@ -874,7 +874,7 @@ export default function EventDetailPage() {
                         downloadCsv(`${dest.name.replace(/\s+/g, "_")}_leads.csv`, leadsToCsv(dLeads));
                         toast.success("Leads exported");
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas"
                     >
                       <Download size={12} />
                       Export
@@ -882,37 +882,37 @@ export default function EventDetailPage() {
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-slate-50">
+                      <thead className="bg-canvas">
                         <tr>
                           {["Name", "Email", "Phone", "University", "Course", "Level", "Start", "IELTS"].map((h) => (
-                            <th key={h} className="text-left px-4 py-2.5 text-xs font-medium text-slate-500">
+                            <th key={h} className="text-left px-4 py-2.5 text-xs font-medium text-muted">
                               {h}
                             </th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-line-soft">
                         {dLeads.map((lead) => (
-                          <tr key={lead.id} className="hover:bg-slate-50">
-                            <td className="px-4 py-3 font-medium text-slate-800">
+                          <tr key={lead.id} className="hover:bg-canvas">
+                            <td className="px-4 py-3 font-medium text-fg">
                               {lead.firstName} {lead.lastName}
                             </td>
-                            <td className="px-4 py-3 text-slate-500">{lead.email}</td>
-                            <td className="px-4 py-3 text-slate-500">{lead.phone}</td>
-                            <td className="px-4 py-3 text-slate-600 max-w-[160px] truncate">
+                            <td className="px-4 py-3 text-muted">{lead.email}</td>
+                            <td className="px-4 py-3 text-muted">{lead.phone}</td>
+                            <td className="px-4 py-3 text-fg-3 max-w-[160px] truncate">
                               {universities.find((u) => u.id === lead.universityId)?.shortName}
                             </td>
-                            <td className="px-4 py-3 text-slate-600">{lead.preferredCourse}</td>
+                            <td className="px-4 py-3 text-fg-3">{lead.preferredCourse}</td>
                             <td className="px-4 py-3">
                               <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "#e8f0fe", color: "#1a3a6e" }}>
                                 {lead.levelOfInterest}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-slate-500">{lead.startYear}</td>
+                            <td className="px-4 py-3 text-muted">{lead.startYear}</td>
                             <td className="px-4 py-3">
                               <span
                                 className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                                  lead.takenIELTS === "Yes" ? "bg-emerald-100 text-emerald-700" : lead.takenIELTS === "Registered" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"
+                                  lead.takenIELTS === "Yes" ? "bg-emerald-500/15 text-emerald-300" : lead.takenIELTS === "Registered" ? "bg-amber-500/15 text-amber-300" : "bg-fill text-fg-3"
                                 }`}
                               >
                                 {lead.takenIELTS}
@@ -932,7 +932,7 @@ export default function EventDetailPage() {
             )}
 
             {filteredLeads.length === 0 && (
-              <div className="text-center py-16 text-slate-400">
+              <div className="text-center py-16 text-subtle">
                 <Users size={36} className="mx-auto mb-3 opacity-40" />
                 <p className="font-medium">No leads found</p>
                 {activeFilters > 0 ? <p className="text-sm mt-1">Try adjusting your filters</p> : <p className="text-sm mt-1">Leads collected by staff will appear here</p>}
@@ -977,9 +977,9 @@ export default function EventDetailPage() {
 
         {showDeleteConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
-            <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
-              <h2 className="font-semibold text-slate-900 text-lg mb-2">Delete this event?</h2>
-              <p className="text-sm text-slate-600">
+            <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
+              <h2 className="font-semibold text-fg text-lg mb-2">Delete this event?</h2>
+              <p className="text-sm text-fg-3">
                 This permanently deletes <span className="font-semibold">{event.name}</span>
                 {leads.length > 0 && (
                   <>
@@ -990,7 +990,7 @@ export default function EventDetailPage() {
                 . This can&apos;t be undone.
               </p>
               {deleteError && (
-                <div className="flex items-start gap-2 p-3 mt-4 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                <div className="flex items-start gap-2 p-3 mt-4 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {deleteError}
                 </div>
@@ -1000,7 +1000,7 @@ export default function EventDetailPage() {
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={deleting}
-                  className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                  className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas disabled:opacity-60"
                 >
                   Cancel
                 </button>

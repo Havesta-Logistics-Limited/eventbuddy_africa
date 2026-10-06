@@ -26,16 +26,16 @@ export function StaffCard({
   const ev = staff.eventId ? events.find((e) => e.id === staff.eventId) : null;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#C21FAF]/30 hover:shadow-sm transition-all">
+    <div className="bg-surface rounded-xl border border-line p-4 flex items-center gap-4 group hover:border-[#C21FAF]/30 hover:shadow-sm transition-all">
       <div className="w-10 h-10 rounded-full bg-[#C21FAF]/10 flex items-center justify-center text-[#C21FAF] font-semibold shrink-0">{staff.name.charAt(0)}</div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-slate-900">{staff.name}</p>
-        {staff.email && <p className="text-sm text-slate-500">{staff.email}</p>}
+        <p className="font-medium text-fg">{staff.name}</p>
+        {staff.email && <p className="text-sm text-muted">{staff.email}</p>}
       </div>
       <div className="flex flex-wrap gap-2 text-xs">
         <span
           className="px-2 py-0.5 rounded-full font-medium"
-          style={staff.role === "admin" ? { background: "#e8f0fe", color: "#1a3a6e" } : { background: "#f1f5f9", color: "#475569" }}
+          style={staff.role === "admin" ? { background: "rgba(79, 179, 255, 0.14)", color: "#9fd3ff" } : { background: "rgba(255, 255, 255, 0.06)", color: "#475569" }}
         >
           {staff.role}
         </span>
@@ -44,14 +44,14 @@ export function StaffCard({
             {dest.flag} {dest.name}
           </span>
         )}
-        {uni && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hidden sm:inline-block">{uni.shortName}</span>}
-        {ev && <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 max-w-[120px] sm:max-w-[160px] truncate">{ev.name.split("—")[0].trim()}</span>}
+        {uni && <span className="px-2 py-0.5 rounded-full bg-fill text-fg-3 hidden sm:inline-block">{uni.shortName}</span>}
+        {ev && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 max-w-[120px] sm:max-w-[160px] truncate">{ev.name.split("—")[0].trim()}</span>}
       </div>
       <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
-        <button onClick={onEdit} className="p-1.5 text-slate-400 hover:text-[#C21FAF] rounded-md hover:bg-slate-100">
+        <button onClick={onEdit} className="p-1.5 text-subtle hover:text-[#C21FAF] rounded-md hover:bg-fill">
           <Edit2 size={16} />
         </button>
-        <button onClick={onDelete} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
+        <button onClick={onDelete} className="p-1.5 text-subtle hover:text-rose-300 rounded-md hover:bg-rose-500/10">
           <Trash2 size={16} />
         </button>
       </div>

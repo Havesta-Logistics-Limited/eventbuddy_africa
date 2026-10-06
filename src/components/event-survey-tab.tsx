@@ -66,13 +66,13 @@ export function SurveyTab({ event }: { event: EventRecord }) {
 
   return (
     <div className="space-y-6">
-      <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+      <div className="p-4 rounded-xl border border-line bg-canvas">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <ClipboardList size={16} className="text-slate-400 shrink-0" />
+            <ClipboardList size={16} className="text-subtle shrink-0" />
             <div>
-              <p className="text-sm font-medium text-slate-800">Post-event survey</p>
-              <p className="text-xs text-slate-500">Shows a Survey tab on the Event Hub once this event has ended.</p>
+              <p className="text-sm font-medium text-fg">Post-event survey</p>
+              <p className="text-xs text-muted">Shows a Survey tab on the Event Hub once this event has ended.</p>
             </div>
           </div>
           <button
@@ -81,15 +81,15 @@ export function SurveyTab({ event }: { event: EventRecord }) {
             aria-checked={enabled}
             onClick={handleToggle}
             disabled={togglingEnabled}
-            className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${enabled ? "bg-brand-600" : "bg-slate-300"}`}
+            className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${enabled ? "bg-brand-600" : "bg-fill-max"}`}
           >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${enabled ? "translate-x-4" : ""}`} />
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface transition-transform ${enabled ? "translate-x-4" : ""}`} />
           </button>
         </div>
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-slate-800 mb-3">Questions</h3>
+        <h3 className="text-sm font-semibold text-fg mb-3">Questions</h3>
         <FieldBuilderStep fields={fields} onChange={setFields} />
         {fieldsDirty && (
           <button
@@ -105,11 +105,11 @@ export function SurveyTab({ event }: { event: EventRecord }) {
 
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-slate-800">Responses</h3>
+          <h3 className="text-sm font-semibold text-fg">Responses</h3>
           {responses && responses.length > 0 && (
             <button
               onClick={exportResponses}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas"
             >
               <Download size={12} />
               Export
@@ -117,32 +117,32 @@ export function SurveyTab({ event }: { event: EventRecord }) {
           )}
         </div>
         {responses === null ? (
-          <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+          <div className="h-24 rounded-xl bg-fill animate-pulse" />
         ) : responses.length === 0 || fields.length === 0 ? (
-          <div className="text-center py-10 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
+          <div className="text-center py-10 text-subtle bg-canvas rounded-xl border border-line">
             <p className="text-sm">{fields.length === 0 ? "Add a question above to start collecting responses." : "No responses yet."}</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50">
+                <thead className="bg-canvas">
                   <tr>
                     {["Submitted", ...fields.map((f) => f.label || "Untitled")].map((h, i) => (
-                      <th key={i} className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">
+                      <th key={i} className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line-soft">
                   {responses.map((r) => (
                     <tr key={r.id}>
-                      <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString("en-GB")}</td>
+                      <td className="px-4 py-3 text-subtle whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString("en-GB")}</td>
                       {fields.map((f) => {
                         const v = r.answers[f.id];
                         return (
-                          <td key={f.id} className="px-4 py-3 text-slate-600 max-w-[200px] truncate">
+                          <td key={f.id} className="px-4 py-3 text-fg-3 max-w-[200px] truncate">
                             {(Array.isArray(v) ? v.join(", ") : v) || "—"}
                           </td>
                         );

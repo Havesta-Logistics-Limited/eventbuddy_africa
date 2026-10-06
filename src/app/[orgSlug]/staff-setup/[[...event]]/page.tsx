@@ -190,7 +190,7 @@ export default function StaffSetupPage() {
         variant="staff"
       />
       <div className="relative -mt-8">
-        <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl p-6">
+        <div className="bg-surface/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl p-6">
         <div className="space-y-8">
           {codeRequired && (
             <section>
@@ -206,7 +206,7 @@ export default function StaffSetupPage() {
                   setError("");
                 }}
                 placeholder="Enter the code provided by your event coordinator"
-                className="w-full px-4 py-3 rounded-xl border border-white/20 bg-white/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-[#1098F7]"
+                className="w-full px-4 py-3 rounded-xl border border-white/20 bg-surface/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-[#1098F7]"
               />
             </section>
           )}
@@ -223,7 +223,7 @@ export default function StaffSetupPage() {
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-colors ${
                     !isNewStaff && selectedStaffName === s.name
                       ? "border-[#1098F7] bg-[#1098F7] text-white"
-                      : "border-white/20 bg-white/5 text-white/80 hover:bg-white/10"
+                      : "border-white/20 bg-surface/5 text-white/80 hover:bg-surface/10"
                   }`}
                 >
                   <UserRound size={14} className={!isNewStaff && selectedStaffName === s.name ? "text-white/70" : "text-white/40"} />
@@ -238,7 +238,7 @@ export default function StaffSetupPage() {
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-full border border-dashed text-sm font-medium transition-colors ${
                   isNewStaff
                     ? "border-[#1098F7] bg-[#1098F7] text-white border-solid"
-                    : "border-white/25 bg-transparent text-white/70 hover:bg-white/5"
+                    : "border-white/25 bg-transparent text-white/70 hover:bg-surface/5"
                 }`}
               >
                 <Plus size={14} className={isNewStaff ? "text-white/70" : "text-white/40"} />
@@ -253,7 +253,7 @@ export default function StaffSetupPage() {
                   placeholder="Enter your full name"
                   value={newStaffName}
                   onChange={(e) => setNewStaffName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-white/20 bg-white/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-[#1098F7]"
+                  className="w-full px-4 py-3 rounded-xl border border-white/20 bg-surface/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-[#1098F7]"
                   autoFocus
                 />
               </div>
@@ -277,7 +277,7 @@ export default function StaffSetupPage() {
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-colors ${
                           selectedDestId === d.id
                             ? "border-[#1098F7] bg-[#1098F7] text-white"
-                            : "border-white/20 bg-white/5 text-white/80 hover:bg-white/10"
+                            : "border-white/20 bg-surface/5 text-white/80 hover:bg-surface/10"
                         }`}
                       >
                         <span className="text-base leading-none">{d.flag}</span>
@@ -294,7 +294,7 @@ export default function StaffSetupPage() {
                   onChange={(e) => setSelectedUniId(e.target.value)}
                   disabled={!selectedDestId}
                   className={`w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#1098F7] ${
-                    !selectedDestId ? "border-white/10 border-dashed bg-white/5 text-white/30 cursor-not-allowed" : "border-white/20 bg-white/5 text-white"
+                    !selectedDestId ? "border-white/10 border-dashed bg-surface/5 text-white/30 cursor-not-allowed" : "border-white/20 bg-surface/5 text-white"
                   }`}
                 >
                   <option value="" disabled>
@@ -322,7 +322,7 @@ export default function StaffSetupPage() {
             onClick={handleStart}
             disabled={!isFormValid || submitting}
             className={`w-full py-4 rounded-xl font-medium text-base transition-colors ${
-              isFormValid && !submitting ? "bg-[#1098F7] text-white hover:bg-[#0b7dd1]" : "bg-white/10 text-white/30 cursor-not-allowed"
+              isFormValid && !submitting ? "bg-[#1098F7] text-white hover:bg-[#0b7dd1]" : "bg-surface/10 text-white/30 cursor-not-allowed"
             }`}
           >
             {submitting ? "Checking in…" : "Start collecting leads"}

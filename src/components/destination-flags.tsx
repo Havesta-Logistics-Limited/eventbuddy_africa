@@ -18,14 +18,14 @@ export function DestinationFlags({ destinations, max = 4 }: { destinations: Dest
 
   return (
     <div className="flex items-center gap-2 overflow-hidden min-w-0">
-      <Globe2 size={13} className="text-slate-400 shrink-0" />
+      <Globe2 size={13} className="text-subtle shrink-0" />
       {shown.map((d) => (
-        <span key={d.id} title={d.name} className="inline-flex shrink-0 items-center gap-1 text-xs text-slate-600 whitespace-nowrap">
+        <span key={d.id} title={d.name} className="inline-flex shrink-0 items-center gap-1 text-xs text-fg-3 whitespace-nowrap">
           <span className="text-sm leading-none">{d.flag}</span>
           {isoCodeForCountryName(d.name) ?? d.name}
         </span>
       ))}
-      {overflow > 0 && <span className="shrink-0 text-xs text-slate-400">+{overflow}</span>}
+      {overflow > 0 && <span className="shrink-0 text-xs text-subtle">+{overflow}</span>}
     </div>
   );
 }

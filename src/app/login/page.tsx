@@ -100,7 +100,7 @@ export default function LoginPage() {
             {["🎓 Education Fairs", "💼 Job Fairs", "🎤 Conferences", "🏬 Trade Shows", "🚀 Launches", "✨ Custom Events"].map((d, i) => (
               <div
                 key={d}
-                className="bg-white/10 rounded-lg px-3 py-2 text-sm text-center animate-fade-in-up hover-bounce-sm"
+                className="bg-surface/10 rounded-lg px-3 py-2 text-sm text-center animate-fade-in-up hover-bounce-sm"
                 style={{ animationDelay: `${300 + i * 60}ms` }}
               >
                 {d}
@@ -112,7 +112,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
+      <div className="flex-1 flex items-center justify-center p-6 bg-canvas">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center justify-center mb-8">
             <Logo height={16} />
@@ -120,12 +120,12 @@ export default function LoginPage() {
 
           {mfaFactorId ? (
             <>
-              <h2 className="text-2xl font-semibold text-slate-900 mb-1">Enter your 2FA code</h2>
-              <p className="text-slate-500 text-sm mb-8">Open your authenticator app and enter the current 6-digit code.</p>
+              <h2 className="text-2xl font-semibold text-fg mb-1">Enter your 2FA code</h2>
+              <p className="text-muted text-sm mb-8">Open your authenticator app and enter the current 6-digit code.</p>
 
               <form onSubmit={handleVerifyMfa} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Verification code</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Verification code</label>
                   <input
                     required
                     autoFocus
@@ -135,12 +135,12 @@ export default function LoginPage() {
                     value={mfaCode}
                     onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
                     placeholder="123456"
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white"
+                    className="w-full px-4 py-2.5 rounded-lg border border-line text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-surface"
                   />
                 </div>
 
                 {error && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                     <AlertCircle size={15} className="mt-0.5 shrink-0" />
                     {error}
                   </div>
@@ -160,7 +160,7 @@ export default function LoginPage() {
                     setMfaCode("");
                     setError("");
                   }}
-                  className="w-full text-center text-xs text-slate-500 hover:text-slate-700"
+                  className="w-full text-center text-xs text-muted hover:text-fg-2"
                 >
                   Back to sign in
                 </button>
@@ -168,28 +168,28 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <h2 className="text-2xl font-semibold text-slate-900 mb-1">Welcome back</h2>
-              <p className="text-slate-500 text-sm mb-8">Sign in to your account to continue</p>
+              <h2 className="text-2xl font-semibold text-fg mb-1">Welcome back</h2>
+              <p className="text-muted text-sm mb-8">Sign in to your account to continue</p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Email address</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@eventbuddy.africa"
                     required
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white"
+                    className="w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-surface"
                   />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-sm font-medium text-slate-700">Password</label>
+                    <label className="block text-sm font-medium text-fg-2">Password</label>
                     <button
                       type="button"
                       onClick={() => router.push("/forgot-password")}
-                      className="text-xs font-medium text-brand-600 hover:underline"
+                      className="text-xs font-medium text-brand-500 hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -201,12 +201,12 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white pr-10"
+                      className="w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-surface pr-10"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPw((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-fg-3"
                       aria-label={showPw ? "Hide password" : "Show password"}
                     >
                       {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -215,7 +215,7 @@ export default function LoginPage() {
                 </div>
 
                 {error && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                     <AlertCircle size={15} className="mt-0.5 shrink-0" />
                     {error}
                   </div>
@@ -230,10 +230,10 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              <div className="mt-8 p-4 rounded-xl bg-slate-100 text-xs text-slate-500 text-center">
+              <div className="mt-8 p-4 rounded-xl bg-fill text-xs text-muted text-center">
                 <p>
                   New here?{" "}
-                  <button type="button" onClick={() => router.push("/signup")} className="text-brand-600 font-medium hover:underline">
+                  <button type="button" onClick={() => router.push("/signup")} className="text-brand-500 font-medium hover:underline">
                     Create your organization account
                   </button>
                 </p>

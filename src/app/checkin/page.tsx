@@ -16,9 +16,9 @@ const STAFF_ONLY: Role[] = ["staff"];
 type Result = { kind: "success" | "already" | "error"; name?: string; message: string };
 
 const resultStyles: Record<Result["kind"], { ring: string; bg: string; icon: React.ReactNode }> = {
-  success: { ring: "ring-teal-100", bg: "bg-teal-100 text-teal-700", icon: <CheckCircle2 size={26} /> },
-  already: { ring: "ring-amber-100", bg: "bg-amber-100 text-amber-700", icon: <Clock3 size={26} /> },
-  error: { ring: "ring-rose-100", bg: "bg-rose-100 text-rose-700", icon: <AlertCircle size={26} /> },
+  success: { ring: "ring-teal-500/20", bg: "bg-teal-500/15 text-teal-300", icon: <CheckCircle2 size={26} /> },
+  already: { ring: "ring-amber-500/20", bg: "bg-amber-500/15 text-amber-300", icon: <Clock3 size={26} /> },
+  error: { ring: "ring-rose-500/20", bg: "bg-rose-500/15 text-rose-300", icon: <AlertCircle size={26} /> },
 };
 
 export default function CheckinPage() {
@@ -88,20 +88,20 @@ export default function CheckinPage() {
       <Shell>
         <div className="min-h-screen flex items-center justify-center p-6">
           <div className="text-center max-w-sm">
-            <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-5">
-              <Lock size={32} className="text-amber-500" />
+            <div className="w-20 h-20 rounded-full bg-amber-500/15 flex items-center justify-center mx-auto mb-5">
+              <Lock size={32} className="text-amber-400" />
             </div>
-            <h2 className="font-display text-2xl text-slate-900 mb-2">
+            <h2 className="font-display text-2xl text-fg mb-2">
               {gate.reason === "not_started" ? "Not open yet" : gate.reason === "manually_closed" ? "Check-in is closed" : "Check-in has ended"}
             </h2>
-            <p className="text-slate-500">
+            <p className="text-muted">
               {gate.reason === "manually_closed"
                 ? `Check-in for ${event.name} has been closed by the event organizer.`
                 : gate.reason === "not_started"
                   ? `Check-in for ${event.name} opens ${formatDate(captureWindow!.date)}${captureWindow!.startTime ? ` at ${formatTime(captureWindow!.startTime)}` : ""}.`
                   : `Check-in for ${event.name} closed ${formatDate(captureWindow!.endDate || captureWindow!.date)}${captureWindow!.endTime ? ` at ${formatTime(captureWindow!.endTime)}` : ""}.`}
             </p>
-            <p className="text-slate-400 text-sm mt-4">This page will unlock automatically once check-in opens.</p>
+            <p className="text-subtle text-sm mt-4">This page will unlock automatically once check-in opens.</p>
           </div>
         </div>
       </Shell>
@@ -113,14 +113,14 @@ export default function CheckinPage() {
       <div className="p-6 max-w-md mx-auto">
         <div className="flex items-start justify-between gap-4 mb-5">
           <div>
-            <h1 className="font-display text-2xl text-slate-900 flex items-center gap-2">
+            <h1 className="font-display text-2xl text-fg flex items-center gap-2">
               <ScanLine size={22} className="text-[#1098F7]" />
               Check-In
             </h1>
-            <p className="text-slate-500 text-sm mt-1">Scan an attendee&apos;s QR code, or enter their reference ID.</p>
+            <p className="text-muted text-sm mt-1">Scan an attendee&apos;s QR code, or enter their reference ID.</p>
           </div>
           {sessionCount > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 text-xs font-semibold shrink-0">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-500/10 text-teal-300 text-xs font-semibold shrink-0">
               <Users size={13} />
               {sessionCount}
             </div>
@@ -128,11 +128,11 @@ export default function CheckinPage() {
         </div>
 
         {result && (
-          <div className={`flex items-center gap-4 p-4 mb-4 rounded-2xl border border-slate-200 bg-white ring-4 ${resultStyles[result.kind].ring}`}>
+          <div className={`flex items-center gap-4 p-4 mb-4 rounded-2xl border border-line bg-surface ring-4 ${resultStyles[result.kind].ring}`}>
             <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${resultStyles[result.kind].bg}`}>{resultStyles[result.kind].icon}</div>
             <div className="min-w-0">
-              {result.name && <p className="text-base font-semibold text-slate-900 truncate">{result.name}</p>}
-              <p className="text-sm text-slate-500">{result.message}</p>
+              {result.name && <p className="text-base font-semibold text-fg truncate">{result.name}</p>}
+              <p className="text-sm text-muted">{result.message}</p>
             </div>
           </div>
         )}
@@ -141,14 +141,14 @@ export default function CheckinPage() {
           <QrScannerPanel onScan={checkIn} label="Camera scan" />
         </div>
 
-        <form onSubmit={handleManualSubmit} className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Or enter code manually</h2>
+        <form onSubmit={handleManualSubmit} className="bg-surface rounded-2xl border border-line p-5">
+          <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Or enter code manually</h2>
           <div className="flex gap-2">
             <input
               value={referenceId}
               onChange={(e) => setReferenceId(e.target.value)}
               placeholder="e.g. K7QX-4R2M"
-              className="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#1098F7]"
+              className="flex-1 px-3.5 py-2.5 rounded-lg border border-line text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#1098F7]"
             />
             <button
               type="submit"

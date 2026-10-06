@@ -1,6 +1,6 @@
 /** Same dark glassmorphic backdrop as the public registration page
  *  (register-page-content.tsx) — deep purple ground with two soft, slow-drifting
- *  color blobs, so a `bg-white/10 backdrop-blur-xl` card actually reads as glass
+ *  color blobs, so a `bg-surface/10 backdrop-blur-xl` card actually reads as glass
  *  instead of floating on a flat color. Shared by every public check-in flow
  *  (staff-setup, rep-login) that wants the same visual identity as registration. */
 export function DarkAuroraShell({ children }: { children: React.ReactNode }) {

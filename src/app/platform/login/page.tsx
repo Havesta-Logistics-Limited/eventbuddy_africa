@@ -99,7 +99,7 @@ export default function PlatformLoginPage() {
         </div>
 
         {mfaFactorId ? (
-          <form onSubmit={handleVerifyMfa} className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-6">
+          <form onSubmit={handleVerifyMfa} className="space-y-4 bg-surface/5 border border-white/10 rounded-2xl p-6">
             <div>
               <label className="block text-sm font-medium text-white/70 mb-1.5">Verification code</label>
               <p className="text-xs text-white/40 mb-2">Enter the current code from your authenticator app.</p>
@@ -112,7 +112,7 @@ export default function PlatformLoginPage() {
                 value={mfaCode}
                 onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
                 placeholder="123456"
-                className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white tracking-widest placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent"
+                className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white tracking-widest placeholder:text-white/30 bg-surface/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent"
               />
             </div>
 
@@ -144,7 +144,7 @@ export default function PlatformLoginPage() {
           </form>
         ) : (
           <>
-            <form onSubmit={handleSubmit} className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-6">
+            <form onSubmit={handleSubmit} className="space-y-4 bg-surface/5 border border-white/10 rounded-2xl p-6">
               <div>
                 <label className="block text-sm font-medium text-white/70 mb-1.5">Email address</label>
                 <input
@@ -153,7 +153,7 @@ export default function PlatformLoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@eventbuddy.africa"
                   required
-                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent"
+                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-surface/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent"
                 />
               </div>
               <div>
@@ -165,7 +165,7 @@ export default function PlatformLoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent pr-10"
+                    className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-surface/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent pr-10"
                   />
                   <button
                     type="button"

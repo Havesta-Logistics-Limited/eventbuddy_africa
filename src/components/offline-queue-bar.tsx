@@ -50,19 +50,19 @@ export function OfflineQueueBar() {
       <div
         role="status"
         aria-live="polite"
-        className="pointer-events-auto flex items-center gap-3 rounded-full border px-4 py-2.5 shadow-lg backdrop-blur bg-white/95 border-slate-200"
+        className="pointer-events-auto flex items-center gap-3 rounded-full border px-4 py-2.5 shadow-lg backdrop-blur bg-surface/95 border-line"
       >
         {justSent > 0 ? (
           <>
-            <Check className="w-4 h-4 text-[#0d7c6e] shrink-0" aria-hidden="true" />
-            <span className="text-sm font-medium text-slate-800">
+            <Check className="w-4 h-4 text-teal-300 shrink-0" aria-hidden="true" />
+            <span className="text-sm font-medium text-fg">
               Synced {justSent} {justSent === 1 ? "lead" : "leads"}
             </span>
           </>
         ) : (
           <>
             <CloudOff className={`w-4 h-4 shrink-0 ${online ? "text-[#C21FAF]" : "text-[#E85D0A]"}`} aria-hidden="true" />
-            <span className="text-sm font-medium text-slate-800 tabular-nums">
+            <span className="text-sm font-medium text-fg tabular-nums">
               {offlineOnly
                 ? "Offline — captures will be saved on this device"
                 : `${pending} ${pending === 1 ? "lead" : "leads"} saved on this device`}

@@ -42,7 +42,7 @@ import { captureRef, storedRef } from "@/lib/referral-capture";
  *  link an organizer shared directly. */
 export function PublicHeader() {
   return (
-    <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
+    <header className="sticky top-0 z-30 bg-surface/70 backdrop-blur-md border-b border-line/70">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         <span className="sm:hidden">
           <Logo height={18} />
@@ -51,13 +51,13 @@ export function PublicHeader() {
           <Logo height={26} />
         </span>
         <nav className="flex items-center gap-3 sm:gap-6">
-          <Link href="/discover" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
+          <Link href="/discover" className="text-sm font-medium text-fg-3 hover:text-fg hidden sm:block">
             Events
           </Link>
-          <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
+          <Link href="/pricing" className="text-sm font-medium text-fg-3 hover:text-fg hidden sm:block">
             Pricing
           </Link>
-          <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
+          <Link href="/login" className="text-sm font-medium text-fg-3 hover:text-fg">
             Sign in
           </Link>
           <Link href="/signup" className="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors">
@@ -232,20 +232,20 @@ function AddToCalendarMenu({ event, orgSlug }: { event: PublicEvent; orgSlug: st
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-colors whitespace-nowrap"
+        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-fg-2 border border-line bg-surface hover:bg-canvas transition-colors whitespace-nowrap"
       >
         <CalendarPlus size={16} />
         Add to calendar
         <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1.5 w-52 bg-white rounded-xl border border-slate-200 shadow-lg py-1 animate-dropdown-settle origin-top-right">
+        <div className="absolute right-0 z-20 mt-1.5 w-52 bg-surface rounded-xl border border-line shadow-lg py-1 animate-dropdown-settle origin-top-right">
           <a
             href={buildGoogleCalendarUrl(event)}
             target="_blank"
             rel="noreferrer"
             onClick={() => setOpen(false)}
-            className="block w-full text-left px-3.5 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="block w-full text-left px-3.5 py-2.5 text-sm text-fg-2 hover:bg-canvas"
           >
             Google Calendar
           </a>
@@ -255,7 +255,7 @@ function AddToCalendarMenu({ event, orgSlug }: { event: PublicEvent; orgSlug: st
               downloadIcs(event, orgSlug);
               setOpen(false);
             }}
-            className="block w-full text-left px-3.5 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="block w-full text-left px-3.5 py-2.5 text-sm text-fg-2 hover:bg-canvas"
           >
             Apple / Outlook (.ics)
           </button>
@@ -679,7 +679,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
       <PublicHeader />
       {isDraftPreview && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
-          <div className="flex items-center gap-2 rounded-xl border border-amber-300/40 bg-amber-400/10 px-4 py-2.5 text-sm text-amber-200">
+          <div className="flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-400/10 px-4 py-2.5 text-sm text-amber-200">
             <Eye size={15} className="shrink-0" />
             Preview only — this is what your event page will look like once published. Registration isn&apos;t open yet.
           </div>
@@ -689,7 +689,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         {/* Hero — cover image + title/badges/CTA, matching the composition of a real
             event landing page rather than the plain header band this used to be. */}
         <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-8 items-start animate-fade-in-up">
-          <div className="aspect-video rounded-2xl overflow-hidden bg-slate-100 shadow-sm">
+          <div className="aspect-video rounded-2xl overflow-hidden bg-fill shadow-sm">
             {event.coverImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={event.coverImage} alt="" className="w-full h-full object-cover" />
@@ -707,7 +707,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
             {badges.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
                 {badges.map((b) => (
-                  <span key={b} className="text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full bg-[#FFF3FD] text-[#93147D]">
+                  <span key={b} className="text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full bg-brand-500/10 text-[#93147D]">
                     {b}
                   </span>
                 ))}
@@ -769,14 +769,14 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 mt-10 items-start">
           <div className="space-y-5 min-w-0">
             {event.description && (
-              <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up" style={{ animationDelay: "0ms" }}>
+              <div className="bg-surface/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up" style={{ animationDelay: "0ms" }}>
                 <h2 className="font-semibold text-white mb-2">About this event</h2>
                 <RichTextDisplay html={event.description} className="text-sm text-white/70 leading-relaxed" />
               </div>
             )}
 
             <div
-              className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up"
+              className="bg-surface/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up"
               style={{ animationDelay: event.description ? "60ms" : "0ms" }}
             >
               <h2 className="font-semibold text-white mb-3">Date and time</h2>
@@ -793,7 +793,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
             {event.eventFormat === "virtual" ? (
               <div
-                className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up"
+                className="bg-surface/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up"
                 style={{ animationDelay: event.description ? "120ms" : "60ms" }}
               >
                 <h2 className="font-semibold text-white mb-3">How to join</h2>
@@ -807,7 +807,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
               </div>
             ) : (
               <div
-                className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up"
+                className="bg-surface/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 animate-fade-in-up"
                 style={{ animationDelay: event.description ? "120ms" : "60ms" }}
               >
                 <h2 className="font-semibold text-white mb-3">Location</h2>
@@ -838,7 +838,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
               picker, discount code, dynamic fields, submit. Not a decorative summary
               card standing in for it. */}
           <div id="register-panel" className="lg:sticky lg:top-8 scroll-mt-8 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
-            <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-surface/10 backdrop-blur-xl border border-white/15 rounded-2xl shadow-xl overflow-hidden">
               {showOneOnOneStep && event ? (
                 <OneOnOneRequestStep
                   orgSlug={orgSlug}
@@ -885,7 +885,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                   {confirmation.referenceId && (
                     <>
                       {qrDataUrl && (
-                        <div className="inline-block p-3 bg-white rounded-lg mb-4">
+                        <div className="inline-block p-3 bg-surface rounded-lg mb-4">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={qrDataUrl} alt="Registration QR code" width={164} height={164} />
                         </div>
@@ -894,7 +894,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                       <button
                         type="button"
                         onClick={copyReferenceId}
-                        className="flex mx-auto items-center gap-2 px-4 py-2 rounded-lg border border-white/20 bg-white/5 font-mono text-base font-semibold text-white hover:bg-white/10"
+                        className="flex mx-auto items-center gap-2 px-4 py-2 rounded-lg border border-white/20 bg-surface/5 font-mono text-base font-semibold text-white hover:bg-surface/10"
                       >
                         {confirmation.referenceId}
                         {copied ? <Check size={15} className="text-teal-300" /> : <Copy size={15} className="text-white/40" />}
@@ -948,7 +948,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
                   <div className="p-6">
                     {ticketTypes.length === 1 && ticketTypes[0].priceNaira > 0 && (
-                      <div className="flex items-center justify-between gap-3 p-3.5 mb-5 rounded-xl bg-white/5 border border-white/15">
+                      <div className="flex items-center justify-between gap-3 p-3.5 mb-5 rounded-xl bg-surface/5 border border-white/15">
                         <p className="text-sm text-white/80 flex items-center gap-2">
                           <Ticket size={14} className="text-[#FF8AF5]" />
                           {ticketTypes[0].name}
@@ -1030,13 +1030,13 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                                 value={discountCodeInput}
                                 onChange={(e) => setDiscountCodeInput(e.target.value)}
                                 placeholder="Discount code"
-                                className="flex-1 px-3.5 py-2.5 rounded-lg border border-white/20 bg-white/5 text-white placeholder:text-white/40 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#FF8AF5]"
+                                className="flex-1 px-3.5 py-2.5 rounded-lg border border-white/20 bg-surface/5 text-white placeholder:text-white/40 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#FF8AF5]"
                               />
                               <button
                                 type="button"
                                 onClick={handleApplyDiscount}
                                 disabled={validatingDiscount || !discountCodeInput.trim()}
-                                className="px-4 py-2.5 rounded-lg text-sm font-medium border border-white/20 text-white hover:bg-white/10 disabled:opacity-50"
+                                className="px-4 py-2.5 rounded-lg text-sm font-medium border border-white/20 text-white hover:bg-surface/10 disabled:opacity-50"
                               >
                                 {validatingDiscount ? "Checking…" : "Apply"}
                               </button>
@@ -1087,7 +1087,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                   <button
                     type="button"
                     onClick={handleShare}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white/70 border-t border-white/10 hover:bg-white/5 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white/70 border-t border-white/10 hover:bg-surface/5 transition-colors"
                   >
                     <Share2 size={14} />
                     Share this event

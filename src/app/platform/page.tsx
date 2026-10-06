@@ -1027,7 +1027,7 @@ export default function PlatformDashboard() {
             }}
             style={active ? { background: "color-mix(in srgb, var(--color-brand-600) 20%, transparent)" } : undefined}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-              active ? "text-white font-medium" : "text-white/60 hover:text-white hover:bg-white/8"
+              active ? "text-white font-medium" : "text-white/60 hover:text-white hover:bg-surface/8"
             }`}
           >
             <Icon size={17} className={active ? "text-[#FF8AF5]" : undefined} />
@@ -1052,7 +1052,7 @@ export default function PlatformDashboard() {
       <button
         type="button"
         onClick={handleSignOut}
-        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8 transition-colors"
+        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-surface/8 transition-colors"
       >
         <LogOut size={16} />
         Sign out
@@ -1061,7 +1061,7 @@ export default function PlatformDashboard() {
   );
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
+    <div className="min-h-screen flex bg-canvas">
       {/* Sidebar — desktop */}
       <aside className="hidden md:flex w-64 flex-col text-white fixed inset-y-0 left-0 z-40" style={{ background: SIDEBAR_BG }}>
         <div className="px-6 py-5 border-b border-white/10">
@@ -1105,17 +1105,17 @@ export default function PlatformDashboard() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
           {view !== "security" && <MfaNagBanner onSetup={() => setView("security")} />}
           {loadError && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm mb-6">
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm mb-6">
               <AlertCircle size={15} className="mt-0.5 shrink-0" />
               <div className="flex-1">
                 <p className="font-medium">Couldn&apos;t load some data.</p>
-                <p className="text-rose-600">{loadError}</p>
+                <p className="text-rose-300">{loadError}</p>
               </div>
               <button
                 type="button"
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-rose-200 hover:bg-rose-100 disabled:opacity-50 shrink-0"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-rose-500/30 hover:bg-rose-500/15 disabled:opacity-50 shrink-0"
               >
                 <RefreshCw size={12} className={refreshing ? "animate-spin" : undefined} />
                 Retry
@@ -1126,8 +1126,8 @@ export default function PlatformDashboard() {
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="font-display text-2xl text-slate-900">Organizations</h1>
-                  <p className="text-slate-500 text-sm mt-0.5">Every business using eventbuddy, and how they&apos;re doing.</p>
+                  <h1 className="font-display text-2xl text-fg">Organizations</h1>
+                  <p className="text-muted text-sm mt-0.5">Every business using eventbuddy, and how they&apos;re doing.</p>
                 </div>
                 <button
                   type="button"
@@ -1135,7 +1135,7 @@ export default function PlatformDashboard() {
                   disabled={refreshing}
                   title="Refresh"
                   aria-label="Refresh"
-                  className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 shrink-0"
+                  className="p-2 rounded-lg border border-line text-muted hover:bg-canvas disabled:opacity-50 shrink-0"
                 >
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
                 </button>
@@ -1146,23 +1146,23 @@ export default function PlatformDashboard() {
                   ? Array.from({ length: 5 }).map((_, i) => <StatTileSkeleton key={i} />)
                   : stats.map((s, i) => (
                       <Reveal key={s.label} index={i}>
-                        <div className="bg-white rounded-xl border border-slate-200 p-4">
+                        <div className="bg-surface rounded-xl border border-line p-4">
                           <div className="flex items-start justify-between mb-2">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#FFF3FD" }}>
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(255, 138, 245, 0.1)" }}>
                               <s.icon size={16} style={{ color: "#C21FAF" }} />
                             </div>
                             {s.delta && (
-                              <span className="text-[10px] font-semibold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded-full">{s.delta}</span>
+                              <span className="text-[10px] font-semibold text-teal-300 bg-teal-500/10 px-1.5 py-0.5 rounded-full">{s.delta}</span>
                             )}
                           </div>
-                          <p className="text-2xl font-bold text-slate-900 tabular-nums">{s.value}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
+                          <p className="text-2xl font-bold text-fg tabular-nums">{s.value}</p>
+                          <p className="text-xs text-muted mt-0.5">{s.label}</p>
                         </div>
                       </Reveal>
                     ))}
               </div>
               {ticketPurchaseTxns.length === 0 && (
-                <p className="text-xs text-slate-400 mb-6 -mt-2">
+                <p className="text-xs text-subtle mb-6 -mt-2">
                   No ticket sales yet — revenue shows here once an org sells a paid ticket. Publishing an event itself is always free, physical or
                   virtual.
                 </p>
@@ -1173,16 +1173,16 @@ export default function PlatformDashboard() {
                 if (pendingNameChanges.length === 0) return null;
                 return (
                   <div className="mb-6">
-                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2.5">Pending name change requests ({pendingNameChanges.length})</h2>
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-subtle mb-2.5">Pending name change requests ({pendingNameChanges.length})</h2>
                     <div className="space-y-3">
                       {pendingNameChanges.map((org) => (
-                        <div key={org.id} className="bg-white rounded-xl border border-amber-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                        <div key={org.id} className="bg-surface rounded-xl border border-amber-500/30 p-4 flex flex-wrap items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm text-slate-500">
-                              <span className="font-medium text-slate-900">{org.name}</span> wants to rename to{" "}
-                              <span className="font-medium text-amber-700">{org.pending_name}</span>
+                            <p className="text-sm text-muted">
+                              <span className="font-medium text-fg">{org.name}</span> wants to rename to{" "}
+                              <span className="font-medium text-amber-300">{org.pending_name}</span>
                             </p>
-                            <p className="text-xs text-slate-400 mt-0.5">
+                            <p className="text-xs text-subtle mt-0.5">
                               Requested{" "}
                               {org.name_change_requested_at
                                 ? new Date(org.name_change_requested_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -1210,16 +1210,16 @@ export default function PlatformDashboard() {
                 if (pendingEmailChanges.length === 0) return null;
                 return (
                   <div className="mb-6">
-                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2.5">Pending login email change requests ({pendingEmailChanges.length})</h2>
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-subtle mb-2.5">Pending login email change requests ({pendingEmailChanges.length})</h2>
                     <div className="space-y-3">
                       {pendingEmailChanges.map((org) => (
-                        <div key={org.id} className="bg-white rounded-xl border border-amber-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                        <div key={org.id} className="bg-surface rounded-xl border border-amber-500/30 p-4 flex flex-wrap items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm text-slate-500">
-                              <span className="font-medium text-slate-900">{org.name}</span> wants their login email changed to{" "}
-                              <span className="font-medium text-amber-700">{org.pending_login_email}</span>
+                            <p className="text-sm text-muted">
+                              <span className="font-medium text-fg">{org.name}</span> wants their login email changed to{" "}
+                              <span className="font-medium text-amber-300">{org.pending_login_email}</span>
                             </p>
-                            <p className="text-xs text-slate-400 mt-0.5">
+                            <p className="text-xs text-subtle mt-0.5">
                               Requested{" "}
                               {org.login_email_change_requested_at
                                 ? new Date(org.login_email_change_requested_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -1248,15 +1248,15 @@ export default function PlatformDashboard() {
                 if (pendingAccountDeletions.length === 0) return null;
                 return (
                   <div className="mb-6">
-                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2.5">Pending account deletion requests ({pendingAccountDeletions.length})</h2>
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-subtle mb-2.5">Pending account deletion requests ({pendingAccountDeletions.length})</h2>
                     <div className="space-y-3">
                       {pendingAccountDeletions.map((org) => (
-                        <div key={org.id} className="bg-white rounded-xl border border-rose-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                        <div key={org.id} className="bg-surface rounded-xl border border-rose-500/30 p-4 flex flex-wrap items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm text-slate-500">
-                              <span className="font-medium text-slate-900">{org.name}</span> requested to permanently delete their account
+                            <p className="text-sm text-muted">
+                              <span className="font-medium text-fg">{org.name}</span> requested to permanently delete their account
                             </p>
-                            <p className="text-xs text-slate-400 mt-0.5">
+                            <p className="text-xs text-subtle mt-0.5">
                               Requested{" "}
                               {org.account_deletion_requested_at
                                 ? new Date(org.account_deletion_requested_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -1282,23 +1282,23 @@ export default function PlatformDashboard() {
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
                 <div className="relative flex-1 max-w-sm">
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle" />
                   <input
                     type="text"
                     value={orgSearch}
                     onChange={(e) => setOrgSearch(e.target.value)}
                     placeholder="Search organizations…"
-                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
                   />
                 </div>
-                <div className="flex items-center gap-0.5 bg-white rounded-lg border border-slate-200 p-1 shrink-0">
+                <div className="flex items-center gap-0.5 bg-surface rounded-lg border border-line p-1 shrink-0">
                   {(["all", "active", "suspended"] as const).map((f) => (
                     <button
                       key={f}
                       type="button"
                       onClick={() => setOrgStatusFilter(f)}
                       className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors ${
-                        orgStatusFilter === f ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:text-slate-700"
+                        orgStatusFilter === f ? "bg-fill text-fg" : "text-muted hover:text-fg-2"
                       }`}
                     >
                       {f}
@@ -1314,87 +1314,87 @@ export default function PlatformDashboard() {
                   ))}
                 </div>
               ) : orgs.length === 0 ? (
-                <div className="text-center py-16 text-slate-400 bg-white rounded-xl border border-slate-200">
+                <div className="text-center py-16 text-subtle bg-surface rounded-xl border border-line">
                   <Building2 size={32} className="mx-auto mb-3 opacity-40" />
                   <p>No organizations yet</p>
                 </div>
               ) : filteredOrgs.length === 0 ? (
-                <div className="text-center py-16 text-slate-400 bg-white rounded-xl border border-slate-200">
+                <div className="text-center py-16 text-subtle bg-surface rounded-xl border border-line">
                   <Search size={32} className="mx-auto mb-3 opacity-40" />
                   <p>No organizations match your search.</p>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="bg-surface rounded-xl border border-line overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-slate-50 border-b border-slate-200">
+                      <thead className="bg-canvas border-b border-line">
                         <tr>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Organization</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Contact</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Events</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Regs</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Leads</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Billing</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Status</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Joined</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Organization</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Contact</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Events</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Regs</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Leads</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Billing</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Status</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Joined</th>
                           <th className="px-4 py-2.5" />
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-line-soft">
                         {filteredOrgs.map((org) => {
                           const orgEvents = events.filter((e) => e.organization_id === org.id);
                           const orgLeads = leads.filter((l) => l.organization_id === org.id);
                           const orgRegs = activeRegistrations.filter((r) => r.organization_id === org.id);
                           const orgBilling = ticketRevenueByOrg.find((r) => r.org?.id === org.id)?.commission ?? 0;
                           return (
-                            <tr key={org.id} className="hover:bg-slate-50">
+                            <tr key={org.id} className="hover:bg-canvas">
                               <td className="px-4 py-3 max-w-[200px]">
-                                <p className="font-medium text-slate-900 truncate">{org.name}</p>
+                                <p className="font-medium text-fg truncate">{org.name}</p>
                                 <span
                                   role="button"
                                   tabIndex={0}
                                   onClick={() => copyOrgId(org.id)}
-                                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-600 font-mono"
+                                  className="flex items-center gap-1 text-[11px] text-subtle hover:text-fg-3 font-mono"
                                   title="Copy full organization ID"
                                 >
-                                  {copiedId === org.id ? <Check size={10} className="text-teal-600" /> : <Copy size={10} />}/{org.slug}
+                                  {copiedId === org.id ? <Check size={10} className="text-teal-300" /> : <Copy size={10} />}/{org.slug}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 text-xs text-slate-500 max-w-[180px]">
+                              <td className="px-4 py-3 text-xs text-muted max-w-[180px]">
                                 {org.email && (
                                   <span
                                     role="button"
                                     tabIndex={0}
                                     onClick={() => copyEmail(org.email!)}
-                                    className="flex items-center gap-1 truncate hover:text-slate-700"
+                                    className="flex items-center gap-1 truncate hover:text-fg-2"
                                     title={`${org.email} — click to copy`}
                                   >
-                                    {copiedId === org.email ? <Check size={10} className="shrink-0 text-teal-600" /> : <Copy size={10} className="shrink-0" />}
+                                    {copiedId === org.email ? <Check size={10} className="shrink-0 text-teal-300" /> : <Copy size={10} className="shrink-0" />}
                                     <span className="truncate">{org.email}</span>
                                   </span>
                                 )}
-                                {org.phone && <p className="text-slate-400 whitespace-nowrap">{org.phone}</p>}
-                                {!org.email && !org.phone && <span className="text-slate-300">—</span>}
+                                {org.phone && <p className="text-subtle whitespace-nowrap">{org.phone}</p>}
+                                {!org.email && !org.phone && <span className="text-faint">—</span>}
                               </td>
-                              <td className="px-4 py-3 text-slate-600 tabular-nums">{orgEvents.length}</td>
-                              <td className="px-4 py-3 text-slate-600 tabular-nums">{orgRegs.length}</td>
-                              <td className="px-4 py-3 text-slate-600 tabular-nums">{orgLeads.length}</td>
-                              <td className="px-4 py-3 text-slate-700 tabular-nums whitespace-nowrap">
+                              <td className="px-4 py-3 text-fg-3 tabular-nums">{orgEvents.length}</td>
+                              <td className="px-4 py-3 text-fg-3 tabular-nums">{orgRegs.length}</td>
+                              <td className="px-4 py-3 text-fg-3 tabular-nums">{orgLeads.length}</td>
+                              <td className="px-4 py-3 text-fg-2 tabular-nums whitespace-nowrap">
                                 {formatNaira(orgBilling)}
-                                {org.is_fee_exempt && <span className="block text-[10px] text-teal-600 font-medium">exempt</span>}
+                                {org.is_fee_exempt && <span className="block text-[10px] text-teal-300 font-medium">exempt</span>}
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex flex-wrap gap-1.5">
                                   <span
                                     className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap ${
-                                      org.is_suspended ? "text-rose-700 bg-rose-100" : "text-teal-700 bg-teal-100"
+                                      org.is_suspended ? "text-rose-300 bg-rose-500/15" : "text-teal-300 bg-teal-500/15"
                                     }`}
                                   >
                                     {org.is_suspended ? "Suspended" : "Active"}
                                   </span>
                                   <span
                                     className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap ${
-                                      org.is_verified ? "text-brand-700 bg-brand-100" : "text-amber-700 bg-amber-100"
+                                      org.is_verified ? "text-brand-500 bg-brand-500/15" : "text-amber-300 bg-amber-500/15"
                                     }`}
                                     title={org.is_verified ? "Owner has verified their email" : "Owner hasn't verified their email yet"}
                                   >
@@ -1402,7 +1402,7 @@ export default function PlatformDashboard() {
                                   </span>
                                   <span
                                     className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap ${
-                                      org.paystack_subaccount_code ? "text-sky-700 bg-sky-100" : "text-slate-500 bg-slate-100"
+                                      org.paystack_subaccount_code ? "text-sky-300 bg-sky-500/15" : "text-muted bg-fill"
                                     }`}
                                     title={org.paystack_subaccount_code ? `Payouts linked — ${org.payout_bank_name || "bank on file"}` : "No bank account linked yet — can't sell paid tickets"}
                                   >
@@ -1410,7 +1410,7 @@ export default function PlatformDashboard() {
                                   </span>
                                 </div>
                               </td>
-                              <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
+                              <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
                                 {new Date(org.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                               </td>
                               <td className="px-4 py-3">
@@ -1423,7 +1423,7 @@ export default function PlatformDashboard() {
                                         disabled={busyOrgId === org.id}
                                         title="Resend verification email"
                                         aria-label="Resend verification email"
-                                        className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                        className="p-2 rounded-lg border border-line text-muted hover:bg-canvas transition-colors disabled:opacity-50"
                                       >
                                         <Mail size={14} />
                                       </button>
@@ -1433,7 +1433,7 @@ export default function PlatformDashboard() {
                                         disabled={busyOrgId === org.id}
                                         title="Manually mark verified"
                                         aria-label="Manually mark verified"
-                                        className="p-2 rounded-lg border border-brand-200 text-brand-700 hover:bg-brand-50 transition-colors disabled:opacity-50"
+                                        className="p-2 rounded-lg border border-brand-500/30 text-brand-500 hover:bg-brand-500/10 transition-colors disabled:opacity-50"
                                       >
                                         <BadgeCheck size={14} />
                                       </button>
@@ -1446,7 +1446,7 @@ export default function PlatformDashboard() {
                                     title={org.is_fee_exempt ? "Remove fee exemption" : "Exempt from per-event fee"}
                                     aria-label={org.is_fee_exempt ? "Remove fee exemption" : "Exempt from per-event fee"}
                                     className={`p-2 rounded-lg border transition-colors disabled:opacity-50 ${
-                                      org.is_fee_exempt ? "border-teal-200 text-teal-700 hover:bg-teal-50" : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                                      org.is_fee_exempt ? "border-teal-500/30 text-teal-300 hover:bg-teal-500/10" : "border-line text-muted hover:bg-canvas"
                                     }`}
                                   >
                                     {org.is_fee_exempt ? <ShieldOff size={14} /> : <ShieldCheck size={14} />}
@@ -1458,7 +1458,7 @@ export default function PlatformDashboard() {
                                     title={org.is_suspended ? "Reactivate" : "Suspend"}
                                     aria-label={org.is_suspended ? "Reactivate" : "Suspend"}
                                     className={`p-2 rounded-lg border transition-colors disabled:opacity-50 ${
-                                      org.is_suspended ? "border-teal-200 text-teal-700 hover:bg-teal-50" : "border-rose-200 text-rose-500 hover:bg-rose-50"
+                                      org.is_suspended ? "border-teal-500/30 text-teal-300 hover:bg-teal-500/10" : "border-rose-500/30 text-rose-400 hover:bg-rose-500/10"
                                     }`}
                                   >
                                     {org.is_suspended ? <RotateCcw size={14} /> : <Ban size={14} />}
@@ -1471,7 +1471,7 @@ export default function PlatformDashboard() {
                                     }}
                                     title="Delete organization"
                                     aria-label="Delete organization"
-                                    className="p-2 rounded-lg border border-rose-200 text-rose-500 hover:bg-rose-50 transition-colors"
+                                    className="p-2 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 transition-colors"
                                   >
                                     <Trash2 size={14} />
                                   </button>
@@ -1491,12 +1491,12 @@ export default function PlatformDashboard() {
           {view === "events" && (
             <>
               <div className="mb-6">
-                <h1 className="font-display text-2xl text-slate-900">Events</h1>
-                <p className="text-slate-500 text-sm mt-0.5">Every event across every organization, physical and virtual.</p>
+                <h1 className="font-display text-2xl text-fg">Events</h1>
+                <p className="text-muted text-sm mt-0.5">Every event across every organization, physical and virtual.</p>
               </div>
 
               {exportError && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm mb-4">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm mb-4">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {exportError}
                 </div>
@@ -1504,23 +1504,23 @@ export default function PlatformDashboard() {
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
                 <div className="relative flex-1 max-w-sm">
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle" />
                   <input
                     type="text"
                     value={eventSearch}
                     onChange={(e) => setEventSearch(e.target.value)}
                     placeholder="Search events or organizations…"
-                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
                   />
                 </div>
-                <div className="flex items-center gap-0.5 bg-white rounded-lg border border-slate-200 p-1 shrink-0">
+                <div className="flex items-center gap-0.5 bg-surface rounded-lg border border-line p-1 shrink-0">
                   {(["all", "physical", "virtual"] as const).map((f) => (
                     <button
                       key={f}
                       type="button"
                       onClick={() => setEventFormatFilter(f)}
                       className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors ${
-                        eventFormatFilter === f ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:text-slate-700"
+                        eventFormatFilter === f ? "bg-fill text-fg" : "text-muted hover:text-fg-2"
                       }`}
                     >
                       {f}
@@ -1536,12 +1536,12 @@ export default function PlatformDashboard() {
                   ))}
                 </div>
               ) : events.length === 0 ? (
-                <div className="text-center py-16 text-slate-400 bg-white rounded-xl border border-slate-200">
+                <div className="text-center py-16 text-subtle bg-surface rounded-xl border border-line">
                   <Calendar size={32} className="mx-auto mb-3 opacity-40" />
                   <p>No events yet</p>
                 </div>
               ) : filteredEvents.length === 0 ? (
-                <div className="text-center py-16 text-slate-400 bg-white rounded-xl border border-slate-200">
+                <div className="text-center py-16 text-subtle bg-surface rounded-xl border border-line">
                   <Search size={32} className="mx-auto mb-3 opacity-40" />
                   <p>No events match your search.</p>
                 </div>
@@ -1552,7 +1552,7 @@ export default function PlatformDashboard() {
                       Capture and the export column stay visible at every width since the
                       row itself always shows those controls (wrapping onto their own line
                       on narrow screens rather than disappearing). */}
-                  <div className="hidden sm:flex items-center gap-3 px-4 pb-2 text-xs font-medium text-slate-500">
+                  <div className="hidden sm:flex items-center gap-3 px-4 pb-2 text-xs font-medium text-muted">
                     <div className="w-10 shrink-0" />
                     <div className="min-w-0 flex-1">Event</div>
                     <div className="hidden sm:block w-10 text-center shrink-0">Regs</div>
@@ -1578,27 +1578,27 @@ export default function PlatformDashboard() {
                       const pill = gate.open
                         ? { label: "Live", classes: "bg-emerald-500 text-white" }
                         : gate.reason === "not_started"
-                          ? { label: "Upcoming", classes: "bg-amber-100 text-amber-700" }
-                          : { label: "Closed", classes: "bg-slate-200 text-slate-600" };
+                          ? { label: "Upcoming", classes: "bg-amber-500/15 text-amber-300" }
+                          : { label: "Closed", classes: "bg-fill-strong text-fg-3" };
 
                       return (
                         <div
                           key={ev.id}
-                          className="flex flex-wrap sm:flex-nowrap items-center gap-3 bg-white rounded-xl border border-slate-200 px-4 py-3 hover:border-brand-600/30 hover:shadow-sm transition-all"
+                          className="flex flex-wrap sm:flex-nowrap items-center gap-3 bg-surface rounded-xl border border-line px-4 py-3 hover:border-brand-600/30 hover:shadow-sm transition-all"
                         >
-                          <div className="w-10 h-10 rounded-lg bg-brand-100 flex items-center justify-center shrink-0">
-                            <RowIcon size={18} className="text-brand-600" />
+                          <div className="w-10 h-10 rounded-lg bg-brand-500/15 flex items-center justify-center shrink-0">
+                            <RowIcon size={18} className="text-brand-500" />
                           </div>
 
                           <div className="min-w-0 flex-1 order-1 sm:order-none basis-full sm:basis-auto">
-                            <p className="font-semibold text-slate-900 text-sm truncate">{ev.name}</p>
-                            <p className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5 truncate">
+                            <p className="font-semibold text-fg text-sm truncate">{ev.name}</p>
+                            <p className="flex items-center gap-1.5 text-xs text-subtle mt-0.5 truncate">
                               <Calendar size={11} className="shrink-0" />
                               {new Date(ev.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                              <span className="text-slate-300">·</span>
+                              <span className="text-faint">·</span>
                               {ev.event_format === "virtual" ? <Presentation size={11} className="shrink-0" /> : <MapPin size={11} className="shrink-0" />}
                               {org ? (
-                                <button type="button" onClick={() => goToOrg(org.name)} className="hover:text-brand-600 hover:underline truncate">
+                                <button type="button" onClick={() => goToOrg(org.name)} className="hover:text-brand-500 hover:underline truncate">
                                   {org.name}
                                 </button>
                               ) : (
@@ -1607,10 +1607,10 @@ export default function PlatformDashboard() {
                             </p>
                           </div>
 
-                          <div className="hidden sm:block w-10 text-center text-sm text-slate-600 tabular-nums shrink-0">{regCount}</div>
-                          <div className="hidden sm:block w-10 text-center text-sm text-slate-600 tabular-nums shrink-0">{leadCount}</div>
+                          <div className="hidden sm:block w-10 text-center text-sm text-fg-3 tabular-nums shrink-0">{regCount}</div>
+                          <div className="hidden sm:block w-10 text-center text-sm text-fg-3 tabular-nums shrink-0">{leadCount}</div>
 
-                          <div className="flex gap-0.5 bg-slate-50 rounded-md p-0.5 border border-slate-200 w-[188px] shrink-0">
+                          <div className="flex gap-0.5 bg-canvas rounded-md p-0.5 border border-line w-[188px] shrink-0">
                             {(
                               [
                                 { label: "Auto", value: null },
@@ -1624,7 +1624,7 @@ export default function PlatformDashboard() {
                                 disabled={busy}
                                 onClick={() => setEventCaptureOverride(ev, value)}
                                 className={`flex-1 px-2 py-1 rounded text-[11px] font-medium transition-colors disabled:opacity-60 ${
-                                  (ev.capture_override ?? null) === value ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                  (ev.capture_override ?? null) === value ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg-2"
                                 }`}
                               >
                                 {label}
@@ -1643,7 +1643,7 @@ export default function PlatformDashboard() {
                               disabled={exportingEventId === ev.id}
                               title="Export leads (CSV)"
                               aria-label="Export leads (CSV)"
-                              className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50"
+                              className="p-2 rounded-lg border border-line text-muted hover:bg-canvas disabled:opacity-50"
                             >
                               <Download size={14} />
                             </button>
@@ -1654,7 +1654,7 @@ export default function PlatformDashboard() {
                                 disabled={exportingEventId === ev.id}
                                 title="Export registrations (CSV)"
                                 aria-label="Export registrations (CSV)"
-                                className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50"
+                                className="p-2 rounded-lg border border-line text-muted hover:bg-canvas disabled:opacity-50"
                               >
                                 <Ticket size={14} />
                               </button>
@@ -1673,8 +1673,8 @@ export default function PlatformDashboard() {
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="font-display text-2xl text-slate-900">Billing</h1>
-                  <p className="text-slate-500 text-sm mt-0.5">Revenue across every organization — your commission on ticket sales.</p>
+                  <h1 className="font-display text-2xl text-fg">Billing</h1>
+                  <p className="text-muted text-sm mt-0.5">Revenue across every organization — your commission on ticket sales.</p>
                 </div>
                 <button
                   type="button"
@@ -1682,7 +1682,7 @@ export default function PlatformDashboard() {
                   disabled={refreshing}
                   title="Refresh"
                   aria-label="Refresh"
-                  className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 shrink-0"
+                  className="p-2 rounded-lg border border-line text-muted hover:bg-canvas disabled:opacity-50 shrink-0"
                 >
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
                 </button>
@@ -1694,20 +1694,20 @@ export default function PlatformDashboard() {
                   { label: "Revenue this week", value: formatNaira(ticketCommissionThisWeek), accent: "#0d9488", bg: "#e7f6f0" },
                 ].map((tile, i) => (
                   <Reveal key={tile.label} index={i}>
-                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                    <div className="bg-surface rounded-xl border border-line p-4">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: tile.bg }}>
                         <DollarSign size={16} style={{ color: tile.accent }} />
                       </div>
-                      <p className="text-2xl font-bold text-slate-900 tabular-nums">{tile.value}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{tile.label}</p>
+                      <p className="text-2xl font-bold text-fg tabular-nums">{tile.value}</p>
+                      <p className="text-xs text-muted mt-0.5">{tile.label}</p>
                     </div>
                   </Reveal>
                 ))}
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6">
+              <div className="bg-surface rounded-2xl border border-line p-5 mb-6">
                 <div className="flex items-center justify-between gap-3 mb-1">
-                  <h2 className="font-semibold text-slate-900">Ticket transaction fee</h2>
+                  <h2 className="font-semibold text-fg">Ticket transaction fee</h2>
                   {!editingFeePct && (
                     <button
                       type="button"
@@ -1717,13 +1717,13 @@ export default function PlatformDashboard() {
                         setFeePctError("");
                         setEditingFeePct(true);
                       }}
-                      className="text-xs font-medium text-brand-600 hover:underline"
+                      className="text-xs font-medium text-brand-500 hover:underline"
                     >
                       Change fee
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-slate-500 mb-3">
+                <p className="text-xs text-muted mb-3">
                   eventbuddy&apos;s cut of every paid self-serve ticket: a percentage of the price paid plus a flat amount per ticket. The rest
                   settles straight to the organizer&apos;s own bank account via their Paystack subaccount. A change applies to every
                   organization&apos;s next sale; fee-exempt organizations pay nothing.
@@ -1740,13 +1740,13 @@ export default function PlatformDashboard() {
                         onChange={(e) => setFeePctDraft(e.target.value)}
                         aria-label="Percentage fee per ticket"
                         autoFocus
-                        className="w-24 pl-3 pr-7 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                        className="w-24 pl-3 pr-7 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle text-sm">%</span>
                     </div>
-                    <span className="text-sm text-slate-400" aria-hidden="true">+</span>
+                    <span className="text-sm text-subtle" aria-hidden="true">+</span>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₦</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle text-sm">₦</span>
                       <input
                         type="number"
                         min="0"
@@ -1754,10 +1754,10 @@ export default function PlatformDashboard() {
                         value={feeFlatDraft}
                         onChange={(e) => setFeeFlatDraft(e.target.value)}
                         aria-label="Flat fee per ticket, in Naira"
-                        className="w-28 pl-7 pr-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                        className="w-28 pl-7 pr-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                       />
                     </div>
-                    <span className="text-xs text-slate-500">per ticket</span>
+                    <span className="text-xs text-muted">per ticket</span>
                     <button
                       type="button"
                       onClick={saveFeePct}
@@ -1773,23 +1773,23 @@ export default function PlatformDashboard() {
                         setFeePctError("");
                       }}
                       disabled={savingFeePct}
-                      className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 disabled:opacity-60"
+                      className="px-3 py-2 rounded-lg text-sm font-medium text-fg-3 border border-line hover:bg-canvas disabled:opacity-60"
                     >
                       Cancel
                     </button>
-                    {feePctError && <p className="w-full text-xs text-rose-600">{feePctError}</p>}
+                    {feePctError && <p className="w-full text-xs text-rose-300">{feePctError}</p>}
                   </div>
                 ) : (
-                  <p className="text-3xl font-bold text-slate-900 tabular-nums">
+                  <p className="text-3xl font-bold text-fg tabular-nums">
                     {formatTicketFee({ percentage: currentFeePct, flatNaira: currentFeeFlat })}
-                    <span className="ml-2 text-sm font-medium text-slate-500">per ticket</span>
+                    <span className="ml-2 text-sm font-medium text-muted">per ticket</span>
                   </p>
                 )}
               </div>
 
               <div className="mb-6">
-                <h2 className="font-semibold text-slate-900 mb-1">Ticket sales &amp; commission</h2>
-                <p className="text-xs text-slate-500 mb-4">
+                <h2 className="font-semibold text-fg mb-1">Ticket sales &amp; commission</h2>
+                <p className="text-xs text-muted mb-4">
                   Every paid ticket checkout, split automatically by Paystack between the organizer&apos;s bank account and eventbuddy&apos;s cut —
                   eventbuddy&apos;s only revenue mechanism.
                 </p>
@@ -1799,35 +1799,35 @@ export default function PlatformDashboard() {
                     { label: "Platform commission", value: formatNaira(ticketCommissionRevenue), accent: "#C21FAF", bg: "#FFF3FD" },
                     { label: "Commission this week", value: formatNaira(ticketCommissionThisWeek), accent: "#0d9488", bg: "#e7f6f0" },
                   ].map((tile) => (
-                    <div key={tile.label} className="bg-white rounded-xl border border-slate-200 p-4">
+                    <div key={tile.label} className="bg-surface rounded-xl border border-line p-4">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: tile.bg }}>
                         <DollarSign size={16} style={{ color: tile.accent }} />
                       </div>
-                      <p className="text-2xl font-bold text-slate-900 tabular-nums">{tile.value}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{tile.label}</p>
+                      <p className="text-2xl font-bold text-fg tabular-nums">{tile.value}</p>
+                      <p className="text-xs text-muted mt-0.5">{tile.label}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <div className="bg-surface rounded-2xl border border-line overflow-hidden">
                   {ticketRevenueByOrg.length === 0 ? (
-                    <p className="text-sm text-slate-400 py-10 text-center">No ticket sales yet.</p>
+                    <p className="text-sm text-subtle py-10 text-center">No ticket sales yet.</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
-                        <thead className="bg-slate-50 border-b border-slate-200">
+                        <thead className="bg-canvas border-b border-line">
                           <tr>
-                            <th className="text-left px-5 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Organization</th>
-                            <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Gross ticket sales</th>
-                            <th className="text-left px-5 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Your commission</th>
+                            <th className="text-left px-5 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Organization</th>
+                            <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Gross ticket sales</th>
+                            <th className="text-left px-5 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Your commission</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-line-soft">
                           {ticketRevenueByOrg.map((r) => (
-                            <tr key={r.org!.id} className="hover:bg-slate-50">
-                              <td className="px-5 py-3 font-medium text-slate-900">{r.org!.name}</td>
-                              <td className="px-4 py-3 text-slate-700 tabular-nums">{formatNaira(r.gross)}</td>
-                              <td className="px-5 py-3 text-slate-700 tabular-nums font-semibold">{formatNaira(r.commission)}</td>
+                            <tr key={r.org!.id} className="hover:bg-canvas">
+                              <td className="px-5 py-3 font-medium text-fg">{r.org!.name}</td>
+                              <td className="px-4 py-3 text-fg-2 tabular-nums">{formatNaira(r.gross)}</td>
+                              <td className="px-5 py-3 text-fg-2 tabular-nums font-semibold">{formatNaira(r.commission)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1838,10 +1838,10 @@ export default function PlatformDashboard() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <div className="bg-white rounded-2xl border border-slate-200 p-5">
-                  <h2 className="font-semibold text-slate-900 mb-4">Ticket commission revenue by month</h2>
+                <div className="bg-surface rounded-2xl border border-line p-5">
+                  <h2 className="font-semibold text-fg mb-4">Ticket commission revenue by month</h2>
                   {ticketRevenueByMonth.length === 0 ? (
-                    <p className="text-sm text-slate-400 py-6 text-center">No ticket sales yet.</p>
+                    <p className="text-sm text-subtle py-6 text-center">No ticket sales yet.</p>
                   ) : (
                     <div className="space-y-4">
                       {(() => {
@@ -1849,10 +1849,10 @@ export default function PlatformDashboard() {
                         return ticketRevenueByMonth.map((m, i) => (
                           <Reveal key={m.month} index={i}>
                             <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-sm text-slate-600">{m.month}</span>
-                              <span className="text-sm font-semibold text-slate-900 tabular-nums">{formatNaira(m.total)}</span>
+                              <span className="text-sm text-fg-3">{m.month}</span>
+                              <span className="text-sm font-semibold text-fg tabular-nums">{formatNaira(m.total)}</span>
                             </div>
-                            <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-2.5 bg-fill rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full transition-all duration-500"
                                 style={{ width: `${(m.total / max) * 100}%`, background: "#C21FAF" }}
@@ -1865,10 +1865,10 @@ export default function PlatformDashboard() {
                   )}
                 </div>
 
-                <div className="bg-white rounded-2xl border border-slate-200 p-5">
-                  <h2 className="font-semibold text-slate-900 mb-4">Top organizations by ticket commission</h2>
+                <div className="bg-surface rounded-2xl border border-line p-5">
+                  <h2 className="font-semibold text-fg mb-4">Top organizations by ticket commission</h2>
                   {ticketRevenueByOrgByCommission.length === 0 ? (
-                    <p className="text-sm text-slate-400 py-6 text-center">No ticket sales yet.</p>
+                    <p className="text-sm text-subtle py-6 text-center">No ticket sales yet.</p>
                   ) : (
                     <div className="space-y-4">
                       {(() => {
@@ -1876,12 +1876,12 @@ export default function PlatformDashboard() {
                         return ticketRevenueByOrgByCommission.map((r, i) => (
                           <Reveal key={r.org!.id} index={i}>
                             <div className="flex items-center justify-between mb-1.5">
-                              <button type="button" onClick={() => goToOrg(r.org!.name)} className="text-sm text-slate-600 hover:text-brand-600 hover:underline truncate">
+                              <button type="button" onClick={() => goToOrg(r.org!.name)} className="text-sm text-fg-3 hover:text-brand-500 hover:underline truncate">
                                 {r.org!.name}
                               </button>
-                              <span className="text-sm font-semibold text-slate-900 tabular-nums shrink-0">{formatNaira(r.commission)}</span>
+                              <span className="text-sm font-semibold text-fg tabular-nums shrink-0">{formatNaira(r.commission)}</span>
                             </div>
-                            <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-2.5 bg-fill rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full transition-all duration-500"
                                 style={{ width: `${(r.commission / max) * 100}%`, background: "#6D28D9" }}
@@ -1895,17 +1895,17 @@ export default function PlatformDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 mt-6">
+              <div className="bg-surface rounded-2xl border border-line p-5 mt-6">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <div className="min-w-0">
-                    <h2 className="font-semibold text-slate-900">All payments</h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Every Paystack attempt — success, failed, or still pending.</p>
+                    <h2 className="font-semibold text-fg">All payments</h2>
+                    <p className="text-xs text-muted mt-0.5">Every Paystack attempt — success, failed, or still pending.</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => exportTransactions(filteredTransactions)}
                     disabled={filteredTransactions.length === 0}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 shrink-0"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas disabled:opacity-50 shrink-0"
                   >
                     <Download size={12} />
                     Export CSV
@@ -1914,18 +1914,18 @@ export default function PlatformDashboard() {
 
                 <div className="flex flex-wrap gap-2 mb-4">
                   <div className="relative flex-1 min-w-[180px]">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle" />
                     <input
                       value={txnSearch}
                       onChange={(e) => setTxnSearch(e.target.value)}
                       placeholder="Search organization, email, event, or reference..."
-                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                     />
                   </div>
                   <select
                     value={txnStatusFilter}
                     onChange={(e) => setTxnStatusFilter(e.target.value as typeof txnStatusFilter)}
-                    className="px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
+                    className="px-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-surface"
                   >
                     <option value="all">All statuses</option>
                     <option value="success">Success</option>
@@ -1937,55 +1937,55 @@ export default function PlatformDashboard() {
                 </div>
 
                 {filteredTransactions.length === 0 ? (
-                  <p className="text-sm text-slate-400 py-10 text-center">
+                  <p className="text-sm text-subtle py-10 text-center">
                     {transactions.length === 0 ? "No payment attempts yet." : "No payments match your search."}
                   </p>
                 ) : (
                   <div className="overflow-x-auto -mx-5">
                     <table className="w-full text-sm">
-                      <thead className="bg-slate-50 border-y border-slate-200">
+                      <thead className="bg-canvas border-y border-line">
                         <tr>
-                          <th className="text-left px-5 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Organization</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Event</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Amount</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Reference</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Status</th>
-                          <th className="text-left px-5 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Date</th>
+                          <th className="text-left px-5 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Organization</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Event</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Amount</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Reference</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Status</th>
+                          <th className="text-left px-5 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Date</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-line-soft">
                         {filteredTransactions.map((t) => {
                           const org = orgById.get(t.organization_id);
                           const ev = eventById.get(t.event_id);
                           const statusPill = {
-                            success: "bg-emerald-100 text-emerald-700",
-                            pending: "bg-amber-100 text-amber-700",
-                            failed: "bg-rose-100 text-rose-700",
-                            refunded: "bg-slate-100 text-slate-500",
-                            disputed: "bg-orange-100 text-orange-700",
+                            success: "bg-emerald-500/15 text-emerald-300",
+                            pending: "bg-amber-500/15 text-amber-300",
+                            failed: "bg-rose-500/15 text-rose-300",
+                            refunded: "bg-fill text-muted",
+                            disputed: "bg-orange-500/15 text-orange-300",
                           }[t.status];
                           return (
-                            <tr key={t.id} className="hover:bg-slate-50/60">
+                            <tr key={t.id} className="hover:bg-canvas/60">
                               <td className="px-5 py-3 max-w-[200px]">
                                 {org ? (
-                                  <button type="button" onClick={() => goToOrg(org.name)} className="text-slate-900 font-medium hover:text-brand-600 hover:underline truncate block text-left">
+                                  <button type="button" onClick={() => goToOrg(org.name)} className="text-fg font-medium hover:text-brand-500 hover:underline truncate block text-left">
                                     {org.name}
                                   </button>
                                 ) : (
-                                  <span className="text-slate-400">—</span>
+                                  <span className="text-subtle">—</span>
                                 )}
-                                {org?.email && <p className="text-[11px] text-slate-400 truncate">{org.email}</p>}
+                                {org?.email && <p className="text-[11px] text-subtle truncate">{org.email}</p>}
                               </td>
-                              <td className="px-4 py-3 text-slate-600 max-w-[180px] truncate">{ev?.name ?? "—"}</td>
-                              <td className="px-4 py-3 text-slate-900 font-medium tabular-nums whitespace-nowrap">{formatNaira(Number(t.amount_naira))}</td>
+                              <td className="px-4 py-3 text-fg-3 max-w-[180px] truncate">{ev?.name ?? "—"}</td>
+                              <td className="px-4 py-3 text-fg font-medium tabular-nums whitespace-nowrap">{formatNaira(Number(t.amount_naira))}</td>
                               <td className="px-4 py-3 max-w-[140px]">
                                 <button
                                   type="button"
                                   onClick={() => copyReference(t.reference)}
                                   title={t.reference}
-                                  className="flex items-center gap-1 text-slate-500 hover:text-slate-700 font-mono text-xs truncate max-w-full"
+                                  className="flex items-center gap-1 text-muted hover:text-fg-2 font-mono text-xs truncate max-w-full"
                                 >
-                                  {copiedId === t.reference ? <Check size={10} className="shrink-0 text-teal-600" /> : <Copy size={10} className="shrink-0" />}
+                                  {copiedId === t.reference ? <Check size={10} className="shrink-0 text-teal-300" /> : <Copy size={10} className="shrink-0" />}
                                   <span className="truncate">{t.reference}</span>
                                 </button>
                               </td>
@@ -1998,14 +1998,14 @@ export default function PlatformDashboard() {
                                       onClick={() => manualRefund(t.reference)}
                                       disabled={refundingTxnRef === t.reference}
                                       title="Records-only: cancels the registration and restores capacity. Does not call Paystack — refund the money separately in the Paystack dashboard."
-                                      className="text-[11px] font-medium text-slate-400 hover:text-rose-600 disabled:opacity-50"
+                                      className="text-[11px] font-medium text-subtle hover:text-rose-300 disabled:opacity-50"
                                     >
                                       {refundingTxnRef === t.reference ? "…" : "Mark refunded"}
                                     </button>
                                   )}
                                 </div>
                               </td>
-                              <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{new Date(t.created_at).toLocaleString("en-GB")}</td>
+                              <td className="px-5 py-3 text-muted whitespace-nowrap">{new Date(t.created_at).toLocaleString("en-GB")}</td>
                             </tr>
                           );
                         })}
@@ -2021,8 +2021,8 @@ export default function PlatformDashboard() {
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="font-display text-2xl text-slate-900">Mobile App</h1>
-                  <p className="text-slate-500 text-sm mt-0.5">
+                  <h1 className="font-display text-2xl text-fg">Mobile App</h1>
+                  <p className="text-muted text-sm mt-0.5">
                     Attendee accounts and activity from the eventbuddy mobile app. Real app-store install counts aren&apos;t
                     something this dashboard can show — that only exists once the app is published, and lives in App Store
                     Connect / Play Console instead.
@@ -2034,7 +2034,7 @@ export default function PlatformDashboard() {
                   disabled={refreshing}
                   title="Refresh"
                   aria-label="Refresh"
-                  className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 shrink-0"
+                  className="p-2 rounded-lg border border-line text-muted hover:bg-canvas disabled:opacity-50 shrink-0"
                 >
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
                 </button>
@@ -2061,12 +2061,12 @@ export default function PlatformDashboard() {
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     {tiles.map((tile, i) => (
                       <Reveal key={tile.label} index={i}>
-                        <div className="bg-white rounded-xl border border-slate-200 p-4">
+                        <div className="bg-surface rounded-xl border border-line p-4">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: tile.bg }}>
                             <tile.icon size={16} style={{ color: tile.accent }} />
                           </div>
-                          <p className="text-2xl font-bold text-slate-900 tabular-nums">{tile.value}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{tile.label}</p>
+                          <p className="text-2xl font-bold text-fg tabular-nums">{tile.value}</p>
+                          <p className="text-xs text-muted mt-0.5">{tile.label}</p>
                         </div>
                       </Reveal>
                     ))}
@@ -2074,16 +2074,16 @@ export default function PlatformDashboard() {
                 );
               })()}
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-5">
-                <h2 className="font-semibold text-slate-900 mb-1">Recent attendee signups</h2>
-                <p className="text-xs text-slate-500 mb-4">The most recent accounts created in the mobile app.</p>
+              <div className="bg-surface rounded-2xl border border-line p-5">
+                <h2 className="font-semibold text-fg mb-1">Recent attendee signups</h2>
+                <p className="text-xs text-muted mb-4">The most recent accounts created in the mobile app.</p>
                 {attendeeAccounts.length === 0 ? (
-                  <p className="text-sm text-slate-400 py-6 text-center">No attendee accounts yet.</p>
+                  <p className="text-sm text-subtle py-6 text-center">No attendee accounts yet.</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-left text-xs text-slate-400 uppercase tracking-wide border-b border-slate-100">
+                        <tr className="text-left text-xs text-subtle uppercase tracking-wide border-b border-line-soft">
                           <th className="pb-2 pr-4 font-medium">Name</th>
                           <th className="pb-2 pr-4 font-medium">Email</th>
                           <th className="pb-2 font-medium">Signed up</th>
@@ -2091,10 +2091,10 @@ export default function PlatformDashboard() {
                       </thead>
                       <tbody>
                         {attendeeAccounts.slice(0, 25).map((a) => (
-                          <tr key={a.id} className="border-b border-slate-50 last:border-0">
-                            <td className="py-2.5 pr-4 text-slate-900">{a.fullName || "—"}</td>
-                            <td className="py-2.5 pr-4 text-slate-600">{a.email}</td>
-                            <td className="py-2.5 text-slate-500">{new Date(a.createdAt).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}</td>
+                          <tr key={a.id} className="border-b border-line-soft last:border-0">
+                            <td className="py-2.5 pr-4 text-fg">{a.fullName || "—"}</td>
+                            <td className="py-2.5 pr-4 text-fg-3">{a.email}</td>
+                            <td className="py-2.5 text-muted">{new Date(a.createdAt).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -2111,8 +2111,8 @@ export default function PlatformDashboard() {
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="font-display text-2xl text-slate-900">Managed Events</h1>
-                  <p className="text-slate-500 text-sm mt-0.5">Quote requests from the &quot;let us run it for you&quot; page — reach out and update their status here.</p>
+                  <h1 className="font-display text-2xl text-fg">Managed Events</h1>
+                  <p className="text-muted text-sm mt-0.5">Quote requests from the &quot;let us run it for you&quot; page — reach out and update their status here.</p>
                 </div>
                 <button
                   type="button"
@@ -2120,7 +2120,7 @@ export default function PlatformDashboard() {
                   disabled={refreshing}
                   title="Refresh"
                   aria-label="Refresh"
-                  className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 shrink-0"
+                  className="p-2 rounded-lg border border-line text-muted hover:bg-canvas disabled:opacity-50 shrink-0"
                 >
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
                 </button>
@@ -2133,7 +2133,7 @@ export default function PlatformDashboard() {
                     type="button"
                     onClick={() => setManagedStatusFilter(s)}
                     className={`px-3.5 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
-                      managedStatusFilter === s ? "bg-brand-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
+                      managedStatusFilter === s ? "bg-brand-600 text-white" : "bg-surface border border-line text-fg-3 hover:border-line-strong"
                     }`}
                   >
                     {s}
@@ -2144,24 +2144,24 @@ export default function PlatformDashboard() {
               {(() => {
                 const filteredRequests = managedRequests.filter((r) => managedStatusFilter === "all" || r.status === managedStatusFilter);
                 const statusPill: Record<ManagedRequestRow["status"], string> = {
-                  new: "bg-amber-100 text-amber-700",
-                  contacted: "bg-blue-100 text-blue-700",
-                  quoted: "bg-brand-100 text-brand-700",
-                  closed: "bg-slate-100 text-slate-500",
+                  new: "bg-amber-500/15 text-amber-300",
+                  contacted: "bg-blue-500/15 text-blue-300",
+                  quoted: "bg-brand-500/15 text-brand-500",
+                  closed: "bg-fill text-muted",
                 };
                 return filteredRequests.length === 0 ? (
-                  <div className="text-center py-16 text-slate-400 bg-white rounded-xl border border-slate-200">
+                  <div className="text-center py-16 text-subtle bg-surface rounded-xl border border-line">
                     <ClipboardList size={32} className="mx-auto mb-3 opacity-40" />
                     <p>{managedRequests.length === 0 ? "No managed-event requests yet." : "No requests match this filter."}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {filteredRequests.map((req) => (
-                      <div key={req.id} className="bg-white rounded-xl border border-slate-200 p-5">
+                      <div key={req.id} className="bg-surface rounded-xl border border-line p-5">
                         <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                           <div className="min-w-0">
-                            <p className="font-semibold text-slate-900">{req.event_name}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">
+                            <p className="font-semibold text-fg">{req.event_name}</p>
+                            <p className="text-xs text-subtle mt-0.5">
                               Submitted {new Date(req.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                             </p>
                           </div>
@@ -2179,44 +2179,44 @@ export default function PlatformDashboard() {
                           </select>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-3">
-                          <p className="flex items-center gap-1.5 text-slate-600">
-                            <Mail size={13} className="text-slate-400 shrink-0" />
-                            <a href={`mailto:${req.contact_email}`} className="hover:text-brand-600 hover:underline truncate">
+                          <p className="flex items-center gap-1.5 text-fg-3">
+                            <Mail size={13} className="text-subtle shrink-0" />
+                            <a href={`mailto:${req.contact_email}`} className="hover:text-brand-500 hover:underline truncate">
                               {req.contact_name} — {req.contact_email}
                             </a>
                           </p>
                           {req.contact_phone && (
-                            <p className="flex items-center gap-1.5 text-slate-600">
-                              <Phone size={13} className="text-slate-400 shrink-0" />
-                              <a href={`tel:${req.contact_phone}`} className="hover:text-brand-600 hover:underline">
+                            <p className="flex items-center gap-1.5 text-fg-3">
+                              <Phone size={13} className="text-subtle shrink-0" />
+                              <a href={`tel:${req.contact_phone}`} className="hover:text-brand-500 hover:underline">
                                 {req.contact_phone}
                               </a>
                             </p>
                           )}
                           {req.organization_name && (
-                            <p className="flex items-center gap-1.5 text-slate-600">
-                              <Building2 size={13} className="text-slate-400 shrink-0" />
+                            <p className="flex items-center gap-1.5 text-fg-3">
+                              <Building2 size={13} className="text-subtle shrink-0" />
                               {req.organization_name}
                             </p>
                           )}
-                          <p className="flex items-center gap-1.5 text-slate-600">
-                            <MapPin size={13} className="text-slate-400 shrink-0" />
+                          <p className="flex items-center gap-1.5 text-fg-3">
+                            <MapPin size={13} className="text-subtle shrink-0" />
                             {req.city}
                           </p>
                           {req.event_date && (
-                            <p className="flex items-center gap-1.5 text-slate-600">
-                              <Calendar size={13} className="text-slate-400 shrink-0" />
+                            <p className="flex items-center gap-1.5 text-fg-3">
+                              <Calendar size={13} className="text-subtle shrink-0" />
                               {new Date(req.event_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                             </p>
                           )}
                           {req.expected_attendees && (
-                            <p className="flex items-center gap-1.5 text-slate-600">
-                              <Users2 size={13} className="text-slate-400 shrink-0" />
+                            <p className="flex items-center gap-1.5 text-fg-3">
+                              <Users2 size={13} className="text-subtle shrink-0" />
                               {req.expected_attendees} expected
                             </p>
                           )}
                         </div>
-                        {req.message && <p className="text-sm text-slate-500 leading-relaxed pt-3 border-t border-slate-100">{req.message}</p>}
+                        {req.message && <p className="text-sm text-muted leading-relaxed pt-3 border-t border-line-soft">{req.message}</p>}
                       </div>
                     ))}
                   </div>
@@ -2229,8 +2229,8 @@ export default function PlatformDashboard() {
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="font-display text-2xl text-slate-900">Payouts</h1>
-                  <p className="text-slate-500 text-sm mt-0.5">Every org&apos;s bank account, and any request to change one on file.</p>
+                  <h1 className="font-display text-2xl text-fg">Payouts</h1>
+                  <p className="text-muted text-sm mt-0.5">Every org&apos;s bank account, and any request to change one on file.</p>
                 </div>
                 <button
                   type="button"
@@ -2238,7 +2238,7 @@ export default function PlatformDashboard() {
                   disabled={refreshing}
                   title="Refresh"
                   aria-label="Refresh"
-                  className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 shrink-0"
+                  className="p-2 rounded-lg border border-line text-muted hover:bg-canvas disabled:opacity-50 shrink-0"
                 >
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
                 </button>
@@ -2248,21 +2248,21 @@ export default function PlatformDashboard() {
                 const pending = orgs.filter((o) => o.payout_change_status === "requested");
                 return (
                   <div className="mb-6">
-                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2.5">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-subtle mb-2.5">
                       Pending change requests {pending.length > 0 && `(${pending.length})`}
                     </h2>
                     {pending.length === 0 ? (
-                      <div className="text-center py-10 text-slate-400 bg-white rounded-xl border border-slate-200">
+                      <div className="text-center py-10 text-subtle bg-surface rounded-xl border border-line">
                         <Clock size={26} className="mx-auto mb-2 opacity-40" />
                         <p className="text-sm">No pending payout change requests.</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
                         {pending.map((org) => (
-                          <div key={org.id} className="bg-white rounded-xl border border-amber-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                          <div key={org.id} className="bg-surface rounded-xl border border-amber-500/30 p-4 flex flex-wrap items-center justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="font-semibold text-slate-900">{org.name}</p>
-                              <p className="text-xs text-slate-500 mt-0.5">
+                              <p className="font-semibold text-fg">{org.name}</p>
+                              <p className="text-xs text-muted mt-0.5">
                                 Currently {org.payout_bank_name || "no bank"} · {revealedAccountNumbers[org.id] || org.payout_account_number_masked || "—"} — requested{" "}
                                 {org.payout_change_requested_at
                                   ? new Date(org.payout_change_requested_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -2286,41 +2286,41 @@ export default function PlatformDashboard() {
                 );
               })()}
 
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2.5">All organizations</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-subtle mb-2.5">All organizations</h2>
               {orgs.length === 0 ? (
-                <div className="text-center py-16 text-slate-400 bg-white rounded-xl border border-slate-200">
+                <div className="text-center py-16 text-subtle bg-surface rounded-xl border border-line">
                   <Landmark size={32} className="mx-auto mb-3 opacity-40" />
                   <p>No organizations yet</p>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="bg-surface rounded-xl border border-line overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-slate-50 border-b border-slate-200">
+                      <thead className="bg-canvas border-b border-line">
                         <tr>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Organization</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Bank</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Account number</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Account name</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">Status</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Organization</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Bank</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Account number</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Account name</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Status</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-line-soft">
                         {orgs.map((org) => {
                           const statusPill = !org.paystack_subaccount_code
-                            ? { label: "Not set up", className: "bg-slate-100 text-slate-500" }
+                            ? { label: "Not set up", className: "bg-fill text-muted" }
                             : org.payout_change_status === "requested"
-                              ? { label: "Change requested", className: "bg-amber-100 text-amber-700" }
+                              ? { label: "Change requested", className: "bg-amber-500/15 text-amber-300" }
                               : org.payout_change_status === "approved"
-                                ? { label: "Change approved", className: "bg-brand-100 text-brand-700" }
-                                : { label: "Connected", className: "bg-teal-100 text-teal-700" };
+                                ? { label: "Change approved", className: "bg-brand-500/15 text-brand-500" }
+                                : { label: "Connected", className: "bg-teal-500/15 text-teal-300" };
                           return (
-                            <tr key={org.id} className="hover:bg-slate-50">
+                            <tr key={org.id} className="hover:bg-canvas">
                               <td className="px-4 py-3 max-w-[200px]">
-                                <p className="font-medium text-slate-900 truncate">{org.name}</p>
+                                <p className="font-medium text-fg truncate">{org.name}</p>
                               </td>
-                              <td className="px-4 py-3 text-slate-600">{org.payout_bank_name || <span className="text-slate-300">—</span>}</td>
-                              <td className="px-4 py-3 text-slate-600 font-mono text-xs">
+                              <td className="px-4 py-3 text-fg-3">{org.payout_bank_name || <span className="text-faint">—</span>}</td>
+                              <td className="px-4 py-3 text-fg-3 font-mono text-xs">
                                 {revealedAccountNumbers[org.id] ? (
                                   revealedAccountNumbers[org.id]
                                 ) : org.payout_account_number_masked ? (
@@ -2330,7 +2330,7 @@ export default function PlatformDashboard() {
                                       type="button"
                                       onClick={() => revealAccountNumber(org.id)}
                                       disabled={revealingOrgId === org.id}
-                                      className="font-sans text-[11px] font-medium text-brand-600 hover:underline disabled:opacity-50"
+                                      className="font-sans text-[11px] font-medium text-brand-500 hover:underline disabled:opacity-50"
                                     >
                                       {revealingOrgId === org.id ? "…" : "Reveal"}
                                     </button>
@@ -2339,8 +2339,8 @@ export default function PlatformDashboard() {
                                   "—"
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-slate-600 truncate max-w-[180px]">
-                                {org.payout_account_name || <span className="text-slate-300">—</span>}
+                              <td className="px-4 py-3 text-fg-3 truncate max-w-[180px]">
+                                {org.payout_account_name || <span className="text-faint">—</span>}
                               </td>
                               <td className="px-4 py-3">
                                 <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusPill.className}`}>{statusPill.label}</span>
@@ -2359,21 +2359,21 @@ export default function PlatformDashboard() {
           {view === "maintenance" && (
             <>
               <div className="mb-6">
-                <h1 className="font-display text-2xl text-slate-900">Maintenance</h1>
-                <p className="text-slate-500 text-sm mt-0.5">
+                <h1 className="font-display text-2xl text-fg">Maintenance</h1>
+                <p className="text-muted text-sm mt-0.5">
                   Take the site offline for every visitor except platform admins, and customize what they see while it&apos;s down.
                 </p>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6">
+              <div className="bg-surface rounded-2xl border border-line p-5 mb-6">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${maintenanceMode ? "bg-rose-100" : "bg-emerald-100"}`}>
-                      <Wrench size={18} className={maintenanceMode ? "text-rose-600" : "text-emerald-600"} />
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${maintenanceMode ? "bg-rose-500/15" : "bg-emerald-500/15"}`}>
+                      <Wrench size={18} className={maintenanceMode ? "text-rose-300" : "text-emerald-300"} />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-slate-900">{maintenanceMode ? "Maintenance mode is ON" : "Site is live"}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="font-semibold text-fg">{maintenanceMode ? "Maintenance mode is ON" : "Site is live"}</p>
+                      <p className="text-xs text-muted mt-0.5">
                         {maintenanceMode
                           ? "Every page except /platform is showing the maintenance page below."
                           : "Visitors see the normal site. Turn this on before making risky changes."}
@@ -2391,14 +2391,14 @@ export default function PlatformDashboard() {
                     {savingMaintenance ? "Saving…" : maintenanceMode ? "Turn off maintenance mode" : "Turn on maintenance mode"}
                   </button>
                 </div>
-                {maintenanceError && <p className="text-xs text-rose-600 mt-3">{maintenanceError}</p>}
+                {maintenanceError && <p className="text-xs text-rose-300 mt-3">{maintenanceError}</p>}
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-5">
+              <div className="bg-surface rounded-2xl border border-line p-5">
                 <div className="flex items-center justify-between gap-3 mb-1">
-                  <h2 className="font-semibold text-slate-900">Maintenance page</h2>
+                  <h2 className="font-semibold text-fg">Maintenance page</h2>
                   <div className="flex items-center gap-3 shrink-0">
-                    <a href="/maintenance" target="_blank" rel="noreferrer" className="text-xs font-medium text-slate-500 hover:text-slate-700 hover:underline">
+                    <a href="/maintenance" target="_blank" rel="noreferrer" className="text-xs font-medium text-muted hover:text-fg-2 hover:underline">
                       Preview
                     </a>
                     {!editingMaintenanceCopy && (
@@ -2410,33 +2410,33 @@ export default function PlatformDashboard() {
                           setMaintenanceError("");
                           setEditingMaintenanceCopy(true);
                         }}
-                        className="text-xs font-medium text-brand-600 hover:underline"
+                        className="text-xs font-medium text-brand-500 hover:underline"
                       >
                         Edit
                       </button>
                     )}
                   </div>
                 </div>
-                <p className="text-xs text-slate-500 mb-4">What visitors see at any blocked URL while maintenance mode is on.</p>
+                <p className="text-xs text-muted mb-4">What visitors see at any blocked URL while maintenance mode is on.</p>
 
                 {editingMaintenanceCopy ? (
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Title</label>
+                      <label className="block text-xs font-medium text-muted mb-1">Title</label>
                       <input
                         value={maintenanceTitleDraft}
                         onChange={(e) => setMaintenanceTitleDraft(e.target.value)}
                         autoFocus
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                        className="w-full px-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Message</label>
+                      <label className="block text-xs font-medium text-muted mb-1">Message</label>
                       <textarea
                         value={maintenanceMessageDraft}
                         onChange={(e) => setMaintenanceMessageDraft(e.target.value)}
                         rows={3}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
+                        className="w-full px-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
                       />
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -2455,17 +2455,17 @@ export default function PlatformDashboard() {
                           setMaintenanceError("");
                         }}
                         disabled={savingMaintenance}
-                        className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 disabled:opacity-60"
+                        className="px-3 py-2 rounded-lg text-sm font-medium text-fg-3 border border-line hover:bg-canvas disabled:opacity-60"
                       >
                         Cancel
                       </button>
-                      {maintenanceError && <p className="w-full text-xs text-rose-600">{maintenanceError}</p>}
+                      {maintenanceError && <p className="w-full text-xs text-rose-300">{maintenanceError}</p>}
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-lg bg-slate-50 border border-slate-200 p-4">
-                    <p className="font-display text-base text-slate-900 mb-1">{maintenanceTitle}</p>
-                    <p className="text-sm text-slate-500 leading-relaxed">{maintenanceMessage}</p>
+                  <div className="rounded-lg bg-canvas border border-line p-4">
+                    <p className="font-display text-base text-fg mb-1">{maintenanceTitle}</p>
+                    <p className="text-sm text-muted leading-relaxed">{maintenanceMessage}</p>
                   </div>
                 )}
               </div>
@@ -2475,17 +2475,17 @@ export default function PlatformDashboard() {
           {view === "admins" && (
             <>
               <div className="mb-6">
-                <h1 className="font-display text-2xl text-slate-900">Platform admins</h1>
-                <p className="text-slate-500 text-sm mt-0.5">People with this same super-admin access, separate from any organization account.</p>
+                <h1 className="font-display text-2xl text-fg">Platform admins</h1>
+                <p className="text-muted text-sm mt-0.5">People with this same super-admin access, separate from any organization account.</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-                <div className="bg-white rounded-xl border border-slate-200 p-4">
-                  <h2 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
+                <div className="bg-surface rounded-xl border border-line p-4">
+                  <h2 className="text-sm font-semibold text-fg mb-1 flex items-center gap-1.5">
                     <UserPlus size={14} />
                     Grant an existing account
                   </h2>
-                  <p className="text-xs text-slate-400 mb-3">
+                  <p className="text-xs text-subtle mb-3">
                     For someone who already has a Supabase Auth account (e.g. signed up as an organization) — this just grants that account platform
                     access.
                   </p>
@@ -2496,7 +2496,7 @@ export default function PlatformDashboard() {
                       onChange={(e) => setNewAdminEmail(e.target.value)}
                       placeholder="teammate@email.com"
                       required
-                      className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                      className="flex-1 px-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
                     />
                     <button
                       type="submit"
@@ -2508,19 +2508,19 @@ export default function PlatformDashboard() {
                     </button>
                   </form>
                   {addAdminError && (
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm mt-3">
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm mt-3">
                       <AlertCircle size={15} className="mt-0.5 shrink-0" />
                       {addAdminError}
                     </div>
                   )}
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 p-4">
-                  <h2 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
+                <div className="bg-surface rounded-xl border border-line p-4">
+                  <h2 className="text-sm font-semibold text-fg mb-1 flex items-center gap-1.5">
                     <KeyRound size={14} />
                     Create a new admin account
                   </h2>
-                  <p className="text-xs text-slate-400 mb-3">Creates a brand-new sign-in for someone who doesn&apos;t have an account yet, with platform access already granted.</p>
+                  <p className="text-xs text-subtle mb-3">Creates a brand-new sign-in for someone who doesn&apos;t have an account yet, with platform access already granted.</p>
                   <form onSubmit={handleCreateAccount} className="space-y-2">
                     <input
                       type="email"
@@ -2528,7 +2528,7 @@ export default function PlatformDashboard() {
                       onChange={(e) => setNewAccountEmail(e.target.value)}
                       placeholder="newadmin@email.com"
                       required
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                      className="w-full px-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
                     />
                     <div className="flex flex-col sm:flex-row gap-2">
                       <input
@@ -2538,7 +2538,7 @@ export default function PlatformDashboard() {
                         placeholder="Temporary password (8+ characters)"
                         required
                         minLength={8}
-                        className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                        className="flex-1 px-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
                       />
                       <button
                         type="submit"
@@ -2551,13 +2551,13 @@ export default function PlatformDashboard() {
                     </div>
                   </form>
                   {createAccountError && (
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm mt-3">
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm mt-3">
                       <AlertCircle size={15} className="mt-0.5 shrink-0" />
                       {createAccountError}
                     </div>
                   )}
                   {createAccountSuccess && (
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-teal-50 text-teal-700 text-sm mt-3">
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-teal-500/10 text-teal-300 text-sm mt-3">
                       <Check size={15} className="mt-0.5 shrink-0" />
                       {createAccountSuccess}
                     </div>
@@ -2565,22 +2565,22 @@ export default function PlatformDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 p-4">
+              <div className="bg-surface rounded-xl border border-line p-4">
                 {admins.length === 0 ? (
-                  <p className="text-sm text-slate-400 py-4 text-center">No platform admins yet.</p>
+                  <p className="text-sm text-subtle py-4 text-center">No platform admins yet.</p>
                 ) : (
-                  <div className="divide-y divide-slate-100">
+                  <div className="divide-y divide-line-soft">
                     {admins.map((admin, i) => (
                       <Reveal key={admin.user_id} index={i}>
                         <div className="flex items-center justify-between py-2.5 gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm text-slate-900 truncate flex items-center gap-2">
+                            <p className="text-sm text-fg truncate flex items-center gap-2">
                               {admin.email || admin.user_id}
                               {admin.user_id === currentUserId && (
-                                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">You</span>
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-muted bg-fill px-2 py-0.5 rounded-full">You</span>
                               )}
                             </p>
-                            <p className="text-xs text-slate-400">
+                            <p className="text-xs text-subtle">
                               added {new Date(admin.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                             </p>
                           </div>
@@ -2595,7 +2595,7 @@ export default function PlatformDashboard() {
                                   ? "Can't remove the last remaining platform admin"
                                   : "Remove platform admin access"
                             }
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-40 disabled:hover:bg-transparent shrink-0"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-300 hover:bg-rose-500/10 disabled:opacity-40 disabled:hover:bg-transparent shrink-0"
                           >
                             <Trash2 size={13} />
                             Remove
@@ -2612,8 +2612,8 @@ export default function PlatformDashboard() {
           {view === "security" && (
             <>
               <div className="mb-6">
-                <h1 className="font-display text-2xl text-slate-900">Security</h1>
-                <p className="text-slate-500 text-sm mt-0.5">Manage two-factor authentication for your own platform admin account.</p>
+                <h1 className="font-display text-2xl text-fg">Security</h1>
+                <p className="text-muted text-sm mt-0.5">Manage two-factor authentication for your own platform admin account.</p>
               </div>
               <div className="max-w-lg">
                 <TwoFactorSettings />
@@ -2627,17 +2627,17 @@ export default function PlatformDashboard() {
       {orgPendingDelete && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => (deletingOrgId ? null : setOrgPendingDelete(null))} />
-          <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
-            <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
+          <div className="relative bg-surface rounded-2xl shadow-xl max-w-sm w-full p-6">
+            <div className="w-10 h-10 rounded-full bg-rose-500/15 text-rose-300 flex items-center justify-center mb-4">
               <Trash2 size={18} />
             </div>
-            <h2 className="font-display text-lg text-slate-900 mb-1.5">Delete {orgPendingDelete.name}?</h2>
-            <p className="text-sm text-slate-500 mb-4">
+            <h2 className="font-display text-lg text-fg mb-1.5">Delete {orgPendingDelete.name}?</h2>
+            <p className="text-sm text-muted mb-4">
               This permanently deletes the organization and everything under it — events, leads, registrations, staff, and destinations — and the
               owner&apos;s login itself, so this email can be used to sign up again. This can&apos;t be undone.
             </p>
             {deleteError && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm mb-4">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm mb-4">
                 <AlertCircle size={15} className="mt-0.5 shrink-0" />
                 {deleteError}
               </div>
@@ -2647,7 +2647,7 @@ export default function PlatformDashboard() {
                 type="button"
                 onClick={() => setOrgPendingDelete(null)}
                 disabled={!!deletingOrgId}
-                className="flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-700 border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium text-fg-2 border border-line hover:bg-canvas disabled:opacity-50"
               >
                 Cancel
               </button>

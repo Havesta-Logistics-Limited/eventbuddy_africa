@@ -44,12 +44,12 @@ function VerticalBars({ items }: { items: { label: string; value: number; color:
         return (
           <Reveal key={item.label} index={i}>
             <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end min-w-[64px]">
-              <span className={`text-sm font-semibold ${isEmpty ? "text-slate-400" : "text-slate-900"}`}>{item.value}</span>
+              <span className={`text-sm font-semibold ${isEmpty ? "text-subtle" : "text-fg"}`}>{item.value}</span>
               <div
-                className={`w-full max-w-[72px] rounded-t-lg transition-all duration-500 ${isEmpty ? "bg-slate-100 border border-dashed border-slate-200" : ""}`}
+                className={`w-full max-w-[72px] rounded-t-lg transition-all duration-500 ${isEmpty ? "bg-fill border border-dashed border-line" : ""}`}
                 style={isEmpty ? { height: "10px" } : { height: `${Math.max((item.value / max) * 112, 6)}px`, background: item.color }}
               />
-              <span className="text-xs text-slate-500 text-center">{item.label}</span>
+              <span className="text-xs text-muted text-center">{item.label}</span>
             </div>
           </Reveal>
         );
@@ -75,12 +75,12 @@ function BarList({
       {rows.map((r, i) => (
         <Reveal key={r.key} index={i}>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="flex items-center gap-1.5 text-sm text-slate-600 truncate mr-2">{r.label}</span>
-            <span className="text-sm font-semibold text-slate-900 shrink-0">
-              {r.count} <span className="text-xs font-normal text-slate-400">({pct(r.count, total)}%)</span>
+            <span className="flex items-center gap-1.5 text-sm text-fg-3 truncate mr-2">{r.label}</span>
+            <span className="text-sm font-semibold text-fg shrink-0">
+              {r.count} <span className="text-xs font-normal text-subtle">({pct(r.count, total)}%)</span>
             </span>
           </div>
-          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-2.5 bg-fill rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(r.count / max) * 100}%`, background: r.color ?? color }} />
           </div>
         </Reveal>
@@ -145,9 +145,9 @@ export function EventAnalytics({
     label: v === "Yes" ? "Ready" : v === "Registered" ? "Registered" : "Not started",
     count: leads.filter((l) => l.takenIELTS === v).length,
     icon: v === "Yes" ? CheckCircle2 : v === "Registered" ? Clock : MinusCircle,
-    textColor: v === "Yes" ? "text-teal-700" : v === "Registered" ? "text-amber-700" : "text-slate-500",
-    iconColor: v === "Yes" ? "text-teal-600" : v === "Registered" ? "text-amber-500" : "text-slate-400",
-    bg: v === "Yes" ? "bg-teal-50 border-teal-100" : v === "Registered" ? "bg-amber-50 border-amber-100" : "bg-slate-50 border-slate-150",
+    textColor: v === "Yes" ? "text-teal-300" : v === "Registered" ? "text-amber-300" : "text-muted",
+    iconColor: v === "Yes" ? "text-teal-300" : v === "Registered" ? "text-amber-400" : "text-subtle",
+    bg: v === "Yes" ? "bg-teal-500/10 border-teal-500/20" : v === "Registered" ? "bg-amber-500/10 border-amber-500/20" : "bg-canvas border-line-soft",
   }));
   const ieltsMissing = leads.filter((l) => !l.takenIELTS).length;
   if (ieltsMissing > 0) {
@@ -156,9 +156,9 @@ export function EventAnalytics({
       label: "No Data",
       count: ieltsMissing,
       icon: MinusCircle,
-      textColor: "text-slate-400",
-      iconColor: "text-slate-300",
-      bg: "bg-slate-50 border-slate-150",
+      textColor: "text-subtle",
+      iconColor: "text-faint",
+      bg: "bg-canvas border-line-soft",
     });
   }
 
@@ -211,17 +211,17 @@ export function EventAnalytics({
 
   return (
     <div className="mb-6">
-      <h2 className="font-display text-lg text-slate-900 mb-4">Analytics</h2>
+      <h2 className="font-display text-lg text-fg mb-4">Analytics</h2>
 
       <div className={`grid grid-cols-2 ${statsLgCols} gap-4 mb-5`}>
         {stats.map((s, i) => (
           <Reveal key={s.label} index={i}>
-            <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/85 hover:shadow-md active:translate-y-0 active:scale-[0.98]">
+            <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-surface/85 hover:shadow-md active:translate-y-0 active:scale-[0.98]">
               <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: s.bg }}>
                 <s.icon size={18} style={{ color: s.accent }} />
               </div>
-              <p className="text-2xl font-bold text-slate-900 leading-none">{s.value}</p>
-              <p className="text-xs text-slate-500 mt-1.5">{s.label}</p>
+              <p className="text-2xl font-bold text-fg leading-none">{s.value}</p>
+              <p className="text-xs text-muted mt-1.5">{s.label}</p>
             </div>
           </Reveal>
         ))}
@@ -229,24 +229,24 @@ export function EventAnalytics({
 
       {registrations.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
+          <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <Ticket size={16} className="text-brand-600" />
-              <h3 className="font-semibold text-slate-800">Registrations &amp; Participants</h3>
+              <Ticket size={16} className="text-brand-500" />
+              <h3 className="font-semibold text-fg">Registrations &amp; Participants</h3>
             </div>
             <VerticalBars
               items={[
                 { label: "Registrations", value: registrations.length, color: "#6D28D9" },
-                { label: `Participants (${conversion}%)`, value: participants.length, color: "#0d7c6e" },
+                { label: `Participants (${conversion}%)`, value: participants.length, color: "#5eead4" },
               ]}
             />
           </div>
 
           {registrationStatusRows.length > 0 && (
-            <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
+            <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
-                <ClipboardList size={16} className="text-brand-600" />
-                <h3 className="font-semibold text-slate-800">Registration Status</h3>
+                <ClipboardList size={16} className="text-brand-500" />
+                <h3 className="font-semibold text-fg">Registration Status</h3>
               </div>
               <BarList
                 rows={registrationStatusRows.map((r) => ({ key: r.key, label: r.label, count: r.count, color: r.color }))}
@@ -259,19 +259,19 @@ export function EventAnalytics({
       )}
 
       {isEducationFair && leads.length === 0 && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-dashed border-slate-300 p-8 text-center mb-5">
-          <Users size={24} className="mx-auto mb-2 text-slate-300" />
-          <p className="text-sm font-medium text-slate-500">No leads captured for this event yet</p>
-          <p className="text-xs text-slate-400 mt-1">Destination, study level, and qualification breakdowns will appear here once staff start capturing leads.</p>
+        <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-dashed border-line-strong p-8 text-center mb-5">
+          <Users size={24} className="mx-auto mb-2 text-faint" />
+          <p className="text-sm font-medium text-muted">No leads captured for this event yet</p>
+          <p className="text-xs text-subtle mt-1">Destination, study level, and qualification breakdowns will appear here once staff start capturing leads.</p>
         </div>
       )}
 
       {isEducationFair && leads.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
+          <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <Globe2 size={16} className="text-brand-600" />
-              <h3 className="font-semibold text-slate-800">Leads by Destination</h3>
+              <Globe2 size={16} className="text-brand-500" />
+              <h3 className="font-semibold text-fg">Leads by Destination</h3>
             </div>
             <BarList
               rows={[
@@ -292,10 +292,10 @@ export function EventAnalytics({
             />
           </div>
 
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
+          <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <GraduationCap size={16} className="text-brand-600" />
-              <h3 className="font-semibold text-slate-800">Preferred Study Level</h3>
+              <GraduationCap size={16} className="text-brand-500" />
+              <h3 className="font-semibold text-fg">Preferred Study Level</h3>
             </div>
             <BarList
               rows={[
@@ -307,8 +307,8 @@ export function EventAnalytics({
             />
 
             <div className="flex items-center gap-2 mb-4 mt-6">
-              <CheckCircle2 size={16} className="text-brand-600" />
-              <h3 className="font-semibold text-slate-800">IELTS Status</h3>
+              <CheckCircle2 size={16} className="text-brand-500" />
+              <h3 className="font-semibold text-fg">IELTS Status</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {byIELTS.map(({ val, label, count, icon: Icon, bg, textColor, iconColor }) => (
@@ -325,33 +325,33 @@ export function EventAnalytics({
 
       {isEducationFair && leads.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
+          <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <Award size={16} className="text-brand-600" />
-              <h3 className="font-semibold text-slate-800">Highest Qualification</h3>
+              <Award size={16} className="text-brand-500" />
+              <h3 className="font-semibold text-fg">Highest Qualification</h3>
             </div>
             <VerticalBars items={[...byEducation, ...(educationMissing > 0 ? [{ label: "No Data", value: educationMissing, color: NO_DATA_COLOR_VERTICAL }] : [])]} />
           </div>
 
-          <div className={`bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm ${byUniversity.length === 0 ? "flex flex-col items-center justify-center text-center" : ""}`}>
+          <div className={`bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-5 shadow-sm ${byUniversity.length === 0 ? "flex flex-col items-center justify-center text-center" : ""}`}>
             <div className="flex items-center gap-2 mb-4">
-              <Building2 size={16} className="text-brand-600" />
-              <h3 className="font-semibold text-slate-800">Leads by University</h3>
+              <Building2 size={16} className="text-brand-500" />
+              <h3 className="font-semibold text-fg">Leads by University</h3>
             </div>
             {byUniversity.length > 0 ? (
               <BarList rows={byUniversity.map(({ uni, count }) => ({ key: uni.id, count, label: uni.name }))} total={leads.length} color="#170821" />
             ) : (
-              <p className="text-sm text-slate-400 py-6">No leads have a university recorded yet.</p>
+              <p className="text-sm text-subtle py-6">No leads have a university recorded yet.</p>
             )}
           </div>
         </div>
       )}
 
       {isEducationFair && leads.length > 0 && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm mb-5">
+        <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-5 shadow-sm mb-5">
           <div className="flex items-center gap-2 mb-4">
-            <BookMarked size={16} className="text-brand-600" />
-            <h3 className="font-semibold text-slate-800">Top Courses</h3>
+            <BookMarked size={16} className="text-brand-500" />
+            <h3 className="font-semibold text-fg">Top Courses</h3>
           </div>
           <BarList
             rows={[
@@ -370,10 +370,10 @@ export function EventAnalytics({
             const total = options.reduce((sum, o) => sum + o.count, 0);
             return (
               <Reveal key={field.id} index={i}>
-                <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/70 p-5 shadow-sm">
+                <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-5 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
-                    <ListChecks size={16} className="text-brand-600" />
-                    <h3 className="font-semibold text-slate-800">{field.label || "Untitled question"}</h3>
+                    <ListChecks size={16} className="text-brand-500" />
+                    <h3 className="font-semibold text-fg">{field.label || "Untitled question"}</h3>
                   </div>
                   <BarList
                     rows={options.map((o) => ({ key: o.label, count: o.count, label: o.label }))}

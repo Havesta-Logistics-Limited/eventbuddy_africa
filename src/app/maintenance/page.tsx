@@ -39,7 +39,7 @@ export default async function MaintenancePage() {
           <Logo tone="white" height={17} />
         </div>
 
-        <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center mx-auto mb-6 animate-idle-float">
+        <div className="w-16 h-16 rounded-2xl bg-surface/10 border border-white/15 flex items-center justify-center mx-auto mb-6 animate-idle-float">
           <Wrench size={26} className="text-[#FF8AF5]" />
         </div>
 
@@ -50,7 +50,7 @@ export default async function MaintenancePage() {
           {[0, 1, 2].map((i) => (
             <span
               key={i}
-              className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse"
+              className="w-1.5 h-1.5 rounded-full bg-surface/40 animate-pulse"
               style={{ animationDelay: `${i * 200}ms`, animationDuration: "1.2s" }}
             />
           ))}

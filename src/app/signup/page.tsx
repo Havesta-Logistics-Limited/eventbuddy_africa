@@ -67,17 +67,17 @@ function SignupForm() {
 
   if (submittedEmail) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-canvas">
         <div className="w-full max-w-sm text-center">
-          <div className="w-14 h-14 rounded-2xl bg-brand-100 flex items-center justify-center mx-auto mb-5">
-            <MailCheck size={24} className="text-brand-600" />
+          <div className="w-14 h-14 rounded-2xl bg-brand-500/15 flex items-center justify-center mx-auto mb-5">
+            <MailCheck size={24} className="text-brand-500" />
           </div>
-          <h2 className="text-2xl font-semibold text-slate-900 mb-2">Check your email</h2>
-          <p className="text-slate-500 text-sm mb-8">
-            We&apos;ve sent a verification link to <span className="font-medium text-slate-700">{submittedEmail}</span>. Verify your email to
+          <h2 className="text-2xl font-semibold text-fg mb-2">Check your email</h2>
+          <p className="text-muted text-sm mb-8">
+            We&apos;ve sent a verification link to <span className="font-medium text-fg-2">{submittedEmail}</span>. Verify your email to
             activate your account — you won&apos;t be able to sign in until it&apos;s confirmed.
           </p>
-          <button type="button" onClick={() => router.push("/login")} className="text-sm font-medium text-brand-600 hover:underline">
+          <button type="button" onClick={() => router.push("/login")} className="text-sm font-medium text-brand-500 hover:underline">
             Back to sign in
           </button>
         </div>
@@ -86,8 +86,8 @@ function SignupForm() {
   }
 
   const fieldClass =
-    "w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-white transition-shadow";
-  const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
+    "w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-surface transition-shadow";
+  const labelClass = "block text-sm font-medium text-fg-2 mb-1.5";
 
   return (
     <div className="min-h-screen flex">
@@ -134,14 +134,14 @@ function SignupForm() {
       </div>
 
       {/* Right panel — matches login's p-6/bg-slate-50/max-w-sm form column exactly. */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
+      <div className="flex-1 flex items-center justify-center p-6 bg-canvas">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center justify-center mb-8">
             <Logo height={16} />
           </div>
 
-          <h2 className="text-2xl font-semibold text-slate-900 mb-1">Create your account</h2>
-          <p className="text-slate-500 text-sm mb-8">Set up your organization to start hosting events.</p>
+          <h2 className="text-2xl font-semibold text-fg mb-1">Create your account</h2>
+          <p className="text-muted text-sm mb-8">Set up your organization to start hosting events.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -165,7 +165,7 @@ function SignupForm() {
                 required
                 className={fieldClass}
               />
-              <p className="text-xs text-slate-400 mt-1">Shown to attendees, and used for your event links — e.g. eventbuddy.africa/your-org-name.</p>
+              <p className="text-xs text-subtle mt-1">Shown to attendees, and used for your event links — e.g. eventbuddy.africa/your-org-name.</p>
             </div>
             <div>
               <label className={labelClass}>Email address</label>
@@ -190,7 +190,7 @@ function SignupForm() {
                 <button
                   type="button"
                   onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-fg-3"
                   aria-label={showPw ? "Hide password" : "Show password"}
                 >
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -199,7 +199,7 @@ function SignupForm() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                 <AlertCircle size={15} className="mt-0.5 shrink-0" />
                 {error}
               </div>
@@ -213,23 +213,23 @@ function SignupForm() {
               {loading ? "Creating account…" : "Create account"}
             </button>
 
-            <p className="text-xs text-slate-400 text-center leading-relaxed">
+            <p className="text-xs text-subtle text-center leading-relaxed">
               By creating an account, you agree to eventbuddy&apos;s{" "}
-              <Link href="/terms" className="text-slate-500 hover:text-slate-700 underline underline-offset-2">
+              <Link href="/terms" className="text-muted hover:text-fg-2 underline underline-offset-2">
                 Terms &amp; Conditions
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" className="text-slate-500 hover:text-slate-700 underline underline-offset-2">
+              <Link href="/privacy" className="text-muted hover:text-fg-2 underline underline-offset-2">
                 Privacy Policy
               </Link>
               .
             </p>
           </form>
 
-          <div className="mt-8 p-4 rounded-xl bg-slate-100 text-xs text-slate-500 text-center">
+          <div className="mt-8 p-4 rounded-xl bg-fill text-xs text-muted text-center">
             <p>
               Already have an account?{" "}
-              <button type="button" onClick={() => router.push("/login")} className="text-brand-600 font-medium hover:underline">
+              <button type="button" onClick={() => router.push("/login")} className="text-brand-500 font-medium hover:underline">
                 Sign in
               </button>
             </p>

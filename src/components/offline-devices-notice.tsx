@@ -32,7 +32,7 @@ export function OfflineDevicesNotice({ staff }: { staff: StaffRecord[] }) {
   const total = holding.reduce((sum, s) => sum + (s.pendingLeadsCount ?? 0), 0);
 
   return (
-    <div className="rounded-xl border border-[#FBBF24]/50 bg-[#FFFBEB] p-4 mb-5">
+    <div className="rounded-xl border border-amber-500/35/50 bg-amber-500/10 p-4 mb-5">
       <div className="flex items-start gap-3">
         <CloudOff className="w-5 h-5 text-[#B45309] shrink-0 mt-0.5" aria-hidden="true" />
         <div className="min-w-0 flex-1">

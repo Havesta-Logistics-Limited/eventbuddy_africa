@@ -31,18 +31,18 @@ type DiscoverEvent = {
 
 const STATUS_LABEL = { upcoming: "Upcoming", active: "Happening now", completed: "Past" } as const;
 const STATUS_CLS = {
-  upcoming: "text-brand-600",
-  active: "text-emerald-600",
-  completed: "text-slate-400",
+  upcoming: "text-brand-500",
+  active: "text-emerald-300",
+  completed: "text-subtle",
 } as const;
 
 /** A booth-only event (no online registration — leads captured at the door)
  *  still gets listed for promotion/awareness, but "Free" would misleadingly
  *  imply there's something to sign up for. */
 function priceBadge(event: DiscoverEvent) {
-  if (!event.selfRegistrationEnabled) return { label: "Booth only", cls: "bg-amber-50 text-amber-700" };
-  if (event.minPriceNaira == null || event.minPriceNaira === 0) return { label: "Free", cls: "bg-slate-100 text-slate-600" };
-  return { label: `From ${formatNaira(event.minPriceNaira)}`, cls: "bg-emerald-50 text-emerald-700" };
+  if (!event.selfRegistrationEnabled) return { label: "Booth only", cls: "bg-amber-500/10 text-amber-300" };
+  if (event.minPriceNaira == null || event.minPriceNaira === 0) return { label: "Free", cls: "bg-fill text-fg-3" };
+  return { label: `From ${formatNaira(event.minPriceNaira)}`, cls: "bg-emerald-500/10 text-emerald-300" };
 }
 
 function isFree(minPriceNaira: number | null) {
@@ -117,8 +117,8 @@ export default function DiscoverEventsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
+    <div className="min-h-screen bg-canvas">
+      <header className="sticky top-0 z-30 bg-surface/70 backdrop-blur-md border-b border-line/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <span className="sm:hidden">
             <Logo height={18} />
@@ -127,13 +127,13 @@ export default function DiscoverEventsPage() {
             <Logo height={26} />
           </span>
           <nav className="flex items-center gap-3 sm:gap-6">
-            <Link href="/discover" className="text-sm font-medium text-brand-600 hidden sm:block">
+            <Link href="/discover" className="text-sm font-medium text-brand-500 hidden sm:block">
               Events
             </Link>
-            <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
+            <Link href="/pricing" className="text-sm font-medium text-fg-3 hover:text-fg hidden sm:block">
               Pricing
             </Link>
-            <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
+            <Link href="/login" className="text-sm font-medium text-fg-3 hover:text-fg">
               Sign in
             </Link>
             <Link href="/signup" className="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors">
@@ -144,19 +144,19 @@ export default function DiscoverEventsPage() {
       </header>
 
       <section className="max-w-3xl mx-auto px-6 pt-14 pb-8 text-center">
-        <h1 className="font-display text-4xl sm:text-5xl text-slate-900 mb-3">Find an event to attend</h1>
-        <p className="text-slate-500 max-w-xl mx-auto">Every live event running on eventbuddy — register or grab a ticket in a couple of taps.</p>
+        <h1 className="font-display text-4xl sm:text-5xl text-fg mb-3">Find an event to attend</h1>
+        <p className="text-muted max-w-xl mx-auto">Every live event running on eventbuddy — register or grab a ticket in a couple of taps.</p>
       </section>
 
       <section className="max-w-6xl mx-auto px-6 pb-24">
         <div className="relative max-w-md mx-auto mb-5">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subtle" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by event, organizer, or city…"
-            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-3 rounded-xl border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
           />
         </div>
 
@@ -169,13 +169,13 @@ export default function DiscoverEventsPage() {
               className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                 priceFilter === f.key
                   ? "bg-brand-600 border-brand-600 text-white"
-                  : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                  : "bg-surface border-line text-fg-3 hover:border-line-strong"
               }`}
             >
               {f.label}
             </button>
           ))}
-          <span className="w-px h-5 bg-slate-200 mx-1" />
+          <span className="w-px h-5 bg-fill-strong mx-1" />
           {TYPE_FILTERS.map((f) => (
             <button
               key={f.key}
@@ -184,13 +184,13 @@ export default function DiscoverEventsPage() {
               className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                 typeFilter === f.key
                   ? "bg-brand-600 border-brand-600 text-white"
-                  : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                  : "bg-surface border-line text-fg-3 hover:border-line-strong"
               }`}
             >
               {f.label}
             </button>
           ))}
-          <span className="w-px h-5 bg-slate-200 mx-1" />
+          <span className="w-px h-5 bg-fill-strong mx-1" />
           {WHEN_FILTERS.map((f) => (
             <button
               key={f.key}
@@ -199,7 +199,7 @@ export default function DiscoverEventsPage() {
               className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                 whenFilter === f.key
                   ? "bg-brand-600 border-brand-600 text-white"
-                  : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                  : "bg-surface border-line text-fg-3 hover:border-line-strong"
               }`}
             >
               {f.label}
@@ -207,12 +207,12 @@ export default function DiscoverEventsPage() {
           ))}
           {cities.length > 1 && (
             <>
-              <span className="w-px h-5 bg-slate-200 mx-1" />
+              <span className="w-px h-5 bg-fill-strong mx-1" />
               <select
                 value={cityFilter}
                 onChange={(e) => setCityFilter(e.target.value)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium border bg-white focus:outline-none focus:ring-2 focus:ring-brand-600 ${
-                  cityFilter === "all" ? "border-slate-200 text-slate-600" : "border-brand-600 text-brand-700"
+                className={`px-4 py-1.5 rounded-full text-sm font-medium border bg-surface focus:outline-none focus:ring-2 focus:ring-brand-600 ${
+                  cityFilter === "all" ? "border-line text-fg-3" : "border-brand-600 text-brand-500"
                 }`}
               >
                 <option value="all">All locations</option>
@@ -229,24 +229,24 @@ export default function DiscoverEventsPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="rounded-2xl border border-slate-200 bg-white overflow-hidden animate-pulse">
-                <div className="aspect-[16/9] bg-slate-100" />
+              <div key={i} className="rounded-2xl border border-line bg-surface overflow-hidden animate-pulse">
+                <div className="aspect-[16/9] bg-fill" />
                 <div className="p-5 space-y-2.5">
-                  <div className="h-4 bg-slate-100 rounded w-3/4" />
-                  <div className="h-3 bg-slate-100 rounded w-1/2" />
-                  <div className="h-3 bg-slate-100 rounded w-2/3" />
+                  <div className="h-4 bg-fill rounded w-3/4" />
+                  <div className="h-3 bg-fill rounded w-1/2" />
+                  <div className="h-3 bg-fill rounded w-2/3" />
                 </div>
               </div>
             ))}
           </div>
         ) : loadError ? (
-          <div className="text-center py-20 text-slate-400">
+          <div className="text-center py-20 text-subtle">
             <p>{loadError}</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-slate-400 bg-white rounded-2xl border border-slate-200">
+          <div className="text-center py-20 text-subtle bg-surface rounded-2xl border border-line">
             <CalendarX size={32} className="mx-auto mb-3 opacity-40" />
-            <p className="font-medium text-slate-500">{events.length === 0 ? "No live events right now" : "No events match your filters"}</p>
+            <p className="font-medium text-muted">{events.length === 0 ? "No live events right now" : "No events match your filters"}</p>
             <p className="text-sm mt-1">
               {events.length === 0 ? "Check back soon — new events are added all the time." : "Try adjusting your search or filters."}
             </p>
@@ -260,10 +260,10 @@ export default function DiscoverEventsPage() {
                 <Link
                   key={event.id}
                   href={event.slug ? `/${event.slug}` : `/${event.orgSlug}/events/${event.id}/register`}
-                  className="group rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-brand-600/40 hover:shadow-md transition-all animate-fade-in-up"
+                  className="group rounded-2xl border border-line bg-surface overflow-hidden hover:border-brand-600/40 hover:shadow-md transition-all animate-fade-in-up"
                   style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
                 >
-                  <div className="aspect-[16/9] bg-slate-100 relative overflow-hidden">
+                  <div className="aspect-[16/9] bg-fill relative overflow-hidden">
                     {event.coverImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={event.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -282,10 +282,10 @@ export default function DiscoverEventsPage() {
                       {status === "active" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
                       {STATUS_LABEL[status]}
                     </p>
-                    <h2 className="font-semibold text-slate-900 mb-2 line-clamp-2">{event.name}</h2>
-                    <div className="space-y-1.5 text-sm text-slate-500">
+                    <h2 className="font-semibold text-fg mb-2 line-clamp-2">{event.name}</h2>
+                    <div className="space-y-1.5 text-sm text-muted">
                       <p className="flex items-center gap-1.5 min-w-0">
-                        <Calendar size={13} className="text-slate-400 shrink-0" />
+                        <Calendar size={13} className="text-subtle shrink-0" />
                         <span className="truncate">
                           {formatDate(event.date)}
                           {event.startTime && ` · ${formatTime(event.startTime)}`}
@@ -293,12 +293,12 @@ export default function DiscoverEventsPage() {
                       </p>
                       {event.eventFormat === "virtual" ? (
                         <p className="flex items-center gap-1.5 min-w-0">
-                          <Video size={13} className="text-slate-400 shrink-0" />
+                          <Video size={13} className="text-subtle shrink-0" />
                           <span className="truncate">{event.virtualPlatform || "Virtual event"}</span>
                         </p>
                       ) : (
                         <p className="flex items-center gap-1.5 min-w-0">
-                          <MapPin size={13} className="text-slate-400 shrink-0" />
+                          <MapPin size={13} className="text-subtle shrink-0" />
                           <span className="truncate">
                             {event.venue}, {event.location}
                           </span>

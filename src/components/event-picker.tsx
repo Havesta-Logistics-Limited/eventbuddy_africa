@@ -11,9 +11,9 @@ import { Reveal } from "@/components/reveal";
 import { Logo } from "@/components/logo";
 
 const statusStyles: Record<EventStatus, string> = {
-  active: "bg-teal-100 text-teal-700",
-  upcoming: "bg-amber-100 text-amber-700",
-  completed: "bg-slate-100 text-slate-500",
+  active: "bg-teal-500/15 text-teal-300",
+  upcoming: "bg-amber-500/15 text-amber-300",
+  completed: "bg-fill text-muted",
 };
 
 const VARIANTS = {
@@ -107,7 +107,7 @@ export function EventPicker({
   const activeFilterCount = destFilter.length + monthFilter.length + locationFilter.length;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-canvas">
       <div className="relative overflow-hidden px-6 pt-6 pb-16 text-white" style={{ background: theme.gradient }}>
         <div
           className="absolute inset-0 opacity-10"
@@ -131,20 +131,20 @@ export function EventPicker({
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 -mt-8 pb-10">
         {events.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center text-slate-500">
+          <div className="bg-surface rounded-2xl shadow-sm border border-line p-8 text-center text-muted">
             No active events found.
           </div>
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-center gap-3 mb-5">
               <div className="relative flex-1 min-w-[200px] max-w-sm">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search events, venue, city..."
-                  className={`w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm shadow-sm focus:outline-none focus:ring-2 ${theme.focusRing}`}
+                  className={`w-full pl-9 pr-3 py-2.5 rounded-xl border border-line bg-surface text-sm shadow-sm focus:outline-none focus:ring-2 ${theme.focusRing}`}
                 />
               </div>
 
@@ -156,7 +156,7 @@ export function EventPicker({
                     ? variant === "rep"
                       ? "border-[#C21FAF]/30 bg-[#C21FAF]/5 text-[#C21FAF]"
                       : "border-[#1098F7]/30 bg-[#1098F7]/5 text-[#1098F7]"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    : "border-line bg-surface text-fg-3 hover:border-line-strong"
                 }`}
               >
                 <SlidersHorizontal size={14} />
@@ -194,7 +194,7 @@ export function EventPicker({
             />
 
             {sortedEvents.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center text-slate-500">
+              <div className="bg-surface rounded-2xl shadow-sm border border-line p-8 text-center text-muted">
                 No events match your search.
               </div>
             ) : (
@@ -207,9 +207,9 @@ export function EventPicker({
                     <Reveal key={evt.id} index={i} className="h-full">
                     <button
                       onClick={() => onSelect(evt.id)}
-                      className={`group flex h-full flex-col text-left bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-all ${theme.cardHoverBorder}`}
+                      className={`group flex h-full flex-col text-left bg-surface rounded-2xl shadow-sm border border-line overflow-hidden hover:shadow-lg transition-all ${theme.cardHoverBorder}`}
                     >
-                      <div className="relative aspect-video bg-slate-100 shrink-0">
+                      <div className="relative aspect-video bg-fill shrink-0">
                         <EventCover event={evt} flag={primaryFlag} gradient={theme.gradient} />
                         <div className="absolute top-3 left-3">
                           <span className={`inline-flex items-center text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full shadow-sm ${statusStyles[status]}`}>
@@ -219,19 +219,19 @@ export function EventPicker({
                       </div>
 
                       <div className="flex flex-1 flex-col p-5">
-                        <h3 className="font-display text-lg text-slate-900 leading-snug line-clamp-2">{evt.name}</h3>
-                        <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+                        <h3 className="font-display text-lg text-fg leading-snug line-clamp-2">{evt.name}</h3>
+                        <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
                           <Calendar size={13} className="shrink-0" />
                           {formatDate(evt.date)}
                         </p>
                         {(evt.startTime || evt.endTime) && (
-                          <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
+                          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
                             <Clock size={13} className="shrink-0" />
                             {evt.startTime && formatTime(evt.startTime)}
                             {evt.endTime && ` - ${formatTime(evt.endTime)}`}
                           </p>
                         )}
-                        <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500 truncate">
+                        <p className="mt-1 flex items-center gap-1.5 text-sm text-muted truncate">
                           {evt.eventFormat === "virtual" ? (
                             <>
                               <Presentation size={13} className="shrink-0" />
@@ -251,7 +251,7 @@ export function EventPicker({
                         )}
 
                         <div className="mt-auto pt-4">
-                          <span className={`block w-full text-center py-2 rounded-full border border-slate-300 text-sm font-medium text-slate-700 transition-colors ${theme.ctaHover}`}>
+                          <span className={`block w-full text-center py-2 rounded-full border border-line-strong text-sm font-medium text-fg-2 transition-colors ${theme.ctaHover}`}>
                             {selectLabel}
                           </span>
                         </div>

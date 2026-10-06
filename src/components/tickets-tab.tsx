@@ -276,7 +276,7 @@ export function TicketsTab({
   return (
     <div>
       {!hasPayoutsConfigured && (
-        <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-amber-50 text-amber-800 text-sm">
+        <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-amber-500/10 text-amber-200 text-sm">
           <AlertCircle size={15} className="mt-0.5 shrink-0" />
           <span className="flex-1">
             Payouts aren&apos;t set up for this organization yet — free tickets still work, but a paid ticket type can&apos;t be created until you add
@@ -290,53 +290,53 @@ export function TicketsTab({
 
       {hasPaidTicketTypes && !loadingTransactions && (
         <div className="mb-6">
-          <h2 className="font-semibold text-slate-800 mb-3">Sales overview</h2>
+          <h2 className="font-semibold text-fg mb-3">Sales overview</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-            <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 flex items-center gap-1.5 mb-1">
+            <div className="bg-surface rounded-xl border border-line p-4">
+              <p className="text-xs text-muted flex items-center gap-1.5 mb-1">
                 <TrendingUp size={13} />
                 Total revenue
               </p>
-              <p className="text-xl font-semibold text-slate-900">{formatNaira(totalRevenueNaira)}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{successfulTxns.length} paid ticket{successfulTxns.length !== 1 ? "s" : ""}</p>
+              <p className="text-xl font-semibold text-fg">{formatNaira(totalRevenueNaira)}</p>
+              <p className="text-xs text-subtle mt-0.5">{successfulTxns.length} paid ticket{successfulTxns.length !== 1 ? "s" : ""}</p>
             </div>
-            <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 flex items-center gap-1.5 mb-1">
+            <div className="bg-surface rounded-xl border border-line p-4">
+              <p className="text-xs text-muted flex items-center gap-1.5 mb-1">
                 <Tag size={13} />
                 Discounts given
               </p>
-              <p className="text-xl font-semibold text-slate-900">{formatNaira(totalDiscountGiven)}</p>
-              <p className="text-xs text-slate-400 mt-0.5">across {discountGivenByCode.size} code{discountGivenByCode.size !== 1 ? "s" : ""}</p>
+              <p className="text-xl font-semibold text-fg">{formatNaira(totalDiscountGiven)}</p>
+              <p className="text-xs text-subtle mt-0.5">across {discountGivenByCode.size} code{discountGivenByCode.size !== 1 ? "s" : ""}</p>
             </div>
           </div>
           {revenueByTicketType.size > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
-              <p className="text-xs font-medium text-slate-500 mb-1">Revenue by ticket type</p>
+            <div className="bg-surface rounded-xl border border-line p-4 space-y-2">
+              <p className="text-xs font-medium text-muted mb-1">Revenue by ticket type</p>
               {ticketTypes
                 .filter((t) => revenueByTicketType.has(t.id))
                 .map((t) => (
                   <div key={t.id} className="flex items-center justify-between text-sm">
-                    <span className="text-slate-700">{t.name}</span>
-                    <span className="font-medium text-slate-900">{formatNaira(revenueByTicketType.get(t.id) ?? 0)}</span>
+                    <span className="text-fg-2">{t.name}</span>
+                    <span className="font-medium text-fg">{formatNaira(revenueByTicketType.get(t.id) ?? 0)}</span>
                   </div>
                 ))}
             </div>
           )}
 
           {abandonedTxns.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-4 mt-3">
+            <div className="bg-surface rounded-xl border border-line p-4 mt-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <button
                   onClick={() => setShowAbandonedCheckouts((v) => !v)}
-                  className="flex items-center gap-1.5 text-sm font-medium text-slate-800"
+                  className="flex items-center gap-1.5 text-sm font-medium text-fg"
                 >
-                  <ChevronDown size={15} className={`text-slate-400 transition-transform ${showAbandonedCheckouts ? "" : "-rotate-90"}`} />
-                  <Clock size={14} className="text-amber-500" />
+                  <ChevronDown size={15} className={`text-subtle transition-transform ${showAbandonedCheckouts ? "" : "-rotate-90"}`} />
+                  <Clock size={14} className="text-amber-400" />
                   Started checkout, never paid ({abandonedTxns.length})
                 </button>
                 <button
                   onClick={copyAbandonedEmails}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-2 hover:bg-canvas"
                 >
                   <Copy size={13} />
                   Copy emails
@@ -344,22 +344,22 @@ export function TicketsTab({
               </div>
               {showAbandonedCheckouts && (
                 <>
-                  <p className="text-xs text-slate-400 mt-3 mb-3">
+                  <p className="text-xs text-subtle mt-3 mb-3">
                     Good candidates for a follow-up email — especially if you add a discount code after they dropped off.
                   </p>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {abandonedTxns.map((t, i) => {
                       const ticketName = ticketTypes.find((tt) => tt.id === t.ticketTypeId)?.name ?? "Ticket";
                       return (
-                        <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-slate-100 first:border-t-0 first:pt-0">
+                        <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-line-soft first:border-t-0 first:pt-0">
                           <div className="min-w-0">
-                            <p className="text-slate-800 truncate">{t.email}</p>
-                            <p className="text-xs text-slate-400">
+                            <p className="text-fg truncate">{t.email}</p>
+                            <p className="text-xs text-subtle">
                               {ticketName} · {formatNaira(t.amountNaira)}
                               {t.discountCodeId && " · tried a discount code"}
                             </p>
                           </div>
-                          <span className="text-xs text-slate-400 shrink-0">{timeAgo(t.createdAt)}</span>
+                          <span className="text-xs text-subtle shrink-0">{timeAgo(t.createdAt)}</span>
                         </div>
                       );
                     })}
@@ -372,19 +372,19 @@ export function TicketsTab({
       )}
 
       {neverSubmitted.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
+        <div className="bg-surface rounded-xl border border-line p-4 mb-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <button
               onClick={() => setShowFormStarts((v) => !v)}
-              className="flex items-center gap-1.5 text-sm font-medium text-slate-800"
+              className="flex items-center gap-1.5 text-sm font-medium text-fg"
             >
-              <ChevronDown size={15} className={`text-slate-400 transition-transform ${showFormStarts ? "" : "-rotate-90"}`} />
-              <FileEdit size={14} className="text-amber-500" />
+              <ChevronDown size={15} className={`text-subtle transition-transform ${showFormStarts ? "" : "-rotate-90"}`} />
+              <FileEdit size={14} className="text-amber-400" />
               Started the form, never submitted ({neverSubmitted.length})
             </button>
             <button
               onClick={copyFormStartEmails}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-2 hover:bg-canvas"
             >
               <Copy size={13} />
               Copy emails
@@ -392,25 +392,25 @@ export function TicketsTab({
           </div>
           {showFormStarts && (
             <>
-              <p className="text-xs text-slate-400 mt-3 mb-3">
+              <p className="text-xs text-subtle mt-3 mb-3">
                 They typed an email into this event&apos;s registration form but never hit submit — didn&apos;t even reach checkout.
               </p>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {neverSubmitted.map((f, i) => {
                   const ticketName = f.ticketTypeId ? ticketTypes.find((tt) => tt.id === f.ticketTypeId)?.name : null;
                   return (
-                    <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-slate-100 first:border-t-0 first:pt-0">
+                    <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-line-soft first:border-t-0 first:pt-0">
                       <div className="min-w-0">
-                        <p className="text-slate-800 truncate">{f.email}</p>
+                        <p className="text-fg truncate">{f.email}</p>
                         {(f.fullName || ticketName) && (
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-subtle">
                             {f.fullName}
                             {f.fullName && ticketName && " · "}
                             {ticketName && `was looking at ${ticketName}`}
                           </p>
                         )}
                       </div>
-                      <span className="text-xs text-slate-400 shrink-0">{timeAgo(f.updatedAt)}</span>
+                      <span className="text-xs text-subtle shrink-0">{timeAgo(f.updatedAt)}</span>
                     </div>
                   );
                 })}
@@ -421,7 +421,7 @@ export function TicketsTab({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="font-semibold text-slate-800">
+        <h2 className="font-semibold text-fg">
           Ticket types ({ticketTypes.length})
         </h2>
         <button
@@ -438,23 +438,23 @@ export function TicketsTab({
       </div>
 
       {ticketTypes.length === 0 ? (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-10 text-center">
-          <Ticket size={28} className="mx-auto mb-3 text-slate-300" />
-          <p className="font-medium text-slate-500">No ticket types yet</p>
-          <p className="text-xs text-slate-400 mt-1.5">
+        <div className="bg-canvas border border-line rounded-xl p-10 text-center">
+          <Ticket size={28} className="mx-auto mb-3 text-faint" />
+          <p className="font-medium text-muted">No ticket types yet</p>
+          <p className="text-xs text-subtle mt-1.5">
             Without one, registration is free and unlimited — add a ticket type to cap capacity or charge for attendance.
           </p>
         </div>
       ) : (
         <div className="space-y-3">
           {ticketTypes.map((t) => (
-            <div key={t.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-brand-600/30 hover:shadow-sm transition-all">
-              <div className="w-10 h-10 rounded-full bg-brand-600/10 flex items-center justify-center text-brand-600 shrink-0">
+            <div key={t.id} className="bg-surface rounded-xl border border-line p-4 flex items-center gap-4 group hover:border-brand-600/30 hover:shadow-sm transition-all">
+              <div className="w-10 h-10 rounded-full bg-brand-600/10 flex items-center justify-center text-brand-500 shrink-0">
                 <DollarSign size={16} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900">{t.name}</p>
-                <p className="text-sm text-slate-500">
+                <p className="font-medium text-fg">{t.name}</p>
+                <p className="text-sm text-muted">
                   {t.priceNaira > 0 ? formatNaira(t.priceNaira) : "Free"} · {t.quantitySold} sold
                   {t.quantityAvailable != null && ` of ${t.quantityAvailable}`}
                 </p>
@@ -472,11 +472,11 @@ export function TicketsTab({
                     setFormError("");
                     setShowForm(true);
                   }}
-                  className="p-1.5 text-slate-400 hover:text-brand-600 rounded-md hover:bg-slate-100"
+                  className="p-1.5 text-subtle hover:text-brand-500 rounded-md hover:bg-fill"
                 >
                   <Edit2 size={16} />
                 </button>
-                <button onClick={() => handleDelete(t.id, t.name)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
+                <button onClick={() => handleDelete(t.id, t.name)} className="p-1.5 text-subtle hover:text-rose-300 rounded-md hover:bg-rose-500/10">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -486,7 +486,7 @@ export function TicketsTab({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 mt-10 mb-4">
-        <h2 className="font-semibold text-slate-800">Discount codes ({discountCodes.length})</h2>
+        <h2 className="font-semibold text-fg">Discount codes ({discountCodes.length})</h2>
         <button
           onClick={() => {
             setCodeForm(EMPTY_CODE_FORM);
@@ -501,28 +501,28 @@ export function TicketsTab({
       </div>
 
       {discountCodes.length === 0 ? (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-10 text-center">
-          <Tag size={28} className="mx-auto mb-3 text-slate-300" />
-          <p className="font-medium text-slate-500">No discount codes yet</p>
-          <p className="text-xs text-slate-400 mt-1.5">A code applies to every paid ticket type on this event — great for early-bird or group pricing.</p>
+        <div className="bg-canvas border border-line rounded-xl p-10 text-center">
+          <Tag size={28} className="mx-auto mb-3 text-faint" />
+          <p className="font-medium text-muted">No discount codes yet</p>
+          <p className="text-xs text-subtle mt-1.5">A code applies to every paid ticket type on this event — great for early-bird or group pricing.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {discountCodes.map((d) => (
-            <div key={d.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-brand-600/30 hover:shadow-sm transition-all">
-              <div className="w-10 h-10 rounded-full bg-brand-600/10 flex items-center justify-center text-brand-600 shrink-0">
+            <div key={d.id} className="bg-surface rounded-xl border border-line p-4 flex items-center gap-4 group hover:border-brand-600/30 hover:shadow-sm transition-all">
+              <div className="w-10 h-10 rounded-full bg-brand-600/10 flex items-center justify-center text-brand-500 shrink-0">
                 {d.discountType === "percentage" ? <Percent size={16} /> : <DollarSign size={16} />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-mono font-medium text-slate-900">{d.code}</p>
-                <p className="text-sm text-slate-500">
+                <p className="font-mono font-medium text-fg">{d.code}</p>
+                <p className="text-sm text-muted">
                   {d.discountType === "percentage" ? `${d.discountValue}% off` : `${formatNaira(d.discountValue)} off`}
                   {d.maxDiscountNaira != null && ` (up to ${formatNaira(d.maxDiscountNaira)})`} · {d.usesCount} used
                   {d.maxUses != null && ` of ${d.maxUses}`}
                   {d.perCustomerLimit === "single" && " · once per customer"}
                   {(discountGivenByCode.get(d.id) ?? 0) > 0 && ` · ${formatNaira(discountGivenByCode.get(d.id) ?? 0)} given`}
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-subtle mt-0.5">
                   {d.ticketTypeIds && d.ticketTypeIds.length > 0
                     ? `${d.ticketTypeIds.length} ticket type${d.ticketTypeIds.length !== 1 ? "s" : ""}`
                     : "All ticket types"}
@@ -536,7 +536,7 @@ export function TicketsTab({
                   onClick={() => handleViewUsage(d)}
                   disabled={d.usesCount === 0}
                   title={d.usesCount === 0 ? "No redemptions yet" : "View who used this code"}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-fg-3 hover:bg-fill disabled:opacity-40 disabled:hover:bg-transparent"
                 >
                   <Users size={14} />
                   Usage
@@ -560,13 +560,13 @@ export function TicketsTab({
                     setCodeFormError("");
                     setShowCodeForm(true);
                   }}
-                  className="p-1.5 text-slate-400 hover:text-brand-600 rounded-md hover:bg-slate-100"
+                  className="p-1.5 text-subtle hover:text-brand-500 rounded-md hover:bg-fill"
                 >
                   <Edit2 size={16} />
                 </button>
                 <button
                   onClick={() => handleDeleteCode(d.id, d.code)}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0"
+                  className="p-1.5 text-subtle hover:text-rose-300 rounded-md hover:bg-rose-500/10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -578,38 +578,38 @@ export function TicketsTab({
 
       {showCodeForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">{codeForm.id ? "Edit Discount Code" : "Add Discount Code"}</h2>
+          <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-line-soft">
+              <h2 className="font-semibold text-fg">{codeForm.id ? "Edit Discount Code" : "Add Discount Code"}</h2>
               <button onClick={() => setShowCodeForm(false)}>
-                <X size={20} className="text-slate-400" />
+                <X size={20} className="text-subtle" />
               </button>
             </div>
             <form onSubmit={handleCodeSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Code</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Code</label>
                 <input
                   required
                   value={codeForm.code}
                   onChange={(e) => setCodeForm({ ...codeForm, code: e.target.value })}
                   placeholder="e.g. EARLYBIRD"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-600"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Discount type</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Discount type</label>
                   <select
                     value={codeForm.discountType}
                     onChange={(e) => setCodeForm({ ...codeForm, discountType: e.target.value as DiscountCode["discountType"] })}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-surface"
                   >
                     <option value="percentage">Percentage off</option>
                     <option value="fixed">Fixed amount off</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">
                     {codeForm.discountType === "percentage" ? "Percentage" : "Amount (₦)"}
                   </label>
                   <input
@@ -620,36 +620,36 @@ export function TicketsTab({
                     value={codeForm.discountValue}
                     onChange={(e) => setCodeForm({ ...codeForm, discountValue: e.target.value })}
                     placeholder={codeForm.discountType === "percentage" ? "e.g. 20" : "e.g. 5000"}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Applies to</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Applies to</label>
                 <div className="flex gap-4 mb-2">
-                  <label className="flex items-center gap-1.5 text-sm text-slate-700">
+                  <label className="flex items-center gap-1.5 text-sm text-fg-2">
                     <input
                       type="radio"
                       checked={codeForm.scope === "all"}
                       onChange={() => setCodeForm({ ...codeForm, scope: "all", ticketTypeIds: [] })}
-                      className="text-brand-600 focus:ring-brand-600"
+                      className="text-brand-500 focus:ring-brand-600"
                     />
                     All ticket types
                   </label>
-                  <label className="flex items-center gap-1.5 text-sm text-slate-700">
+                  <label className="flex items-center gap-1.5 text-sm text-fg-2">
                     <input
                       type="radio"
                       checked={codeForm.scope === "specific"}
                       onChange={() => setCodeForm({ ...codeForm, scope: "specific" })}
-                      className="text-brand-600 focus:ring-brand-600"
+                      className="text-brand-500 focus:ring-brand-600"
                     />
                     Specific ticket types
                   </label>
                 </div>
                 {codeForm.scope === "specific" && (
-                  <div className="flex flex-wrap gap-2 p-3 rounded-lg border border-slate-200 bg-slate-50">
+                  <div className="flex flex-wrap gap-2 p-3 rounded-lg border border-line bg-canvas">
                     {ticketTypes.length === 0 ? (
-                      <p className="text-xs text-slate-400">No ticket types on this event yet.</p>
+                      <p className="text-xs text-subtle">No ticket types on this event yet.</p>
                     ) : (
                       ticketTypes.map((t) => {
                         const checked = codeForm.ticketTypeIds.includes(t.id);
@@ -657,7 +657,7 @@ export function TicketsTab({
                           <label
                             key={t.id}
                             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border cursor-pointer ${
-                              checked ? "bg-brand-600 text-white border-brand-600" : "bg-white text-slate-600 border-slate-200"
+                              checked ? "bg-brand-600 text-white border-brand-600" : "bg-surface text-fg-3 border-line"
                             }`}
                           >
                             <input
@@ -680,11 +680,11 @@ export function TicketsTab({
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Per-customer limit</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Per-customer limit</label>
                 <select
                   value={codeForm.perCustomerLimit}
                   onChange={(e) => setCodeForm({ ...codeForm, perCustomerLimit: e.target.value as DiscountCode["perCustomerLimit"] })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-surface"
                 >
                   <option value="unlimited">Multiple uses per customer</option>
                   <option value="single">Once per customer</option>
@@ -692,8 +692,8 @@ export function TicketsTab({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Max total uses <span className="text-slate-400 font-normal">(optional)</span>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">
+                    Max total uses <span className="text-subtle font-normal">(optional)</span>
                   </label>
                   <input
                     type="number"
@@ -701,12 +701,12 @@ export function TicketsTab({
                     value={codeForm.maxUses}
                     onChange={(e) => setCodeForm({ ...codeForm, maxUses: e.target.value })}
                     placeholder="Unlimited"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Max discount <span className="text-slate-400 font-normal">(optional)</span>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">
+                    Max discount <span className="text-subtle font-normal">(optional)</span>
                   </label>
                   <input
                     type="number"
@@ -715,13 +715,13 @@ export function TicketsTab({
                     value={codeForm.maxDiscountNaira}
                     onChange={(e) => setCodeForm({ ...codeForm, maxDiscountNaira: e.target.value })}
                     placeholder="No cap"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Minimum ticket price to qualify <span className="text-slate-400 font-normal">(optional)</span>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">
+                  Minimum ticket price to qualify <span className="text-subtle font-normal">(optional)</span>
                 </label>
                 <input
                   type="number"
@@ -730,41 +730,41 @@ export function TicketsTab({
                   value={codeForm.minSpendNaira}
                   onChange={(e) => setCodeForm({ ...codeForm, minSpendNaira: e.target.value })}
                   placeholder="No minimum"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Starts <span className="text-slate-400 font-normal">(optional)</span>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">
+                    Starts <span className="text-subtle font-normal">(optional)</span>
                   </label>
                   <input
                     type="datetime-local"
                     value={codeForm.startsAt}
                     onChange={(e) => setCodeForm({ ...codeForm, startsAt: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Ends <span className="text-slate-400 font-normal">(optional)</span>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">
+                    Ends <span className="text-subtle font-normal">(optional)</span>
                   </label>
                   <input
                     type="datetime-local"
                     value={codeForm.endsAt}
                     onChange={(e) => setCodeForm({ ...codeForm, endsAt: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
               </div>
               {codeFormError && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {codeFormError}
                 </div>
               )}
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowCodeForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                <button type="button" onClick={() => setShowCodeForm(false)} className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas">
                   Cancel
                 </button>
                 <button
@@ -782,49 +782,49 @@ export function TicketsTab({
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">{form.id ? "Edit Ticket Type" : "Add Ticket Type"}</h2>
+          <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-line-soft">
+              <h2 className="font-semibold text-fg">{form.id ? "Edit Ticket Type" : "Add Ticket Type"}</h2>
               <button onClick={() => setShowForm(false)}>
-                <X size={20} className="text-slate-400" />
+                <X size={20} className="text-subtle" />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Name</label>
                 <input
                   required
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g. General Admission"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Description <span className="text-slate-400 font-normal">(optional)</span>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">
+                  Description <span className="text-subtle font-normal">(optional)</span>
                 </label>
                 <input
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Price (₦)</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Price (₦)</label>
                   <input
                     type="number"
                     min="0"
                     step="1"
                     value={form.priceNaira}
                     onChange={(e) => setForm({ ...form, priceNaira: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Quantity <span className="text-slate-400 font-normal">(optional)</span>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">
+                    Quantity <span className="text-subtle font-normal">(optional)</span>
                   </label>
                   <input
                     type="number"
@@ -832,18 +832,18 @@ export function TicketsTab({
                     value={form.quantityAvailable}
                     onChange={(e) => setForm({ ...form, quantityAvailable: e.target.value })}
                     placeholder="Unlimited"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
               </div>
               {formError && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {formError}
                 </div>
               )}
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas">
                   Cancel
                 </button>
                 <button
@@ -861,37 +861,37 @@ export function TicketsTab({
 
       {usageCode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop" onClick={() => setUsageCode(null)}>
-          <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl overflow-y-auto max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+          <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl overflow-y-auto max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-line-soft">
               <div>
-                <h2 className="font-semibold text-slate-900">
+                <h2 className="font-semibold text-fg">
                   Usage — <span className="font-mono">{usageCode.code}</span>
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-subtle mt-0.5">
                   {usageCode.usesCount} redemption{usageCode.usesCount !== 1 ? "s" : ""}
                   {usageCode.maxUses != null && ` of ${usageCode.maxUses}`}
                 </p>
               </div>
               <button onClick={() => setUsageCode(null)}>
-                <X size={20} className="text-slate-400" />
+                <X size={20} className="text-subtle" />
               </button>
             </div>
             <div className="p-6">
               {loadingRedemptions ? (
-                <p className="text-sm text-slate-400 text-center py-6">Loading…</p>
+                <p className="text-sm text-subtle text-center py-6">Loading…</p>
               ) : redemptions.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-6">No redemptions yet.</p>
+                <p className="text-sm text-subtle text-center py-6">No redemptions yet.</p>
               ) : (
                 <div className="space-y-3">
                   {redemptions.map((r, i) => (
-                    <div key={i} className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
+                    <div key={i} className="flex items-center justify-between gap-3 pb-3 border-b border-line-soft last:border-0 last:pb-0">
                       <div className="min-w-0">
-                        <p className="font-medium text-slate-900 text-sm truncate">{r.fullName}</p>
-                        <p className="text-xs text-slate-500 truncate">{r.email}</p>
+                        <p className="font-medium text-fg text-sm truncate">{r.fullName}</p>
+                        <p className="text-xs text-muted truncate">{r.email}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold text-slate-900">{formatNaira(r.amountPaidNaira)}</p>
-                        <p className="text-xs text-slate-400">{new Date(r.purchasedAt).toLocaleDateString()}</p>
+                        <p className="text-sm font-semibold text-fg">{formatNaira(r.amountPaidNaira)}</p>
+                        <p className="text-xs text-subtle">{new Date(r.purchasedAt).toLocaleDateString()}</p>
                       </div>
                     </div>
                   ))}

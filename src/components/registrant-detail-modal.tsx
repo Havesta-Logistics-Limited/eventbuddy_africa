@@ -112,16 +112,16 @@ export function RegistrantDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-2xl shadow-2xl overflow-y-auto max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between p-6 border-b border-slate-100">
+      <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-2xl shadow-2xl overflow-y-auto max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between p-6 border-b border-line-soft">
           <div>
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Registration details</p>
-            <h2 className="font-display text-xl text-slate-900">{registration.fullName}</h2>
+            <p className="text-xs font-medium text-subtle uppercase tracking-wide mb-1">Registration details</p>
+            <h2 className="font-display text-xl text-fg">{registration.fullName}</h2>
             <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-xs font-medium ${statusStyles[registration.status]}`}>
               {statusLabels[registration.status]}
             </span>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 shrink-0">
+          <button type="button" onClick={onClose} className="text-subtle hover:text-fg-3 shrink-0">
             <X size={20} />
           </button>
         </div>
@@ -129,27 +129,27 @@ export function RegistrantDetailModal({
         <div className="p-6 space-y-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-1.5 text-sm">
-              <p className="flex items-center gap-2 text-slate-600">
-                <Mail size={14} className="text-slate-400" /> {registration.email}
+              <p className="flex items-center gap-2 text-fg-3">
+                <Mail size={14} className="text-subtle" /> {registration.email}
               </p>
               {registration.phone && (
-                <p className="flex items-center gap-2 text-slate-600">
-                  <Phone size={14} className="text-slate-400" /> {registration.phone}
+                <p className="flex items-center gap-2 text-fg-3">
+                  <Phone size={14} className="text-subtle" /> {registration.phone}
                 </p>
               )}
-              <p className="flex items-center gap-2 text-slate-600">
-                <Calendar size={14} className="text-slate-400" /> Registered {new Date(registration.createdAt).toLocaleString()}
+              <p className="flex items-center gap-2 text-fg-3">
+                <Calendar size={14} className="text-subtle" /> Registered {new Date(registration.createdAt).toLocaleString()}
               </p>
               {registration.checkedInAt && (
-                <p className="flex items-center gap-2 text-teal-700">
+                <p className="flex items-center gap-2 text-teal-300">
                   <CheckCircle2 size={14} /> Checked in {new Date(registration.checkedInAt).toLocaleString()}
                   {checkedInByName ? ` by ${checkedInByName}` : ""}
                 </p>
               )}
               {ticketType && (
-                <p className="flex items-center gap-2 text-slate-600">
-                  <Ticket size={14} className="text-slate-400" /> {ticketType.name}
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${ticketType.priceNaira > 0 ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}>
+                <p className="flex items-center gap-2 text-fg-3">
+                  <Ticket size={14} className="text-subtle" /> {ticketType.name}
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${ticketType.priceNaira > 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-fill text-fg-2"}`}>
                     {ticketType.priceNaira > 0 ? formatNaira(ticketType.priceNaira) : "Free"}
                   </span>
                 </p>
@@ -159,7 +159,7 @@ export function RegistrantDetailModal({
               <button
                 type="button"
                 onClick={() => setShowQr((v) => !v)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-line text-sm font-medium text-fg-2 hover:bg-canvas"
               >
                 <QrCode size={15} /> {showQr ? "Hide QR Code" : "Show QR Code"}
               </button>
@@ -168,7 +168,7 @@ export function RegistrantDetailModal({
                   type="button"
                   onClick={resendEmail}
                   disabled={resending}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-line text-sm font-medium text-fg-2 hover:bg-canvas disabled:opacity-60"
                 >
                   <Send size={15} /> {resending ? "Sending…" : "Resend Email"}
                 </button>
@@ -180,7 +180,7 @@ export function RegistrantDetailModal({
                   disabled={busy}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60 transition-colors ${
                     registration.status === "checked_in"
-                      ? "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                      ? "border border-line text-fg-3 hover:bg-canvas"
                       : "text-white bg-brand-600 hover:bg-brand-700"
                   }`}
                 >
@@ -201,7 +201,7 @@ export function RegistrantDetailModal({
                     type="button"
                     onClick={() => decide("decline")}
                     disabled={busy}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-200 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-500/30 text-sm font-medium text-rose-300 hover:bg-rose-500/10 disabled:opacity-60"
                   >
                     <X size={15} /> Decline
                   </button>
@@ -221,7 +221,7 @@ export function RegistrantDetailModal({
                     type="button"
                     onClick={() => decide("decline")}
                     disabled={busy}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-200 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-500/30 text-sm font-medium text-rose-300 hover:bg-rose-500/10 disabled:opacity-60"
                   >
                     <X size={15} /> Decline
                   </button>
@@ -231,7 +231,7 @@ export function RegistrantDetailModal({
                 <button
                   type="button"
                   onClick={() => setShowRefundConfirm(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-200 text-sm font-medium text-rose-700 hover:bg-rose-50"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-500/30 text-sm font-medium text-rose-300 hover:bg-rose-500/10"
                 >
                   <Undo2 size={15} /> Refund
                 </button>
@@ -240,30 +240,30 @@ export function RegistrantDetailModal({
           </div>
 
           {showQr && (
-            <div className="flex flex-col items-center gap-2 p-5 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="flex flex-col items-center gap-2 p-5 rounded-xl bg-canvas border border-line">
               {qrDataUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={qrDataUrl} alt={`QR code for ${registration.referenceId}`} className="w-44 h-44" />
               ) : (
-                <div className="w-44 h-44 flex items-center justify-center text-slate-400 text-xs">Generating…</div>
+                <div className="w-44 h-44 flex items-center justify-center text-subtle text-xs">Generating…</div>
               )}
-              <p className="font-mono text-sm text-slate-600 tracking-wide">{registration.referenceId}</p>
-              <p className="text-xs text-slate-400">The code this attendee was issued at registration</p>
+              <p className="font-mono text-sm text-fg-3 tracking-wide">{registration.referenceId}</p>
+              <p className="text-xs text-subtle">The code this attendee was issued at registration</p>
             </div>
           )}
 
           <div>
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Registration form answers</h3>
+            <h3 className="text-sm font-semibold text-fg mb-3">Registration form answers</h3>
             {customFields.length === 0 ? (
-              <p className="text-sm text-slate-400">This event&apos;s registration form has no additional questions.</p>
+              <p className="text-sm text-subtle">This event&apos;s registration form has no additional questions.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                 {customFields.map((f) => {
                   const v = registration.customAnswers?.[f.id];
                   return (
                     <div key={f.id}>
-                      <p className="text-xs text-slate-400">{f.label || "Untitled question"}</p>
-                      <p className="text-sm text-slate-700 mt-0.5">{(Array.isArray(v) ? v.join(", ") : v) || "—"}</p>
+                      <p className="text-xs text-subtle">{f.label || "Untitled question"}</p>
+                      <p className="text-sm text-fg-2 mt-0.5">{(Array.isArray(v) ? v.join(", ") : v) || "—"}</p>
                     </div>
                   );
                 })}
@@ -272,68 +272,68 @@ export function RegistrantDetailModal({
           </div>
 
           {lead && (
-            <div className="pt-5 border-t border-slate-100">
-              <h3 className="text-sm font-semibold text-slate-800 mb-1">Lead captured at this event</h3>
-              <p className="text-xs text-slate-400 mb-3">Collected by staff when this attendee&apos;s code was scanned at a booth.</p>
+            <div className="pt-5 border-t border-line-soft">
+              <h3 className="text-sm font-semibold text-fg mb-1">Lead captured at this event</h3>
+              <p className="text-xs text-subtle mb-3">Collected by staff when this attendee&apos;s code was scanned at a booth.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 {destination && (
                   <div>
-                    <p className="text-xs text-slate-400 flex items-center gap-1">
+                    <p className="text-xs text-subtle flex items-center gap-1">
                       <Globe2 size={11} /> Destination
                     </p>
-                    <p className="text-slate-700 mt-0.5">
+                    <p className="text-fg-2 mt-0.5">
                       {destination.flag} {destination.name}
                     </p>
                   </div>
                 )}
                 {university && (
                   <div>
-                    <p className="text-xs text-slate-400 flex items-center gap-1">
+                    <p className="text-xs text-subtle flex items-center gap-1">
                       <Building2 size={11} /> University
                     </p>
-                    <p className="text-slate-700 mt-0.5">{university.name}</p>
+                    <p className="text-fg-2 mt-0.5">{university.name}</p>
                   </div>
                 )}
                 {lead.preferredCourse && (
                   <div>
-                    <p className="text-xs text-slate-400 flex items-center gap-1">
+                    <p className="text-xs text-subtle flex items-center gap-1">
                       <BookMarked size={11} /> Preferred course
                     </p>
-                    <p className="text-slate-700 mt-0.5">{lead.preferredCourse}</p>
+                    <p className="text-fg-2 mt-0.5">{lead.preferredCourse}</p>
                   </div>
                 )}
                 {lead.levelOfInterest && (
                   <div>
-                    <p className="text-xs text-slate-400 flex items-center gap-1">
+                    <p className="text-xs text-subtle flex items-center gap-1">
                       <GraduationCap size={11} /> Level of interest
                     </p>
-                    <p className="text-slate-700 mt-0.5">{lead.levelOfInterest}</p>
+                    <p className="text-fg-2 mt-0.5">{lead.levelOfInterest}</p>
                   </div>
                 )}
                 {lead.highestEducation && (
                   <div>
-                    <p className="text-xs text-slate-400">Highest education</p>
-                    <p className="text-slate-700 mt-0.5">{lead.highestEducation}</p>
+                    <p className="text-xs text-subtle">Highest education</p>
+                    <p className="text-fg-2 mt-0.5">{lead.highestEducation}</p>
                   </div>
                 )}
                 {lead.startYear && (
                   <div>
-                    <p className="text-xs text-slate-400">Intended start year</p>
-                    <p className="text-slate-700 mt-0.5">{lead.startYear}</p>
+                    <p className="text-xs text-subtle">Intended start year</p>
+                    <p className="text-fg-2 mt-0.5">{lead.startYear}</p>
                   </div>
                 )}
                 {lead.takenIELTS && (
                   <div>
-                    <p className="text-xs text-slate-400">IELTS status</p>
-                    <p className="text-slate-700 mt-0.5">{lead.takenIELTS}</p>
+                    <p className="text-xs text-subtle">IELTS status</p>
+                    <p className="text-fg-2 mt-0.5">{lead.takenIELTS}</p>
                   </div>
                 )}
                 {lead.comments && (
                   <div className="sm:col-span-2">
-                    <p className="text-xs text-slate-400 flex items-center gap-1">
+                    <p className="text-xs text-subtle flex items-center gap-1">
                       <MessageSquare size={11} /> Comments
                     </p>
-                    <p className="text-slate-700 mt-0.5">{lead.comments}</p>
+                    <p className="text-fg-2 mt-0.5">{lead.comments}</p>
                   </div>
                 )}
               </div>
@@ -344,14 +344,14 @@ export function RegistrantDetailModal({
 
       {showRefundConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop" onClick={(e) => e.stopPropagation()}>
-          <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
-            <h2 className="font-semibold text-slate-900 text-lg mb-2">Refund this ticket?</h2>
-            <p className="text-sm text-slate-600">
+          <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
+            <h2 className="font-semibold text-fg text-lg mb-2">Refund this ticket?</h2>
+            <p className="text-sm text-fg-3">
               This reverses the charge on Paystack and cancels <span className="font-semibold">{registration.fullName}</span>&apos;s registration. They&apos;ll be emailed automatically. This
               can&apos;t be undone from here.
             </p>
             {refundError && (
-              <div className="flex items-start gap-2 p-3 mt-4 rounded-lg bg-rose-50 text-rose-700 text-sm">
+              <div className="flex items-start gap-2 p-3 mt-4 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                 <AlertCircle size={15} className="mt-0.5 shrink-0" />
                 {refundError}
               </div>
@@ -361,7 +361,7 @@ export function RegistrantDetailModal({
                 type="button"
                 onClick={() => setShowRefundConfirm(false)}
                 disabled={refunding}
-                className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas disabled:opacity-60"
               >
                 Cancel
               </button>

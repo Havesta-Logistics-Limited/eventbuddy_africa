@@ -7,8 +7,8 @@ import { ImageCropperModal } from "@/components/image-cropper-modal";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import type { EventWizardData } from "../types";
 
-const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]";
-const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
+const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]";
+const labelClass = "block text-sm font-medium text-fg-2 mb-1.5";
 
 export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange: (patch: Partial<EventWizardData>) => void }) {
   const [imageUploading, setImageUploading] = useState(false);
@@ -40,7 +40,7 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
               className={`py-2.5 rounded-lg border text-sm font-medium transition-colors ${
                 (data.eventFormat || "physical") === format
                   ? "border-[#C21FAF] bg-[#C21FAF] text-white"
-                  : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  : "border-line text-fg-3 hover:border-line-strong"
               }`}
             >
               {format === "physical" ? "In-person" : "Virtual"}
@@ -80,7 +80,7 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
               <label
                 key={opt.key}
                 className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-colors ${
-                  selected ? "border-[#C21FAF] bg-[#C21FAF]/5" : "border-slate-200 hover:border-slate-300"
+                  selected ? "border-[#C21FAF] bg-[#C21FAF]/5" : "border-line hover:border-line-strong"
                 }`}
               >
                 <input
@@ -95,11 +95,11 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
                           : { selfRegistrationEnabled: false, isInviteOnly: true }
                     )
                   }
-                  className="mt-0.5 w-4 h-4 border-slate-300 text-[#C21FAF] focus:ring-[#C21FAF]"
+                  className="mt-0.5 w-4 h-4 border-line-strong text-[#C21FAF] focus:ring-[#C21FAF]"
                 />
                 <span>
-                  <span className="block text-sm font-medium text-slate-700">{opt.title}</span>
-                  <span className="block text-xs text-slate-500 mt-0.5">{opt.body}</span>
+                  <span className="block text-sm font-medium text-fg-2">{opt.title}</span>
+                  <span className="block text-xs text-muted mt-0.5">{opt.body}</span>
                 </span>
               </label>
             );
@@ -126,7 +126,7 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
           <input type="time" value={data.endTime || ""} onChange={(e) => onChange({ endTime: e.target.value })} className={fieldClass} />
         </div>
       </div>
-      {data.timezone && <p className="text-xs text-slate-400 -mt-2">Times shown in {data.timezone}</p>}
+      {data.timezone && <p className="text-xs text-subtle -mt-2">Times shown in {data.timezone}</p>}
       {isVirtual ? (
         <>
           <div>
@@ -189,7 +189,7 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
           <option value="Concert / Festival" />
           <option value="Meetup" />
         </datalist>
-        <p className="text-xs text-slate-400 mt-1">Shown as a badge on your public registration page. Leave blank to not show one.</p>
+        <p className="text-xs text-subtle mt-1">Shown as a badge on your public registration page. Leave blank to not show one.</p>
       </div>
       <div>
         <label className={labelClass}>Description</label>
@@ -204,7 +204,7 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
         <label className={labelClass}>Cover Image</label>
         <div className="space-y-3">
           {data.coverImage && (
-            <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-100">
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-fill">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={data.coverImage} alt="Cover preview" className="w-full h-full object-contain" />
               <button
@@ -228,8 +228,8 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
             className={fieldClass}
           />
           <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-500">or</span>
-            <label className="cursor-pointer flex-1 text-center py-2 px-3 border border-dashed border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:border-[#C21FAF] transition-colors">
+            <span className="text-sm text-muted">or</span>
+            <label className="cursor-pointer flex-1 text-center py-2 px-3 border border-dashed border-line-strong rounded-lg text-sm text-fg-3 hover:bg-canvas hover:border-[#C21FAF] transition-colors">
               {imageUploading ? (
                 <span className="inline-flex items-center gap-1.5 justify-center">
                   <Loader2 size={14} className="animate-spin" />
@@ -265,9 +265,9 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
               />
             </label>
           </div>
-          <p className="text-xs text-slate-400">Cards show this at a wide 16:9 crop — pasted URLs are shown as-is; uploads let you pick the visible area.</p>
+          <p className="text-xs text-subtle">Cards show this at a wide 16:9 crop — pasted URLs are shown as-is; uploads let you pick the visible area.</p>
           {imageUploadError && (
-            <p className="flex items-start gap-1.5 text-xs text-rose-600">
+            <p className="flex items-start gap-1.5 text-xs text-rose-300">
               <AlertCircle size={13} className="mt-0.5 shrink-0" />
               {imageUploadError}
             </p>

@@ -26,7 +26,7 @@ const OPTIONS = [
 export function AudienceStep({ allowRepAccess, onChange }: { allowRepAccess: boolean; onChange: (allowRepAccess: boolean) => void }) {
   return (
     <div>
-      <p className="text-xs text-slate-500 mb-3">Choose who this event is for — this controls whether reps get their own check-in link.</p>
+      <p className="text-xs text-muted mb-3">Choose who this event is for — this controls whether reps get their own check-in link.</p>
       <div className="grid gap-3">
         {OPTIONS.map((opt) => {
           const Icon = opt.icon;
@@ -37,18 +37,18 @@ export function AudienceStep({ allowRepAccess, onChange }: { allowRepAccess: boo
               type="button"
               onClick={() => onChange(opt.value)}
               className={`flex items-start gap-3 text-left p-4 rounded-xl border transition-colors ${
-                selected ? "border-[#C21FAF] bg-[#C21FAF]/5" : "border-slate-200 hover:border-slate-300"
+                selected ? "border-[#C21FAF] bg-[#C21FAF]/5" : "border-line hover:border-line-strong"
               }`}
             >
-              <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${selected ? "bg-[#C21FAF] text-white" : "bg-slate-100 text-slate-500"}`}>
+              <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${selected ? "bg-[#C21FAF] text-white" : "bg-fill text-muted"}`}>
                 <Icon size={17} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-900">{opt.title}</p>
+                <p className="text-sm font-semibold text-fg">{opt.title}</p>
                 <ul className="mt-1 space-y-1">
                   {opt.bullets.map((b) => (
-                    <li key={b.text} className="flex items-start gap-1.5 text-xs text-slate-500">
-                      {b.ok ? <Check size={12} className="text-emerald-500 mt-0.5 shrink-0" /> : <X size={12} className="text-rose-400 mt-0.5 shrink-0" />}
+                    <li key={b.text} className="flex items-start gap-1.5 text-xs text-muted">
+                      {b.ok ? <Check size={12} className="text-emerald-400 mt-0.5 shrink-0" /> : <X size={12} className="text-rose-400 mt-0.5 shrink-0" />}
                       {b.text}
                     </li>
                   ))}

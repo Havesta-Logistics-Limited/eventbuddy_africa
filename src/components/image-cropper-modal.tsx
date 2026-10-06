@@ -43,15 +43,15 @@ export function ImageCropperModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-slate-100">
-          <h3 className="font-semibold text-slate-900">Choose visible area</h3>
-          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600">
+      <div className="bg-surface rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-line-soft">
+          <h3 className="font-semibold text-fg">Choose visible area</h3>
+          <button onClick={onCancel} className="text-subtle hover:text-fg-3">
             <X size={18} />
           </button>
         </div>
 
-        <div className="relative w-full bg-slate-900" style={{ aspectRatio: aspect }}>
+        <div className="relative w-full bg-surface-hi" style={{ aspectRatio: aspect }}>
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -65,7 +65,7 @@ export function ImageCropperModal({
 
         <div className="p-4 space-y-3">
           <div className="flex items-center gap-3">
-            <ZoomIn size={15} className="text-slate-400 shrink-0" />
+            <ZoomIn size={15} className="text-subtle shrink-0" />
             <input
               type="range"
               min={1}
@@ -76,13 +76,13 @@ export function ImageCropperModal({
               className="w-full accent-brand-600"
             />
           </div>
-          <p className="text-xs text-slate-400">Drag to reposition, use the slider to zoom — the highlighted area is what attendees will see.</p>
-          {error && <p className="text-sm text-rose-600">{error}</p>}
+          <p className="text-xs text-subtle">Drag to reposition, use the slider to zoom — the highlighted area is what attendees will see.</p>
+          {error && <p className="text-sm text-rose-300">{error}</p>}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas"
             >
               Cancel
             </button>

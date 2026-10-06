@@ -67,7 +67,7 @@ export function OneOnOneRequestStep({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="e.g. Interested in your AI product roadmap"
-          className="w-full px-3.5 py-2.5 rounded-lg border border-white/20 bg-white/5 text-white placeholder:text-white/40 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#FF8AF5]"
+          className="w-full px-3.5 py-2.5 rounded-lg border border-white/20 bg-surface/5 text-white placeholder:text-white/40 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#FF8AF5]"
         />
       </div>
 

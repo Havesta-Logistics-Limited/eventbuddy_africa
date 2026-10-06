@@ -143,8 +143,8 @@ export function DestinationsUniversitiesManagement({
       <div>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="font-semibold text-slate-800 min-w-0">Destinations ({destinations.length})</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Specific to this event — other events have their own lists.</p>
+            <h2 className="font-semibold text-fg min-w-0">Destinations ({destinations.length})</h2>
+            <p className="text-xs text-subtle mt-0.5">Specific to this event — other events have their own lists.</p>
           </div>
           <button
             onClick={() => {
@@ -160,13 +160,13 @@ export function DestinationsUniversitiesManagement({
           </button>
         </div>
         {otherEvents.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
-            <Copy size={14} className="text-slate-400 shrink-0" />
-            <span className="text-sm text-slate-500 shrink-0">Copy destinations &amp; universities from</span>
+          <div className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-xl bg-canvas border border-line">
+            <Copy size={14} className="text-subtle shrink-0" />
+            <span className="text-sm text-muted shrink-0">Copy destinations &amp; universities from</span>
             <select
               value={copySourceId}
               onChange={(e) => setCopySourceId(e.target.value)}
-              className="flex-1 min-w-[160px] px-2.5 py-1.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+              className="flex-1 min-w-[160px] px-2.5 py-1.5 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
             >
               <option value="">Select a past event…</option>
               {otherEvents.map((e) => (
@@ -186,8 +186,8 @@ export function DestinationsUniversitiesManagement({
           </div>
         )}
         {destinations.length === 0 ? (
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
-            <p className="text-sm text-slate-500">No destinations yet — add the countries this fair covers, or copy them from a past event above.</p>
+          <div className="bg-canvas border border-line rounded-xl p-8 text-center">
+            <p className="text-sm text-muted">No destinations yet — add the countries this fair covers, or copy them from a past event above.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -195,11 +195,11 @@ export function DestinationsUniversitiesManagement({
               const uniCount = universities.filter((u) => u.destinationId === d.id).length;
               return (
                 <Reveal key={d.id} index={i}>
-                  <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#C21FAF]/30 transition-colors">
+                  <div className="bg-surface rounded-xl border border-line p-4 flex items-center gap-4 group hover:border-[#C21FAF]/30 transition-colors">
                     <span className="text-3xl shrink-0">{d.flag}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900 truncate">{d.name}</p>
-                      <p className="text-sm text-slate-400">
+                      <p className="font-medium text-fg truncate">{d.name}</p>
+                      <p className="text-sm text-subtle">
                         {uniCount} universit{uniCount !== 1 ? "ies" : "y"}
                       </p>
                     </div>
@@ -210,11 +210,11 @@ export function DestinationsUniversitiesManagement({
                           setFormError("");
                           setShowDestForm(true);
                         }}
-                        className="p-1.5 text-slate-400 hover:text-[#C21FAF] rounded-md hover:bg-slate-100"
+                        className="p-1.5 text-subtle hover:text-[#C21FAF] rounded-md hover:bg-fill"
                       >
                         <Edit2 size={14} />
                       </button>
-                      <button onClick={() => requestDelete("destination", d.id, d.name)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
+                      <button onClick={() => requestDelete("destination", d.id, d.name)} className="p-1.5 text-subtle hover:text-rose-300 rounded-md hover:bg-rose-500/10">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -229,8 +229,8 @@ export function DestinationsUniversitiesManagement({
       <div>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="font-semibold text-slate-800 min-w-0">Universities ({universities.length})</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Exhibiting universities, grouped by destination.</p>
+            <h2 className="font-semibold text-fg min-w-0">Universities ({universities.length})</h2>
+            <p className="text-xs text-subtle mt-0.5">Exhibiting universities, grouped by destination.</p>
           </div>
           <button
             onClick={() => {
@@ -247,24 +247,24 @@ export function DestinationsUniversitiesManagement({
           </button>
         </div>
         {destinations.length === 0 ? (
-          <p className="text-sm text-slate-400">Add a destination first, then its exhibiting universities.</p>
+          <p className="text-sm text-subtle">Add a destination first, then its exhibiting universities.</p>
         ) : (
           destinations.map((dest) => {
             const unis = universities.filter((u) => u.destinationId === dest.id);
             if (unis.length === 0) return null;
             return (
               <div key={dest.id} className="mb-5">
-                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">
                   {dest.flag} {dest.name}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {unis.map((u, i) => (
                     <Reveal key={u.id} index={i}>
-                      <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3 group hover:border-[#C21FAF]/30 hover:shadow-sm transition-all">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">{u.shortName.slice(0, 3)}</div>
+                      <div className="bg-surface rounded-xl border border-line p-4 flex items-center gap-3 group hover:border-[#C21FAF]/30 hover:shadow-sm transition-all">
+                        <div className="w-8 h-8 rounded-lg bg-fill flex items-center justify-center text-xs font-bold text-fg-3 shrink-0">{u.shortName.slice(0, 3)}</div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-800 text-sm truncate">{u.name}</p>
-                          <p className="text-xs text-slate-400 truncate">{u.shortName}</p>
+                          <p className="font-medium text-fg text-sm truncate">{u.name}</p>
+                          <p className="text-xs text-subtle truncate">{u.shortName}</p>
                         </div>
                         <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                           <button
@@ -273,11 +273,11 @@ export function DestinationsUniversitiesManagement({
                               setFormError("");
                               setShowUniForm(true);
                             }}
-                            className="p-1.5 text-slate-400 hover:text-[#C21FAF] rounded-md hover:bg-slate-100"
+                            className="p-1.5 text-subtle hover:text-[#C21FAF] rounded-md hover:bg-fill"
                           >
                             <Edit2 size={14} />
                           </button>
-                          <button onClick={() => requestDelete("university", u.id, u.name)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
+                          <button onClick={() => requestDelete("university", u.id, u.name)} className="p-1.5 text-subtle hover:text-rose-300 rounded-md hover:bg-rose-500/10">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -293,16 +293,16 @@ export function DestinationsUniversitiesManagement({
 
       {showDestForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-semibold text-slate-900">{destForm.id ? "Edit Destination" : "Add Destination"}</h2>
+              <h2 className="font-semibold text-fg">{destForm.id ? "Edit Destination" : "Add Destination"}</h2>
               <button onClick={() => setShowDestForm(false)}>
-                <X size={20} className="text-slate-400" />
+                <X size={20} className="text-subtle" />
               </button>
             </div>
             <form onSubmit={handleAddDest} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Destination Name</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Destination Name</label>
                 <input
                   required
                   value={destForm.name}
@@ -311,29 +311,29 @@ export function DestinationsUniversitiesManagement({
                     const autoFlag = flagForCountryName(name);
                     setDestForm((prev) => ({ ...prev, name, flag: autoFlag ?? prev.flag }));
                   }}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                   placeholder="e.g. United Kingdom"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Flag (Emoji)</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Flag (Emoji)</label>
                 <input
                   required
                   value={destForm.flag}
                   onChange={(e) => setDestForm({ ...destForm, flag: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                   placeholder="e.g. 🇬🇧"
                 />
-                <p className="text-xs text-slate-400 mt-1">Auto-filled for recognized countries — edit if this destination isn&apos;t one.</p>
+                <p className="text-xs text-subtle mt-1">Auto-filled for recognized countries — edit if this destination isn&apos;t one.</p>
               </div>
               {formError && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {formError}
                 </div>
               )}
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowDestForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                <button type="button" onClick={() => setShowDestForm(false)} className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas">
                   Cancel
                 </button>
                 <button
@@ -352,21 +352,21 @@ export function DestinationsUniversitiesManagement({
 
       {showUniForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-semibold text-slate-900">{uniForm.id ? "Edit University" : "Add University"}</h2>
+              <h2 className="font-semibold text-fg">{uniForm.id ? "Edit University" : "Add University"}</h2>
               <button onClick={() => setShowUniForm(false)}>
-                <X size={20} className="text-slate-400" />
+                <X size={20} className="text-subtle" />
               </button>
             </div>
             <form onSubmit={handleAddUni} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Destination</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Destination</label>
                 <select
                   required
                   value={uniForm.destinationId}
                   onChange={(e) => setUniForm({ ...uniForm, destinationId: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-surface"
                 >
                   <option value="">Select destination</option>
                   {destinations.map((d) => (
@@ -377,34 +377,34 @@ export function DestinationsUniversitiesManagement({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">University Name</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">University Name</label>
                 <input
                   required
                   value={uniForm.name}
                   onChange={(e) => setUniForm({ ...uniForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                   placeholder="e.g. University of Oxford"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Short Name / Abbreviation <span className="text-slate-400 font-normal">(optional)</span>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">
+                  Short Name / Abbreviation <span className="text-subtle font-normal">(optional)</span>
                 </label>
                 <input
                   value={uniForm.shortName}
                   onChange={(e) => setUniForm({ ...uniForm, shortName: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                   placeholder="e.g. Oxford — defaults to the full name if left blank"
                 />
               </div>
               {formError && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {formError}
                 </div>
               )}
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowUniForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                <button type="button" onClick={() => setShowUniForm(false)} className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas">
                   Cancel
                 </button>
                 <button
@@ -423,9 +423,9 @@ export function DestinationsUniversitiesManagement({
 
       {pendingDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
-            <h2 className="font-semibold text-slate-900 text-lg mb-2">Delete {pendingDelete.kind === "destination" ? "this destination" : "this university"}?</h2>
-            <p className="text-sm text-slate-600">
+          <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-sm shadow-2xl p-6">
+            <h2 className="font-semibold text-fg text-lg mb-2">Delete {pendingDelete.kind === "destination" ? "this destination" : "this university"}?</h2>
+            <p className="text-sm text-fg-3">
               This permanently deletes <span className="font-semibold">{pendingDelete.name}</span> and{" "}
               <span className="font-semibold">
                 {pendingDelete.leadCount} collected lead{pendingDelete.leadCount !== 1 ? "s" : ""}
@@ -433,7 +433,7 @@ export function DestinationsUniversitiesManagement({
               attached to it. This can&apos;t be undone.
             </p>
             {pendingDelete.affectsOtherEvents && (
-              <div className="flex items-start gap-2 p-3 mt-3 rounded-lg bg-amber-50 text-amber-800 text-sm">
+              <div className="flex items-start gap-2 p-3 mt-3 rounded-lg bg-amber-500/10 text-amber-200 text-sm">
                 <AlertCircle size={15} className="mt-0.5 shrink-0" />
                 Some of these leads belong to other events, not just this one — this will delete leads from those events too.
               </div>
@@ -443,7 +443,7 @@ export function DestinationsUniversitiesManagement({
                 type="button"
                 onClick={() => setPendingDelete(null)}
                 disabled={deleting}
-                className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas disabled:opacity-60"
               >
                 Cancel
               </button>

@@ -318,18 +318,18 @@ export default function EventHubPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-slate-400" />
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <Loader2 size={24} className="animate-spin text-subtle" />
       </div>
     );
   }
   if (loadError || !data) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <KeyRound size={24} className="mx-auto mb-3 text-slate-300" />
-          <h2 className="text-lg font-semibold text-slate-900 text-center mb-1">Find your event hub</h2>
-          <p className="text-sm text-slate-500 text-center mb-5">
+      <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
+        <div className="w-full max-w-sm bg-surface rounded-2xl shadow-sm border border-line p-6">
+          <KeyRound size={24} className="mx-auto mb-3 text-faint" />
+          <h2 className="text-lg font-semibold text-fg text-center mb-1">Find your event hub</h2>
+          <p className="text-sm text-muted text-center mb-5">
             {loadError && token
               ? "That link isn't valid anymore. "
               : "Opened without your personal link? "}
@@ -341,20 +341,20 @@ export default function EventHubPage() {
               value={lookupEmail}
               onChange={(e) => setLookupEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
             />
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <div className="flex-1 h-px bg-slate-100" />
+            <div className="flex items-center gap-2 text-xs text-subtle">
+              <div className="flex-1 h-px bg-fill" />
               or
-              <div className="flex-1 h-px bg-slate-100" />
+              <div className="flex-1 h-px bg-fill" />
             </div>
             <input
               value={lookupRefId}
               onChange={(e) => setLookupRefId(e.target.value)}
               placeholder="Reference ID, e.g. AB12-CD34"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-600"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-600"
             />
-            {lookupError && <p className="text-sm text-rose-600">{lookupError}</p>}
+            {lookupError && <p className="text-sm text-rose-300">{lookupError}</p>}
             <button
               type="submit"
               disabled={lookingUp}
@@ -388,7 +388,7 @@ export default function EventHubPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-16">
+    <div className="min-h-screen bg-canvas pb-16">
       <div className="pt-10 pb-16 px-4" style={{ background: "#C21FAF" }}>
         <div className="max-w-2xl mx-auto text-white">
           <p className="text-xs uppercase tracking-wider text-white/60 mb-2">Event Hub</p>
@@ -401,14 +401,14 @@ export default function EventHubPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 -mt-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="flex border-b border-slate-100 overflow-x-auto">
+        <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden">
+          <div className="flex border-b border-line-soft overflow-x-auto">
             {SECTIONS.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setSection(s.id)}
                 className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium border-b-2 transition-colors shrink-0 min-w-[64px] ${
-                  section === s.id ? "border-brand-600 text-brand-700" : "border-transparent text-slate-400 hover:text-slate-600"
+                  section === s.id ? "border-brand-600 text-brand-500" : "border-transparent text-subtle hover:text-fg-3"
                 }`}
               >
                 <s.icon size={16} />
@@ -424,7 +424,7 @@ export default function EventHubPage() {
                   <button
                     onClick={() => setMyAgendaOnly((v) => !v)}
                     className={`mb-4 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                      myAgendaOnly ? "bg-brand-600 text-white border-brand-600" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                      myAgendaOnly ? "bg-brand-600 text-white border-brand-600" : "border-line text-fg-3 hover:bg-canvas"
                     }`}
                   >
                     <BookmarkCheck size={13} />
@@ -433,32 +433,32 @@ export default function EventHubPage() {
                 ) : null}
 
                 {sessions.length === 0 ? (
-                  <p className="text-sm text-slate-400 text-center py-10">The schedule isn&apos;t published yet — check back soon.</p>
+                  <p className="text-sm text-subtle text-center py-10">The schedule isn&apos;t published yet — check back soon.</p>
                 ) : visibleSessions.length === 0 ? (
-                  <p className="text-sm text-slate-400 text-center py-10">No sessions bookmarked yet — tap the bookmark icon on a session to add it here.</p>
+                  <p className="text-sm text-subtle text-center py-10">No sessions bookmarked yet — tap the bookmark icon on a session to add it here.</p>
                 ) : (
                   <div className="space-y-3">
                     {visibleSessions.map((s) => (
-                      <div key={s.id} className="border border-slate-100 rounded-xl p-3.5">
+                      <div key={s.id} className="border border-line-soft rounded-xl p-3.5">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">{s.sessionType}</span>
-                            {s.track && <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{s.track}</span>}
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-500 bg-brand-500/10 px-2 py-0.5 rounded-full">{s.sessionType}</span>
+                            {s.track && <span className="text-[10px] text-muted bg-fill px-2 py-0.5 rounded-full">{s.track}</span>}
                           </div>
-                          <button onClick={() => handleBookmark(s.id)} disabled={busyId === s.id} className="text-slate-400 hover:text-brand-600 disabled:opacity-50 shrink-0">
-                            {s.bookmarked ? <BookmarkCheck size={16} className="text-brand-600" /> : <Bookmark size={16} />}
+                          <button onClick={() => handleBookmark(s.id)} disabled={busyId === s.id} className="text-subtle hover:text-brand-500 disabled:opacity-50 shrink-0">
+                            {s.bookmarked ? <BookmarkCheck size={16} className="text-brand-500" /> : <Bookmark size={16} />}
                           </button>
                         </div>
-                        <p className="font-semibold text-slate-900 text-sm">{s.title}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <p className="font-semibold text-fg text-sm">{s.title}</p>
+                        <p className="text-xs text-muted mt-0.5">
                           {formatTime(new Date(s.startTime).toTimeString().slice(0, 5))}
                           {s.endTime && ` – ${formatTime(new Date(s.endTime).toTimeString().slice(0, 5))}`}
                         </p>
-                        {s.description && <p className="text-sm text-slate-600 mt-2">{s.description}</p>}
+                        {s.description && <p className="text-sm text-fg-3 mt-2">{s.description}</p>}
                         {s.speakers.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {s.speakers.map((sp) => (
-                              <span key={sp.assignmentId} className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
+                              <span key={sp.assignmentId} className="text-[11px] bg-fill text-fg-2 px-2 py-0.5 rounded-full">
                                 {sp.name} · {sp.role}
                               </span>
                             ))}
@@ -473,12 +473,12 @@ export default function EventHubPage() {
 
             {section === "speakers" &&
               (speakers.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-10">Speakers haven&apos;t been announced yet.</p>
+                <p className="text-sm text-subtle text-center py-10">Speakers haven&apos;t been announced yet.</p>
               ) : (
                 <div className="space-y-3">
                   {speakers.map((sp) => (
-                    <div key={sp.id} className="flex items-start gap-3 border border-slate-100 rounded-xl p-3.5">
-                      <div className="w-11 h-11 rounded-full bg-slate-100 shrink-0 overflow-hidden flex items-center justify-center text-slate-400 font-semibold">
+                    <div key={sp.id} className="flex items-start gap-3 border border-line-soft rounded-xl p-3.5">
+                      <div className="w-11 h-11 rounded-full bg-fill shrink-0 overflow-hidden flex items-center justify-center text-subtle font-semibold">
                         {sp.photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={sp.photoUrl} alt={sp.name} className="w-full h-full object-cover" />
@@ -487,15 +487,15 @@ export default function EventHubPage() {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-slate-900 text-sm">{sp.name}</p>
+                        <p className="font-semibold text-fg text-sm">{sp.name}</p>
                         {(sp.title || sp.company) && (
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-muted">
                             {sp.title}
                             {sp.title && sp.company ? ", " : ""}
                             {sp.company}
                           </p>
                         )}
-                        {sp.bio && <p className="text-xs text-slate-600 mt-1.5">{sp.bio}</p>}
+                        {sp.bio && <p className="text-xs text-fg-3 mt-1.5">{sp.bio}</p>}
                       </div>
                     </div>
                   ))}
@@ -505,7 +505,7 @@ export default function EventHubPage() {
             {section === "qa" && (
               <div>
                 {qaAvailable ? (
-                  <form onSubmit={handleSubmitQuestion} className="mb-5 pb-5 border-b border-slate-100">
+                  <form onSubmit={handleSubmitQuestion} className="mb-5 pb-5 border-b border-line-soft">
                     <div className="flex gap-2 mb-2">
                       <select
                         value={targetSessionId}
@@ -513,7 +513,7 @@ export default function EventHubPage() {
                           setTargetSessionId(e.target.value);
                           setTargetSpeakerId("");
                         }}
-                        className="flex-1 text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white"
+                        className="flex-1 text-xs border border-line rounded-lg px-2 py-1.5 bg-surface"
                       >
                         <option value="">Any session</option>
                         {openSessions.map((s) => (
@@ -523,7 +523,7 @@ export default function EventHubPage() {
                         ))}
                       </select>
                       {sessionSpeakerOptions.length > 0 && (
-                        <select value={targetSpeakerId} onChange={(e) => setTargetSpeakerId(e.target.value)} className="flex-1 text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
+                        <select value={targetSpeakerId} onChange={(e) => setTargetSpeakerId(e.target.value)} className="flex-1 text-xs border border-line rounded-lg px-2 py-1.5 bg-surface">
                           <option value="">Any speaker</option>
                           {sessionSpeakerOptions.map((sp) => (
                             <option key={sp.speakerId} value={sp.speakerId}>
@@ -539,9 +539,9 @@ export default function EventHubPage() {
                       onChange={(e) => setQuestionText(e.target.value)}
                       maxLength={500}
                       placeholder="Ask a question…"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      className="w-full px-3 py-2 rounded-lg border border-line text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600"
                     />
-                    {submitError && <p className="text-xs text-rose-600 mt-1.5">{submitError}</p>}
+                    {submitError && <p className="text-xs text-rose-300 mt-1.5">{submitError}</p>}
                     <button
                       type="submit"
                       disabled={submitting}
@@ -552,20 +552,20 @@ export default function EventHubPage() {
                     </button>
                   </form>
                 ) : (
-                  <p className="text-xs text-slate-400 mb-5 pb-5 border-b border-slate-100">Q&amp;A isn&apos;t open right now — check back once a session starts.</p>
+                  <p className="text-xs text-subtle mb-5 pb-5 border-b border-line-soft">Q&amp;A isn&apos;t open right now — check back once a session starts.</p>
                 )}
 
                 {questions.length === 0 ? (
-                  <p className="text-sm text-slate-400 text-center py-6">No questions yet — be the first to ask.</p>
+                  <p className="text-sm text-subtle text-center py-6">No questions yet — be the first to ask.</p>
                 ) : (
                   <div className="space-y-3">
                     {questions.map((q) => (
-                      <div key={q.id} className="border border-slate-100 rounded-xl p-3 flex items-start gap-3">
+                      <div key={q.id} className="border border-line-soft rounded-xl p-3 flex items-start gap-3">
                         <button
                           onClick={() => handleUpvote(q.id)}
                           disabled={busyId === q.id}
                           className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg border shrink-0 transition-colors disabled:opacity-50 ${
-                            q.hasUpvoted ? "border-brand-600 bg-brand-50 text-brand-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                            q.hasUpvoted ? "border-brand-600 bg-brand-500/10 text-brand-500" : "border-line text-muted hover:bg-canvas"
                           }`}
                         >
                           <ThumbsUp size={13} />
@@ -573,13 +573,13 @@ export default function EventHubPage() {
                         </button>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="text-xs font-medium text-slate-900">{q.askedByName}</span>
-                            {q.status === "answered" && <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">Answered</span>}
+                            <span className="text-xs font-medium text-fg">{q.askedByName}</span>
+                            {q.status === "answered" && <span className="text-[10px] font-semibold text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded-full">Answered</span>}
                             {q.speakerId && speakerById.get(q.speakerId) && (
-                              <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">for {speakerById.get(q.speakerId)!.name}</span>
+                              <span className="text-[10px] text-muted bg-fill px-1.5 py-0.5 rounded-full">for {speakerById.get(q.speakerId)!.name}</span>
                             )}
                           </div>
-                          <p className="text-sm text-slate-700">{q.questionText}</p>
+                          <p className="text-sm text-fg-2">{q.questionText}</p>
                         </div>
                       </div>
                     ))}
@@ -590,15 +590,15 @@ export default function EventHubPage() {
 
             {section === "polls" &&
               (openPolls.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-10">No polls right now — check back during the event.</p>
+                <p className="text-sm text-subtle text-center py-10">No polls right now — check back during the event.</p>
               ) : (
                 <div className="space-y-4">
                   {openPolls.map((p) => {
                     const total = p.options.reduce((sum, o) => sum + o.voteCount, 0);
                     const showResults = !!p.myOptionId || p.status === "closed";
                     return (
-                      <div key={p.id} className="border border-slate-100 rounded-xl p-3.5">
-                        <p className="font-medium text-slate-900 text-sm mb-3">{p.question}</p>
+                      <div key={p.id} className="border border-line-soft rounded-xl p-3.5">
+                        <p className="font-medium text-fg text-sm mb-3">{p.question}</p>
                         <div className="space-y-2">
                           {p.options.map((o) => {
                             const pct = total > 0 ? Math.round((o.voteCount / total) * 100) : 0;
@@ -606,14 +606,14 @@ export default function EventHubPage() {
                             return showResults ? (
                               <div key={o.id}>
                                 <div className="flex items-center justify-between text-xs mb-1">
-                                  <span className={isMine ? "font-semibold text-brand-700" : "text-slate-600"}>
+                                  <span className={isMine ? "font-semibold text-brand-500" : "text-fg-3"}>
                                     {o.label}
                                     {isMine ? " ✓" : ""}
                                   </span>
-                                  <span className="text-slate-500 tabular-nums">{pct}%</span>
+                                  <span className="text-muted tabular-nums">{pct}%</span>
                                 </div>
-                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                  <div className={`h-full rounded-full transition-all duration-500 ${isMine ? "bg-brand-600" : "bg-slate-300"}`} style={{ width: `${pct}%` }} />
+                                <div className="h-2 bg-fill rounded-full overflow-hidden">
+                                  <div className={`h-full rounded-full transition-all duration-500 ${isMine ? "bg-brand-600" : "bg-fill-max"}`} style={{ width: `${pct}%` }} />
                                 </div>
                               </div>
                             ) : (
@@ -621,14 +621,14 @@ export default function EventHubPage() {
                                 key={o.id}
                                 onClick={() => handlePollVote(p.id, o.id)}
                                 disabled={busyId === p.id || p.status !== "open"}
-                                className="w-full text-left text-sm px-3 py-2 rounded-lg border border-slate-200 hover:border-brand-600 hover:bg-brand-50/40 disabled:opacity-50 transition-colors"
+                                className="w-full text-left text-sm px-3 py-2 rounded-lg border border-line hover:border-brand-600 hover:bg-brand-500/10 disabled:opacity-50 transition-colors"
                               >
                                 {o.label}
                               </button>
                             );
                           })}
                         </div>
-                        {p.status === "closed" && <p className="text-[11px] text-slate-400 mt-2">This poll is closed.</p>}
+                        {p.status === "closed" && <p className="text-[11px] text-subtle mt-2">This poll is closed.</p>}
                       </div>
                     );
                   })}
@@ -637,16 +637,16 @@ export default function EventHubPage() {
 
             {section === "announcements" &&
               (announcements.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-10">No updates yet — check back during the event.</p>
+                <p className="text-sm text-subtle text-center py-10">No updates yet — check back during the event.</p>
               ) : (
                 <div className="space-y-3">
                   {announcements.map((a) => (
-                    <div key={a.id} className={`border rounded-xl p-3.5 ${a.pinned ? "border-brand-200 bg-brand-50/40" : "border-slate-100"}`}>
+                    <div key={a.id} className={`border rounded-xl p-3.5 ${a.pinned ? "border-brand-500/30 bg-brand-500/10" : "border-line-soft"}`}>
                       <div className="flex items-start justify-between gap-2">
-                        <RichTextDisplay html={a.body} className="text-sm text-slate-700" />
-                        {a.pinned && <Pin size={12} className="text-brand-600 shrink-0 mt-0.5" />}
+                        <RichTextDisplay html={a.body} className="text-sm text-fg-2" />
+                        {a.pinned && <Pin size={12} className="text-brand-500 shrink-0 mt-0.5" />}
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-2">
+                      <p className="text-[11px] text-subtle mt-2">
                         {new Date(a.createdAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
@@ -658,10 +658,10 @@ export default function EventHubPage() {
               survey &&
               (survey.alreadySubmitted || surveySubmitted ? (
                 <div className="text-center py-10">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-3">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center mx-auto mb-3">
                     <Check size={22} />
                   </div>
-                  <p className="font-medium text-slate-800">Thanks for your feedback!</p>
+                  <p className="font-medium text-fg">Thanks for your feedback!</p>
                 </div>
               ) : (
                 <SurveyForm fields={survey.fields} onSubmit={handleSurveySubmit} submitting={surveySubmitting} submitError={surveyError} />
@@ -670,45 +670,45 @@ export default function EventHubPage() {
             {section === "transfer" &&
               (transferred ? (
                 <div className="text-center py-10">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-3">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center mx-auto mb-3">
                     <Check size={22} />
                   </div>
-                  <p className="font-medium text-slate-800">Ticket transferred to {transferName}</p>
-                  <p className="text-sm text-slate-500 mt-1">They&apos;ve been emailed their own confirmation.</p>
+                  <p className="font-medium text-fg">Ticket transferred to {transferName}</p>
+                  <p className="text-sm text-muted mt-1">They&apos;ve been emailed their own confirmation.</p>
                 </div>
               ) : (
                 <form onSubmit={handleTransfer} className="space-y-3">
-                  <p className="text-sm text-slate-500">
-                    Can&apos;t make it to <span className="font-medium text-slate-700">{event.name}</span>? Give your ticket to someone else — they&apos;ll get their own confirmation email,
+                  <p className="text-sm text-muted">
+                    Can&apos;t make it to <span className="font-medium text-fg-2">{event.name}</span>? Give your ticket to someone else — they&apos;ll get their own confirmation email,
                     and you&apos;ll lose access to this one.
                   </p>
                   <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">New attendee&apos;s name</label>
+                    <label className="block text-xs font-medium text-muted mb-1">New attendee&apos;s name</label>
                     <input
                       value={transferName}
                       onChange={(e) => setTransferName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Their email</label>
+                    <label className="block text-xs font-medium text-muted mb-1">Their email</label>
                     <input
                       type="email"
                       value={transferEmail}
                       onChange={(e) => setTransferEmail(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Their phone (optional)</label>
+                    <label className="block text-xs font-medium text-muted mb-1">Their phone (optional)</label>
                     <input
                       type="tel"
                       value={transferPhone}
                       onChange={(e) => setTransferPhone(sanitizePhoneInput(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                     />
                   </div>
-                  {transferError && <p className="text-sm text-rose-600">{transferError}</p>}
+                  {transferError && <p className="text-sm text-rose-300">{transferError}</p>}
                   <button
                     type="submit"
                     disabled={transferring}

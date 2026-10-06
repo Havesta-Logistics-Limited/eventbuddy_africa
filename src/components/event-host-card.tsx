@@ -63,10 +63,10 @@ function ContactModal({ title, placeholder, needsName, onClose, onSubmit }: { ti
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-slate-100">
-          <h3 className="font-semibold text-slate-900">{title}</h3>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
+      <div className="bg-surface rounded-2xl w-full max-w-sm shadow-2xl">
+        <div className="flex items-center justify-between p-5 border-b border-line-soft">
+          <h3 className="font-semibold text-fg">{title}</h3>
+          <button type="button" onClick={onClose} className="text-subtle hover:text-fg-3">
             <X size={18} />
           </button>
         </div>
@@ -76,7 +76,7 @@ function ContactModal({ title, placeholder, needsName, onClose, onSubmit }: { ti
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
             />
           )}
           <input
@@ -84,16 +84,16 @@ function ContactModal({ title, placeholder, needsName, onClose, onSubmit }: { ti
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Your email (optional)"
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+            className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
           />
           <textarea
             rows={4}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder={placeholder}
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+            className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
           />
-          {error && <p className="text-xs text-rose-600">{error}</p>}
+          {error && <p className="text-xs text-rose-300">{error}</p>}
           <button
             type="submit"
             disabled={submitting}
@@ -153,7 +153,7 @@ export function EventHostCard({
   const sampleNames = attendeeSummary?.sampleNames ?? [];
 
   return (
-    <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
+    <div className="bg-surface/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6">
       <h2 className="font-semibold text-white mb-4">Hosted By</h2>
       <div className="flex items-center gap-3 pb-4 mb-4 border-b border-white/10">
         <Link href={`/${orgSlug}`} className="flex items-center gap-3 flex-1 min-w-0 group">

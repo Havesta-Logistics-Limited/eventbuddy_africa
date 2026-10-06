@@ -40,8 +40,8 @@ export default function PricingContent() {
   const FAQS = faqs(feeLabel);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
+    <div className="min-h-screen bg-canvas">
+      <header className="sticky top-0 z-30 bg-surface/70 backdrop-blur-md border-b border-line/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <span className="sm:hidden">
             <Logo height={18} />
@@ -50,10 +50,10 @@ export default function PricingContent() {
             <Logo height={26} />
           </span>
           <nav className="flex items-center gap-3 sm:gap-6">
-            <Link href="/discover" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
+            <Link href="/discover" className="text-sm font-medium text-fg-3 hover:text-fg hidden sm:block">
               Events
             </Link>
-            <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
+            <Link href="/login" className="text-sm font-medium text-fg-3 hover:text-fg">
               Sign in
             </Link>
             <Link href="/signup" className="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#C21FAF] hover:bg-[#93147D] transition-colors">
@@ -64,12 +64,12 @@ export default function PricingContent() {
       </header>
 
       <section className="max-w-3xl mx-auto px-6 pt-14 pb-8 text-center">
-        <h1 className="font-display text-4xl text-slate-900 mb-3">
+        <h1 className="font-display text-4xl text-fg mb-3">
           Start free.
           <br />
           Bring in our team when you need to.
         </h1>
-        <p className="text-slate-500 max-w-xl mx-auto">
+        <p className="text-muted max-w-xl mx-auto">
           Self-Serve costs nothing until a ticket actually sells. Full-Service and Enterprise put eventbuddy&apos;s own
           team on the ground for events that need more hands than yours.
         </p>
@@ -100,7 +100,7 @@ export default function PricingContent() {
             </div>
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-white text-brand-700 hover:bg-white/90 transition-colors shrink-0"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-surface text-brand-500 hover:bg-surface/90 transition-colors shrink-0"
             >
               Get Started
               <ArrowRight size={16} />
@@ -120,17 +120,17 @@ export default function PricingContent() {
             (on-site team, no self-serve price to show), so equal-weight cards here
             are the honest shape, not a lazy default. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 flex flex-col">
-            <p className="text-sm text-brand-600 font-medium mb-2 flex items-center gap-1.5">
+          <div className="rounded-3xl border border-line bg-surface p-8 flex flex-col">
+            <p className="text-sm text-brand-500 font-medium mb-2 flex items-center gap-1.5">
               <Users2 size={14} />
               Full-Service
             </p>
-            <p className="font-display text-3xl text-slate-900 mb-1">Quote-based</p>
-            <p className="text-slate-500 text-sm mb-6">eventbuddy&apos;s own team runs your event on-site, on the day.</p>
+            <p className="font-display text-3xl text-fg mb-1">Quote-based</p>
+            <p className="text-muted text-sm mb-6">eventbuddy&apos;s own team runs your event on-site, on the day.</p>
             <div className="space-y-2.5 mb-6">
               {FULL_SERVICE_INCLUDED.map((item) => (
-                <div key={item} className="flex items-start gap-2.5 text-sm text-slate-700">
-                  <Check size={16} className="text-brand-600 shrink-0 mt-0.5" />
+                <div key={item} className="flex items-start gap-2.5 text-sm text-fg-2">
+                  <Check size={16} className="text-brand-500 shrink-0 mt-0.5" />
                   {item}
                 </div>
               ))}
@@ -144,17 +144,17 @@ export default function PricingContent() {
             </Link>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 flex flex-col">
-            <p className="text-sm text-brand-600 font-medium mb-2 flex items-center gap-1.5">
+          <div className="rounded-3xl border border-line bg-surface p-8 flex flex-col">
+            <p className="text-sm text-brand-500 font-medium mb-2 flex items-center gap-1.5">
               <Building2 size={14} />
               Enterprise
             </p>
-            <p className="font-display text-3xl text-slate-900 mb-1">Custom</p>
-            <p className="text-slate-500 text-sm mb-6">Full-Service across every event in your program.</p>
+            <p className="font-display text-3xl text-fg mb-1">Custom</p>
+            <p className="text-muted text-sm mb-6">Full-Service across every event in your program.</p>
             <div className="space-y-2.5 mb-6">
               {ENTERPRISE_INCLUDED.map((item) => (
-                <div key={item} className="flex items-start gap-2.5 text-sm text-slate-700">
-                  <Check size={16} className="text-brand-600 shrink-0 mt-0.5" />
+                <div key={item} className="flex items-start gap-2.5 text-sm text-fg-2">
+                  <Check size={16} className="text-brand-500 shrink-0 mt-0.5" />
                   {item}
                 </div>
               ))}
@@ -171,12 +171,12 @@ export default function PricingContent() {
       </section>
 
       <section className="max-w-3xl mx-auto px-6 py-16">
-        <h2 className="font-display text-3xl text-slate-900 mb-10">Questions, answered</h2>
+        <h2 className="font-display text-3xl text-fg mb-10">Questions, answered</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-7">
           {FAQS.map(({ q, a }) => (
-            <div key={q} className="pt-5 border-t border-slate-200">
-              <h3 className="font-semibold text-slate-900 text-sm mb-1.5">{q}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{a}</p>
+            <div key={q} className="pt-5 border-t border-line">
+              <h3 className="font-semibold text-fg text-sm mb-1.5">{q}</h3>
+              <p className="text-sm text-muted leading-relaxed">{a}</p>
             </div>
           ))}
         </div>

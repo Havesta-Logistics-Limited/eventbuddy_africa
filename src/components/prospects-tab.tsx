@@ -31,13 +31,13 @@ function RegistrationSettingsCard({ event }: { event: EventRecord }) {
   }
 
   return (
-    <div className="mb-5 p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
+    <div className="mb-5 p-4 rounded-xl border border-line bg-canvas space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <ClipboardCheck size={16} className="text-slate-400 shrink-0" />
+          <ClipboardCheck size={16} className="text-subtle shrink-0" />
           <div>
-            <p className="text-sm font-medium text-slate-800">Require approval</p>
-            <p className="text-xs text-slate-500">New registrations start pending — review and approve or decline each one.</p>
+            <p className="text-sm font-medium text-fg">Require approval</p>
+            <p className="text-xs text-muted">New registrations start pending — review and approve or decline each one.</p>
           </div>
         </div>
         <button
@@ -46,17 +46,17 @@ function RegistrationSettingsCard({ event }: { event: EventRecord }) {
           aria-checked={!!event.requiresApproval}
           onClick={() => toggle("requiresApproval", event.requiresApproval, setTogglingApproval)}
           disabled={togglingApproval}
-          className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${event.requiresApproval ? "bg-brand-600" : "bg-slate-300"}`}
+          className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${event.requiresApproval ? "bg-brand-600" : "bg-fill-max"}`}
         >
-          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${event.requiresApproval ? "translate-x-4" : ""}`} />
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface transition-transform ${event.requiresApproval ? "translate-x-4" : ""}`} />
         </button>
       </div>
-      <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-200">
+      <div className="flex items-center justify-between gap-3 pt-3 border-t border-line">
         <div className="flex items-center gap-2.5">
-          <ListOrdered size={16} className="text-slate-400 shrink-0" />
+          <ListOrdered size={16} className="text-subtle shrink-0" />
           <div>
-            <p className="text-sm font-medium text-slate-800">Waitlist when sold out</p>
-            <p className="text-xs text-slate-500">Once a capacity-limited ticket sells out, new sign-ups join a waitlist instead of being turned away.</p>
+            <p className="text-sm font-medium text-fg">Waitlist when sold out</p>
+            <p className="text-xs text-muted">Once a capacity-limited ticket sells out, new sign-ups join a waitlist instead of being turned away.</p>
           </div>
         </div>
         <button
@@ -65,9 +65,9 @@ function RegistrationSettingsCard({ event }: { event: EventRecord }) {
           aria-checked={!!event.waitlistEnabled}
           onClick={() => toggle("waitlistEnabled", event.waitlistEnabled, setTogglingWaitlist)}
           disabled={togglingWaitlist}
-          className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${event.waitlistEnabled ? "bg-brand-600" : "bg-slate-300"}`}
+          className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${event.waitlistEnabled ? "bg-brand-600" : "bg-fill-max"}`}
         >
-          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${event.waitlistEnabled ? "translate-x-4" : ""}`} />
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface transition-transform ${event.waitlistEnabled ? "translate-x-4" : ""}`} />
         </button>
       </div>
     </div>
@@ -75,12 +75,12 @@ function RegistrationSettingsCard({ event }: { event: EventRecord }) {
 }
 
 export const statusStyles: Record<RegistrationRecord["status"], string> = {
-  registered: "bg-amber-100 text-amber-700",
-  checked_in: "bg-teal-100 text-teal-700",
-  cancelled: "bg-slate-100 text-slate-500",
-  pending: "bg-orange-100 text-orange-700",
-  waitlisted: "bg-violet-100 text-violet-700",
-  declined: "bg-rose-100 text-rose-700",
+  registered: "bg-amber-500/15 text-amber-300",
+  checked_in: "bg-teal-500/15 text-teal-300",
+  cancelled: "bg-fill text-muted",
+  pending: "bg-orange-500/15 text-orange-300",
+  waitlisted: "bg-violet-500/15 text-violet-300",
+  declined: "bg-rose-500/15 text-rose-300",
 };
 export const statusLabels: Record<RegistrationRecord["status"], string> = {
   registered: "Registered",
@@ -172,10 +172,10 @@ export function ProspectsTab({
     return (
       <div>
         <RegistrationSettingsCard event={event} />
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-10 text-center">
-          <Users size={28} className="mx-auto mb-3 text-slate-300" />
-          <p className="font-medium text-slate-500">No registrations yet</p>
-          <p className="text-xs text-slate-400 mt-1.5">Self-service sign-ups for this event will appear here.</p>
+        <div className="bg-canvas border border-line rounded-xl p-10 text-center">
+          <Users size={28} className="mx-auto mb-3 text-faint" />
+          <p className="font-medium text-muted">No registrations yet</p>
+          <p className="text-xs text-subtle mt-1.5">Self-service sign-ups for this event will appear here.</p>
         </div>
       </div>
     );
@@ -201,37 +201,37 @@ export function ProspectsTab({
           type="button"
           onClick={() => setView("registrations")}
           className={`text-left p-4 rounded-2xl border shadow-sm transition-colors ${
-            view === "registrations" ? "bg-brand-600/5 border-brand-600" : "bg-white border-slate-200 hover:border-slate-300"
+            view === "registrations" ? "bg-brand-600/5 border-brand-600" : "bg-surface border-line hover:border-line-strong"
           }`}
         >
           <div className="flex items-center gap-2 mb-2">
-            <Users size={15} className={view === "registrations" ? "text-brand-600" : "text-slate-400"} />
-            <span className={`text-xs font-medium ${view === "registrations" ? "text-brand-700" : "text-slate-500"}`}>Registrations</span>
+            <Users size={15} className={view === "registrations" ? "text-brand-500" : "text-subtle"} />
+            <span className={`text-xs font-medium ${view === "registrations" ? "text-brand-500" : "text-muted"}`}>Registrations</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 tabular-nums">{registrations.length}</p>
+          <p className="text-2xl font-bold text-fg tabular-nums">{registrations.length}</p>
         </button>
         <button
           type="button"
           onClick={() => setView("participants")}
           className={`text-left p-4 rounded-2xl border shadow-sm transition-colors ${
-            view === "participants" ? "bg-brand-600/5 border-brand-600" : "bg-white border-slate-200 hover:border-slate-300"
+            view === "participants" ? "bg-brand-600/5 border-brand-600" : "bg-surface border-line hover:border-line-strong"
           }`}
         >
           <div className="flex items-center gap-2 mb-2">
-            <UserCheck size={15} className={view === "participants" ? "text-brand-600" : "text-slate-400"} />
-            <span className={`text-xs font-medium ${view === "participants" ? "text-brand-700" : "text-slate-500"}`}>Participants</span>
+            <UserCheck size={15} className={view === "participants" ? "text-brand-500" : "text-subtle"} />
+            <span className={`text-xs font-medium ${view === "participants" ? "text-brand-500" : "text-muted"}`}>Participants</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 tabular-nums">
-            {participants.length} <span className="text-sm font-normal text-slate-400">({conversion}% of registrations)</span>
+          <p className="text-2xl font-bold text-fg tabular-nums">
+            {participants.length} <span className="text-sm font-normal text-subtle">({conversion}% of registrations)</span>
           </p>
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <div className="bg-surface rounded-2xl border border-line overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line-soft">
           <div>
-            <h2 className="font-semibold text-slate-900">{view === "registrations" ? "Event registrations" : "Event participants"}</h2>
-            <p className="text-xs text-slate-500">
+            <h2 className="font-semibold text-fg">{view === "registrations" ? "Event registrations" : "Event participants"}</h2>
+            <p className="text-xs text-muted">
               {shown.length} {view === "registrations" ? "registrant" : "participant"}
               {shown.length !== 1 ? "s" : ""}
             </p>
@@ -241,7 +241,7 @@ export function ProspectsTab({
               onClick={resendAll}
               disabled={resendingAll}
               title="Resend the confirmation email (with QR code) to every registrant — good for a reminder a few days before the event"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas disabled:opacity-50"
             >
               <Send size={12} />
               {resendingAll ? "Sending…" : "Resend QR Codes"}
@@ -250,7 +250,7 @@ export function ProspectsTab({
               onClick={() => {
                 downloadCsv(`${event.name.replace(/[^a-z0-9]/gi, "_")}_${view}.csv`, registrationsToCsv(shown, event));
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas"
             >
               <Download size={12} />
               Export
@@ -259,7 +259,7 @@ export function ProspectsTab({
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead className="bg-canvas">
               <tr>
                 {[
                   "Reference ID",
@@ -272,28 +272,28 @@ export function ProspectsTab({
                   "Checked In",
                   "Registered",
                 ].map((h, i) => (
-                  <th key={i} className="text-left px-4 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">
+                  <th key={i} className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line-soft">
               {shown.map((r) => (
-                <tr key={r.id} onClick={() => setSelectedId(r.id)} className="hover:bg-slate-50 cursor-pointer">
-                  <td className="px-4 py-3 font-mono text-xs text-slate-600 whitespace-nowrap">{r.referenceId}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">{r.fullName}</td>
-                  <td className="px-4 py-3 text-slate-500 max-w-[180px] truncate">{r.email}</td>
-                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{r.phone || "—"}</td>
+                <tr key={r.id} onClick={() => setSelectedId(r.id)} className="hover:bg-canvas cursor-pointer">
+                  <td className="px-4 py-3 font-mono text-xs text-fg-3 whitespace-nowrap">{r.referenceId}</td>
+                  <td className="px-4 py-3 font-medium text-fg whitespace-nowrap">{r.fullName}</td>
+                  <td className="px-4 py-3 text-muted max-w-[180px] truncate">{r.email}</td>
+                  <td className="px-4 py-3 text-muted whitespace-nowrap">{r.phone || "—"}</td>
                   {showTicketColumn && (
                     <td className="px-4 py-3 whitespace-nowrap">
                       {(() => {
                         const ticket = r.ticketTypeId ? ticketTypes.find((t) => t.id === r.ticketTypeId) : undefined;
-                        if (!ticket) return <span className="text-slate-400">—</span>;
+                        if (!ticket) return <span className="text-subtle">—</span>;
                         return (
                           <span className="inline-flex items-center gap-1.5">
-                            <span className="text-slate-700">{ticket.name}</span>
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${ticket.priceNaira > 0 ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}>
+                            <span className="text-fg-2">{ticket.name}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${ticket.priceNaira > 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-fill text-fg-2"}`}>
                               {ticket.priceNaira > 0 ? formatNaira(ticket.priceNaira) : "Free"}
                             </span>
                           </span>
@@ -304,7 +304,7 @@ export function ProspectsTab({
                   {customFields.map((f) => {
                     const v = r.customAnswers?.[f.id];
                     return (
-                      <td key={f.id} className="px-4 py-3 text-slate-600 max-w-[160px] truncate">
+                      <td key={f.id} className="px-4 py-3 text-fg-3 max-w-[160px] truncate">
                         {Array.isArray(v) ? v.join(", ") : v || "—"}
                       </td>
                     );
@@ -314,13 +314,13 @@ export function ProspectsTab({
                   </td>
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     {busyId === r.id ? (
-                      <Loader2 size={16} className="animate-spin text-slate-400" />
+                      <Loader2 size={16} className="animate-spin text-subtle" />
                     ) : r.status === "pending" ? (
                       <div className="flex items-center gap-1.5">
-                        <button type="button" onClick={() => decide(r, "approve")} title="Approve" className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                        <button type="button" onClick={() => decide(r, "approve")} title="Approve" className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15">
                           <Check size={13} />
                         </button>
-                        <button type="button" onClick={() => decide(r, "decline")} title="Decline" className="p-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100">
+                        <button type="button" onClick={() => decide(r, "decline")} title="Decline" className="p-1.5 rounded-lg bg-rose-500/10 text-rose-300 hover:bg-rose-500/15">
                           <X size={13} />
                         </button>
                       </div>
@@ -330,11 +330,11 @@ export function ProspectsTab({
                           type="button"
                           onClick={() => decide(r, "promote")}
                           title="Promote from waitlist"
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-medium"
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-violet-500/10 text-violet-300 hover:bg-violet-500/15 text-xs font-medium"
                         >
                           <ArrowUpCircle size={13} /> Promote
                         </button>
-                        <button type="button" onClick={() => decide(r, "decline")} title="Decline" className="p-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100">
+                        <button type="button" onClick={() => decide(r, "decline")} title="Decline" className="p-1.5 rounded-lg bg-rose-500/10 text-rose-300 hover:bg-rose-500/15">
                           <X size={13} />
                         </button>
                       </div>
@@ -345,11 +345,11 @@ export function ProspectsTab({
                         disabled={r.status === "cancelled" || r.status === "declined"}
                         onChange={() => toggleCheckedIn(r)}
                         title={r.status === "checked_in" ? "Undo check-in" : "Mark as checked in"}
-                        className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600 disabled:opacity-40"
+                        className="w-4 h-4 rounded border-line-strong text-brand-500 focus:ring-brand-600 disabled:opacity-40"
                       />
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString("en-GB")}</td>
+                  <td className="px-4 py-3 text-subtle whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString("en-GB")}</td>
                 </tr>
               ))}
             </tbody>

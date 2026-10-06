@@ -88,20 +88,20 @@ export default function LeadCollectPage() {
       <Shell>
         <div className="min-h-screen flex items-center justify-center p-6">
           <div className="text-center max-w-sm">
-            <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-5">
-              <Lock size={32} className="text-amber-500" />
+            <div className="w-20 h-20 rounded-full bg-amber-500/15 flex items-center justify-center mx-auto mb-5">
+              <Lock size={32} className="text-amber-400" />
             </div>
-            <h2 className="font-display text-2xl text-slate-900 mb-2">
+            <h2 className="font-display text-2xl text-fg mb-2">
               {gate.reason === "not_started" ? "Not open yet" : gate.reason === "manually_closed" ? "Collection is closed" : "Collection has ended"}
             </h2>
-            <p className="text-slate-500">
+            <p className="text-muted">
               {gate.reason === "manually_closed"
                 ? `Lead capture for ${event.name} has been closed by the event organizer.`
                 : gate.reason === "not_started"
                   ? `Lead capture for ${event.name} opens ${formatDate(captureWindow!.date)}${captureWindow!.startTime ? ` at ${formatTime(captureWindow!.startTime)}` : ""}.`
                   : `Lead capture for ${event.name} closed ${formatDate(captureWindow!.endDate || captureWindow!.date)}${captureWindow!.endTime ? ` at ${formatTime(captureWindow!.endTime)}` : ""}.`}
             </p>
-            <p className="text-slate-400 text-sm mt-4">This page will unlock automatically once collection opens.</p>
+            <p className="text-subtle text-sm mt-4">This page will unlock automatically once collection opens.</p>
           </div>
         </div>
       </Shell>
@@ -227,9 +227,9 @@ export default function LeadCollectPage() {
     }
   };
 
-  const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-staff-600 focus:border-transparent";
+  const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-staff-600 focus:border-transparent";
   const selectClass = `${fieldClass} cursor-pointer`;
-  const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
+  const labelClass = "block text-sm font-medium text-fg-2 mb-1.5";
 
   if (submitted) {
     const pendingCount = getPendingLeads().length;
@@ -237,17 +237,17 @@ export default function LeadCollectPage() {
       <Shell>
         <div className="min-h-screen flex items-center justify-center p-6">
           <div className="text-center">
-            <div className="w-20 h-20 rounded-full bg-sky-100 flex items-center justify-center mx-auto mb-5">
-              <CheckCircle2 size={40} className="text-sky-500" />
+            <div className="w-20 h-20 rounded-full bg-sky-500/15 flex items-center justify-center mx-auto mb-5">
+              <CheckCircle2 size={40} className="text-sky-400" />
             </div>
-            <h2 className="font-display text-2xl text-slate-900 mb-2">Lead captured!</h2>
-            <p className="text-slate-500 mb-1">
+            <h2 className="font-display text-2xl text-fg mb-2">Lead captured!</h2>
+            <p className="text-muted mb-1">
               {pendingCount > 0 ? "Saved locally (pending sync)" : "Record saved successfully."}
             </p>
-            <p className="text-sky-600 font-semibold text-lg">
+            <p className="text-sky-300 font-semibold text-lg">
               {count} lead{count !== 1 ? "s" : ""} collected today
             </p>
-            <p className="text-slate-400 text-sm mt-3">Form resetting…</p>
+            <p className="text-subtle text-sm mt-3">Form resetting…</p>
           </div>
         </div>
       </Shell>
@@ -257,7 +257,7 @@ export default function LeadCollectPage() {
   if (event && template.id !== "education-fair") {
     return (
       <Shell>
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-canvas">
           <div className="sticky top-0 z-30 bg-[#04223d] text-white px-4 py-3">
             <div className="max-w-xl mx-auto flex items-center justify-between">
               <p className="font-semibold text-sm truncate max-w-[200px] sm:max-w-none">{event.name}</p>
@@ -270,13 +270,13 @@ export default function LeadCollectPage() {
 
           <div className="max-w-xl mx-auto px-4 py-6">
             <div className="mb-5">
-              <h1 className="font-display text-2xl text-slate-900">Attendee Registration</h1>
-              <p className="text-slate-500 text-sm mt-1">Capture lead details for {event.name}</p>
+              <h1 className="font-display text-2xl text-fg">Attendee Registration</h1>
+              <p className="text-muted text-sm mt-1">Capture lead details for {event.name}</p>
             </div>
 
             <DynamicLeadForm fields={event.customFields ?? []} onSubmit={handleDynamicSubmit} submitting={submitting} submitError={submitError} />
 
-            <p className="text-center text-xs text-slate-400 pt-4 pb-4">{count > 0 ? `${count} lead${count !== 1 ? "s" : ""} collected this session` : "No leads collected yet"}</p>
+            <p className="text-center text-xs text-subtle pt-4 pb-4">{count > 0 ? `${count} lead${count !== 1 ? "s" : ""} collected this session` : "No leads collected yet"}</p>
           </div>
         </div>
       </Shell>
@@ -285,7 +285,7 @@ export default function LeadCollectPage() {
 
   return (
     <Shell>
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-canvas">
         <div className="sticky top-0 z-30 bg-[#04223d] text-white px-4 py-3">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <div>
@@ -308,8 +308,8 @@ export default function LeadCollectPage() {
 
         <div className="max-w-xl mx-auto px-4 py-6">
           <div className="mb-5">
-            <h1 className="font-display text-2xl text-slate-900">Attendee Registration</h1>
-            <p className="text-slate-500 text-sm mt-1">Capture lead details for {uni?.name || "your university"}</p>
+            <h1 className="font-display text-2xl text-fg">Attendee Registration</h1>
+            <p className="text-muted text-sm mt-1">Capture lead details for {uni?.name || "your university"}</p>
           </div>
 
           <div className="mb-5 space-y-3">
@@ -318,9 +318,9 @@ export default function LeadCollectPage() {
               label="Scan to pull attendee details"
               helperText="Scan a registered attendee's QR code to fill in their name, email, and phone — or use manual entry below."
             />
-            <form onSubmit={handleLookupSubmit} className="bg-white rounded-xl border border-slate-200 p-5">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                <ScanLine size={13} className="text-slate-400" />
+            <form onSubmit={handleLookupSubmit} className="bg-surface rounded-xl border border-line p-5">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted uppercase tracking-wider mb-3">
+                <ScanLine size={13} className="text-subtle" />
                 Manual reference ID
               </div>
               <div className="flex gap-2">
@@ -328,7 +328,7 @@ export default function LeadCollectPage() {
                   value={lookupRef}
                   onChange={(e) => setLookupRef(e.target.value)}
                   placeholder="e.g. K7QX-4R2M"
-                  className="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-staff-600"
+                  className="flex-1 px-3.5 py-2.5 rounded-lg border border-line text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-staff-600"
                 />
                 <button
                   type="submit"
@@ -338,20 +338,20 @@ export default function LeadCollectPage() {
                   {lookupLoading ? "Looking up…" : "Pull details"}
                 </button>
               </div>
-              {pulledName && <p className="text-xs text-teal-600 mt-2">Pulled details for {pulledName} — review below before submitting.</p>}
+              {pulledName && <p className="text-xs text-teal-300 mt-2">Pulled details for {pulledName} — review below before submitting.</p>}
               {alreadyCollected && (
-                <p className="text-xs text-amber-600 mt-2">
+                <p className="text-xs text-amber-300 mt-2">
                   This attendee&apos;s data has already been collected for {uni?.name || "your university"}. Scan a different attendee, or ask them to visit another
                   university&apos;s booth.
                 </p>
               )}
-              {lookupError && <p className="text-xs text-rose-600 mt-2">{lookupError}</p>}
+              {lookupError && <p className="text-xs text-rose-300 mt-2">{lookupError}</p>}
             </form>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Personal Information</h2>
+            <div className="bg-surface rounded-xl border border-line p-5 space-y-4">
+              <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Personal Information</h2>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>First Name *</label>
@@ -383,20 +383,20 @@ export default function LeadCollectPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Academic Interest</h2>
+            <div className="bg-surface rounded-xl border border-line p-5 space-y-4">
+              <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Academic Interest</h2>
 
               <div>
                 <label className={labelClass}>Destination</label>
-                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg border border-sky-200 bg-sky-50 text-sm text-sky-800">
-                  <Lock size={13} className="text-sky-500 shrink-0" />
+                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sm text-sky-200">
+                  <Lock size={13} className="text-sky-400 shrink-0" />
                   {dest ? `${dest.flag} ${dest.name}` : "—"}
                 </div>
               </div>
               <div>
                 <label className={labelClass}>University</label>
-                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg border border-sky-200 bg-sky-50 text-sm text-sky-800">
-                  <Lock size={13} className="text-sky-500 shrink-0" />
+                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sm text-sky-200">
+                  <Lock size={13} className="text-sky-400 shrink-0" />
                   {uni ? uni.name : "—"}
                 </div>
               </div>
@@ -430,8 +430,8 @@ export default function LeadCollectPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Qualifications</h2>
+            <div className="bg-surface rounded-xl border border-line p-5 space-y-4">
+              <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Qualifications</h2>
               <div>
                 <label className={labelClass}>Highest Level of Education *</label>
                 <select required value={form.highestEducation} onChange={(e) => set("highestEducation", e.target.value)} className={selectClass}>
@@ -449,7 +449,7 @@ export default function LeadCollectPage() {
                     <label
                       key={val}
                       className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer text-sm transition-colors ${
-                        form.takenIELTS === val ? "border-sky-500 bg-sky-50 text-sky-800 font-medium" : "border-slate-200 text-slate-700 hover:border-slate-300"
+                        form.takenIELTS === val ? "border-sky-500 bg-sky-500/10 text-sky-200 font-medium" : "border-line text-fg-2 hover:border-line-strong"
                       }`}
                     >
                       <input
@@ -468,19 +468,19 @@ export default function LeadCollectPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="bg-surface rounded-xl border border-line p-5">
               <label className={labelClass}>Additional Comments</label>
               <textarea
                 rows={3}
                 value={form.comments}
                 onChange={(e) => set("comments", e.target.value)}
                 placeholder="Any notes, questions, or special requirements…"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-staff-600 resize-none"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-staff-600 resize-none"
               />
             </div>
 
             {submitError && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                 <AlertCircle size={15} className="mt-0.5 shrink-0" />
                 {submitError}
               </div>
@@ -492,7 +492,7 @@ export default function LeadCollectPage() {
             >
               {submitting ? "Saving…" : "Save Lead"}
             </button>
-            <p className="text-center text-xs text-slate-400 pb-4">{count > 0 ? `${count} lead${count !== 1 ? "s" : ""} collected this session` : "No leads collected yet"}</p>
+            <p className="text-center text-xs text-subtle pb-4">{count > 0 ? `${count} lead${count !== 1 ? "s" : ""} collected this session` : "No leads collected yet"}</p>
           </form>
         </div>
       </div>

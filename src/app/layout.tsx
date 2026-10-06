@@ -103,7 +103,7 @@ export default function RootLayout({
         <GoogleAnalytics />
         {children}
         <OfflineSupport />
-        <Toaster richColors position="top-right" closeButton />
+        <Toaster theme="dark" richColors position="top-right" closeButton toastOptions={{ style: { background: "#1d1426", border: "1px solid #ffffff17", color: "#f6f0fa" } }} />
       </body>
     </html>
   );

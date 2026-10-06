@@ -8,9 +8,9 @@ import { PersistError, markOneOnOneRequestNotified, updateEvent, updateOneOnOneR
 
 const STATUS_LABEL: Record<EventOneOnOneRequest["status"], string> = { pending: "Pending", assigned: "Assigned", done: "Done" };
 const STATUS_COLOR: Record<EventOneOnOneRequest["status"], string> = {
-  pending: "bg-amber-100 text-amber-700",
-  assigned: "bg-blue-100 text-blue-700",
-  done: "bg-emerald-100 text-emerald-700",
+  pending: "bg-amber-500/15 text-amber-300",
+  assigned: "bg-blue-500/15 text-blue-300",
+  done: "bg-emerald-500/15 text-emerald-300",
 };
 
 function RequestRow({ orgSlug, eventId, request }: { orgSlug: string; eventId: string; request: EventOneOnOneRequest }) {
@@ -54,11 +54,11 @@ function RequestRow({ orgSlug, eventId, request }: { orgSlug: string; eventId: s
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
+    <div className="bg-surface rounded-xl border border-line p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-medium text-slate-900">{request.fullName}</p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
+          <p className="font-medium text-fg">{request.fullName}</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted mt-1">
             <span className="flex items-center gap-1">
               <Mail size={11} />
               {request.email}
@@ -71,7 +71,7 @@ function RequestRow({ orgSlug, eventId, request }: { orgSlug: string; eventId: s
             )}
             <span>{new Date(request.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
           </div>
-          {request.note && <p className="text-sm text-slate-600 mt-2 italic">&quot;{request.note}&quot;</p>}
+          {request.note && <p className="text-sm text-fg-3 mt-2 italic">&quot;{request.note}&quot;</p>}
         </div>
         <select
           value={request.status}
@@ -85,17 +85,17 @@ function RequestRow({ orgSlug, eventId, request }: { orgSlug: string; eventId: s
           ))}
         </select>
       </div>
-      <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2">
+      <div className="mt-3 pt-3 border-t border-line-soft flex items-center gap-2">
         <input
           value={assignment}
           onChange={(e) => setAssignment(e.target.value)}
           onBlur={saveAssignment}
           placeholder="Assign to a booth, room, or speaker…"
           disabled={saving}
-          className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60"
+          className="flex-1 px-3 py-1.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60"
         />
         {request.notifiedAt ? (
-          <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 shrink-0 px-1">
+          <span className="flex items-center gap-1 text-xs font-medium text-emerald-300 shrink-0 px-1">
             <Check size={13} />
             Notified
           </span>
@@ -105,7 +105,7 @@ function RequestRow({ orgSlug, eventId, request }: { orgSlug: string; eventId: s
             onClick={handleNotify}
             disabled={notifying || !request.assignment?.trim()}
             title={request.assignment?.trim() ? "Email the attendee their assignment" : "Set an assignment first"}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
           >
             <Send size={12} />
             {notifying ? "Notifying…" : "Notify"}
@@ -170,13 +170,13 @@ export function OneOnOneTab({
 
   return (
     <div>
-      <div className="mb-5 p-4 rounded-xl border border-slate-200 bg-slate-50">
+      <div className="mb-5 p-4 rounded-xl border border-line bg-canvas">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <HeartHandshake size={16} className="text-slate-400 shrink-0" />
+            <HeartHandshake size={16} className="text-subtle shrink-0" />
             <div>
-              <p className="text-sm font-medium text-slate-800">1-on-1 requests</p>
-              <p className="text-xs text-slate-500">Attendees can say they&apos;re interested in a 1-on-1 right after registering — you decide who they meet.</p>
+              <p className="text-sm font-medium text-fg">1-on-1 requests</p>
+              <p className="text-xs text-muted">Attendees can say they&apos;re interested in a 1-on-1 right after registering — you decide who they meet.</p>
             </div>
           </div>
           <button
@@ -185,14 +185,14 @@ export function OneOnOneTab({
             aria-checked={oneOnOneEnabled}
             onClick={handleToggle}
             disabled={toggling}
-            className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${oneOnOneEnabled ? "bg-brand-600" : "bg-slate-300"}`}
+            className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${oneOnOneEnabled ? "bg-brand-600" : "bg-fill-max"}`}
           >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${oneOnOneEnabled ? "translate-x-4" : ""}`} />
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface transition-transform ${oneOnOneEnabled ? "translate-x-4" : ""}`} />
           </button>
         </div>
         {oneOnOneEnabled && (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 mt-3 pt-3 border-t border-slate-200">
-            <label className="text-xs font-medium text-slate-500 shrink-0">Limit (first come, first served)</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 mt-3 pt-3 border-t border-line">
+            <label className="text-xs font-medium text-muted shrink-0">Limit (first come, first served)</label>
             <div className="flex items-center gap-2.5">
               <input
                 type="number"
@@ -202,9 +202,9 @@ export function OneOnOneTab({
                 onBlur={saveLimit}
                 disabled={savingLimit}
                 placeholder="Unlimited"
-                className="w-24 px-2.5 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60"
+                className="w-24 px-2.5 py-1.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60"
               />
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-subtle">
                 {requests.length} request{requests.length !== 1 ? "s" : ""}
                 {oneOnOneLimit != null ? ` of ${oneOnOneLimit}` : " so far"}
               </span>
@@ -214,7 +214,7 @@ export function OneOnOneTab({
       </div>
 
       {requests.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="text-center py-16 text-subtle bg-canvas rounded-xl border border-line">
           <HeartHandshake size={28} className="mx-auto mb-3 opacity-40" />
           <p className="text-sm">{oneOnOneEnabled ? "No requests yet." : "Turn this on to start collecting 1-on-1 requests."}</p>
         </div>

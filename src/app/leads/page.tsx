@@ -124,8 +124,8 @@ export default function LeadsPage() {
       <div className="p-4 sm:p-6 max-w-7xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="font-display text-2xl text-slate-900">Leads</h1>
-            <p className="text-slate-500 text-sm mt-0.5 tabular-nums">
+            <h1 className="font-display text-2xl text-fg">Leads</h1>
+            <p className="text-muted text-sm mt-0.5 tabular-nums">
               {filtered.length} of {isRep ? leads.filter((l) => l.universityId === session?.universityId).length : leads.length} records
             </p>
           </div>
@@ -133,7 +133,7 @@ export default function LeadsPage() {
             <button
               onClick={openEmailModal}
               disabled={filtered.length === 0}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-line text-fg-3 hover:bg-canvas disabled:opacity-50"
             >
               <Mail size={14} />
               Email
@@ -150,21 +150,21 @@ export default function LeadsPage() {
         </div>
 
         {!isRep && (
-          <div className="rounded-xl bg-slate-50 p-4 mb-5">
+          <div className="rounded-xl bg-canvas p-4 mb-5">
             <div className="flex flex-wrap gap-3">
               <div className="relative flex-1 min-w-[180px]">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name or email…"
-                  className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                 />
               </div>
               <select
                 value={filterEvent}
                 onChange={(e) => setFilterEvent(e.target.value)}
-                className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 min-w-[150px] bg-white"
+                className="px-3.5 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 min-w-[150px] bg-surface"
               >
                 <option value="">All Events</option>
                 {events.map((ev) => (
@@ -181,7 +181,7 @@ export default function LeadsPage() {
                       setFilterDest(e.target.value);
                       setFilterUni("");
                     }}
-                    className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
+                    className="px-3.5 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-surface"
                   >
                     <option value="">All Destinations</option>
                     {destinations.map((d) => (
@@ -193,7 +193,7 @@ export default function LeadsPage() {
                   <select
                     value={filterUni}
                     onChange={(e) => setFilterUni(e.target.value)}
-                    className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white min-w-[160px]"
+                    className="px-3.5 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-surface min-w-[160px]"
                   >
                     <option value="">All Universities</option>
                     {availableUnis.map((u) => (
@@ -205,7 +205,7 @@ export default function LeadsPage() {
                 </>
               )}
               {activeFilters > 0 && (
-                <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-rose-600 hover:bg-rose-50 border border-rose-100">
+                <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-rose-300 hover:bg-rose-500/10 border border-rose-500/20">
                   <X size={13} />
                   Clear ({activeFilters})
                 </button>
@@ -215,14 +215,14 @@ export default function LeadsPage() {
         )}
 
         {isRep && (
-          <div className="rounded-xl bg-slate-50 p-4 mb-5">
+          <div className="rounded-xl bg-canvas p-4 mb-5">
             <div className="relative w-full max-w-md">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search leads by name, email or phone..."
-                className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
               />
             </div>
           </div>
@@ -235,8 +235,8 @@ export default function LeadsPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="text-center py-16 text-slate-400">
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
+            <div className="text-center py-16 text-subtle">
               <Users size={36} className="mx-auto mb-3 opacity-40" />
               <p className="font-medium">No leads found</p>
               {activeFilters > 0 && <p className="text-sm mt-1">Try adjusting your filters</p>}
@@ -252,19 +252,19 @@ export default function LeadsPage() {
 
         {emailModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
-            <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="font-semibold text-slate-900">Email Leads</h2>
-                <button onClick={() => setEmailModal(false)} className="text-slate-400 hover:text-slate-600">
+                <h2 className="font-semibold text-fg">Email Leads</h2>
+                <button onClick={() => setEmailModal(false)} className="text-subtle hover:text-fg-3">
                   <X size={20} />
                 </button>
               </div>
               <div className="space-y-4">
-                <div className="p-3 bg-slate-50 rounded-lg text-sm text-slate-600">
-                  Sending <span className="font-semibold text-slate-900">{filtered.length} leads</span>
+                <div className="p-3 bg-canvas rounded-lg text-sm text-fg-3">
+                  Sending <span className="font-semibold text-fg">{filtered.length} leads</span>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Recipient Email</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Recipient Email</label>
                   <input
                     type="email"
                     required
@@ -275,50 +275,50 @@ export default function LeadsPage() {
                       setSendError("");
                     }}
                     placeholder="recipient@example.com"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Subject</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Subject</label>
                   <input
                     value={emailSubject}
                     onChange={(e) => setEmailSubject(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Message</label>
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Message</label>
                   <textarea
                     rows={4}
                     value={emailMessage}
                     onChange={(e) => setEmailMessage(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Attachment</label>
-                  <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-600">
-                    <Paperclip size={14} className="text-slate-400 shrink-0" />
+                  <label className="block text-sm font-medium text-fg-2 mb-1.5">Attachment</label>
+                  <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg border border-line bg-canvas text-sm text-fg-3">
+                    <Paperclip size={14} className="text-subtle shrink-0" />
                     leads_export.csv
-                    <span className="text-slate-400">— attached automatically</span>
+                    <span className="text-subtle">— attached automatically</span>
                   </div>
                 </div>
 
                 {sendError && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                     <AlertCircle size={15} className="mt-0.5 shrink-0" />
                     {sendError}
                   </div>
                 )}
                 {sent && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-teal-50 text-teal-700 text-sm">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-teal-500/10 text-teal-300 text-sm">
                     <CheckCircle2 size={15} className="mt-0.5 shrink-0" />
                     Email sent to {emailTo}.
                   </div>
                 )}
 
                 <div className="flex gap-3">
-                  <button type="button" onClick={downloadFiltered} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                  <button type="button" onClick={downloadFiltered} className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas">
                     Download CSV only
                   </button>
                   <button

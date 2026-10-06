@@ -56,7 +56,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="font-semibold text-slate-800 min-w-0">University Reps ({reps.length})</h2>
+        <h2 className="font-semibold text-fg min-w-0">University Reps ({reps.length})</h2>
         <button
           onClick={() => {
             setRepForm(emptyRep);
@@ -70,9 +70,9 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
         </button>
       </div>
       {reps.length === 0 ? (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-10 text-center">
-          <p className="font-medium text-slate-500">No university reps yet</p>
-          <p className="text-xs text-slate-400 mt-1.5">Add one so a university&apos;s own representative can sign in and see just their leads.</p>
+        <div className="bg-canvas border border-line rounded-xl p-10 text-center">
+          <p className="font-medium text-muted">No university reps yet</p>
+          <p className="text-xs text-subtle mt-1.5">Add one so a university&apos;s own representative can sign in and see just their leads.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -81,28 +81,28 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
             const uni = s.universityId ? universities.find((u) => u.id === s.universityId) : null;
             return (
               <Reveal key={s.id} index={i}>
-                <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 group hover:border-[#C21FAF]/30 hover:shadow-sm transition-all">
+                <div className="bg-surface rounded-xl border border-line p-4 flex items-center gap-4 group hover:border-[#C21FAF]/30 hover:shadow-sm transition-all">
                   <div className="w-10 h-10 rounded-full bg-[#C21FAF]/10 flex items-center justify-center text-[#C21FAF] font-semibold shrink-0">{s.name.charAt(0)}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900 flex items-center gap-2">
+                    <p className="font-medium text-fg flex items-center gap-2">
                       {s.name}
                       {s.isOnline && (
-                        <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-full">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                           Online
                         </span>
                       )}
                     </p>
-                    {s.email && <p className="text-sm text-slate-500">{s.email}</p>}
+                    {s.email && <p className="text-sm text-muted">{s.email}</p>}
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700">Rep</span>
+                    <span className="px-2 py-0.5 rounded-full font-medium bg-purple-500/15 text-purple-300">Rep</span>
                     {dest && <span className="px-2 py-0.5 rounded-full bg-[#C21FAF]/10 text-[#C21FAF] hidden sm:inline-block">{dest.name}</span>}
-                    {uni && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hidden sm:inline-block">{uni.name}</span>}
+                    {uni && <span className="px-2 py-0.5 rounded-full bg-fill text-fg-3 hidden sm:inline-block">{uni.name}</span>}
                   </div>
                   <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
                     {s.isOnline && (
-                      <button onClick={() => handleDelete(() => forceLogoutRep(s.id), `${s.name} signed out`)} title="Force Logout" className="p-1.5 text-slate-400 hover:text-amber-600 rounded-md hover:bg-amber-50">
+                      <button onClick={() => handleDelete(() => forceLogoutRep(s.id), `${s.name} signed out`)} title="Force Logout" className="p-1.5 text-subtle hover:text-amber-300 rounded-md hover:bg-amber-500/10">
                         <LogOut size={16} />
                       </button>
                     )}
@@ -111,11 +111,11 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                         setRepForm({ id: s.id, name: s.name, email: s.email || "", destinationId: s.destinationId || "", universityId: s.universityId || "", eventId });
                         setShowRepForm(true);
                       }}
-                      className="p-1.5 text-slate-400 hover:text-[#C21FAF] rounded-md hover:bg-slate-100"
+                      className="p-1.5 text-subtle hover:text-[#C21FAF] rounded-md hover:bg-fill"
                     >
                       <Edit2 size={16} />
                     </button>
-                    <button onClick={() => handleDelete(() => deleteStaff(s.id), `${s.name} removed`)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50">
+                    <button onClick={() => handleDelete(() => deleteStaff(s.id), `${s.name} removed`)} className="p-1.5 text-subtle hover:text-rose-300 rounded-md hover:bg-rose-500/10">
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -128,40 +128,40 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
 
       {showRepForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
-          <div className="bg-white rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">{repForm.id ? "Edit Rep" : "Add Rep"}</h2>
+          <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-line-soft">
+              <h2 className="font-semibold text-fg">{repForm.id ? "Edit Rep" : "Add Rep"}</h2>
               <button onClick={() => setShowRepForm(false)}>
-                <X size={20} className="text-slate-400" />
+                <X size={20} className="text-subtle" />
               </button>
             </div>
             <form onSubmit={handleAddRep} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Rep Name</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Rep Name</label>
                 <input
                   required
                   value={repForm.name}
                   onChange={(e) => setRepForm({ ...repForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Email</label>
                 <input
                   required
                   type="email"
                   value={repForm.email}
                   onChange={(e) => setRepForm({ ...repForm, email: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Destination</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">Destination</label>
                 <select
                   required
                   value={repForm.destinationId}
                   onChange={(e) => setRepForm({ ...repForm, destinationId: e.target.value, universityId: "" })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-surface"
                 >
                   <option value="">Select destination</option>
                   {destinations.map((d) => (
@@ -172,13 +172,13 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">University Name</label>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">University Name</label>
                 <select
                   required
                   value={repForm.universityId}
                   onChange={(e) => setRepForm({ ...repForm, universityId: e.target.value })}
                   disabled={!repForm.destinationId}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-white disabled:opacity-50"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] bg-surface disabled:opacity-50"
                 >
                   <option value="">Select university</option>
                   {repUnis.map((u) => (
@@ -189,13 +189,13 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                 </select>
               </div>
               {formError && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {formError}
                 </div>
               )}
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowRepForm(false)} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                <button type="button" onClick={() => setShowRepForm(false)} className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas">
                   Cancel
                 </button>
                 <button

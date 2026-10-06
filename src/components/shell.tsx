@@ -62,13 +62,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const staffUni = session?.universityId ? getUniversityById(session.universityId) : null;
   const staffEvent = session?.eventId ? getEventById(session.eventId) : null;
 
-  // Brand green is the app-wide identity; Staff gets its own distinct blue
-  // identity so it's never mistaken for the Admin/Rep experience.
-  const sidebarBg = isStaff ? "#04223d" : "#22103A";
-  const activeNavAccent = isStaff ? "#1098F7" : "var(--color-brand-600)";
-  const sessionAccentColor = isStaff ? "text-sky-300" : "text-[#FF8AF5]";
-  const avatarBg = isStaff ? "bg-[#1098F7]/20" : "bg-brand-600/25";
-  const avatarText = isStaff ? "text-sky-300" : "text-[#FF8AF5]";
+  // Organizers get the brand pink; Staff keep their own distinct blue identity
+  // so the portal is never mistaken for the Admin/Rep experience (DESIGN.md).
+  const accent = isStaff ? "#4FB3FF" : "#FF8AF5";
+  const shellTone = isStaff ? "eb-shell eb-shell--staff" : "eb-shell";
 
   async function handleLogout() {
     await logout();
@@ -78,57 +75,24 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex">
       {/* Sidebar — desktop */}
-      <aside className="hidden md:flex w-64 flex-col text-white fixed inset-y-0 left-0 z-40" style={{ background: sidebarBg }}>
-        <div className="px-6 py-5 border-b border-white/10">
-          <Logo tone="white" height={18} />
+      <aside className={`${shellTone} hidden md:flex w-64 flex-col fixed inset-y-0 left-0 z-40`} style={{ ["--accent" as string]: accent }}>
+        <div className="px-5 h-16 flex items-center border-b border-line-soft">
+          <Logo tone="white" height={20} />
         </div>
 
-        {!isAdmin && staffEvent && (
-          <div className="mx-4 mt-4 rounded-lg bg-white/8 p-3 text-xs">
-            <p className="text-white/50 uppercase tracking-wider text-[10px] mb-1">Active Session</p>
-            <p className="font-semibold text-white truncate">{staffEvent.name}</p>
-            {staffDest && (
-              <p className={`${sessionAccentColor} mt-0.5`}>
-                {staffDest.flag} {staffDest.name}
-              </p>
-            )}
-            {staffUni && <p className="text-white/60 truncate">{staffUni.shortName}</p>}
-          </div>
-        )}
+        {!isAdmin && staffEvent && <SessionCard event={staffEvent.name} dest={staffDest} uni={staffUni?.shortName} />}
 
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
-          {nav.map(({ to, label, icon: Icon }) => {
-            const active = pathname === to || pathname.startsWith(to + "/");
-            return (
-              <Link
-                key={to}
-                href={to}
-                style={active ? { background: `color-mix(in srgb, ${activeNavAccent} 20%, transparent)` } : undefined}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  active ? "text-white font-medium" : "text-white/60 hover:text-white hover:bg-white/8"
-                }`}
-              >
-                <Icon size={17} className={active ? sessionAccentColor : undefined} />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
+        <NavList items={nav} pathname={pathname} />
 
-        <div className="px-3 pb-5 border-t border-white/10 pt-4">
-          <div className="flex items-center gap-3 px-3 mb-3">
-            <div className={`w-8 h-8 rounded-full ${avatarBg} flex items-center justify-center ${avatarText} font-semibold text-sm`}>
-              {session?.name.charAt(0)}
-            </div>
+        <div className="px-3 pb-4 pt-3 border-t border-line-soft">
+          <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 mb-1">
+            <div className="eb-avatar">{session?.name.charAt(0)}</div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{session?.name}</p>
-              <p className="text-xs text-white/40 capitalize">{session?.role}</p>
+              <p className="text-sm font-medium text-fg truncate">{session?.name}</p>
+              <p className="text-xs text-subtle capitalize">{session?.role?.replace("_", " ")}</p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8 transition-colors"
-          >
+          <button onClick={handleLogout} className="eb-nav-item w-full">
             <LogOut size={16} />
             Sign out
           </button>
@@ -136,67 +100,39 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Mobile header */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-50 text-white h-14 flex items-center px-4 gap-4" style={{ background: sidebarBg }}>
-        <button onClick={() => setMobileOpen(true)} aria-label="Open menu">
-          <Menu size={22} />
+      <header className={`${shellTone} eb-mobilebar md:hidden fixed top-0 inset-x-0 z-50 h-14 flex items-center px-4 gap-3`} style={{ ["--accent" as string]: accent }}>
+        <button onClick={() => setMobileOpen(true)} aria-label="Open menu" aria-expanded={mobileOpen} className="eb-iconbtn -ml-1.5">
+          <Menu size={20} />
         </button>
-        <Logo tone="white" height={12} />
+        <Logo tone="white" height={15} />
       </header>
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
-          <div className="w-64 text-white flex flex-col h-full animate-drawer-in" style={{ background: sidebarBg }}>
-            <div className="px-5 py-4 flex items-center justify-between border-b border-white/10">
-              <Logo tone="white" height={13} />
-              <button onClick={() => setMobileOpen(false)} aria-label="Close menu">
-                <X size={20} className="text-white/60" />
+        <div className="md:hidden fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="Menu">
+          <div className={`${shellTone} w-72 max-w-[85vw] flex flex-col h-full animate-drawer-in border-r border-line`} style={{ ["--accent" as string]: accent }}>
+            <div className="px-5 h-14 flex items-center justify-between border-b border-line-soft">
+              <Logo tone="white" height={15} />
+              <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="eb-iconbtn -mr-1.5">
+                <X size={19} />
               </button>
             </div>
-            {!isAdmin && staffEvent && (
-              <div className="mx-4 mt-4 rounded-lg bg-white/8 p-3 text-xs">
-                <p className="text-white/50 uppercase tracking-wider text-[10px] mb-1">Active Session</p>
-                <p className="font-semibold text-white truncate">{staffEvent.name}</p>
-                {staffDest && (
-                  <p className={`${sessionAccentColor} mt-0.5`}>
-                    {staffDest.flag} {staffDest.name}
-                  </p>
-                )}
-              </div>
-            )}
-            <nav className="flex-1 px-3 py-4 space-y-0.5">
-              {nav.map(({ to, label, icon: Icon }) => {
-                const active = pathname === to;
-                return (
-                  <Link
-                    key={to}
-                    href={to}
-                    onClick={() => setMobileOpen(false)}
-                    style={active ? { background: `color-mix(in srgb, ${activeNavAccent} 20%, transparent)` } : undefined}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                      active ? "text-white font-medium" : "text-white/60 hover:text-white hover:bg-white/8"
-                    }`}
-                  >
-                    <Icon size={17} className={active ? sessionAccentColor : undefined} />
-                    {label}
-                  </Link>
-                );
-              })}
-            </nav>
-            <div className="px-3 pb-5 border-t border-white/10 pt-4">
+            {!isAdmin && staffEvent && <SessionCard event={staffEvent.name} dest={staffDest} uni={staffUni?.shortName} />}
+            <NavList items={nav} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+            <div className="px-3 pb-5 pt-3 border-t border-line-soft">
               <button
                 onClick={() => {
                   handleLogout();
                   setMobileOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8"
+                className="eb-nav-item w-full"
               >
                 <LogOut size={16} />
                 Sign out
               </button>
             </div>
           </div>
-          <div className="flex-1 bg-black/50 animate-modal-backdrop" onClick={() => setMobileOpen(false)} />
+          <div className="flex-1 bg-black/60 backdrop-blur-[2px] animate-modal-backdrop" onClick={() => setMobileOpen(false)} />
         </div>
       )}
 
@@ -204,7 +140,50 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {/* min-w-0 keeps this a shrinkable flex item — without it, wide content
           (e.g. the leads table's nowrap columns) forces the whole page past
           the viewport instead of scrolling inside its own overflow-x-auto. */}
-      <main className="flex-1 min-w-0 md:ml-64 min-h-screen pt-14 md:pt-0">{children}</main>
+      <main className="flex-1 min-w-0 md:ml-64 min-h-screen pt-14 md:pt-0 bg-canvas">{children}</main>
+    </div>
+  );
+}
+
+type NavItem = { to: string; label: string; icon: React.ComponentType<{ size?: number; className?: string }> };
+
+/** The nav list. One pill marks the active page and glides between items as the
+ *  route changes, so moving around the app reads as one continuous surface. */
+function NavList({ items, pathname, onNavigate }: { items: NavItem[]; pathname: string; onNavigate?: () => void }) {
+  const activeIndex = items.findIndex(({ to }) => pathname === to || pathname.startsWith(to + "/"));
+  return (
+    <nav className="relative flex-1 px-3 py-4" aria-label="Main">
+      <ul className="relative space-y-0.5">
+        {activeIndex >= 0 && (
+          <li aria-hidden="true" className="eb-nav-pill" style={{ transform: `translateY(${activeIndex * 42}px)` }} />
+        )}
+        {items.map(({ to, label, icon: Icon }, i) => {
+          const active = i === activeIndex;
+          return (
+            <li key={to}>
+              <Link href={to} onClick={onNavigate} aria-current={active ? "page" : undefined} className="eb-nav-item" data-active={active || undefined}>
+                <Icon size={17} className="eb-nav-icon" />
+                {label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+function SessionCard({ event, dest, uni }: { event: string; dest: { flag: string; name: string } | null | undefined; uni?: string }) {
+  return (
+    <div className="mx-3 mt-4 rounded-xl border border-line-soft bg-fill px-3.5 py-3 text-xs">
+      <p className="text-subtle uppercase tracking-wider text-[10px] font-semibold mb-1">Active session</p>
+      <p className="font-semibold text-fg truncate">{event}</p>
+      {dest && (
+        <p className="mt-0.5 text-[color:var(--accent)]">
+          {dest.flag} {dest.name}
+        </p>
+      )}
+      {uni && <p className="text-muted truncate">{uni}</p>}
     </div>
   );
 }

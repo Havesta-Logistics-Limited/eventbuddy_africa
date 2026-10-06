@@ -83,8 +83,8 @@ const SECTIONS = [
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
+    <div className="min-h-screen bg-canvas">
+      <header className="sticky top-0 z-30 bg-surface/70 backdrop-blur-md border-b border-line/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <span className="sm:hidden">
             <Logo height={18} />
@@ -93,10 +93,10 @@ export default function TermsPage() {
             <Logo height={26} />
           </span>
           <nav className="flex items-center gap-3 sm:gap-6">
-            <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
+            <Link href="/pricing" className="text-sm font-medium text-fg-3 hover:text-fg hidden sm:block">
               Pricing
             </Link>
-            <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
+            <Link href="/login" className="text-sm font-medium text-fg-3 hover:text-fg">
               Sign in
             </Link>
             <Link href="/signup" className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors">
@@ -107,19 +107,19 @@ export default function TermsPage() {
       </header>
 
       <section className="max-w-3xl mx-auto px-6 pt-12 pb-4">
-        <p className="font-mono text-xs font-semibold uppercase tracking-widest text-brand-600 mb-3">Legal</p>
-        <h1 className="font-display text-4xl text-slate-900 mb-2">Terms &amp; Conditions</h1>
-        <p className="text-sm text-slate-400">Last updated October 6, 2026</p>
+        <p className="font-mono text-xs font-semibold uppercase tracking-widest text-brand-500 mb-3">Legal</p>
+        <h1 className="font-display text-4xl text-fg mb-2">Terms &amp; Conditions</h1>
+        <p className="text-sm text-subtle">Last updated October 6, 2026</p>
       </section>
 
       <section className="max-w-3xl mx-auto px-6 pb-20">
         <div className="space-y-10 mt-6">
           {SECTIONS.map(({ heading, body }) => (
-            <div key={heading} className="pt-8 border-t border-slate-200 first:pt-0 first:border-t-0">
-              <h2 className="font-display text-xl text-slate-900 mb-3">{heading}</h2>
+            <div key={heading} className="pt-8 border-t border-line first:pt-0 first:border-t-0">
+              <h2 className="font-display text-xl text-fg mb-3">{heading}</h2>
               <div className="space-y-3">
                 {body.map((p, i) => (
-                  <p key={i} className="text-sm text-slate-600 leading-relaxed">
+                  <p key={i} className="text-sm text-fg-3 leading-relaxed">
                     {p}
                   </p>
                 ))}

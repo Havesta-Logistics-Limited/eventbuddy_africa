@@ -28,18 +28,18 @@ export function MfaNagBanner({ onSetup }: { onSetup: () => void }) {
   if (!needsSetup || dismissed) return null;
 
   return (
-    <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 mb-5">
-      <ShieldAlert size={18} className="text-amber-600 shrink-0 mt-0.5" />
+    <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 mb-5">
+      <ShieldAlert size={18} className="text-amber-300 shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-amber-900">Secure your account with two-factor authentication</p>
-        <p className="text-xs text-amber-700 mt-0.5">
+        <p className="text-sm font-medium text-amber-200">Secure your account with two-factor authentication</p>
+        <p className="text-xs text-amber-300 mt-0.5">
           Add a code from an authenticator app at sign-in.{" "}
           <button type="button" onClick={onSetup} className="font-medium underline hover:no-underline">
             Set it up now
           </button>
         </p>
       </div>
-      <button type="button" onClick={() => setDismissed(true)} aria-label="Dismiss" className="text-amber-500 hover:text-amber-700 shrink-0">
+      <button type="button" onClick={() => setDismissed(true)} aria-label="Dismiss" className="text-amber-400 hover:text-amber-300 shrink-0">
         <X size={16} />
       </button>
     </div>

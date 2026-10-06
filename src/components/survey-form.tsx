@@ -4,8 +4,8 @@ import { useState } from "react";
 import { FieldDef } from "@/lib/types";
 import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
 
-const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600";
-const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
+const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600";
+const labelClass = "block text-sm font-medium text-fg-2 mb-1.5";
 
 export type SurveyAnswers = Record<string, string | string[]>;
 
@@ -29,7 +29,7 @@ function SurveyField({ field, value, onChange }: { field: FieldDef; value: strin
       ) : field.type === "multiple_choice" ? (
         <div className="grid grid-cols-2 gap-2">
           {(field.options ?? []).map((opt) => (
-            <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-700 cursor-pointer hover:border-slate-300">
+            <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-line text-sm text-fg-2 cursor-pointer hover:border-line-strong">
               <input type="radio" checked={value === opt} onChange={() => onChange(opt)} className="accent-brand-600" />
               {opt}
             </label>
@@ -40,7 +40,7 @@ function SurveyField({ field, value, onChange }: { field: FieldDef; value: strin
           {(field.options ?? []).map((opt) => {
             const arr = Array.isArray(value) ? value : [];
             return (
-              <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-700 cursor-pointer hover:border-slate-300">
+              <label key={opt} className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-line text-sm text-fg-2 cursor-pointer hover:border-line-strong">
                 <input
                   type="checkbox"
                   checked={arr.includes(opt)}
@@ -106,7 +106,7 @@ export function SurveyForm({ fields, onSubmit, submitting, submitError }: { fiel
       {fields.map((f) => (
         <SurveyField key={f.id} field={f} value={answers[f.id]} onChange={(v) => set(f.id, v)} />
       ))}
-      {(validationError || submitError) && <p className="text-sm text-rose-600">{validationError || submitError}</p>}
+      {(validationError || submitError) && <p className="text-sm text-rose-300">{validationError || submitError}</p>}
       <button type="submit" disabled={submitting} className="w-full py-2.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60">
         {submitting ? "Submitting…" : "Submit"}
       </button>

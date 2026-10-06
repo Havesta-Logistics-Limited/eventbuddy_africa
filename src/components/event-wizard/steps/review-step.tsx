@@ -6,7 +6,7 @@ import type { EventWizardData } from "../types";
 export function ReviewStep({ data, template }: { data: EventWizardData; template: EventTemplate }) {
   return (
     <div className="space-y-4 text-sm">
-      <div className="rounded-lg bg-slate-50 border border-slate-200 p-4 space-y-2">
+      <div className="rounded-lg bg-canvas border border-line p-4 space-y-2">
         <Row label="Template" value={template.name} />
         <Row label="Name" value={data.name || "—"} />
         {data.category && <Row label="Category" value={data.category} />}
@@ -41,7 +41,7 @@ export function ReviewStep({ data, template }: { data: EventWizardData; template
         {template.usesDestinations && data.allowRepAccess !== false && <Row label="Rep code" value={data.repAccessCode || "None — open check-in"} />}
       </div>
       {template.usesDestinations && (
-        <p className="text-xs text-slate-400">Add this fair&apos;s destinations, universities, and reps from its own page once it&apos;s created.</p>
+        <p className="text-xs text-subtle">Add this fair&apos;s destinations, universities, and reps from its own page once it&apos;s created.</p>
       )}
     </div>
   );
@@ -50,8 +50,8 @@ export function ReviewStep({ data, template }: { data: EventWizardData; template
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <span className="text-slate-500 shrink-0">{label}</span>
-      <span className="text-slate-800 font-medium text-right">{value}</span>
+      <span className="text-muted shrink-0">{label}</span>
+      <span className="text-fg font-medium text-right">{value}</span>
     </div>
   );
 }

@@ -44,9 +44,9 @@ export function CheckinLinksCard({
   const who = showStaffLink && showRepLink ? "Staff and reps use" : showRepLink ? "Reps use" : "Staff uses";
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
-      <h2 className="text-sm font-semibold text-slate-800 mb-1">Check-in link{links.length !== 1 ? "s" : ""}</h2>
-      <p className="text-xs text-slate-500 mb-3">
+    <div className="bg-surface rounded-xl border border-line p-4 mb-6">
+      <h2 className="text-sm font-semibold text-fg mb-1">Check-in link{links.length !== 1 ? "s" : ""}</h2>
+      <p className="text-xs text-muted mb-3">
         {who} this to check in, no admin login needed — unique to this event, it can&apos;t be used to check in against a different one.
       </p>
       <div className="flex flex-wrap gap-2 mb-2">
@@ -55,7 +55,7 @@ export function CheckinLinksCard({
             key={key}
             type="button"
             onClick={() => copy(key, `${origin}${path}`)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas"
           >
             <Link2 size={12} />
             {copied === key ? "Link copied!" : `Copy ${label}`}

@@ -50,7 +50,7 @@ export function FollowOrgButton({ orgSlug, theme = "light" }: { orgSlug: string;
     return (
       <span
         className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full shrink-0 ${
-          theme === "dark" ? "bg-white/10 text-white/70" : "bg-slate-100 text-slate-600"
+          theme === "dark" ? "bg-surface/10 text-white/70" : "bg-fill text-fg-3"
         }`}
       >
         <Check size={12} /> Following
@@ -69,7 +69,7 @@ export function FollowOrgButton({ orgSlug, theme = "light" }: { orgSlug: string;
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Your email"
             className={`w-36 px-2.5 py-1.5 rounded-lg text-xs border focus:outline-none focus:ring-1 ${
-              theme === "dark" ? "bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:ring-[#FF8AF5]" : "border-slate-200 focus:ring-brand-600"
+              theme === "dark" ? "bg-surface/5 border-white/20 text-white placeholder:text-white/40 focus:ring-[#FF8AF5]" : "border-line focus:ring-brand-600"
             }`}
           />
           <button type="submit" disabled={submitting} className="px-3 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-60 shrink-0" style={{ background: "#C21FAF" }}>
@@ -81,14 +81,14 @@ export function FollowOrgButton({ orgSlug, theme = "light" }: { orgSlug: string;
           type="button"
           onClick={() => setExpanded(true)}
           className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-            theme === "dark" ? "border-white/20 text-white/80 hover:bg-white/10" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+            theme === "dark" ? "border-white/20 text-white/80 hover:bg-surface/10" : "border-line text-fg-3 hover:bg-canvas"
           }`}
         >
           <UserPlus size={12} />
           Follow
         </button>
       )}
-      {error && <p className={`text-xs mt-1 ${theme === "dark" ? "text-rose-300" : "text-rose-600"}`}>{error}</p>}
+      {error && <p className={`text-xs mt-1 ${theme === "dark" ? "text-rose-300" : "text-rose-300"}`}>{error}</p>}
     </div>
   );
 }

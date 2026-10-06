@@ -161,8 +161,8 @@ export function ReferralsTab({
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="font-semibold text-slate-900">Referral partners</h2>
-          <p className="text-sm text-slate-500 mt-0.5 max-w-xl">
+          <h2 className="font-semibold text-fg">Referral partners</h2>
+          <p className="text-sm text-muted mt-0.5 max-w-xl">
             Give each partner their own link. Anything booked through it is credited to them for 30 days,
             and the commission below is what you owe once the event is done.
           </p>
@@ -172,7 +172,7 @@ export function ReferralsTab({
             <button
               type="button"
               onClick={exportCsv}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-medium text-fg-2 hover:bg-canvas"
             >
               <Download className="w-4 h-4" aria-hidden="true" />
               Export
@@ -190,55 +190,55 @@ export function ReferralsTab({
       </div>
 
       {adding && (
-        <form onSubmit={create} className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 grid gap-3 sm:grid-cols-2">
+        <form onSubmit={create} className="rounded-xl border border-line bg-canvas/60 p-4 grid gap-3 sm:grid-cols-2">
           <div>
-            <label htmlFor="ref-name" className="block text-sm font-medium text-slate-700 mb-1.5">Partner name *</label>
+            <label htmlFor="ref-name" className="block text-sm font-medium text-fg-2 mb-1.5">Partner name *</label>
             <input
               id="ref-name" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="Campus Reps NG"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface"
             />
           </div>
           <div>
-            <label htmlFor="ref-code" className="block text-sm font-medium text-slate-700 mb-1.5">Link code</label>
+            <label htmlFor="ref-code" className="block text-sm font-medium text-fg-2 mb-1.5">Link code</label>
             <input
               id="ref-code" value={code} onChange={(e) => setCode(e.target.value)}
               placeholder={name ? slugifyCode(name) : "CAMPUS-REPS"}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white font-mono"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface font-mono"
             />
-            <p className="text-xs text-slate-500 mt-1">Left blank, it&rsquo;s made from the name.</p>
+            <p className="text-xs text-muted mt-1">Left blank, it&rsquo;s made from the name.</p>
           </div>
           <div>
-            <label htmlFor="ref-email" className="block text-sm font-medium text-slate-700 mb-1.5">Email (optional)</label>
+            <label htmlFor="ref-email" className="block text-sm font-medium text-fg-2 mb-1.5">Email (optional)</label>
             <input
               id="ref-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="partner@example.com"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="ref-type" className="block text-sm font-medium text-slate-700 mb-1.5">Commission</label>
+              <label htmlFor="ref-type" className="block text-sm font-medium text-fg-2 mb-1.5">Commission</label>
               <select
                 id="ref-type" value={type} onChange={(e) => setType(e.target.value as CommissionType)}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white cursor-pointer"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface cursor-pointer"
               >
                 {TYPES.map((t) => <option key={t} value={t}>{COMMISSION_LABELS[t]}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="ref-rate" className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label htmlFor="ref-rate" className="block text-sm font-medium text-fg-2 mb-1.5">
                 {type.startsWith("percent") ? "Percent" : "Amount ₦"}
               </label>
               <input
                 id="ref-rate" type="number" min="0" step="0.01" value={rate}
                 onChange={(e) => setRate(e.target.value)} disabled={type === "none"}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white disabled:bg-slate-100 tabular-nums"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm bg-surface disabled:bg-fill tabular-nums"
               />
             </div>
           </div>
           <div className="sm:col-span-2 flex justify-end gap-2">
-            <button type="button" onClick={() => setAdding(false)} className="px-3 py-2 text-sm font-medium text-slate-600">Cancel</button>
+            <button type="button" onClick={() => setAdding(false)} className="px-3 py-2 text-sm font-medium text-fg-3">Cancel</button>
             <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-[#C21FAF] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
               {saving && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
               Add partner
@@ -248,10 +248,10 @@ export function ReferralsTab({
       )}
 
       {mine.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center">
-          <Link2 className="w-8 h-8 text-slate-300 mx-auto mb-3" aria-hidden="true" />
-          <p className="text-slate-600 font-medium">No referral partners yet</p>
-          <p className="text-sm text-slate-500 mt-1">Add one to get a shareable link and start attributing signups.</p>
+        <div className="rounded-xl border border-dashed border-line-strong p-10 text-center">
+          <Link2 className="w-8 h-8 text-faint mx-auto mb-3" aria-hidden="true" />
+          <p className="text-fg-3 font-medium">No referral partners yet</p>
+          <p className="text-sm text-muted mt-1">Add one to get a shareable link and start attributing signups.</p>
         </div>
       ) : (
         <>
@@ -262,18 +262,18 @@ export function ReferralsTab({
               { label: "Revenue referred", value: formatNaira(totals.grossNaira) },
               { label: "Commission owed", value: formatNaira(totals.commissionNaira), accent: true },
             ].map((s) => (
-              <div key={s.label} className={`rounded-xl border p-4 ${s.accent ? "border-[#C21FAF]/30 bg-[#FFF3FD]" : "border-slate-200 bg-white"}`}>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{s.label}</p>
-                <p className={`mt-1 text-2xl font-semibold tabular-nums ${s.accent ? "text-[#C21FAF]" : "text-slate-900"}`}>
+              <div key={s.label} className={`rounded-xl border p-4 ${s.accent ? "border-[#C21FAF]/30 bg-brand-500/10" : "border-line bg-surface"}`}>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted">{s.label}</p>
+                <p className={`mt-1 text-2xl font-semibold tabular-nums ${s.accent ? "text-[#C21FAF]" : "text-fg"}`}>
                   {loadingTallies ? "—" : s.value}
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="overflow-x-auto rounded-xl border border-line">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-500">
+              <thead className="bg-canvas text-muted">
                 <tr>
                   <th className="text-left px-4 py-2.5 font-medium">Partner</th>
                   <th className="text-left px-4 py-2.5 font-medium">Link</th>
@@ -285,15 +285,15 @@ export function ReferralsTab({
                   <th className="px-4 py-2.5" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {mine.map((r) => {
                   const t = tallies[r.id] ?? EMPTY;
                   const link = referralLink(siteUrl, orgSlug, event.id, r.code);
                   return (
                     <tr key={r.id} className={r.isActive ? "" : "opacity-55"}>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-slate-900">{r.partnerName}</div>
-                        <div className="text-xs text-slate-500">
+                        <div className="font-medium text-fg">{r.partnerName}</div>
+                        <div className="text-xs text-muted">
                           {COMMISSION_LABELS[r.commissionType]}
                           {r.commissionType !== "none" && ` · ${r.commissionType.startsWith("percent") ? `${r.commissionRate}%` : formatNaira(r.commissionRate)}`}
                           {!r.isActive && " · inactive"}
@@ -303,31 +303,31 @@ export function ReferralsTab({
                         <button
                           type="button"
                           onClick={() => copy(link, r.id)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 font-mono text-xs text-slate-700 hover:bg-slate-50 max-w-[240px]"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 font-mono text-xs text-fg-2 hover:bg-canvas max-w-[240px]"
                           title={link}
                         >
                           {copied === r.id
-                            ? <Check className="w-3.5 h-3.5 text-[#0d7c6e] shrink-0" aria-hidden="true" />
+                            ? <Check className="w-3.5 h-3.5 text-teal-300 shrink-0" aria-hidden="true" />
                             : <Copy className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
                           <span className="truncate">?ref={r.code}</span>
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-slate-600">{r.clickCount}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-slate-900 font-medium">{loadingTallies ? "—" : t.registrations}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-slate-600">{loadingTallies ? "—" : t.paidTickets}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-slate-600">{loadingTallies ? "—" : formatNaira(t.grossNaira)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-fg-3">{r.clickCount}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-fg font-medium">{loadingTallies ? "—" : t.registrations}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-fg-3">{loadingTallies ? "—" : t.paidTickets}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-fg-3">{loadingTallies ? "—" : formatNaira(t.grossNaira)}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-semibold text-[#C21FAF]">{loadingTallies ? "—" : formatNaira(t.commissionNaira)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
                           <button
                             type="button" onClick={() => toggleActive(r)}
-                            className="px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900"
+                            className="px-2 py-1 text-xs font-medium text-fg-3 hover:text-fg"
                           >
                             {r.isActive ? "Deactivate" : "Activate"}
                           </button>
                           <button
                             type="button" onClick={() => remove(r)} aria-label={`Delete ${r.partnerName}`}
-                            className="p-1.5 text-slate-400 hover:text-rose-600"
+                            className="p-1.5 text-subtle hover:text-rose-300"
                           >
                             <Trash2 className="w-4 h-4" aria-hidden="true" />
                           </button>
@@ -340,7 +340,7 @@ export function ReferralsTab({
             </table>
           </div>
 
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             Clicks are counted once per visitor per browser session and are a traffic signal, not money.
             Commission is calculated only on ticket payments that actually settled.
           </p>

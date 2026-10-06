@@ -7,10 +7,10 @@ import { EventQuestion, EventSession, EventSpeaker } from "@/lib/types";
 import { PersistError, listEventQuestions, moderateQuestion } from "@/lib/store";
 
 const STATUS_PILL: Record<EventQuestion["status"], string> = {
-  pending: "bg-amber-100 text-amber-700",
-  approved: "bg-brand-100 text-brand-700",
-  answered: "bg-emerald-100 text-emerald-700",
-  hidden: "bg-slate-100 text-slate-500",
+  pending: "bg-amber-500/15 text-amber-300",
+  approved: "bg-brand-500/15 text-brand-500",
+  answered: "bg-emerald-500/15 text-emerald-300",
+  hidden: "bg-fill text-muted",
 };
 
 /** Q&A moderation queue — polls every few seconds so new attendee-submitted
@@ -68,7 +68,7 @@ export function QaTab({ eventId, sessions, speakers }: { eventId: string; sessio
               key={f}
               onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
-                filter === f ? "bg-brand-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
+                filter === f ? "bg-brand-600 text-white" : "bg-surface border border-line text-fg-3 hover:border-line-strong"
               }`}
             >
               {f}
@@ -76,42 +76,42 @@ export function QaTab({ eventId, sessions, speakers }: { eventId: string; sessio
             </button>
           ))}
         </div>
-        <button onClick={refresh} className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">
+        <button onClick={refresh} className="p-2 rounded-lg border border-line text-muted hover:bg-canvas">
           <RefreshCw size={14} />
         </button>
       </div>
 
       {loading ? (
-        <div className="py-16 text-center text-slate-400 text-sm">Loading…</div>
+        <div className="py-16 text-center text-subtle text-sm">Loading…</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="text-center py-16 text-subtle bg-canvas rounded-xl border border-line">
           <MessageSquareText size={28} className="mx-auto mb-3 opacity-40" />
           <p className="text-sm">No {filter !== "all" ? filter : ""} questions.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((q) => (
-            <div key={q.id} className="bg-white rounded-xl border border-slate-200 p-4">
+            <div key={q.id} className="bg-surface rounded-xl border border-line p-4">
               <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-slate-900 text-sm">{q.askedByName}</span>
+                  <span className="font-medium text-fg text-sm">{q.askedByName}</span>
                   <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${STATUS_PILL[q.status]}`}>{q.status}</span>
                   {q.sessionId && sessionById.get(q.sessionId) && (
-                    <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{sessionById.get(q.sessionId)!.title}</span>
+                    <span className="text-[11px] text-muted bg-fill px-2 py-0.5 rounded-full">{sessionById.get(q.sessionId)!.title}</span>
                   )}
                   {q.speakerId && speakerById.get(q.speakerId) && (
-                    <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">for {speakerById.get(q.speakerId)!.name}</span>
+                    <span className="text-[11px] text-muted bg-fill px-2 py-0.5 rounded-full">for {speakerById.get(q.speakerId)!.name}</span>
                   )}
                 </div>
-                <span className="text-[11px] text-slate-400">{new Date(q.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+                <span className="text-[11px] text-subtle">{new Date(q.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
               </div>
-              <p className="text-sm text-slate-700 mb-3">{q.questionText}</p>
+              <p className="text-sm text-fg-2 mb-3">{q.questionText}</p>
               <div className="flex items-center gap-2">
                 {q.status !== "approved" && (
                   <button
                     onClick={() => handleModerate(q.id, "approved")}
                     disabled={busyId === q.id}
-                    className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline disabled:opacity-50"
+                    className="flex items-center gap-1 text-xs font-medium text-brand-500 hover:underline disabled:opacity-50"
                   >
                     <Check size={12} /> Approve
                   </button>
@@ -120,7 +120,7 @@ export function QaTab({ eventId, sessions, speakers }: { eventId: string; sessio
                   <button
                     onClick={() => handleModerate(q.id, "answered")}
                     disabled={busyId === q.id}
-                    className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline disabled:opacity-50"
+                    className="flex items-center gap-1 text-xs font-medium text-emerald-300 hover:underline disabled:opacity-50"
                   >
                     <Check size={12} /> Mark answered
                   </button>
@@ -129,7 +129,7 @@ export function QaTab({ eventId, sessions, speakers }: { eventId: string; sessio
                   <button
                     onClick={() => handleModerate(q.id, "hidden")}
                     disabled={busyId === q.id}
-                    className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:underline disabled:opacity-50 ml-auto"
+                    className="flex items-center gap-1 text-xs font-medium text-muted hover:underline disabled:opacity-50 ml-auto"
                   >
                     <EyeOff size={12} /> Hide
                   </button>

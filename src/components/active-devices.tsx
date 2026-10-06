@@ -60,30 +60,30 @@ export function ActiveDevicesSection() {
 
   return (
     <div>
-      <h2 className="font-semibold text-slate-800 mb-1">Active devices</h2>
-      <p className="text-sm text-slate-500 mb-4">Devices currently signed into your account.</p>
+      <h2 className="font-semibold text-fg mb-1">Active devices</h2>
+      <p className="text-sm text-muted mb-4">Devices currently signed into your account.</p>
       {sessions === null ? (
-        <div className="h-16 rounded-xl bg-slate-100 animate-pulse" />
+        <div className="h-16 rounded-xl bg-fill animate-pulse" />
       ) : sessions.length === 0 ? (
-        <p className="text-sm text-slate-400">No active sessions found.</p>
+        <p className="text-sm text-subtle">No active sessions found.</p>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+        <div className="bg-surface rounded-xl border border-line divide-y divide-line-soft">
           {sessions.map((s) => {
             const { browser, os, isMobile } = parseUserAgent(s.user_agent);
             const isCurrent = s.session_id === currentId;
             const Icon = isMobile ? Smartphone : Laptop;
             return (
               <div key={s.session_id} className="flex items-center gap-3 px-4 py-3">
-                <Icon size={16} className="text-slate-400 shrink-0" />
+                <Icon size={16} className="text-subtle shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-slate-800">
+                    <span className="text-sm font-medium text-fg">
                       {browser} on {os}
                     </span>
-                    {isCurrent && <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">This device</span>}
+                    {isCurrent && <span className="text-xs font-medium text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-full">This device</span>}
                   </div>
                   {!isCurrent && (
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-subtle mt-0.5">
                       Active {formatDistanceToNowStrict(new Date(s.refreshed_at || s.created_at), { addSuffix: true })}
                     </p>
                   )}
@@ -98,7 +98,7 @@ export function ActiveDevicesSection() {
           type="button"
           onClick={handleSignOutOthers}
           disabled={signingOutOthers}
-          className="mt-3 text-sm font-medium text-rose-600 hover:text-rose-700 disabled:opacity-60 transition-transform active:scale-[0.97]"
+          className="mt-3 text-sm font-medium text-rose-300 hover:text-rose-300 disabled:opacity-60 transition-transform active:scale-[0.97]"
         >
           {signingOutOthers ? "Signing out…" : `Sign out of ${otherCount} other device${otherCount !== 1 ? "s" : ""}`}
         </button>

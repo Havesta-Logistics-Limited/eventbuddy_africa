@@ -33,14 +33,14 @@ export function FieldEditorRow({
   const isChoice = CHOICE_TYPES.includes(field.type);
 
   return (
-    <div className="rounded-lg border border-slate-200 p-3.5 space-y-3">
+    <div className="rounded-lg border border-line p-3.5 space-y-3">
       <div className="flex items-start gap-2">
         <div className="flex-1 space-y-2">
           <input
             value={field.label}
             onChange={(e) => onChange({ ...field, label: e.target.value })}
             placeholder="Question"
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+            className="w-full px-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
           />
           <select
             value={field.type}
@@ -49,7 +49,7 @@ export function FieldEditorRow({
               const isNewChoice = CHOICE_TYPES.includes(type);
               onChange({ ...field, type, options: isNewChoice ? (field.options?.length ? field.options : ["Option 1"]) : undefined });
             }}
-            className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-white"
+            className="px-3 py-1.5 rounded-lg border border-line text-xs bg-surface"
           >
             {Object.entries(TYPE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -59,14 +59,14 @@ export function FieldEditorRow({
           </select>
         </div>
         <div className="flex flex-col gap-1 shrink-0">
-          <button type="button" onClick={onMoveUp} disabled={!onMoveUp} className="text-slate-400 hover:text-slate-600 disabled:opacity-30">
+          <button type="button" onClick={onMoveUp} disabled={!onMoveUp} className="text-subtle hover:text-fg-3 disabled:opacity-30">
             <ChevronUp size={15} />
           </button>
-          <button type="button" onClick={onMoveDown} disabled={!onMoveDown} className="text-slate-400 hover:text-slate-600 disabled:opacity-30">
+          <button type="button" onClick={onMoveDown} disabled={!onMoveDown} className="text-subtle hover:text-fg-3 disabled:opacity-30">
             <ChevronDown size={15} />
           </button>
         </div>
-        <button type="button" onClick={onDelete} className="text-slate-400 hover:text-rose-600 shrink-0">
+        <button type="button" onClick={onDelete} className="text-subtle hover:text-rose-300 shrink-0">
           <Trash2 size={15} />
         </button>
       </div>
@@ -82,12 +82,12 @@ export function FieldEditorRow({
                   options[i] = e.target.value;
                   onChange({ ...field, options });
                 }}
-                className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
+                className="flex-1 px-3 py-1.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]"
               />
               <button
                 type="button"
                 onClick={() => onChange({ ...field, options: (field.options ?? []).filter((_, x) => x !== i) })}
-                className="text-slate-400 hover:text-rose-600"
+                className="text-subtle hover:text-rose-300"
               >
                 <X size={14} />
               </button>
@@ -104,7 +104,7 @@ export function FieldEditorRow({
         </div>
       )}
 
-      <label className="flex items-center gap-2 text-xs text-slate-600">
+      <label className="flex items-center gap-2 text-xs text-fg-3">
         <input type="checkbox" checked={field.required} onChange={(e) => onChange({ ...field, required: e.target.checked })} className="accent-[#C21FAF]" />
         Required
       </label>

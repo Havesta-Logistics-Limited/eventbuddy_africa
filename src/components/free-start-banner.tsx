@@ -15,11 +15,11 @@ export function FreeStartBanner() {
   if (dismissed) return null;
 
   return (
-    <div className="flex items-start gap-3 p-4 rounded-xl bg-sky-50 border border-sky-200 mb-5">
-      <Rocket size={18} className="text-sky-600 shrink-0 mt-0.5" />
+    <div className="flex items-start gap-3 p-4 rounded-xl bg-sky-500/10 border border-sky-500/30 mb-5">
+      <Rocket size={18} className="text-sky-300 shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-sky-900">No payout setup needed to get started</p>
-        <p className="text-xs text-sky-700 mt-0.5">
+        <p className="text-sm font-medium text-sky-200">No payout setup needed to get started</p>
+        <p className="text-xs text-sky-300 mt-0.5">
           Create your first event and start collecting free registrations right away — add a payout bank account only when you&apos;re ready to
           sell paid tickets.{" "}
           <Link href="/admin?tab=payouts" className="font-medium underline hover:no-underline">
@@ -27,7 +27,7 @@ export function FreeStartBanner() {
           </Link>
         </p>
       </div>
-      <button type="button" onClick={() => setDismissed(true)} aria-label="Dismiss" className="text-sky-500 hover:text-sky-700 shrink-0">
+      <button type="button" onClick={() => setDismissed(true)} aria-label="Dismiss" className="text-sky-400 hover:text-sky-300 shrink-0">
         <X size={16} />
       </button>
     </div>

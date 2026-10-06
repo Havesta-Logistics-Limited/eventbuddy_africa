@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Camera, ScanLine, X } from "lucide-react";
 
-const CORNER_BASE = "absolute w-7 h-7 border-white/90";
+const CORNER_BASE = "absolute w-7 h-7 border-line";
 
 /**
  * Shared camera-QR-scan UI: goes straight to the device camera on "Start camera" (no
@@ -93,10 +93,10 @@ export function QrScannerPanel(props: {
   }, [active]);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div className="bg-surface rounded-2xl border border-line overflow-hidden">
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
-        <h2 className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-          <ScanLine size={13} className="text-slate-400" />
+        <h2 className="flex items-center gap-1.5 text-xs font-semibold text-muted uppercase tracking-wider">
+          <ScanLine size={13} className="text-subtle" />
           {label}
         </h2>
         {active && (
@@ -106,7 +106,7 @@ export function QrScannerPanel(props: {
               setError("");
               setActive(false);
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-muted hover:bg-fill transition-colors"
           >
             <X size={12} />
             Stop
@@ -115,7 +115,7 @@ export function QrScannerPanel(props: {
       </div>
 
       {active ? (
-        <div className="relative aspect-square bg-slate-900 [&_video]:w-full [&_video]:h-full [&_video]:object-cover">
+        <div className="relative aspect-square bg-surface-hi [&_video]:w-full [&_video]:h-full [&_video]:object-cover">
           <div id={elementId} className="w-full h-full" />
 
           {/* Purely decorative scan-target frame — html5-qrcode's own qrbox outline is
@@ -128,7 +128,7 @@ export function QrScannerPanel(props: {
           </div>
 
           {countdown !== null && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/85 backdrop-blur-sm">
+            <div className="absolute inset-0 flex items-center justify-center bg-surface-hi/85 backdrop-blur-sm">
               <div className="text-center text-white">
                 <p className="text-6xl font-bold tabular-nums leading-none">{countdown}</p>
                 <p className="text-xs text-white/70 mt-3 uppercase tracking-wider">Ready for next scan…</p>
@@ -143,7 +143,7 @@ export function QrScannerPanel(props: {
             setError("");
             setActive(true);
           }}
-          className="w-full flex flex-col items-center justify-center gap-3 px-5 py-10 border-t border-dashed border-slate-200 hover:bg-slate-50/80 transition-colors"
+          className="w-full flex flex-col items-center justify-center gap-3 px-5 py-10 border-t border-dashed border-line hover:bg-canvas/80 transition-colors"
         >
           <span className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "#1098F71A" }}>
             <Camera size={24} style={{ color: "#1098F7" }} />
@@ -154,8 +154,8 @@ export function QrScannerPanel(props: {
         </button>
       )}
 
-      <div className="px-5 py-3 bg-slate-50 border-t border-slate-100">
-        {error ? <p className="text-xs text-rose-600">{error}</p> : <p className="text-xs text-slate-400">{helperText}</p>}
+      <div className="px-5 py-3 bg-canvas border-t border-line-soft">
+        {error ? <p className="text-xs text-rose-300">{error}</p> : <p className="text-xs text-subtle">{helperText}</p>}
       </div>
     </div>
   );

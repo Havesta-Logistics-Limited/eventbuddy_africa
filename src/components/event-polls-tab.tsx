@@ -7,9 +7,9 @@ import { EventPoll } from "@/lib/types";
 import { PersistError, createPoll, deletePoll, listEventPolls, updatePollStatus } from "@/lib/store";
 
 const STATUS_PILL: Record<EventPoll["status"], string> = {
-  draft: "bg-slate-100 text-slate-500",
-  open: "bg-emerald-100 text-emerald-700",
-  closed: "bg-amber-100 text-amber-700",
+  draft: "bg-fill text-muted",
+  open: "bg-emerald-500/15 text-emerald-300",
+  closed: "bg-amber-500/15 text-amber-300",
 };
 
 /** Live-polls tab — mirrors the Q&A tab's polling refresh so vote counts (kept in
@@ -100,7 +100,7 @@ export function PollsTab({ eventId }: { eventId: string }) {
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-4">
-        <p className="text-sm text-slate-500">{polls.length} poll{polls.length !== 1 ? "s" : ""}</p>
+        <p className="text-sm text-muted">{polls.length} poll{polls.length !== 1 ? "s" : ""}</p>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
@@ -113,13 +113,13 @@ export function PollsTab({ eventId }: { eventId: string }) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-4 mb-4 space-y-3">
+        <form onSubmit={handleSubmit} className="bg-surface rounded-xl border border-line p-4 mb-4 space-y-3">
           <input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Poll question…"
             autoFocus
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+            className="w-full px-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
           <div className="space-y-2">
             {options.map((opt, i) => (
@@ -128,22 +128,22 @@ export function PollsTab({ eventId }: { eventId: string }) {
                   value={opt}
                   onChange={(e) => setOptions((prev) => prev.map((o, idx) => (idx === i ? e.target.value : o)))}
                   placeholder={`Option ${i + 1}`}
-                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  className="flex-1 px-3 py-2 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                 />
                 {options.length > 2 && (
-                  <button type="button" onClick={() => setOptions((prev) => prev.filter((_, idx) => idx !== i))} className="text-slate-400 hover:text-rose-600">
+                  <button type="button" onClick={() => setOptions((prev) => prev.filter((_, idx) => idx !== i))} className="text-subtle hover:text-rose-300">
                     <X size={15} />
                   </button>
                 )}
               </div>
             ))}
             {options.length < 6 && (
-              <button type="button" onClick={() => setOptions((prev) => [...prev, ""])} className="text-xs font-medium text-brand-600 hover:underline">
+              <button type="button" onClick={() => setOptions((prev) => [...prev, ""])} className="text-xs font-medium text-brand-500 hover:underline">
                 + Add option
               </button>
             )}
           </div>
-          {formError && <p className="text-sm text-rose-600">{formError}</p>}
+          {formError && <p className="text-sm text-rose-300">{formError}</p>}
           <div className="flex items-center gap-2">
             <button type="submit" disabled={saving} className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60">
               {saving ? "Creating…" : "Create Poll"}
@@ -154,7 +154,7 @@ export function PollsTab({ eventId }: { eventId: string }) {
                 setShowForm(false);
                 setFormError("");
               }}
-              className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50"
+              className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-fg-3 border border-line hover:bg-canvas"
             >
               Cancel
             </button>
@@ -163,9 +163,9 @@ export function PollsTab({ eventId }: { eventId: string }) {
       )}
 
       {loading ? (
-        <div className="py-16 text-center text-slate-400 text-sm">Loading…</div>
+        <div className="py-16 text-center text-subtle text-sm">Loading…</div>
       ) : polls.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="text-center py-16 text-subtle bg-canvas rounded-xl border border-line">
           <BarChart3 size={28} className="mx-auto mb-3 opacity-40" />
           <p className="text-sm">No polls yet — create one to push a live vote to the room.</p>
         </div>
@@ -174,24 +174,24 @@ export function PollsTab({ eventId }: { eventId: string }) {
           {polls.map((p) => {
             const total = p.options.reduce((sum, o) => sum + o.voteCount, 0);
             return (
-              <div key={p.id} className="bg-white rounded-xl border border-slate-200 p-4">
+              <div key={p.id} className="bg-surface rounded-xl border border-line p-4">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${STATUS_PILL[p.status]}`}>{p.status}</span>
-                    <p className="font-medium text-slate-900 text-sm">{p.question}</p>
+                    <p className="font-medium text-fg text-sm">{p.question}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {p.status !== "open" && (
-                      <button onClick={() => handleSetStatus(p.id, "open")} disabled={busyId === p.id} className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline disabled:opacity-50">
+                      <button onClick={() => handleSetStatus(p.id, "open")} disabled={busyId === p.id} className="flex items-center gap-1 text-xs font-medium text-emerald-300 hover:underline disabled:opacity-50">
                         <Play size={11} /> Open
                       </button>
                     )}
                     {p.status === "open" && (
-                      <button onClick={() => handleSetStatus(p.id, "closed")} disabled={busyId === p.id} className="flex items-center gap-1 text-xs font-medium text-amber-600 hover:underline disabled:opacity-50">
+                      <button onClick={() => handleSetStatus(p.id, "closed")} disabled={busyId === p.id} className="flex items-center gap-1 text-xs font-medium text-amber-300 hover:underline disabled:opacity-50">
                         <Square size={11} /> Close
                       </button>
                     )}
-                    <button onClick={() => handleDelete(p.id)} disabled={busyId === p.id} className="text-slate-400 hover:text-rose-600 disabled:opacity-50">
+                    <button onClick={() => handleDelete(p.id)} disabled={busyId === p.id} className="text-subtle hover:text-rose-300 disabled:opacity-50">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -201,13 +201,13 @@ export function PollsTab({ eventId }: { eventId: string }) {
                     const pct = total > 0 ? Math.round((o.voteCount / total) * 100) : 0;
                     return (
                       <div key={o.id}>
-                        <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+                        <div className="flex items-center justify-between text-xs text-fg-3 mb-1">
                           <span>{o.label}</span>
                           <span className="tabular-nums">
                             {o.voteCount} ({pct}%)
                           </span>
                         </div>
-                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-2 bg-fill rounded-full overflow-hidden">
                           <div className="h-full bg-brand-600 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
