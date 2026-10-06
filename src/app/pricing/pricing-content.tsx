@@ -6,8 +6,24 @@ import { Check, ArrowRight, Plus, Sparkles, Users2, Building2 } from "lucide-rea
 import { LandingNav } from "@/components/landing/landing-hero";
 import { OrbsObject } from "@/components/landing/event-objects";
 import { LandingFooter } from "@/components/landing/landing-close";
-import { DEFAULT_TICKET_FEE, fetchCurrentTicketFee, formatTicketFee } from "@/lib/billing";
+import { DEFAULT_TICKET_FEE, fetchCurrentTicketFee, formatNaira, formatTicketFee, planTicketFee } from "@/lib/billing";
+import { getOrganizerPlans } from "@/lib/store";
+import type { OrganizerPlan } from "@/lib/types";
 import { faqs } from "./faqs";
+
+// Shown before the live plans load (and if they can't): the seeded values from
+// migration 0104, so the cards never jump or render empty.
+const FALLBACK_PLANS: OrganizerPlan[] = [
+  { id: "launch", name: "Launch", priceMonthlyNaira: 0, feePercentage: null, feeFlatNaira: null, maxPromotersPerEvent: 5, purchasable: false },
+  { id: "grow", name: "Grow", priceMonthlyNaira: 15000, feePercentage: 4, feeFlatNaira: 100, maxPromotersPerEvent: null, purchasable: false },
+  { id: "scale", name: "Scale", priceMonthlyNaira: 45000, feePercentage: 3, feeFlatNaira: 100, maxPromotersPerEvent: null, purchasable: false },
+];
+
+const PLAN_BLURB: Record<string, string> = {
+  launch: "Everything you need to sell tickets and run your event. Pay only when a ticket sells.",
+  grow: "For organizers selling regularly: a lower fee on every ticket and unlimited promoters.",
+  scale: "Our lowest ticket fee, for organizers with big or frequent events.",
+};
 
 const SELF_SERVE_INCLUDED = [
   "Virtual and in-person events, from templates or your own custom form",
@@ -44,6 +60,12 @@ export default function PricingContent() {
   const feeLabel = formatTicketFee(fee);
   const FAQS = faqs(feeLabel);
   const [openFaq, setOpenFaq] = useState(-1);
+  const [plans, setPlans] = useState<OrganizerPlan[]>(FALLBACK_PLANS);
+  useEffect(() => {
+    getOrganizerPlans()
+      .then((p) => p.length && setPlans(p))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -58,8 +80,8 @@ export default function PricingContent() {
           <span className="block text-subtle">Bring in our team when you need to.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-fg-3">
-          Self-Serve costs nothing until a ticket actually sells. Full-Service and Enterprise put eventbuddy&apos;s own
-          team on the ground for events that need more hands than yours.
+          Launch costs nothing until a ticket actually sells; Grow and Scale lower your fee as you sell more. Full-Service and
+          Enterprise put eventbuddy&apos;s own team on the ground for events that need more hands than yours.
         </p>
       </section>
 
@@ -73,24 +95,59 @@ export default function PricingContent() {
             ))}
           </div>
           <div className="eb-horizon-inner">
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-[1fr_auto] sm:items-end">
-              <div>
-                <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-brand-500">
-                  <Sparkles size={14} aria-hidden="true" />
-                  Self-Serve
-                </p>
-                <p className="font-display text-5xl leading-none text-fg sm:text-6xl">Free to start</p>
-                <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-fg-3">
-                  Only pay <span className="font-semibold text-fg">{feeLabel}</span> per ticket that actually sells. Free
-                  tickets and free events cost nothing.
-                </p>
-              </div>
-              <Link href="/signup" className="eb-btn eb-btn--primary shrink-0 px-6">
-                Get Started
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
+            <div className="text-center">
+              <p className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-500">
+                <Sparkles size={14} aria-hidden="true" />
+                Self-Serve
+              </p>
+              <p className="font-display text-4xl leading-none text-fg sm:text-5xl">Free to start</p>
+              <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-fg-3">
+                Run your event yourself from your dashboard. Start on Launch for free and move up when you&apos;re selling more.
+              </p>
             </div>
-            <ul className="mt-9 grid grid-cols-1 gap-x-10 gap-y-3.5 border-t border-line pt-8 sm:grid-cols-2">
+
+            <div className="mt-9 grid grid-cols-1 gap-4 md:grid-cols-3">
+              {plans.map((p) => {
+                const planFee = formatTicketFee(planTicketFee({ fee_percentage: p.feePercentage, fee_flat_naira: p.feeFlatNaira }, fee));
+                return (
+                  <section key={p.id} className="eb-plan eb-plan--public" data-plan={p.id} aria-labelledby={`plan-${p.id}`}>
+                    <h2 id={`plan-${p.id}`} className="eb-plan-name">
+                      {p.id === "scale" && <Sparkles size={15} aria-hidden="true" />}
+                      {p.name}
+                    </h2>
+                    <p className="eb-plan-price">
+                      {p.priceMonthlyNaira > 0 ? formatNaira(p.priceMonthlyNaira) : "Free"}
+                      {p.priceMonthlyNaira > 0 && <span>/month</span>}
+                    </p>
+                    <p className="eb-plan-fee">{planFee} per paid ticket</p>
+                    <p className="mt-2 text-[13px] leading-relaxed text-muted">{PLAN_BLURB[p.id]}</p>
+                    <ul className="eb-plan-list">
+                      <li>
+                        <Check size={14} aria-hidden="true" /> Free tickets and free events cost nothing
+                      </li>
+                      <li>
+                        <Check size={14} aria-hidden="true" /> {p.maxPromotersPerEvent == null ? "Unlimited promoters" : `Up to ${p.maxPromotersPerEvent} promoters`} per event
+                      </li>
+                      <li>
+                        <Check size={14} aria-hidden="true" /> Payouts to your bank on request
+                      </li>
+                    </ul>
+                    <div className="mt-auto pt-5">
+                      <Link href="/signup" className={`eb-btn w-full ${p.id === "launch" ? "eb-btn--primary" : "eb-btn--ghost"}`}>
+                        {p.id === "launch" ? "Get started free" : `Choose ${p.name}`}
+                        <ArrowRight size={16} aria-hidden="true" />
+                      </Link>
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+            <p className="mt-4 text-center text-xs text-subtle">
+              Every account starts on Launch; switch to Grow or Scale any time from Settings → Plan. Paid plans are billed monthly and can be cancelled any time.
+            </p>
+
+            <p className="mt-10 border-t border-line pt-8 text-sm font-semibold text-fg">Every plan includes</p>
+            <ul className="mt-4 grid grid-cols-1 gap-x-10 gap-y-3.5 sm:grid-cols-2">
               {SELF_SERVE_INCLUDED.map((item) => (
                 <li key={item} className="flex items-start gap-3 text-[15px] leading-snug text-fg-2">
                   <Check size={17} className="mt-0.5 shrink-0 text-brand-500" aria-hidden="true" />

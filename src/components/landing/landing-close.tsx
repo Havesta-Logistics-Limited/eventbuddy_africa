@@ -82,7 +82,7 @@ export function LandingClose({ feeLabel }: { feeLabel: string }) {
           Create Event
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
-        <p className="mt-4 text-xs text-[#9D8DAD]">Free to start · {feeLabel} on tickets sold · no subscription</p>
+        <p className="mt-4 text-xs text-[#9D8DAD]">Free to start · {feeLabel} on tickets sold · no subscription required</p>
       </div>
     </section>
   );
