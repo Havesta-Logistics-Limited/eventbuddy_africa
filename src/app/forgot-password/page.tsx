@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { Logo } from "@/components/logo";
+import { AuthCentered } from "@/components/auth/auth-shell";
 import { isValidEmail } from "@/lib/validation";
 
 export default function ForgotPasswordPage() {
@@ -42,49 +42,45 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-canvas">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center mb-8">
-          <Logo height={16} />
-        </div>
+    <AuthCentered>
 
         {sent ? (
           <div className="text-center">
             <div className="w-12 h-12 rounded-full bg-teal-500/10 flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 size={22} className="text-teal-300" />
             </div>
-            <h2 className="text-xl font-semibold text-fg mb-1">Check your email</h2>
+            <h1 className="eb-auth-title">Check your email</h1>
             <p className="text-muted text-sm mb-6">
               If an account exists for {email}, we&apos;ve sent a link to reset your password.
             </p>
             <button
               type="button"
               onClick={() => router.push("/login")}
-              className="text-sm font-medium text-brand-500 hover:underline"
+              className="eb-link text-sm"
             >
               Back to sign in
             </button>
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-semibold text-fg mb-1">Reset your password</h2>
-            <p className="text-muted text-sm mb-8">Enter your email and we&apos;ll send you a reset link.</p>
+            <h1 className="eb-auth-title">Reset your password</h1>
+            <p className="eb-auth-sub">Enter your email and we&apos;ll send you a reset link.</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-fg-2 mb-1.5">Email address</label>
+                <label className="eb-label">Email address</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
-                  className="w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-surface"
+                  className="eb-input"
                 />
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
+                <div className="eb-alert" role="alert">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {error}
                 </div>
@@ -93,20 +89,19 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-brand-600 hover:bg-brand-700 transition-colors disabled:opacity-60"
+                className="eb-btn eb-btn--primary w-full"
               >
                 {loading ? "Sending…" : "Send reset link"}
               </button>
             </form>
 
             <p className="text-center text-sm text-muted mt-6">
-              <button type="button" onClick={() => router.push("/login")} className="text-brand-500 font-medium hover:underline">
+              <button type="button" onClick={() => router.push("/login")} className="eb-link text-xs">
                 Back to sign in
               </button>
             </p>
           </>
         )}
-      </div>
-    </div>
+    </AuthCentered>
   );
 }

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Logo } from "@/components/logo";
+import { AuthCentered } from "@/components/auth/auth-shell";
 import { challengeAndVerify, getVerifiedFactor, needsStepUp } from "@/lib/mfa";
 
 function ResetPasswordForm() {
@@ -119,44 +119,40 @@ function ResetPasswordForm() {
     setTimeout(() => router.push(platformMembership ? "/platform/login" : "/login"), 2000);
   }
 
-  if (!ready) return <div className="min-h-screen bg-canvas" />;
+  if (!ready) return <div className="min-h-screen bg-canvas" aria-busy="true" />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-canvas">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center mb-8">
-          <Logo height={16} />
-        </div>
+    <AuthCentered>
 
         {linkError ? (
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-fg mb-1">Link expired</h2>
+            <h1 className="eb-auth-title">Link expired</h1>
             <p className="text-muted text-sm mb-6">
               This password reset link is invalid or has expired. Request a new one.
             </p>
             <button
               type="button"
               onClick={() => router.push("/forgot-password")}
-              className="text-sm font-medium text-[#C21FAF] hover:underline"
+              className="eb-link text-sm"
             >
               Request a new link
             </button>
           </div>
         ) : done ? (
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-fg mb-1">Password updated</h2>
+            <h1 className="eb-auth-title">Password updated</h1>
             <p className="text-muted text-sm">Redirecting you to sign in…</p>
           </div>
         ) : mfaFactorId ? (
           <>
-            <h2 className="text-2xl font-semibold text-fg mb-1">Enter your 2FA code</h2>
-            <p className="text-muted text-sm mb-8">
+            <h1 className="eb-auth-title">Enter your 2FA code</h1>
+            <p className="eb-auth-sub">
               This account has two-factor authentication on — open your authenticator app and enter the current 6-digit code to continue.
             </p>
 
             <form onSubmit={handleVerifyMfa} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-fg-2 mb-1.5">Verification code</label>
+                <label className="eb-label">Verification code</label>
                 <input
                   required
                   autoFocus
@@ -166,12 +162,12 @@ function ResetPasswordForm() {
                   value={mfaCode}
                   onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
                   placeholder="123456"
-                  className="w-full px-4 py-2.5 rounded-lg border border-line text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent bg-surface"
+                  className="eb-input tracking-widest"
                 />
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
+                <div className="eb-alert" role="alert">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {error}
                 </div>
@@ -180,7 +176,7 @@ function ResetPasswordForm() {
               <button
                 type="submit"
                 disabled={loading || mfaCode.length !== 6}
-                className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#C21FAF] hover:bg-[#93147D] transition-colors disabled:opacity-60"
+                className="eb-btn eb-btn--primary w-full"
               >
                 {loading ? "Verifying…" : "Verify"}
               </button>
@@ -188,12 +184,12 @@ function ResetPasswordForm() {
           </>
         ) : (
           <>
-            <h2 className="text-2xl font-semibold text-fg mb-1">Set a new password</h2>
-            <p className="text-muted text-sm mb-8">Choose a new password for your account.</p>
+            <h1 className="eb-auth-title">Set a new password</h1>
+            <p className="eb-auth-sub">Choose a new password for your account.</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-fg-2 mb-1.5">New password</label>
+                <label className="eb-label">New password</label>
                 <div className="relative">
                   <input
                     type={showPw ? "text" : "password"}
@@ -202,7 +198,7 @@ function ResetPasswordForm() {
                     placeholder="At least 8 characters"
                     required
                     minLength={8}
-                    className="w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent bg-surface pr-10"
+                    className="eb-input pr-10"
                   />
                   <button
                     type="button"
@@ -216,7 +212,7 @@ function ResetPasswordForm() {
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
+                <div className="eb-alert" role="alert">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {error}
                 </div>
@@ -233,14 +229,13 @@ function ResetPasswordForm() {
             </form>
           </>
         )}
-      </div>
-    </div>
+    </AuthCentered>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-canvas" />}>
+    <Suspense fallback={<div className="min-h-screen bg-canvas" aria-busy="true" />}>
       <ResetPasswordForm />
     </Suspense>
   );

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { optionalPhone } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyHubMember } from "@/lib/event-hub";
 import { getEventStatus } from "@/lib/capture-window";
@@ -28,6 +29,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   if (!token || !newFullName || !newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
     return NextResponse.json({ error: "Enter the new attendee's name and a valid email." }, { status: 400 });
   }
+  const phoneCheck = optionalPhone(newPhone);
+  if (!phoneCheck.ok) return NextResponse.json({ error: phoneCheck.error }, { status: 400 });
 
   if (!(await checkRateLimit(`hub-transfer:token:${token}`, 10, 10 * 60))) {
     return rateLimitedResponse();
@@ -64,7 +67,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     const [firstName, ...rest] = newFullName.split(" ");
     const { error } = await admin
       .from("leads")
-      .update({ first_name: firstName || newFullName, last_name: rest.join(" "), email: newEmail, phone: newPhone || "" })
+      .update({ first_name: firstName || newFullName, last_name: rest.join(" "), email: newEmail, phone: phoneCheck.value || "" })
       .eq("id", lead.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -82,7 +85,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     if (registration.status === "checked_in") return NextResponse.json({ error: "This ticket has already been used to check in and can't be transferred." }, { status: 400 });
     if (registration.status !== "registered") return NextResponse.json({ error: "This ticket isn't in a transferable state." }, { status: 400 });
 
-    const { error } = await admin.from("registrations").update({ full_name: newFullName, email: newEmail, phone: newPhone || null }).eq("id", registration.id);
+    const { error } = await admin.from("registrations").update({ full_name: newFullName, email: newEmail, phone: phoneCheck.value }).eq("id", registration.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     await sendTicketTransferredAwayEmail(member.email, event, newFullName);

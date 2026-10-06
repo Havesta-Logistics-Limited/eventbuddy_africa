@@ -5,14 +5,14 @@ import { useForm, type UseFormRegister, type FieldErrors, type Resolver } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FieldDef } from "@/lib/types";
 import { buildCustomFieldsSchema } from "@/lib/dynamic-form-schema";
-import { PHONE_REGEX, sanitizePhoneInput } from "@/lib/validation";
+import { isValidPhone, sanitizePhoneInput } from "@/lib/validation";
 
 const baseSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
   middleName: z.string().optional(),
   lastName: z.string().min(1, "Last name is required."),
   email: z.string().email("Enter a valid email address."),
-  phone: z.string().min(1, "Phone number is required.").regex(PHONE_REGEX, "Enter a valid phone number."),
+  phone: z.string().min(1, "Phone number is required.").refine(isValidPhone, "Enter a valid phone number."),
   comments: z.string().optional(),
 });
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, AlertCircle, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { challengeAndVerify } from "@/lib/mfa";
-import { Logo } from "@/components/logo";
+import { AuthCentered } from "@/components/auth/auth-shell";
 import { isValidEmail } from "@/lib/validation";
 
 /**
@@ -88,21 +88,20 @@ export default function PlatformLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#22103A" }}>
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center gap-2 mb-8 text-center">
-          <Logo tone="white" height={18} />
-          <p className="text-xs text-white/40 flex items-center gap-1.5">
-            <ShieldCheck size={12} />
-            Platform Admin
-          </p>
-        </div>
+    <AuthCentered
+      badge={
+        <p className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted">
+          <ShieldCheck size={12} className="text-brand-500" />
+          Platform Admin
+        </p>
+      }
+    >
 
         {mfaFactorId ? (
-          <form onSubmit={handleVerifyMfa} className="space-y-4 bg-surface/5 border border-white/10 rounded-2xl p-6">
+          <form onSubmit={handleVerifyMfa} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/70 mb-1.5">Verification code</label>
-              <p className="text-xs text-white/40 mb-2">Enter the current code from your authenticator app.</p>
+              <label className="eb-label">Verification code</label>
+              <p className="eb-hint mb-2">Enter the current code from your authenticator app.</p>
               <input
                 required
                 autoFocus
@@ -112,12 +111,12 @@ export default function PlatformLoginPage() {
                 value={mfaCode}
                 onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
                 placeholder="123456"
-                className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white tracking-widest placeholder:text-white/30 bg-surface/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent"
+                className="eb-input tracking-widest"
               />
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
+              <div className="eb-alert" role="alert">
                 <AlertCircle size={15} className="mt-0.5 shrink-0" />
                 {error}
               </div>
@@ -126,7 +125,7 @@ export default function PlatformLoginPage() {
             <button
               type="submit"
               disabled={loading || mfaCode.length !== 6}
-              className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#C21FAF] hover:bg-[#93147D] transition-colors disabled:opacity-60"
+              className="eb-btn eb-btn--primary w-full"
             >
               {loading ? "Verifying…" : "Verify & sign in"}
             </button>
@@ -137,27 +136,29 @@ export default function PlatformLoginPage() {
                 setMfaCode("");
                 setError("");
               }}
-              className="w-full text-center text-xs text-white/40 hover:text-white/70"
+              className="w-full text-center text-xs text-muted hover:text-fg-2"
             >
               Back to sign in
             </button>
           </form>
         ) : (
           <>
-            <form onSubmit={handleSubmit} className="space-y-4 bg-surface/5 border border-white/10 rounded-2xl p-6">
+            <h1 className="eb-auth-title">Sign in</h1>
+            <p className="eb-auth-sub">For eventbuddy&apos;s own team only.</p>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-white/70 mb-1.5">Email address</label>
+                <label className="eb-label">Email address</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@eventbuddy.africa"
                   required
-                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-surface/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent"
+                  className="eb-input"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-white/70 mb-1.5">Password</label>
+                <label className="eb-label">Password</label>
                 <div className="relative">
                   <input
                     type={showPw ? "text" : "password"}
@@ -165,12 +166,12 @@ export default function PlatformLoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white placeholder:text-white/30 bg-surface/5 focus:outline-none focus:ring-2 focus:ring-[#FF8AF5] focus:border-transparent pr-10"
+                    className="eb-input pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPw((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-fg-3"
                     aria-label={showPw ? "Hide password" : "Show password"}
                   >
                     {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -179,7 +180,7 @@ export default function PlatformLoginPage() {
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
+                <div className="eb-alert" role="alert">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {error}
                 </div>
@@ -188,22 +189,21 @@ export default function PlatformLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 rounded-lg font-medium text-sm text-white bg-[#C21FAF] hover:bg-[#93147D] transition-colors disabled:opacity-60"
+                className="eb-btn eb-btn--primary w-full"
               >
                 {loading ? "Signing in…" : "Sign in"}
               </button>
             </form>
 
             <p className="text-center text-sm mt-6">
-              <button type="button" onClick={() => router.push("/forgot-password")} className="text-white/50 hover:text-white/80 transition-colors">
+              <button type="button" onClick={() => router.push("/forgot-password")} className="eb-link">
                 Forgot password?
               </button>
             </p>
 
-            <p className="text-center text-xs text-white/25 mt-4">This is a separate credential from any organization account.</p>
+            <p className="text-center text-xs text-subtle mt-4">This is a separate credential from any organization account.</p>
           </>
         )}
-      </div>
-    </div>
+    </AuthCentered>
   );
 }

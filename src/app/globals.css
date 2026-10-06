@@ -1207,6 +1207,7 @@ select {
   .lp-runsheet-tick { transition: none; }
   .lp-acc-body { transition: none; }
   .eb-nav-pill { transition: none; }
+  .eb-auth-card, .eb-auth-panel, .eb-alert { animation: none; }
   .lp-bar { animation: none; }
   .lp-marquee-pause { display: none; }
   .lp-rise { transform: none; }
@@ -1298,6 +1299,257 @@ select {
 }
 .eb-iconbtn:hover { background: var(--color-fill); color: var(--color-fg); }
 .eb-iconbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ==========================================================================
+   Form primitives (shared across the app from phase 2 on)
+   ========================================================================== */
+.eb-label { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 600; color: var(--color-fg); }
+/* required marker: a pink asterisk after the label text */
+.eb-req::after { content: " *"; color: #ff8af5; }
+.eb-hint { margin-top: 6px; font-size: 12px; line-height: 1.45; color: var(--color-subtle); }
+.eb-input {
+  display: block;
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 11px;
+  /* measured: the border clears the 3:1 non-text contrast guideline against
+     both the field and the panel behind it; placeholder text is 6.5:1 */
+  border: 1px solid #6c6674;
+  background: #1d1429;
+  font-size: 15px;
+  color: var(--color-fg);
+  caret-color: #ff8af5;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+.eb-input::placeholder { color: var(--color-muted); }
+.eb-input:hover { border-color: #8a8494; }
+.eb-input:focus {
+  outline: none;
+  border-color: #ff8af5;
+  background: #22182f;
+  box-shadow: 0 0 0 3px rgba(255, 138, 245, 0.22);
+}
+.eb-input[aria-invalid="true"] { border-color: #fb7185; }
+/* Every app form field gets the same measured visibility as .eb-input,
+   whatever utility classes it was built with. Unlayered on purpose: it must
+   win over the Tailwind utilities (which live in a cascade layer) that drew
+   these fields faint (1.03:1 fill, 1.19:1 border) on the dark theme. */
+:where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], [type="hidden"]), select, textarea):is(.border-line, .border-line-soft, .border-line-strong, .border-white\/10, .border-white\/15, .border-white\/20) {
+  border-color: #6c6674;
+  background-color: #1d1429;
+  color: var(--color-fg);
+}
+:where(input, textarea):is(.border-line, .border-line-soft, .border-line-strong, .border-white\/10, .border-white\/15, .border-white\/20)::placeholder {
+  color: var(--color-muted);
+}
+:where(input:not([type="checkbox"], [type="radio"]), select, textarea):is(.border-line, .border-line-soft, .border-line-strong, .border-white\/10, .border-white\/15, .border-white\/20):hover {
+  border-color: #8a8494;
+}
+:where(input:not([type="checkbox"], [type="radio"]), select, textarea):is(.border-line, .border-line-soft, .border-line-strong, .border-white\/10, .border-white\/15, .border-white\/20):focus {
+  border-color: #ff8af5;
+  background-color: #22182f;
+}
+
+.eb-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 18px;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+.eb-btn:active:not(:disabled) { transform: translateY(1px); }
+.eb-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.eb-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.eb-btn--primary {
+  background: #ff8af5;
+  color: #170821;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3) inset, 0 12px 30px -14px rgba(255, 138, 245, 0.75);
+}
+.eb-btn--primary:hover:not(:disabled) { background: #ffa6f8; }
+.eb-btn--ghost { border: 1px solid var(--color-line-strong); color: var(--color-fg); background: transparent; }
+.eb-btn--ghost:hover:not(:disabled) { background: var(--color-fill); }
+.eb-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: eb-spin 700ms linear infinite;
+}
+@keyframes eb-spin { to { transform: rotate(360deg); } }
+.eb-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  border: 1px solid rgba(251, 113, 133, 0.28);
+  background: rgba(244, 63, 94, 0.1);
+  font-size: 14px;
+  line-height: 1.45;
+  color: #fda4af;
+  animation: eb-alert-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.eb-alert svg { flex-shrink: 0; margin-top: 2px; }
+.eb-alert--ok { border-color: rgba(52, 211, 153, 0.28); background: rgba(16, 185, 129, 0.1); color: #6ee7b7; }
+@keyframes eb-alert-in {
+  0% { opacity: 0; transform: translateX(0); }
+  30% { opacity: 1; transform: translateX(-4px); }
+  60% { transform: translateX(3px); }
+  100% { opacity: 1; transform: none; }
+}
+.eb-link { color: #ff8af5; font-weight: 550; text-underline-offset: 3px; }
+.eb-link:hover { text-decoration: underline; }
+.eb-link:focus-visible { outline: 2px solid #ff8af5; outline-offset: 2px; border-radius: 3px; }
+
+/* ==========================================================================
+   Sign-in surfaces (phase 2)
+   ========================================================================== */
+.eb-auth { position: relative; background: var(--color-canvas); color: var(--color-fg); overflow: hidden; }
+.eb-auth-art {
+  position: relative;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh;
+  overflow: hidden;
+  border-right: 1px solid var(--color-line-soft);
+}
+.eb-auth-pool {
+  position: absolute;
+  left: 50%;
+  bottom: -260px;
+  width: 1100px;
+  height: 760px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(ellipse 36% 30% at 50% 40%, rgba(255, 138, 245, 0.5), transparent 70%),
+    radial-gradient(ellipse 50% 42% at 50% 46%, rgba(237, 28, 220, 0.38), transparent 72%),
+    radial-gradient(ellipse 64% 54% at 50% 52%, rgba(109, 40, 217, 0.48), transparent 75%);
+  filter: blur(6px);
+  pointer-events: none;
+}
+.eb-auth-pool--center { top: 34%; bottom: auto; width: min(1200px, 200vw); opacity: 0.85; }
+.eb-auth-headline {
+  max-width: 13ch;
+  margin: 0;
+  font-family: var(--font-hero);
+  font-size: clamp(2.4rem, 3.6vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+}
+.eb-auth-headline span { display: block; color: #ff8af5; }
+.eb-auth-objects { position: relative; z-index: 1; height: 300px; }
+.eb-auth-objects .lp-obj svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 26px 28px rgba(8, 2, 18, 0.6)); }
+.eb-auth-ticket { width: 230px; left: 8%; top: 96px; }
+.eb-auth-badge { width: 128px; left: 47%; top: 10px; }
+.eb-auth-wrist { width: 160px; left: 30%; top: 176px; }
+.eb-auth-orbs { width: 146px; left: 70%; top: 120px; }
+.eb-auth-main { position: relative; display: flex; min-height: 100vh; align-items: center; justify-content: center; padding: 48px 20px; }
+.eb-auth-band {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 260px;
+  background:
+    radial-gradient(ellipse 70% 100% at 50% 0%, rgba(237, 28, 220, 0.28), transparent 70%),
+    radial-gradient(ellipse 90% 100% at 50% 0%, rgba(109, 40, 217, 0.32), transparent 75%);
+  pointer-events: none;
+}
+.eb-auth-card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 36px;
+  border-radius: 22px;
+  border: 1px solid #ffffff24;
+  background: #120c1a;
+  box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 138, 245, 0.07) inset, 0 -30px 80px -50px rgba(237, 28, 220, 0.45);
+  animation: eb-card-in 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.eb-auth-title { margin: 0; font-family: var(--font-hero); font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
+.eb-auth-sub { margin: 8px 0 32px; font-size: 15px; line-height: 1.5; color: var(--color-muted); }
+.eb-auth-panel {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  border-radius: 20px;
+  border: 1px solid #ffffff24;
+  background: color-mix(in srgb, #120c1a 92%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 138, 245, 0.06) inset;
+  animation: eb-card-in 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.eb-auth-foot {
+  margin-top: 28px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #ffffff14;
+  background: #ffffff08;
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-fg-3);
+}
+/* Compact form rhythm (signup): fits the viewport without scrolling */
+.eb-form-compact { display: flex; flex-direction: column; gap: 14px; }
+.eb-form-compact .eb-auth-sub { margin-bottom: 24px; }
+/* Short laptop screens: tighten the rhythm so sign-in pages still fit */
+@media (min-width: 1024px) and (max-height: 860px) {
+  .eb-auth-card { padding: 28px 32px; }
+  .eb-auth-title { font-size: 27px; }
+  .eb-auth-sub { margin: 6px 0 22px; }
+  .eb-auth-card .eb-input { height: 42px; }
+  .eb-auth-card .eb-btn { height: 44px; }
+  .eb-form-compact { gap: 12px; }
+}
+@media (min-width: 1024px) and (max-height: 760px) {
+  .eb-auth-card { padding: 22px 28px; }
+  .eb-auth-card .eb-label { margin-bottom: 5px; }
+  .eb-auth-card .eb-input { height: 40px; }
+  .eb-auth-card .eb-btn { height: 42px; }
+  .eb-form-compact { gap: 10px; }
+  .eb-auth-main { padding-top: 24px; padding-bottom: 24px; }
+}
+
+/* Phones: the sign-in pages fit one screen, down to a 667px-tall iPhone SE */
+@media (max-width: 1023px) {
+  .eb-auth-main { padding: 20px 16px; }
+  .eb-auth-main > div > span { margin-bottom: 16px; }
+  .eb-auth-card { padding: 22px 18px; }
+  .eb-auth-card .eb-auth-title { font-size: 24px; }
+  .eb-auth-card .eb-auth-sub { margin: 4px 0 18px; font-size: 14px; }
+  .eb-auth-card .eb-label { margin-bottom: 5px; font-size: 12.5px; }
+  .eb-auth-card .eb-input { height: 42px; font-size: 16px; padding: 0 12px; } /* 16px stops iOS zooming on focus */
+  .eb-auth-card .eb-btn { height: 44px; }
+  .eb-form-compact { gap: 11px; }
+}
+@media (max-width: 1023px) and (max-height: 700px) {
+  .eb-auth-main { padding: 12px 14px; }
+  .eb-auth-main > div > span { margin-bottom: 10px; }
+  .eb-auth-card { padding: 18px 16px; }
+  .eb-auth-card .eb-auth-sub { margin-bottom: 14px; }
+  .eb-auth-card .eb-input { height: 40px; }
+  .eb-auth-card .eb-btn { height: 42px; }
+  .eb-form-compact { gap: 9px; }
+  .eb-form-compact .eb-hint { display: none; }
+}
+
+@keyframes eb-card-in {
+  from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+@media (max-width: 767px) {
+  .eb-auth-panel { padding: 24px 20px; border-radius: 18px; }
+  .eb-auth-card { padding: 26px 20px; border-radius: 18px; }
+  .eb-auth-title { font-size: 26px; }
+}
 
 /* Light islands: content that must stay light on the dark theme (QR codes on
    white for scannability, printable previews). */

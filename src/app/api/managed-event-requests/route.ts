@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { z } from "zod";
+import { optionalPhone } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
@@ -19,7 +20,13 @@ type RequestBody = {
 const RequestSchema = z.object({
   contactName: z.string().trim().min(1).max(120),
   contactEmail: z.string().trim().email(),
-  contactPhone: z.string().trim().max(40).optional(),
+  contactPhone: z
+    .string()
+    .trim()
+    .max(40)
+    .optional()
+    .refine((v) => optionalPhone(v).ok, "Enter a valid phone number.")
+    .transform((v) => { const r = optionalPhone(v); return r.ok ? r.value ?? undefined : undefined; }),
   organizationName: z.string().trim().max(160).optional(),
   eventName: z.string().trim().min(1).max(160),
   eventDate: z.string().trim().max(40).optional(),

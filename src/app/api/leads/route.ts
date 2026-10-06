@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizePhone } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
@@ -127,7 +128,10 @@ export async function POST(request: Request) {
       middle_name: body.middleName || null,
       last_name: lastName,
       email,
-      phone,
+      // Never reject here: staff devices can sync leads captured offline under
+      // older rules, and refusing them would silently lose the lead. A valid
+      // number is stored canonically (+234…); anything else is kept as typed.
+      phone: normalizePhone(phone) ?? phone,
       preferred_course: preferredCourse || "",
       level_of_interest: levelOfInterest || "",
       start_year: startYear || "",

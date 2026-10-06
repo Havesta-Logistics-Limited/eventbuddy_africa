@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { FieldDef } from "./types";
-import { EMAIL_REGEX, PHONE_REGEX } from "./validation";
+import { EMAIL_REGEX, isValidPhone } from "./validation";
 
 function schemaForField(f: FieldDef): z.ZodTypeAny {
   if (f.type === "checkboxes") {
@@ -13,7 +13,7 @@ function schemaForField(f: FieldDef): z.ZodTypeAny {
   if (f.required) {
     let required = str.min(1, `${f.label || "This field"} is required.`);
     if (f.type === "email") required = required.email("Enter a valid email address.");
-    if (f.type === "phone") required = required.regex(PHONE_REGEX, "Enter a valid phone number.");
+    if (f.type === "phone") return required.refine(isValidPhone, "Enter a valid phone number.");
     if (f.type === "number") required = required.regex(/^-?\d+(\.\d+)?$/, "Enter a number.");
     return required;
   }
@@ -24,7 +24,7 @@ function schemaForField(f: FieldDef): z.ZodTypeAny {
   // same .email()/.regex() calls used above, which would otherwise reject
   // "" outright and block submitting the field empty.
   if (f.type === "email") return str.refine((v) => !v || EMAIL_REGEX.test(v), "Enter a valid email address.").optional();
-  if (f.type === "phone") return str.refine((v) => !v || PHONE_REGEX.test(v), "Enter a valid phone number.").optional();
+  if (f.type === "phone") return str.refine((v) => !v || isValidPhone(v), "Enter a valid phone number.").optional();
   if (f.type === "number") return str.refine((v) => !v || /^-?\d+(\.\d+)?$/.test(v), "Enter a number.").optional();
   return str.optional();
 }

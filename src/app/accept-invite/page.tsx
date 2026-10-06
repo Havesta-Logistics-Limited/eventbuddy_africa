@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Logo } from "@/components/logo";
+import { AuthCentered } from "@/components/auth/auth-shell";
 import { acceptInvite } from "@/lib/store";
 
 function AcceptInviteForm() {
@@ -71,28 +71,24 @@ function AcceptInviteForm() {
     router.push("/dashboard");
   }
 
-  if (!ready) return <div className="min-h-screen bg-canvas" />;
+  if (!ready) return <div className="min-h-screen bg-canvas" aria-busy="true" />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-canvas">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center mb-8">
-          <Logo height={16} />
-        </div>
+    <AuthCentered>
 
         {linkError ? (
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-fg mb-1">Link expired</h2>
+            <h1 className="eb-auth-title">Link expired</h1>
             <p className="text-muted text-sm">This invite link is invalid or has expired. Ask whoever invited you to send a new one.</p>
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-semibold text-fg mb-1">Set your password</h2>
-            <p className="text-muted text-sm mb-8">One more step — choose a password to activate your account.</p>
+            <h1 className="eb-auth-title">Set your password</h1>
+            <p className="eb-auth-sub">One more step — choose a password to activate your account.</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-fg-2 mb-1.5">Password</label>
+                <label className="eb-label">Password</label>
                 <div className="relative">
                   <input
                     type={showPw ? "text" : "password"}
@@ -101,7 +97,7 @@ function AcceptInviteForm() {
                     placeholder="At least 8 characters"
                     required
                     minLength={8}
-                    className="w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF] focus:border-transparent bg-surface pr-10"
+                    className="eb-input pr-10"
                   />
                   <button
                     type="button"
@@ -115,7 +111,7 @@ function AcceptInviteForm() {
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">
+                <div className="eb-alert" role="alert">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
                   {error}
                 </div>
@@ -132,14 +128,13 @@ function AcceptInviteForm() {
             </form>
           </>
         )}
-      </div>
-    </div>
+    </AuthCentered>
   );
 }
 
 export default function AcceptInvitePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-canvas" />}>
+    <Suspense fallback={<div className="min-h-screen bg-canvas" aria-busy="true" />}>
       <AcceptInviteForm />
     </Suspense>
   );

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { optionalPhone } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
 import { generateReferenceId } from "@/lib/utils";
@@ -55,6 +56,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   if (!eventId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
+  const phoneCheck = optionalPhone(phone);
+  if (!phoneCheck.ok) return NextResponse.json({ error: phoneCheck.error }, { status: 400 });
 
   // Generous enough for a real rush of attendees registering for the same popular
   // event from behind one shared IP (a campus, an office), but stops a script from
@@ -183,7 +186,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         email: email.trim(),
-        phone: phone?.trim() || "",
+        phone: phoneCheck.value || "",
         preferred_course: "",
         level_of_interest: "",
         start_year: "",
@@ -232,7 +235,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
         ticket_type_id: ticketTypeIdForRegistration,
         full_name: `${firstName.trim()} ${lastName.trim()}`,
         email: email.trim(),
-        phone: phone?.trim() || null,
+        phone: phoneCheck.value,
         custom_answers: customAnswers || {},
         source: resolvedSource,
         status: resolvedStatus,

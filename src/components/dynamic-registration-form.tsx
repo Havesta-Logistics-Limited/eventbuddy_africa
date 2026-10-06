@@ -6,7 +6,7 @@ import { useForm, useWatch, type UseFormRegister, type FieldErrors, type Resolve
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FieldDef } from "@/lib/types";
 import { buildCustomFieldsSchema } from "@/lib/dynamic-form-schema";
-import { PHONE_REGEX, sanitizePhoneInput } from "@/lib/validation";
+import { isValidPhone, sanitizePhoneInput } from "@/lib/validation";
 
 const baseSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
@@ -16,7 +16,7 @@ const baseSchema = z.object({
   // .refine() rather than .regex() (which would reject "" outright).
   phone: z
     .string()
-    .refine((v) => !v || PHONE_REGEX.test(v), "Enter a valid phone number.")
+    .refine((v) => !v || isValidPhone(v), "Enter a valid phone number.")
     .optional(),
 });
 

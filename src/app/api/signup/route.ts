@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { z } from "zod";
+import { normalizePhone } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
@@ -59,12 +60,18 @@ const SignupSchema = z.object({
   organizationName: z.string().trim().min(2, "Enter your organization's name."),
   email: z.string().trim().email("Enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
+  // Strict: real digit counts, Nigerian formats, stored canonically (+234…).
   phone: z
     .string()
     .trim()
-    .min(7, "Enter a valid phone number.")
-    .max(20, "Enter a valid phone number.")
-    .regex(/^[0-9+()\-\s]+$/, "Enter a valid phone number."),
+    .transform((v, ctx) => {
+      const normalized = normalizePhone(v);
+      if (!normalized) {
+        ctx.addIssue({ code: "custom", message: "Enter a valid phone number." });
+        return z.NEVER;
+      }
+      return normalized;
+    }),
 });
 
 function slugify(name: string) {
