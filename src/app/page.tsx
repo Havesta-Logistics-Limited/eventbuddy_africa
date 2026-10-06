@@ -106,26 +106,6 @@ export default function MarketingHomePage() {
 
       <LandingWays feeLabel={feeLabel} />
 
-      {/* Product demo — an actual walkthrough embedded right here, so a visitor
-          can see eventbuddy working before deciding whether to sign up. */}
-      <section className="max-w-5xl mx-auto px-6 pb-4">
-        <h2 className="font-display text-3xl text-slate-900 text-center mb-2">See it in action</h2>
-        <p className="text-slate-500 text-center max-w-lg mx-auto mb-10">A real walkthrough of creating and managing an event in eventbuddy.</p>
-        <div
-          className="rounded-3xl overflow-hidden border border-slate-200 shadow-sm"
-          style={{ position: "relative", boxSizing: "content-box", maxHeight: "80vh", width: "100%", aspectRatio: "1.6", padding: "40px 0" }}
-        >
-          <iframe
-            src="https://app.supademo.com/embed/cmtebm42w0px8qmia3af4jrix?embed_v=2&utm_source=embed"
-            loading="lazy"
-            title="Create Virtual Events and Manage Attendees on EventBuddy"
-            allow="clipboard-write"
-            allowFullScreen
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
-          />
-        </div>
-      </section>
-
       {/* How it works — a connected horizontal sequence, not three boxed cards.
           The step order carries real information (setup must happen before the link
           is shared), so the numbering earns its place here. */}
