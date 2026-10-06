@@ -25,6 +25,14 @@ function field(label: string, type: FieldDef["type"], required: boolean, options
  */
 export const EVENT_TEMPLATES: EventTemplate[] = [
   {
+    id: "custom",
+    name: "Custom / Blank",
+    description: "Start from scratch and build your own lead-capture form.",
+    icon: Sparkles,
+    usesDestinations: false,
+    defaultFields: [],
+  },
+  {
     id: "education-fair",
     name: "Education Fair",
     description: "International destinations and exhibiting universities, with the built-in academic-interest lead form.",
@@ -70,14 +78,6 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
       field("What are you interested in?", "paragraph", false),
       field("Preferred follow-up method", "multiple_choice", false, ["Email", "Phone call", "No follow-up"]),
     ],
-  },
-  {
-    id: "custom",
-    name: "Custom / Blank",
-    description: "Start from scratch and build your own lead-capture form.",
-    icon: Sparkles,
-    usesDestinations: false,
-    defaultFields: [],
   },
 ];
 

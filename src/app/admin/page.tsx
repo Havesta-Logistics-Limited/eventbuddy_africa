@@ -598,10 +598,10 @@ function AdminPageContent() {
 
   return (
     <Shell>
-      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+      <div className="eb-app-page p-4 sm:p-8 max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="font-display text-2xl text-fg">Settings</h1>
-          <p className="text-muted text-sm mt-0.5">Manage your profile, staff, and ticket payouts</p>
+          <h1 className="eb-app-title">Settings</h1>
+          <p className="eb-app-sub">Manage your profile, staff, and ticket payouts</p>
         </div>
 
         <MfaNagBanner onSetup={() => setTab("profile")} />

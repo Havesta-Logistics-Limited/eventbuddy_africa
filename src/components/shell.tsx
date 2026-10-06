@@ -7,6 +7,7 @@ import { Calendar, Users, Settings, LogOut, Menu, X, BookOpen, ScanLine, ShieldC
 import { getDestinationById, getEventById, getUniversityById, logout, useSession } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/logo";
+import { BadgeObject, OrbsObject, TicketObject, WristbandObject } from "@/components/landing/event-objects";
 
 const adminNav = [
   { to: "/dashboard", label: "Events", icon: Calendar },
@@ -84,7 +85,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         <NavList items={nav} pathname={pathname} />
 
-        <div className="px-3 pb-4 pt-3 border-t border-line-soft">
+        <RailObjects />
+
+        <div className="relative px-3 pb-4 pt-3 border-t border-line-soft">
           <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 mb-1">
             <div className="eb-avatar">{session?.name.charAt(0)}</div>
             <div className="flex-1 min-w-0">
@@ -110,7 +113,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="Menu">
-          <div className={`${shellTone} w-72 max-w-[85vw] flex flex-col h-full animate-drawer-in border-r border-line`} style={{ ["--accent" as string]: accent }}>
+          <div className={`${shellTone} eb-drawer relative w-72 max-w-[85vw] flex flex-col h-full animate-drawer-in`} style={{ ["--accent" as string]: accent }}>
             <div className="px-5 h-14 flex items-center justify-between border-b border-line-soft">
               <Logo tone="white" height={15} />
               <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="eb-iconbtn -mr-1.5">
@@ -119,7 +122,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </div>
             {!isAdmin && staffEvent && <SessionCard event={staffEvent.name} dest={staffDest} uni={staffUni?.shortName} />}
             <NavList items={nav} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
-            <div className="px-3 pb-5 pt-3 border-t border-line-soft">
+            <RailObjects />
+            <div className="relative px-3 pb-5 pt-3 border-t border-line-soft">
               <button
                 onClick={() => {
                   handleLogout();
@@ -184,6 +188,28 @@ function SessionCard({ event, dest, uni }: { event: string; dest: { flag: string
         </p>
       )}
       {uni && <p className="text-muted truncate">{uni}</p>}
+    </div>
+  );
+}
+
+/** The landing page's event objects, gathered in the rail's light pool just
+ *  above the account card: they rise in one by one, then float. Decorative,
+ *  and hidden on short screens so they never crowd the nav. */
+function RailObjects() {
+  return (
+    <div className="eb-rail-objects" aria-hidden="true">
+      <div className="lp-obj eb-rail-ticket" style={{ ["--d" as string]: "0.3s" }}>
+        <div className="lp-bob" style={{ ["--bob" as string]: "6.2s" }}><TicketObject className="lp-tilt-ticket" /></div>
+      </div>
+      <div className="lp-obj eb-rail-badge" style={{ ["--d" as string]: "0.5s" }}>
+        <div className="lp-bob" style={{ ["--bob" as string]: "7s", animationDelay: "-2s" }}><BadgeObject className="lp-tilt-badge" /></div>
+      </div>
+      <div className="lp-obj eb-rail-wrist" style={{ ["--d" as string]: "0.7s" }}>
+        <div className="lp-bob" style={{ ["--bob" as string]: "5.6s", animationDelay: "-1s" }}><WristbandObject className="lp-tilt-band" /></div>
+      </div>
+      <div className="lp-obj eb-rail-orbs" style={{ ["--d" as string]: "0.9s" }}>
+        <div className="lp-bob" style={{ ["--bob" as string]: "6.6s", animationDelay: "-3s" }}><OrbsObject /></div>
+      </div>
     </div>
   );
 }

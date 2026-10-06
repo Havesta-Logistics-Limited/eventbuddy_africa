@@ -294,7 +294,7 @@ export default function EventDetailPage() {
     if (!dataReady) {
       return (
         <Shell>
-          <div className="p-6 max-w-5xl mx-auto space-y-3">
+          <div className="p-6 max-w-6xl mx-auto space-y-3">
             <div className="h-4 w-28 rounded bg-fill-strong animate-pulse mb-2" />
             <div className="h-40 rounded-2xl bg-fill-strong animate-pulse" />
             {Array.from({ length: 3 }).map((_, i) => (
@@ -396,7 +396,7 @@ export default function EventDetailPage() {
   return (
     <Shell>
       <AmbientBackground />
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="eb-app-page p-6 sm:p-8 max-w-6xl mx-auto">
         <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg-2 mb-5">
           <ArrowLeft size={15} />
           Back to events
@@ -412,7 +412,7 @@ export default function EventDetailPage() {
               >
                 {event.published === false ? "Draft" : status.charAt(0).toUpperCase() + status.slice(1)}
               </span>
-              <h1 className="font-display text-2xl text-fg mb-3">{event.name}</h1>
+              <h1 className="eb-app-title mb-3">{event.name}</h1>
               {event.seriesId &&
                 (() => {
                   const siblings = allEvents
@@ -469,11 +469,6 @@ export default function EventDetailPage() {
               </div>
               {event.eventFormat === "virtual" && event.virtualAccessNotes && (
                 <p className="text-xs text-subtle mt-1">{event.virtualAccessNotes}</p>
-              )}
-              {event.description && event.description.trim() !== event.name.trim() && (
-                <div className="mt-3 pt-3 border-t border-line-soft">
-                  <RichTextDisplay html={event.description} className="text-fg-3 text-sm" />
-                </div>
               )}
               {event.published === false && (
                 <p className="flex items-center gap-1.5 text-xs text-amber-300 bg-amber-500/10 rounded-lg px-3 py-2 mt-3 w-fit">
@@ -547,6 +542,14 @@ export default function EventDetailPage() {
             </div>
           </div>
 
+          {/* The description spans the whole card under the header row, rather
+              than squeezing into the left column beside the actions and stats. */}
+          {event.description && event.description.trim() !== event.name.trim() && (
+            <div className="mt-5 border-t border-line-soft pt-5">
+              <RichTextDisplay html={event.description} className="text-[15px] leading-7 text-fg-2" />
+            </div>
+          )}
+
           {event.coverImage && !imgError && (
             <div className="mt-5 w-full aspect-video rounded-xl overflow-hidden bg-fill">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -615,16 +618,20 @@ export default function EventDetailPage() {
 
         </div>
 
-        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 border-b border-line mb-6">
-          <div className="flex flex-wrap gap-x-5 gap-y-1">
+        <div className="flex items-start justify-between gap-x-3 border-b border-line mb-6">
+          {/* One scrollable row instead of wrapping onto two lines */}
+          <div className="eb-tabrow" role="tablist" aria-label="Event sections">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 type="button"
-                onClick={() => setActiveTab(t.id)}
-                className={`pb-3 -mb-px border-b-2 text-sm font-medium whitespace-nowrap transition-all active:scale-[0.97] ${
-                  activeTab === t.id ? "border-brand-600 text-brand-500" : "border-transparent text-muted hover:text-fg-2"
-                }`}
+                role="tab"
+                aria-selected={activeTab === t.id}
+                onClick={(e) => {
+                  setActiveTab(t.id);
+                  e.currentTarget.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+                }}
+                className="eb-tab"
               >
                 {t.label}
               </button>

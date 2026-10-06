@@ -1229,16 +1229,70 @@ h1.font-display { letter-spacing: -0.04em; line-height: 1.05; }
    ========================================================================== */
 .eb-shell {
   --accent: #ff8af5;
-  background: var(--color-canvas);
+  /* the nav rail is its own lifted surface; the workspace stays the darkest
+     layer, so the two never read as one plane */
+  background:
+    radial-gradient(ellipse 120% 40% at 0% 0%, rgba(237, 28, 220, 0.1), transparent 70%),
+    linear-gradient(180deg, #140d1d 0%, #0f0a16 100%);
   color: var(--color-fg);
-  border-right: 1px solid var(--color-line-soft);
+  border-right: 1px solid #ffffff1f;
+  box-shadow: 1px 0 0 0 rgba(0, 0, 0, 0.6), 12px 0 40px -20px rgba(0, 0, 0, 0.8);
+}
+/* Glow on the desktop rail and the mobile drawer (not the mobile top bar):
+   a light pool rising from the foot, a softer bloom at the top, and a glowing
+   edge line that slowly shimmers against the workspace. */
+aside.eb-shell,
+.eb-shell.eb-drawer {
+  --glow-a: 237, 28, 220;
+  --glow-b: 139, 92, 246;
+  background:
+    radial-gradient(ellipse 140% 34% at 50% 104%, rgba(var(--glow-a), 0.34), transparent 70%),
+    radial-gradient(ellipse 160% 46% at 30% 108%, rgba(var(--glow-b), 0.38), transparent 72%),
+    radial-gradient(ellipse 120% 30% at 10% -4%, rgba(var(--glow-a), 0.18), transparent 70%),
+    linear-gradient(180deg, #140d1d 0%, #0f0a16 100%);
+  border-right-color: transparent;
+}
+aside.eb-shell::after,
+.eb-shell.eb-drawer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -1px;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(var(--glow-a), 0.15) 0%, rgba(var(--glow-a), 0.85) 35%, rgba(var(--glow-b), 0.9) 70%, rgba(var(--glow-b), 0.25) 100%);
+  background-size: 100% 200%;
+  box-shadow: 0 0 14px 1px rgba(var(--glow-a), 0.45);
+  animation: eb-edge-shimmer 9s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes eb-edge-shimmer {
+  0%, 100% { background-position: 0 0%; opacity: 0.75; }
+  50% { background-position: 0 100%; opacity: 1; }
+}
+.eb-nav-pill { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent), 0 0 22px -6px color-mix(in srgb, var(--accent) 60%, transparent) !important; }
+/* the event objects floating in the rail's light pool */
+.eb-rail-objects { position: relative; height: 150px; flex-shrink: 0; margin: 0 8px; pointer-events: none; }
+.eb-rail-objects .lp-obj svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 14px 16px rgba(8, 2, 18, 0.6)); }
+.eb-rail-ticket { width: 106px; left: 10px; top: 56px; }
+.eb-rail-badge { width: 64px; left: 106px; top: 4px; }
+.eb-rail-wrist { width: 84px; left: 76px; top: 92px; }
+.eb-rail-orbs { width: 70px; left: 158px; top: 56px; }
+@media (max-height: 640px) { .eb-rail-objects { display: none; } }
+.eb-shell--staff.eb-drawer,
+aside.eb-shell--staff { --glow-a: 79, 179, 255; --glow-b: 56, 120, 230; }
+@media (prefers-reduced-motion: reduce) {
+  aside.eb-shell::after, .eb-shell.eb-drawer::after { animation: none; }
 }
 .eb-shell--staff {
-  background: linear-gradient(180deg, #050d17, var(--color-canvas) 60%);
+  background:
+    radial-gradient(ellipse 120% 40% at 0% 0%, rgba(79, 179, 255, 0.12), transparent 70%),
+    linear-gradient(180deg, #0b1522 0%, #0a0f17 100%);
 }
 .eb-mobilebar {
   border-right: 0;
-  border-bottom: 1px solid var(--color-line-soft);
+  box-shadow: none;
+  border-bottom: 1px solid #ffffff1f;
   background: color-mix(in srgb, var(--color-canvas) 86%, transparent);
   backdrop-filter: saturate(150%) blur(14px);
   -webkit-backdrop-filter: saturate(150%) blur(14px);
@@ -1377,6 +1431,8 @@ select.eb-input option { color: var(--color-fg); background: #1d1429; }
 }
 .eb-btn:active:not(:disabled) { transform: translateY(1px); }
 .eb-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+/* a disabled primary reads as clearly "not yet": neutral, not a faded pink */
+.eb-btn--primary:disabled { opacity: 1; background: #ffffff14; color: var(--color-subtle); box-shadow: inset 0 0 0 1px #ffffff1f; }
 .eb-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .eb-btn--primary {
   background: #ff8af5;
@@ -1605,6 +1661,178 @@ select.eb-input option { color: var(--color-fg); background: #1d1429; }
   pointer-events: none;
 }
 .eb-hub-band h1 { animation: eb-card-in 600ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* ==========================================================================
+   Organizer app primitives (phase 4): page header, stat tiles, cards,
+   segmented filters. The landing page's language at working density.
+   ========================================================================== */
+.eb-app-page { position: relative; isolation: isolate; }
+.eb-app-page::before {
+  /* a faint glow behind each page header, so app pages share the landing's light */
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  right: 0;
+  top: -40px;
+  height: 320px;
+  background:
+    radial-gradient(ellipse 40% 60% at 20% 0%, rgba(237, 28, 220, 0.12), transparent 70%),
+    radial-gradient(ellipse 50% 70% at 70% 0%, rgba(109, 40, 217, 0.16), transparent 72%);
+  pointer-events: none;
+}
+.eb-app-title { margin: 0; font-family: var(--font-hero); font-size: 30px; font-weight: 600; letter-spacing: -0.035em; line-height: 1.1; color: var(--color-fg); }
+.eb-app-sub { margin-top: 4px; font-size: 14px; color: var(--color-muted); }
+.eb-stat {
+  position: relative;
+  overflow: hidden;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid #ffffff17;
+  background: linear-gradient(180deg, #120c1a, #0d0814);
+  transition: border-color 200ms ease, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.eb-stat::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 138, 245, 0.55), transparent);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.eb-stat:hover { border-color: #ffffff2b; transform: translateY(-2px); }
+.eb-stat:hover::before { opacity: 1; }
+.eb-stat-label { font-size: 12.5px; font-weight: 500; color: var(--color-muted); }
+.eb-stat-value { margin-top: 6px; font-family: var(--font-hero); font-size: 30px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; color: var(--color-fg); font-variant-numeric: tabular-nums; }
+.eb-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid #ffffff17;
+  background: #0f0916;
+  transition: border-color 220ms ease, transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms ease;
+}
+.eb-card:hover { border-color: rgba(255, 138, 245, 0.32); transform: translateY(-3px); box-shadow: 0 24px 50px -28px rgba(237, 28, 220, 0.5); }
+.eb-card:active { transform: translateY(-1px); }
+.eb-card:focus-visible { outline: 2px solid #ff8af5; outline-offset: 2px; }
+.eb-cover-ph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 80% at 25% 110%, rgba(255, 138, 245, 0.55), transparent 70%),
+    radial-gradient(ellipse 70% 90% at 80% 100%, rgba(109, 40, 217, 0.7), transparent 72%),
+    #120a1c;
+}
+.eb-cover-ph span { padding: 0 20px; text-align: center; font-family: var(--font-hero); font-size: 20px; font-weight: 600; letter-spacing: -0.03em; color: #ffffffe6; }
+.eb-seg {
+  display: inline-flex;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px;
+  border-radius: 9999px;
+  border: 1px solid #ffffff1c;
+  background: #ffffff08;
+}
+.eb-seg::-webkit-scrollbar { display: none; }
+.eb-seg button {
+  flex-shrink: 0;
+  padding: 7px 16px;
+  border-radius: 9999px;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--color-muted);
+  text-transform: capitalize;
+  transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+.eb-seg button:hover { color: var(--color-fg); }
+.eb-seg button[aria-pressed="true"] { color: var(--color-fg); background: #ffffff12; box-shadow: inset 0 0 0 1px #ffffff40; }
+.eb-seg button:focus-visible { outline: 2px solid #ff8af5; outline-offset: -2px; }
+/* underlined tab row that scrolls sideways instead of wrapping */
+.eb-tabrow {
+  display: flex;
+  gap: 22px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+  padding-right: 28px;
+}
+.eb-tabrow::-webkit-scrollbar { display: none; }
+.eb-tab {
+  position: relative;
+  flex-shrink: 0;
+  margin-bottom: -1px;
+  padding: 2px 0 13px;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  font-weight: 550;
+  white-space: nowrap;
+  color: var(--color-muted);
+  transition: color 160ms ease, border-color 200ms ease;
+}
+.eb-tab:hover { color: var(--color-fg); }
+.eb-tab[aria-selected="true"] { color: var(--color-fg); border-bottom-color: #ff8af5; }
+.eb-tab:focus-visible { outline: 2px solid #ff8af5; outline-offset: 2px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .eb-stat, .eb-card { transition: none; }
+}
+
+/* Modals (every .animate-modal-panel in the app): a lifted surface with a
+   visible edge and a soft brand glow over a dark, blurred backdrop, so the
+   panel never melts into the page behind it. */
+.animate-modal-backdrop {
+  background-color: rgba(3, 1, 6, 0.74) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.animate-modal-panel {
+  background: linear-gradient(180deg, #1a1225 0%, #140e1d 100%) !important;
+  border: 1px solid #ffffff2e;
+  box-shadow:
+    0 -1px 0 0 rgba(255, 214, 252, 0.4) inset,
+    0 40px 100px -30px rgba(0, 0, 0, 0.9),
+    0 0 90px -30px rgba(237, 28, 220, 0.45) !important;
+}
+/* inside a modal, hairlines and soft fills need more strength to read */
+.animate-modal-panel .border-line,
+.animate-modal-panel .border-line-soft { border-color: #ffffff24; }
+.animate-modal-panel .bg-surface { background-color: #ffffff08; }
+.animate-modal-panel ::-webkit-scrollbar-thumb { background: #ffffff33; }
+/* a soft bloom along the top of every modal, like light behind the panel */
+.animate-modal-panel {
+  background:
+    radial-gradient(ellipse 70% 120px at 50% 0%, rgba(237, 28, 220, 0.16), transparent 100%),
+    linear-gradient(180deg, #1a1225 0%, #140e1d 100%) !important;
+}
+/* Hover glow: every bordered control inside a modal (option cards, fields,
+   buttons, toggles) lights up pink when the pointer is over it, and stays lit
+   while focused. Plain icon buttons have no border class, so they're left out. */
+.animate-modal-panel :is(button, label, a, input, select, textarea)[class*="border"] {
+  transition: border-color 180ms ease, box-shadow 220ms ease, background-color 180ms ease;
+}
+.animate-modal-panel :is(button, label, a, input, select, textarea)[class*="border"]:hover:not(:disabled),
+.animate-modal-panel :is(input, select, textarea)[class*="border"]:focus {
+  border-color: rgba(255, 138, 245, 0.75) !important;
+  box-shadow: 0 0 0 3px rgba(255, 138, 245, 0.12), 0 0 26px -6px rgba(237, 28, 220, 0.6) !important;
+}
+.animate-modal-panel .eb-btn--primary:hover:not(:disabled) { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35) inset, 0 0 34px -4px rgba(255, 138, 245, 0.85) !important; }
+.animate-modal-panel .eb-btn--ghost:hover:not(:disabled) { border-color: rgba(255, 138, 245, 0.6); box-shadow: 0 0 24px -8px rgba(237, 28, 220, 0.6); }
+@media (prefers-reduced-motion: reduce) {
+  .animate-modal-panel :is(button, label, a, input, select, textarea)[class*="border"] { transition: none; }
+}
+
+/* native radios and checkboxes take the brand pink instead of system blue */
+input[type="radio"], input[type="checkbox"] { accent-color: #ff8af5; }
 
 /* Glowing horizon panel (pricing): light rises from the frame's top edge
    behind an inner panel, after the reference's product window */

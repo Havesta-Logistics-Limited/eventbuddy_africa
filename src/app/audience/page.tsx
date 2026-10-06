@@ -430,11 +430,11 @@ export default function AudiencePage() {
 
   return (
     <Shell>
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="eb-app-page p-6 sm:p-8 max-w-5xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="font-display text-2xl text-fg">Audience</h1>
-            <p className="text-muted text-sm mt-0.5">Everyone who&apos;s registered for one of your events or followed you directly.</p>
+            <h1 className="eb-app-title">Audience</h1>
+            <p className="eb-app-sub">Everyone who&apos;s registered for one of your events or followed you directly.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -459,19 +459,19 @@ export default function AudiencePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="bg-surface rounded-2xl border border-line shadow-sm p-4">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="eb-stat">
+            <div className="flex items-center gap-2">
               <Users size={15} className="text-subtle" />
-              <span className="text-xs font-medium text-muted">Total audience</span>
+              <span className="eb-stat-label">Total audience</span>
             </div>
-            <p className="text-2xl font-bold text-fg tabular-nums">{loading ? "—" : members.length}</p>
+            <p className="eb-stat-value">{loading ? "—" : members.length}</p>
           </div>
-          <div className="bg-surface rounded-2xl border border-line shadow-sm p-4">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="eb-stat">
+            <div className="flex items-center gap-2">
               <UserCheck size={15} className="text-subtle" />
-              <span className="text-xs font-medium text-muted">Direct followers</span>
+              <span className="eb-stat-label">Direct followers</span>
             </div>
-            <p className="text-2xl font-bold text-fg tabular-nums">{loading ? "—" : followerCount}</p>
+            <p className="eb-stat-value">{loading ? "—" : followerCount}</p>
           </div>
         </div>
 

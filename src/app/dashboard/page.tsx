@@ -42,14 +42,14 @@ function EventCard({ event }: { event: EventRecord }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className="h-full bg-surface/75 backdrop-blur-xl rounded-xl border border-line shadow-sm overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:border-brand-600/30 active:translate-y-0 active:scale-[0.99] active:shadow-md"
+      className="eb-card h-full"
     >
       <div className="aspect-video bg-fill relative">
         {event.coverImage && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={event.coverImage} alt={event.name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
         ) : (
-          <div className="w-full h-full bg-gradient-to-tr from-fill-strong to-fill" />
+          <div className="eb-cover-ph" aria-hidden="true"><span>{event.name}</span></div>
         )}
         <div className="absolute top-3 left-3">
           {event.published === false ? (
@@ -243,15 +243,15 @@ export default function DashboardPage() {
   return (
     <Shell>
       <AmbientBackground />
-      <div className="p-6 max-w-6xl mx-auto">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="eb-app-page p-6 sm:p-8 max-w-6xl mx-auto">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-7">
           <div className="min-w-0">
-            <h1 className="font-display text-2xl text-fg">Events</h1>
-            <p className="text-muted text-sm mt-0.5">Manage your event schedule</p>
+            <h1 className="eb-app-title">Events</h1>
+            <p className="eb-app-sub">Manage your event schedule</p>
           </div>
           <button
             onClick={() => setShowWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#C21FAF] shadow-sm hover:bg-[#93147D] hover:shadow-md transition-[transform,background-color,box-shadow] active:scale-[0.97] shrink-0 whitespace-nowrap"
+            className="eb-btn eb-btn--primary h-11 shrink-0 whitespace-nowrap px-5"
           >
             <Plus size={16} />
             New Event
@@ -265,23 +265,21 @@ export default function DashboardPage() {
             ? Array.from({ length: 5 }).map((_, i) => <StatTileSkeleton key={i} />)
             : stats.map((s, i) => (
                 <Reveal key={s.label} index={i}>
-                  <div className="rounded-xl bg-surface/60 backdrop-blur-xl border border-line shadow-sm p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-surface/80 hover:shadow-md active:translate-y-0 active:scale-[0.98]">
-                    <p className="text-xs text-muted mb-1">{s.label}</p>
-                    <p className="text-2xl font-bold text-fg tabular-nums">{s.value}</p>
+                  <div className="eb-stat">
+                    <p className="eb-stat-label">{s.label}</p>
+                    <p className="eb-stat-value">{s.value}</p>
                   </div>
                 </Reveal>
               ))}
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-5">
-          <div className="flex gap-1 bg-surface/60 backdrop-blur-md border border-line rounded-lg p-1 w-fit">
+          <div className="eb-seg" role="group" aria-label="Filter events">
             {(["all", "draft", "active", "upcoming", "completed"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-all duration-150 active:scale-[0.95] ${
-                  filter === f ? "bg-surface shadow-sm text-fg" : "text-muted hover:text-fg-2 hover:bg-surface/50"
-                }`}
+                aria-pressed={filter === f}
               >
                 {f}
               </button>

@@ -121,11 +121,11 @@ export default function LeadsPage() {
 
   return (
     <Shell>
-      <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <div className="eb-app-page p-4 sm:p-8 max-w-7xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="font-display text-2xl text-fg">Leads</h1>
-            <p className="text-muted text-sm mt-0.5 tabular-nums">
+            <h1 className="eb-app-title">Leads</h1>
+            <p className="eb-app-sub tabular-nums">
               {filtered.length} of {isRep ? leads.filter((l) => l.universityId === session?.universityId).length : leads.length} records
             </p>
           </div>

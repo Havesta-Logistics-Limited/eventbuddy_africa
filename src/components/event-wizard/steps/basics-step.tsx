@@ -7,8 +7,8 @@ import { ImageCropperModal } from "@/components/image-cropper-modal";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import type { EventWizardData } from "../types";
 
-const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-[#C21FAF]";
-const labelClass = "block text-sm font-medium text-fg-2 mb-1.5";
+const fieldClass = "eb-input";
+const labelClass = "eb-label";
 
 export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange: (patch: Partial<EventWizardData>) => void }) {
   const [imageUploading, setImageUploading] = useState(false);
@@ -80,7 +80,7 @@ export function BasicsStep({ data, onChange }: { data: EventWizardData; onChange
               <label
                 key={opt.key}
                 className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-colors ${
-                  selected ? "border-[#C21FAF] bg-[#C21FAF]/5" : "border-line hover:border-line-strong"
+                  selected ? "border-[#FF8AF5] bg-[#FF8AF5]/10 shadow-[0_0_0_3px_rgba(255,138,245,0.12)]" : "border-[#ffffff2e] hover:border-[#ffffff55]"
                 }`}
               >
                 <input
