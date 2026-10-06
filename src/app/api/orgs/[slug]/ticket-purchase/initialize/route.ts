@@ -172,8 +172,16 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   // amount, migration 0098), read live so a rate change applies to the very next
   // sale. Fee-exempt organizations pay nothing. Paystack splits the payment by this
   // exact amount; finalize later records what it actually took (fees_split).
-  const { data: feeSettings } = await admin.from("platform_settings").select("ticket_fee_percentage, ticket_fee_flat_naira").eq("id", true).maybeSingle();
+  const { data: feeSettings } = await admin
+    .from("platform_settings")
+    .select("ticket_fee_percentage, ticket_fee_flat_naira, held_funds_enabled")
+    .eq("id", true)
+    .maybeSingle();
   const platformFeeMinor = org.is_fee_exempt ? 0 : ticketFeeMinor(amountNaira, ticketFeeFromSettings(feeSettings), groupSize);
+  // Held funds (migration 0102): no subaccount split; the whole payment lands in
+  // eventbuddy's balance and finalize credits the organizer's ledger with the
+  // sale minus this fee, recorded here because Paystack won't report a split.
+  const held = Boolean(feeSettings?.held_funds_enabled);
 
   const referralId = await resolveReferralId(admin, event.id, ref);
 
@@ -188,7 +196,9 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     purpose: "ticket_purchase",
     ticket_type_id: ticket.id,
     discount_code_id: discountCodeId,
-    subaccount_code: org.paystack_subaccount_code,
+    subaccount_code: held ? null : org.paystack_subaccount_code,
+    settlement: held ? "held" : "split",
+    ...(held ? { platform_fee_naira: platformFeeMinor / 100, net_amount_naira: Math.round((amountNaira - platformFeeMinor / 100) * 100) / 100 } : {}),
     registrant_data: {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -211,8 +221,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       reference,
       callbackUrl,
       currency,
-      subaccount: org.paystack_subaccount_code,
-      transactionChargeMinor: platformFeeMinor,
+      subaccount: held ? undefined : org.paystack_subaccount_code,
+      transactionChargeMinor: held ? undefined : platformFeeMinor,
       metadata: { eventId: event.id, organizationId: org.id, ticketTypeId: ticket.id, discountCodeId },
     });
     return NextResponse.json({ authorizationUrl });

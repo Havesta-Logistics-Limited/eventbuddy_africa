@@ -142,6 +142,8 @@ export async function POST(request: Request) {
       payout_account_name: accountName,
       payout_change_status: "none",
       payout_change_approved_at: null,
+      // payouts to the new account need a fresh Paystack transfer recipient
+      payout_recipient_code: null,
     })
     .eq("id", org.id);
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });

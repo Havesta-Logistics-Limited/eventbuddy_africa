@@ -27,6 +27,12 @@ import {
   TicketType,
   University,
   LedgerSummary,
+  AccountBalance,
+  LedgerEntry,
+  LedgerKind,
+  PayoutRequest,
+  PayoutSettings,
+  PayoutStatus,
 } from "./types";
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { copyEventMedia, deleteEventMedia, isEventMediaUrl, uploadEventMedia } from "./supabase/storage";
@@ -2389,4 +2395,127 @@ export async function logout(): Promise<void> {
   leadsLoadedForOrg = null;   // next login re-reads leads instead of trusting an empty cache
   registrationsCache = [];
   persistSession();
+}
+
+// ---- Held funds and payouts (migration 0102) ---------------------------------
+
+type PayoutRow = {
+  id: string;
+  organization_id: string;
+  amount_naira: number | string;
+  fee_naira: number | string;
+  status: PayoutStatus;
+  bank_name: string | null;
+  account_number_last4: string | null;
+  account_name: string | null;
+  requested_at: string;
+  decided_at: string | null;
+  decision_note: string | null;
+  paid_at: string | null;
+  failure_reason: string | null;
+};
+
+export function mapPayoutRow(p: PayoutRow): PayoutRequest {
+  return {
+    id: p.id,
+    organizationId: p.organization_id,
+    amountNaira: Number(p.amount_naira),
+    feeNaira: Number(p.fee_naira),
+    status: p.status,
+    bankName: p.bank_name,
+    accountNumberLast4: p.account_number_last4,
+    accountName: p.account_name,
+    requestedAt: p.requested_at,
+    decidedAt: p.decided_at,
+    decisionNote: p.decision_note,
+    paidAt: p.paid_at,
+    failureReason: p.failure_reason,
+  };
+}
+
+export async function getPayoutSettings(): Promise<PayoutSettings> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from("platform_settings")
+    .select("held_funds_enabled, held_funds_since, payout_min_naira, payout_fee_naira, unverified_lock_days")
+    .eq("id", true)
+    .maybeSingle();
+  if (error) throw new PersistError(error);
+  return {
+    heldFundsEnabled: Boolean(data?.held_funds_enabled),
+    heldFundsSince: data?.held_funds_since ?? null,
+    payoutMinNaira: Number(data?.payout_min_naira ?? 5000),
+    payoutFeeNaira: Number(data?.payout_fee_naira ?? 100),
+    unverifiedLockDays: Number(data?.unverified_lock_days ?? 3),
+  };
+}
+
+export async function getAccountBalance(orgId?: string): Promise<AccountBalance | null> {
+  const supabase = createSupabaseBrowserClient();
+  const id = orgId ?? (await resolveMyOrgId(supabase));
+  if (!id) return null;
+  const { data, error } = await supabase.rpc("account_balance", { p_org: id }).maybeSingle<{
+    total_naira: number;
+    pending_naira: number;
+    locked_naira: number;
+    available_naira: number;
+    paid_out_naira: number;
+  }>();
+  if (error) throw new PersistError(error);
+  return {
+    totalNaira: Number(data?.total_naira ?? 0),
+    pendingNaira: Number(data?.pending_naira ?? 0),
+    lockedNaira: Number(data?.locked_naira ?? 0),
+    availableNaira: Number(data?.available_naira ?? 0),
+    paidOutNaira: Number(data?.paid_out_naira ?? 0),
+  };
+}
+
+export async function getMyPayoutRequests(): Promise<PayoutRequest[]> {
+  const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) return [];
+  const { data, error } = await supabase.from("payout_requests").select("*").eq("organization_id", orgId).order("requested_at", { ascending: false }).limit(100);
+  if (error) throw new PersistError(error);
+  return (data ?? []).map((p) => mapPayoutRow(p as PayoutRow));
+}
+
+export async function getMyLedgerEntries(limit = 200): Promise<LedgerEntry[]> {
+  const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) return [];
+  const { data, error } = await supabase
+    .from("ledger_entries")
+    .select("id, event_id, kind, amount_naira, clears_at, note, created_at, events(name)")
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new PersistError(error);
+  return (data ?? []).map((l) => ({
+    id: l.id,
+    eventId: l.event_id,
+    eventName: (l.events as unknown as { name?: string } | null)?.name ?? null,
+    kind: l.kind as LedgerKind,
+    amountNaira: Number(l.amount_naira),
+    clearsAt: l.clears_at,
+    note: l.note,
+    createdAt: l.created_at,
+  }));
+}
+
+/** Owner only (enforced in request_payout). Throws a PersistError carrying the
+ *  database's own readable reason (minimum, balance, bank change pending…). */
+export async function requestPayout(amountNaira: number): Promise<string> {
+  const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) throw new PersistError({ message: "No organization found for this account." });
+  const { data, error } = await supabase.rpc("request_payout", { p_org: orgId, p_amount: amountNaira });
+  if (error) throw new PersistError(error);
+  return data as string;
+}
+
+export async function cancelPayout(payoutId: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.rpc("cancel_payout", { p_payout: payoutId });
+  if (error) throw new PersistError(error);
 }

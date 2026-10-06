@@ -216,6 +216,52 @@ export async function paystackRefund(reference: string): Promise<void> {
   }
 }
 
+/** Creates (or, for the same account, re-fetches) a Paystack transfer
+ *  recipient for a Nigerian bank account: the "who" of a payout transfer. */
+export async function createTransferRecipient(params: { name: string; accountNumber: string; bankCode: string }): Promise<{ recipientCode: string }> {
+  const res = await fetch(`${PAYSTACK_BASE}/transferrecipient`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${paystackKey()}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "nuban", name: params.name, account_number: params.accountNumber, bank_code: params.bankCode, currency: "NGN" }),
+  });
+  const json = (await res.json()) as { status: boolean; message: string; data?: { recipient_code: string } };
+  if (!res.ok || !json.status || !json.data) throw new Error(json.message || "Paystack couldn't register this bank account for payouts.");
+  return { recipientCode: json.data.recipient_code };
+}
+
+/** Sends money from eventbuddy's Paystack balance to a recipient. Needs
+ *  Transfers enabled on the Paystack account with the OTP requirement turned
+ *  off; Paystack reports the outcome later via transfer.success / .failed /
+ *  .reversed webhooks, keyed by our `reference`. */
+export async function initiateTransfer(params: { amountMinor: number; recipientCode: string; reference: string; reason: string }): Promise<{ transferCode: string; status: string }> {
+  const res = await fetch(`${PAYSTACK_BASE}/transfer`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${paystackKey()}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ source: "balance", amount: params.amountMinor, recipient: params.recipientCode, reference: params.reference, reason: params.reason, currency: "NGN" }),
+  });
+  const json = (await res.json()) as { status: boolean; message: string; data?: { transfer_code: string; status: string } };
+  if (!res.ok || !json.status || !json.data) throw new Error(json.message || "Paystack couldn't send this payout.");
+  return { transferCode: json.data.transfer_code, status: json.data.status };
+}
+
+/** Applies a Paystack transfer webhook to its payout request. Idempotent:
+ *  only a payout still 'processing' moves, so redelivered webhooks are no-ops. */
+export async function handleTransferEvent(supabase: SupabaseClient, reference: string, outcome: "success" | "failed" | "reversed", reason?: string): Promise<void> {
+  const { data: payout } = await supabase.from("payout_requests").select("id, status").eq("transfer_reference", reference).maybeSingle();
+  if (!payout || payout.status !== "processing") return;
+  if (outcome === "success") {
+    await supabase.from("payout_requests").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", payout.id).eq("status", "processing");
+  } else {
+    const { error } = await supabase.rpc("return_payout", {
+      p_payout: payout.id,
+      p_status: "failed",
+      p_note: reason || (outcome === "reversed" ? "Transfer reversed by the bank" : "Transfer failed"),
+      p_by: null,
+    });
+    if (error) console.error(`[payouts] couldn't return failed payout ${payout.id}:`, error.message);
+  }
+}
+
 export type FinalizeResult =
   | { ok: true; purpose: "ticket_purchase"; eventId: string; referenceId: string | null; hubUrl?: string; alreadyProcessed: boolean }
   | { ok: true; purpose: "other"; eventId: string; alreadyProcessed: true }
@@ -307,7 +353,10 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
   // happened on this specific charge. Absent entirely (no subaccount, a pre-payout-setup
   // historical row) reads as a 0 fee rather than failing the whole finalize.
   const feeMinor = Number((verified as { fees_split?: { integration?: number } }).fees_split?.integration ?? 0);
-  const platformFeeNaira = Math.round((feeMinor / 100) * 100) / 100;
+  // A held sale (migration 0102) has no split for Paystack to report: the fee
+  // was computed and stored at initialize, and stays what it was.
+  const isHeld = txn.settlement === "held";
+  const platformFeeNaira = isHeld ? Number(txn.platform_fee_naira ?? 0) : Math.round((feeMinor / 100) * 100) / 100;
   const netAmountNaira = Math.round((Number(txn.amount_naira) - platformFeeNaira) * 100) / 100;
 
   // The idempotency boundary: this UPDATE only ever matches a row while it's still
@@ -333,8 +382,29 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
     return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId: null, hubUrl, alreadyProcessed: true };
   }
 
+  if (isHeld) await postHeldSale(supabase, txn, platformFeeNaira);
+
   const { referenceId, hubUrl } = await createTicketPurchaseRegistration(supabase, txn);
   return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId, hubUrl, alreadyProcessed: false };
+}
+
+/** Credits a held sale to the organizer's ledger: the full sale, then
+ *  eventbuddy's fee off it. Unique per (transaction, kind), so a webhook and
+ *  the browser callback racing can't double-credit. A failure is logged, not
+ *  thrown: the buyer has paid and must still get their ticket, and the entry
+ *  can be re-posted from the transaction row. */
+async function postHeldSale(supabase: SupabaseClient, txn: { id: string; organization_id: string; event_id: string; amount_naira: number | string; created_at?: string }, feeNaira: number) {
+  const { data: clearsAt } = await supabase.rpc("ledger_clear_time", { p_at: new Date().toISOString() });
+  const rows = [
+    { organization_id: txn.organization_id, event_id: txn.event_id, transaction_id: txn.id, kind: "sale", amount_naira: Number(txn.amount_naira), clears_at: clearsAt ?? new Date().toISOString(), note: "Ticket sale" },
+    ...(feeNaira > 0
+      ? // every row in one upsert must carry the same columns, or PostgREST sends
+        // the missing ones as null instead of letting the default apply
+        [{ organization_id: txn.organization_id, event_id: txn.event_id, transaction_id: txn.id, kind: "fee", amount_naira: -feeNaira, clears_at: new Date().toISOString(), note: "eventbuddy fee" }]
+      : []),
+  ];
+  const { error } = await supabase.from("ledger_entries").upsert(rows, { onConflict: "transaction_id,kind", ignoreDuplicates: true });
+  if (error) console.error(`[ledger] couldn't credit held sale ${txn.id} for org ${txn.organization_id} — needs manual posting:`, error.message);
 }
 
 type PendingTicketTxn = {
@@ -651,6 +721,24 @@ export async function handleRefundOrDispute(supabase: SupabaseClient, reference:
     }
     if (txn.discount_code_id) {
       await supabase.rpc("decrement_discount_uses", { p_discount_code_id: txn.discount_code_id });
+    }
+    // Held funds: the money came out of eventbuddy's balance, so it comes off
+    // what the organizer is owed. eventbuddy's fee is not returned (Paystack
+    // keeps its own charge on a refunded payment too). If they've already been
+    // paid out, the balance goes negative and the next sale covers it first.
+    if (txn.settlement === "held") {
+      const { error } = await supabase.from("ledger_entries").upsert(
+        {
+          organization_id: txn.organization_id,
+          event_id: txn.event_id,
+          transaction_id: txn.id,
+          kind: kind === "refunded" ? "refund" : "dispute",
+          amount_naira: -Number(txn.amount_naira),
+          note: kind === "refunded" ? "Ticket refunded" : "Payment disputed",
+        },
+        { onConflict: "transaction_id,kind", ignoreDuplicates: true }
+      );
+      if (error) console.error(`[ledger] couldn't debit ${kind} transaction ${txn.id} — needs manual posting:`, error.message);
     }
   }
   // Any other purpose (historical event-publish transactions only — that flat

@@ -52,6 +52,7 @@ import { getTemplate } from "@/lib/event-templates";
 import { isValidEmail } from "@/lib/validation";
 import { PlatformDocumentsTab } from "@/components/platform-documents-tab";
 import { fetchAllRows } from "@/lib/fetch-all-rows";
+import { PlatformPayoutQueue } from "@/components/platform-payout-queue";
 
 const SIDEBAR_BG = "#22103A";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -2236,7 +2237,7 @@ export default function PlatformDashboard() {
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
                   <h1 className="font-display text-2xl text-fg">Payouts</h1>
-                  <p className="text-muted text-sm mt-0.5">Every org&apos;s bank account, and any request to change one on file.</p>
+                  <p className="text-muted text-sm mt-0.5">Payout requests to approve, the held-funds rules, and every org&apos;s bank account.</p>
                 </div>
                 <button
                   type="button"
@@ -2249,6 +2250,8 @@ export default function PlatformDashboard() {
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
                 </button>
               </div>
+
+              <PlatformPayoutQueue />
 
               {(() => {
                 const pending = orgs.filter((o) => o.payout_change_status === "requested");

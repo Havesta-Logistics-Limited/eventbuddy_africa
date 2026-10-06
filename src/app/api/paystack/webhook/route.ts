@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { finalizePaystackTransaction, handleRefundOrDispute } from "@/lib/paystack";
+import { finalizePaystackTransaction, handleRefundOrDispute, handleTransferEvent } from "@/lib/paystack";
 
 /**
  * Paystack calls this directly, server-to-server — no user session, so the signature
@@ -33,6 +33,7 @@ export async function POST(request: Request) {
       reference?: string;
       transaction_reference?: string;
       transaction?: { reference?: string };
+      reason?: string;
     };
   };
   try {
@@ -58,7 +59,12 @@ export async function POST(request: Request) {
     await handleRefundOrDispute(admin, reference, "refunded");
   } else if (event.event === "charge.dispute.create" && reference) {
     const admin = createAdminClient();
-    await handleRefundOrDispute(admin, reference, "disputed");
+    await handleRefundOrDispute(admin, reference, "disputed");  } else if ((event.event === "transfer.success" || event.event === "transfer.failed" || event.event === "transfer.reversed") && event.data?.reference) {
+    // Payout transfers (migration 0102): data.reference is the payout's own
+    // transfer_reference, never a charge reference.
+    const admin = createAdminClient();
+    const outcome = event.event === "transfer.success" ? "success" : event.event === "transfer.failed" ? "failed" : "reversed";
+    await handleTransferEvent(admin, event.data.reference, outcome, event.data.reason);
   }
 
   // Always acknowledge with 200 once the signature is valid, even for event types this

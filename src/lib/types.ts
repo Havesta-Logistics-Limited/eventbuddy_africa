@@ -591,3 +591,55 @@ export interface EventPollOption {
   label: string;
   voteCount: number;
 }
+
+/** Held funds (migration 0102): what eventbuddy owes an organization, split by
+ *  when it can be withdrawn. Amounts in Naira. */
+export interface AccountBalance {
+  totalNaira: number;
+  /** Sold today (or on a non-business day): clears at the start of the next business day. */
+  pendingNaira: number;
+  /** Cleared, but the event hasn't ended yet and the organization isn't payout-verified. */
+  lockedNaira: number;
+  /** Can be requested now (may be negative after a refund that followed a payout). */
+  availableNaira: number;
+  paidOutNaira: number;
+}
+
+export type PayoutStatus = "requested" | "processing" | "paid" | "failed" | "rejected" | "cancelled";
+
+export interface PayoutRequest {
+  id: string;
+  organizationId: string;
+  amountNaira: number;
+  feeNaira: number;
+  status: PayoutStatus;
+  bankName: string | null;
+  accountNumberLast4: string | null;
+  accountName: string | null;
+  requestedAt: string;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  paidAt: string | null;
+  failureReason: string | null;
+}
+
+export type LedgerKind = "sale" | "fee" | "refund" | "dispute" | "payout" | "payout_fee" | "payout_return" | "payout_fee_return" | "adjustment";
+
+export interface LedgerEntry {
+  id: string;
+  eventId: string | null;
+  eventName: string | null;
+  kind: LedgerKind;
+  amountNaira: number;
+  clearsAt: string;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface PayoutSettings {
+  heldFundsEnabled: boolean;
+  heldFundsSince: string | null;
+  payoutMinNaira: number;
+  payoutFeeNaira: number;
+  unverifiedLockDays: number;
+}
