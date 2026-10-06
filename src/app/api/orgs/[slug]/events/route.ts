@@ -99,7 +99,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       destinationIds: e.destination_ids ?? [],
       description: e.description ?? "",
       coverImage: e.cover_image ?? undefined,
-      templateId: e.template_id ?? "education-fair",
+      templateId: e.template_id ?? "custom",
       category: e.category ?? undefined,
       customFields: (e.custom_fields as FieldDef[] | null) ?? [],
       eventFormat: (e.event_format as "physical" | "virtual" | null) ?? "physical",

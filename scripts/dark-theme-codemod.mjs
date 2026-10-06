@@ -34,6 +34,10 @@ NEUTRAL.ring = NEUTRAL.border;
 NEUTRAL.outline = NEUTRAL.border;
 NEUTRAL.fill = NEUTRAL.text;
 NEUTRAL.stroke = NEUTRAL.text;
+// gradient stops follow the background mapping
+NEUTRAL.from = NEUTRAL.bg;
+NEUTRAL.via = NEUTRAL.bg;
+NEUTRAL.to = NEUTRAL.bg;
 
 const HUES = ["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"];
 // The brand ramps (globals.css): their 500 is the bright logo hue.
@@ -68,7 +72,7 @@ function mapHue(prop, family, shade) {
   return null;
 }
 
-const PROPS = "bg|text|border|ring|divide|placeholder|fill|stroke|outline";
+const PROPS = "bg|text|border|ring|divide|placeholder|fill|stroke|outline|from|via|to";
 const FAMILIES = ["slate", "gray", "zinc", "neutral", "stone", ...HUES, ...Object.keys(BRAND)].sort((a, b) => b.length - a.length).join("|");
 // prefix: any chain of variants (hover:, md:, group-hover:, data-[x]:, …)
 const RE = new RegExp(String.raw`(?<![\w\-\[/])((?:[a-z0-9\-\[\]=&_]+:)*)(${PROPS})-(white|${FAMILIES})(?:-(\d{2,3}))?(\/\d{1,3})?(?![\w\-])`, "g");

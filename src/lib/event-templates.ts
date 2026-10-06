@@ -81,6 +81,12 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   },
 ];
 
+/** The template new events start from, and the fallback for an unknown id.
+ *  General-purpose on purpose (2026-10-06): eventbuddy serves any event, so
+ *  education-fair features (destinations, universities, reps) only appear when
+ *  an organizer actually chooses that template. */
+export const DEFAULT_TEMPLATE_ID = "custom";
+
 export function getTemplate(id: string | undefined): EventTemplate {
-  return EVENT_TEMPLATES.find((t) => t.id === id) ?? EVENT_TEMPLATES[0];
+  return EVENT_TEMPLATES.find((t) => t.id === id) ?? EVENT_TEMPLATES.find((t) => t.id === DEFAULT_TEMPLATE_ID)!;
 }

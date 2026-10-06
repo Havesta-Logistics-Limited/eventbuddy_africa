@@ -36,8 +36,7 @@ import {
   Clock,
   CheckCircle2,
   FileText,
-  Smartphone,
-} from "lucide-react";
+  Smartphone, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 import { Reveal } from "@/components/reveal";
@@ -128,6 +127,7 @@ type ManagedRequestRow = {
   event_date: string | null;
   expected_attendees: string | null;
   city: string;
+  budget: string | null;
   message: string | null;
   status: "new" | "contacted" | "quoted" | "closed";
   created_at: string;
@@ -278,7 +278,7 @@ export default function PlatformDashboard() {
         .order("created_at", { ascending: false }),
       supabase
         .from("managed_event_requests")
-        .select("id, contact_name, contact_email, contact_phone, organization_name, event_name, event_date, expected_attendees, city, message, status, created_at")
+        .select("id, contact_name, contact_email, contact_phone, organization_name, event_name, event_date, expected_attendees, city, budget, message, status, created_at")
         .order("created_at", { ascending: false }),
       supabase.from("device_push_tokens").select("platform"),
       fetch("/api/platform/attendee-accounts").then((r) => r.json()),
@@ -1574,7 +1574,7 @@ export default function PlatformDashboard() {
                       const busy = busyEventId === ev.id;
                       const regCount = activeRegistrations.filter((r) => r.event_id === ev.id).length;
                       const leadCount = leads.filter((l) => l.event_id === ev.id).length;
-                      const RowIcon = ev.event_format === "virtual" ? Presentation : getTemplate(ev.template_id ?? "education-fair").icon;
+                      const RowIcon = ev.event_format === "virtual" ? Presentation : getTemplate(ev.template_id ?? "custom").icon;
                       const pill = gate.open
                         ? { label: "Live", classes: "bg-emerald-500 text-white" }
                         : gate.reason === "not_started"
@@ -2213,6 +2213,12 @@ export default function PlatformDashboard() {
                             <p className="flex items-center gap-1.5 text-fg-3">
                               <Users2 size={13} className="text-subtle shrink-0" />
                               {req.expected_attendees} expected
+                            </p>
+                          )}
+                          {req.budget && (
+                            <p className="flex items-center gap-1.5 text-fg-3">
+                              <Wallet size={13} className="text-subtle shrink-0" />
+                              Budget: {req.budget}
                             </p>
                           )}
                         </div>

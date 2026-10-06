@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       destinationIds: e.destination_ids ?? [],
       description: e.description ?? "",
       coverImage: e.cover_image ?? undefined,
-      templateId: e.template_id ?? "education-fair",
+      templateId: e.template_id ?? "custom",
       customFields: e.custom_fields ?? [],
       timezone: e.timezone ?? undefined,
       captureOverride: e.capture_override ?? null,

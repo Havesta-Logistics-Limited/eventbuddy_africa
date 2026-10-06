@@ -6,6 +6,7 @@ import { ArrowRight, Users2, Tablet, QrCode, ClipboardCheck, CheckCircle2 } from
 import { LandingNav } from "@/components/landing/landing-hero";
 import { LandingFooter } from "@/components/landing/landing-close";
 import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
+import { BUDGET_OPTIONS } from "@/lib/managed-events";
 
 const INCLUDED = [
   { icon: Users2, title: "On-site staff", body: "Our team runs your check-in desk in person — you don't need to train or bring your own staff." },
@@ -23,6 +24,7 @@ type FormState = {
   eventDate: string;
   expectedAttendees: string;
   city: string;
+  budget: string;
   message: string;
 };
 
@@ -35,8 +37,10 @@ const EMPTY_FORM: FormState = {
   eventDate: "",
   expectedAttendees: "",
   city: "",
+  budget: "",
   message: "",
 };
+
 
 export default function ManagedEventsContent() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -54,7 +58,7 @@ export default function ManagedEventsContent() {
       setError("Enter a valid email address.");
       return;
     }
-    if (form.contactPhone.trim() && !isValidPhone(form.contactPhone)) {
+    if (!isValidPhone(form.contactPhone)) {
       setError("Enter a valid phone number.");
       return;
     }
@@ -76,8 +80,8 @@ export default function ManagedEventsContent() {
     }
   }
 
-  const fieldClass = "w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600";
-  const labelClass = "block text-sm font-medium text-fg-2 mb-1.5";
+  const fieldClass = "eb-input";
+  const labelClass = "eb-label";
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -130,45 +134,62 @@ export default function ManagedEventsContent() {
               <h2 className="font-display text-xl text-fg mb-1">Request a quote</h2>
               <p className="text-sm text-muted mb-5">No pricing is charged here — we&apos;ll reach out with a quote based on your event.</p>
 
+              {/* Every row is an even pair so labels and fields line up. */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className={labelClass}>Your name</label>
-                  <input required value={form.contactName} onChange={(e) => set("contactName", e.target.value)} className={fieldClass} />
+                  <label htmlFor="q-name" className={`${labelClass} eb-req`}>Your name</label>
+                  <input id="q-name" required autoComplete="name" value={form.contactName} onChange={(e) => set("contactName", e.target.value)} className={fieldClass} />
                 </div>
                 <div>
-                  <label className={labelClass}>Email</label>
-                  <input required type="email" value={form.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} className={fieldClass} />
+                  <label htmlFor="q-email" className={`${labelClass} eb-req`}>Email</label>
+                  <input id="q-email" required type="email" autoComplete="email" value={form.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} className={fieldClass} />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className={labelClass}>Phone (optional)</label>
-                  <input type="tel" value={form.contactPhone} onChange={(e) => set("contactPhone", sanitizePhoneInput(e.target.value))} className={fieldClass} />
+                  <label htmlFor="q-phone" className={`${labelClass} eb-req`}>Phone</label>
+                  <input id="q-phone" required type="tel" autoComplete="tel" placeholder="0801 234 5678" value={form.contactPhone} onChange={(e) => set("contactPhone", sanitizePhoneInput(e.target.value))} className={fieldClass} />
                 </div>
                 <div>
-                  <label className={labelClass}>Organization (optional)</label>
-                  <input value={form.organizationName} onChange={(e) => set("organizationName", e.target.value)} className={fieldClass} />
+                  <label htmlFor="q-org" className={`${labelClass} eb-req`}>Organization</label>
+                  <input id="q-org" required autoComplete="organization" value={form.organizationName} onChange={(e) => set("organizationName", e.target.value)} className={fieldClass} />
                 </div>
               </div>
 
               <div>
-                <label className={labelClass}>Event name</label>
-                <input required value={form.eventName} onChange={(e) => set("eventName", e.target.value)} className={fieldClass} />
+                <label htmlFor="q-event" className={`${labelClass} eb-req`}>Event name</label>
+                <input id="q-event" required value={form.eventName} onChange={(e) => set("eventName", e.target.value)} className={fieldClass} />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className={labelClass}>Event date (optional)</label>
-                  <input type="date" value={form.eventDate} onChange={(e) => set("eventDate", e.target.value)} className={fieldClass} />
+                  <label htmlFor="q-date" className={`${labelClass} eb-req`}>Event date</label>
+                  <input id="q-date" required type="date" min={new Date().toISOString().slice(0, 10)} value={form.eventDate} onChange={(e) => set("eventDate", e.target.value)} className={fieldClass} />
                 </div>
                 <div>
-                  <label className={labelClass}>Expected attendees</label>
-                  <input placeholder="e.g. 200-300" value={form.expectedAttendees} onChange={(e) => set("expectedAttendees", e.target.value)} className={fieldClass} />
+                  <label htmlFor="q-attendees" className={`${labelClass} eb-req`}>Expected attendees</label>
+                  <input id="q-attendees" required inputMode="numeric" placeholder="e.g. 200–300" value={form.expectedAttendees} onChange={(e) => set("expectedAttendees", e.target.value)} className={fieldClass} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="q-city" className={`${labelClass} eb-req`}>City / venue</label>
+                  <input id="q-city" required placeholder="e.g. Eko Hotel, Lagos" value={form.city} onChange={(e) => set("city", e.target.value)} className={fieldClass} />
                 </div>
                 <div>
-                  <label className={labelClass}>City / venue</label>
-                  <input required value={form.city} onChange={(e) => set("city", e.target.value)} className={fieldClass} />
+                  <label htmlFor="q-budget" className={`${labelClass} eb-req`}>Budget</label>
+                  <select id="q-budget" required value={form.budget} onChange={(e) => set("budget", e.target.value)} className={`${fieldClass} cursor-pointer`}>
+                    <option value="" disabled>
+                      Select a range
+                    </option>
+                    {BUDGET_OPTIONS.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -177,7 +198,7 @@ export default function ManagedEventsContent() {
                 <textarea rows={3} value={form.message} onChange={(e) => set("message", e.target.value)} className={`${fieldClass} resize-none`} />
               </div>
 
-              {error && <p className="text-sm text-rose-300">{error}</p>}
+              {error && <p className="eb-alert" role="alert">{error}</p>}
 
               <button
                 type="submit"

@@ -49,7 +49,7 @@ function EventCard({ event }: { event: EventRecord }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={event.coverImage} alt={event.name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
         ) : (
-          <div className="w-full h-full bg-gradient-to-tr from-slate-200 to-slate-100" />
+          <div className="w-full h-full bg-gradient-to-tr from-fill-strong to-fill" />
         )}
         <div className="absolute top-3 left-3">
           {event.published === false ? (

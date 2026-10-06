@@ -183,7 +183,7 @@ function mapEventRow(e: {
     isInviteOnly: e.is_invite_only ?? false,
     published: e.published ?? true,
     priceNaira: e.price_naira !== null && e.price_naira !== undefined ? Number(e.price_naira) : undefined,
-    templateId: e.template_id ?? "education-fair",
+    templateId: e.template_id ?? "custom",
     category: e.category ?? undefined,
     customFields: e.custom_fields ?? [],
     timezone: e.timezone ?? undefined,

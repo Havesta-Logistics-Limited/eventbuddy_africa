@@ -25,7 +25,7 @@ const EMPTY_DATA: EventWizardData = {
   coverImage: undefined,
   staffAccessCode: "",
   repAccessCode: "",
-  templateId: "education-fair",
+  templateId: "custom",
   customFields: [],
   allowRepAccess: true,
   selfRegistrationEnabled: true,
@@ -50,7 +50,7 @@ function toWizardData(event: EventRecord): EventWizardData {
     coverImage: event.coverImage,
     staffAccessCode: event.staffAccessCode || "",
     repAccessCode: event.repAccessCode || "",
-    templateId: event.templateId || "education-fair",
+    templateId: event.templateId || "custom",
     customFields: event.customFields || [],
     allowRepAccess: event.allowRepAccess ?? true,
     selfRegistrationEnabled: event.selfRegistrationEnabled ?? true,
@@ -168,7 +168,7 @@ export function EventWizard(props: {
         </div>
 
         <div className="p-6 space-y-4 overflow-y-auto flex-1">
-          {step === "template" && <TemplateStep selectedId={data.templateId || "education-fair"} onSelect={selectTemplate} />}
+          {step === "template" && <TemplateStep selectedId={data.templateId || "custom"} onSelect={selectTemplate} />}
           {step === "basics" && (
             <>
               <BasicsStep data={data} onChange={patch} />
