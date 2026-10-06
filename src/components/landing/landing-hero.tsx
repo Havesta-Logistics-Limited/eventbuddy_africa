@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { formatTicketFee, type TicketFee } from "@/lib/billing";
 import { BadgeObject, OrbsObject, TicketObject, WristbandObject } from "./event-objects";
@@ -11,9 +11,23 @@ import { ProductShowcase } from "./product-showcase";
 
 /* ------------------------------------------------------------------ nav */
 
+const NAV_LINKS = [
+  { href: "/discover", label: "Events" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/marketplace", label: "For Promoters" },
+];
+
 export function LandingNav() {
   const pathname = usePathname();
   const current = (href: string) => (pathname === href || pathname.startsWith(href + "/") ? "page" : undefined);
+  // Phones: the section links live in a drop-down behind a menu button.
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
   return (
     <header className="lp-nav sticky top-0 z-40">
       <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between px-5 sm:px-8">
@@ -23,13 +37,40 @@ export function LandingNav() {
           <span className="hidden sm:block"><Logo height={24} /></span>
         </span>
         <nav className="flex items-center gap-1 sm:gap-2" aria-label="Main">
-          <Link href="/discover" aria-current={current("/discover")} className="lp-navlink hidden sm:inline-flex">Events</Link>
-          <Link href="/pricing" aria-current={current("/pricing")} className="lp-navlink hidden sm:inline-flex">Pricing</Link>
+          {NAV_LINKS.map((l) => (
+            <Link key={l.href} href={l.href} aria-current={current(l.href)} className="lp-navlink hidden sm:inline-flex">
+              {l.label}
+            </Link>
+          ))}
           <span className="mx-2 hidden h-5 w-px bg-white/15 sm:block" aria-hidden="true" />
           <Link href="/login" className="lp-navlink">Sign in</Link>
           <Link href="/signup" className="lp-navcta">Sign up</Link>
+          <button
+            type="button"
+            className="lp-navmenu sm:hidden"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="lp-mobile-menu"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            {menuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
+          </button>
         </nav>
       </div>
+      {menuOpen && (
+        <nav id="lp-mobile-menu" className="lp-mobile-menu sm:hidden" aria-label="Menu">
+          {NAV_LINKS.map((l) => (
+            <Link key={l.href} href={l.href} aria-current={current(l.href)} onClick={() => setMenuOpen(false)}>
+              {l.label}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          ))}
+          <Link href="/promote" onClick={() => setMenuOpen(false)} className="lp-mobile-menu-sub">
+            Become a promoter
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </nav>
+      )}
     </header>
   );
 }

@@ -187,6 +187,11 @@ function SignupForm() {
           </form>
 
           <p className="mt-5 border-t border-white/10 pt-5 text-center text-sm text-fg-3">
+            Want to earn by promoting events?{" "}
+            <Link href="/promote" className="eb-link text-sm">
+              Become a promoter
+            </Link>
+            <br />
             Already have an account?{" "}
             <button type="button" onClick={() => router.push("/login")} className="eb-link text-sm">
               Sign in
