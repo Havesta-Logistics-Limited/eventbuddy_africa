@@ -44,7 +44,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const admin = createAdminClient();
   const { data: registration } = await admin
     .from("registrations")
-    .select("id, email, status")
+    .select("id, email, status, group_lead_id")
     .eq("id", registrationId)
     .eq("event_id", event.id)
     .eq("organization_id", org.id)
@@ -54,10 +54,19 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     return NextResponse.json({ error: "This registration is already cancelled." }, { status: 400 });
   }
 
+  // A group ticket's guests share the buyer's purchase: refunding any seat
+  // refunds the whole group, and the money goes back to the buyer who paid.
+  const purchaseRegistrationId = registration.group_lead_id ?? registration.id;
+  let payerEmail = registration.email;
+  if (registration.group_lead_id) {
+    const { data: lead } = await admin.from("registrations").select("email").eq("id", registration.group_lead_id).maybeSingle();
+    if (lead?.email) payerEmail = lead.email;
+  }
+
   const { data: txn } = await admin
     .from("paystack_transactions")
     .select("reference, amount_naira")
-    .eq("registration_id", registration.id)
+    .eq("registration_id", purchaseRegistrationId)
     .eq("status", "success")
     .maybeSingle();
   if (!txn) return NextResponse.json({ error: "No successful paid transaction found for this registration — nothing to refund." }, { status: 400 });
@@ -69,7 +78,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   await handleRefundOrDispute(admin, txn.reference, "refunded");
-  const emailSent = await sendAttendeeRefundEmail(registration.email, event.name, Number(txn.amount_naira));
+  const emailSent = await sendAttendeeRefundEmail(payerEmail, event.name, Number(txn.amount_naira));
 
   return NextResponse.json({ success: true, emailSent });
 }

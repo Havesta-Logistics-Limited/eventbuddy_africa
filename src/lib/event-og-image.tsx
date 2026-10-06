@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { stripHtml } from "@/lib/rich-text";
 import { formatDate, formatTime } from "@/lib/utils";
+import { ticketCtaLabel } from "@/lib/ticket-cta";
 
 export const eventOgImageSize = { width: 1200, height: 630 };
 
@@ -156,6 +157,13 @@ export function safeJsonLdString(jsonLd: unknown): string {
  *  here even though a browser fetching og:image directly could never load one —
  *  Satori renders it as image content, not a URL a client fetches. No cover image
  *  falls back to the brand gradient alone filling the right panel. */
+/** The share card's cue for a register link: "Buy Ticket" for a paid event (see
+ *  ticketCtaLabel). Falls back to "Register" if the ticket list can't be read. */
+export async function eventCtaLabel(eventId: string): Promise<string> {
+  const { data } = await createAnonClient().rpc("public_event_ticket_types", { p_event_id: eventId });
+  return ticketCtaLabel(((data ?? []) as { price_naira: number }[]).map((t) => Number(t.price_naira)));
+}
+
 export function buildEventOgImage(event: OgEvent, ctaLabel = "Register") {
   return new ImageResponse(
     (

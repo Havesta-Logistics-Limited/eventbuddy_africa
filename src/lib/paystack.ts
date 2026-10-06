@@ -354,6 +354,8 @@ type PendingTicketTxn = {
     customAnswers?: Record<string, string | string[]>;
     source?: "web" | "mobile";
     hideFromGuestList?: boolean;
+    /** Group (bundle) tickets: the other people this purchase admits. */
+    guests?: { firstName: string; lastName: string; email: string }[];
   } | null;
 };
 
@@ -497,6 +499,49 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
   const physicalHub = await tryHubUrl(info.email, `${info.firstName} ${info.lastName}`);
   await sendRegistrationEmail(info.email, referenceId, event, physicalHub);
   await sendPushToAttendee(supabase, info.email, "Payment confirmed! 🎉", `${event.name} — your ticket is ready.`, { eventId: txn.event_id, referenceId });
+
+  // Group ticket: every guest the buyer named gets their own registration,
+  // reference ID and QR (so each checks in independently), linked to the
+  // buyer's row so a refund cancels the whole group. The bundle already
+  // counted once against quantity_sold above. A guest that fails is logged and
+  // skipped; it never undoes the buyer's paid ticket.
+  for (const guest of info.guests ?? []) {
+    let guestRef: string | null = null;
+    let guestErr: { message: string; code?: string } | null = null;
+    for (let attempt = 0; attempt < 5 && !guestRef; attempt++) {
+      const candidate = generateReferenceId();
+      const { data, error } = await supabase
+        .from("registrations")
+        .insert({
+          organization_id: txn.organization_id,
+          event_id: txn.event_id,
+          ticket_type_id: txn.ticket_type_id,
+          reference_id: candidate,
+          full_name: `${guest.firstName} ${guest.lastName}`,
+          email: guest.email,
+          phone: null,
+          custom_answers: {},
+          source: info.source === "mobile" ? "mobile" : "web",
+          hide_from_guest_list: Boolean(info.hideFromGuestList),
+          referral_id: txn.referral_id ?? null,
+          group_lead_id: registrationId,
+        })
+        .select("id")
+        .single();
+      if (data) guestRef = candidate;
+      else {
+        guestErr = error;
+        if (error?.code !== "23505") break;
+      }
+    }
+    if (!guestRef) {
+      console.error(`[ticket-purchase] group ticket ${txn.id}: guest ${guest.email} couldn't be registered — needs manual follow-up:`, guestErr?.message);
+      continue;
+    }
+    const guestHub = await tryHubUrl(guest.email, `${guest.firstName} ${guest.lastName}`);
+    await sendRegistrationEmail(guest.email, guestRef, event, guestHub);
+  }
+
   return { referenceId, hubUrl: physicalHub };
 }
 
@@ -598,6 +643,8 @@ export async function handleRefundOrDispute(supabase: SupabaseClient, reference:
   if (txn.purpose === "ticket_purchase") {
     if (txn.registration_id) {
       await supabase.from("registrations").update({ status: "cancelled" }).eq("id", txn.registration_id);
+      // a group ticket's guests point at the buyer's row; the refund covers them too
+      await supabase.from("registrations").update({ status: "cancelled" }).eq("group_lead_id", txn.registration_id);
     }
     if (txn.ticket_type_id) {
       await supabase.rpc("decrement_ticket_sold", { p_ticket_type_id: txn.ticket_type_id });

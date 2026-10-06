@@ -7,6 +7,7 @@ import { nairaToChargeAmount, paystackInitialize } from "@/lib/paystack";
 import { newId } from "@/lib/utils";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 import { resolveReferralId } from "@/lib/referrals";
+import { validateGroupGuests } from "@/lib/group-tickets";
 
 type InitializeBody = {
   eventId: string;
@@ -26,6 +27,9 @@ type InitializeBody = {
    *  transaction now and copied onto the registration when the payment
    *  finalizes, so an abandoned checkout stays attributable too. */
   ref?: string;
+  /** Group (bundle) tickets only: the other people this purchase admits, named
+   *  by the buyer. Each becomes their own registration with its own QR. */
+  guests?: unknown;
 };
 
 /**
@@ -38,7 +42,7 @@ type InitializeBody = {
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/ticket-purchase/initialize">) {
   const { slug } = await ctx.params;
   const body = (await request.json()) as Partial<InitializeBody>;
-  const { eventId, ticketTypeId, firstName, lastName, email, phone, customAnswers, discountCode, source, hideFromGuestList, ref } = body;
+  const { eventId, ticketTypeId, firstName, lastName, email, phone, customAnswers, discountCode, source, hideFromGuestList, ref, guests } = body;
   const resolvedSource = source === "mobile" ? "mobile" : "web";
 
   if (!eventId || !ticketTypeId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
@@ -99,7 +103,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { data: ticket } = await admin
     .from("ticket_types")
-    .select("id, price_naira, quantity_available, quantity_sold, sales_start, sales_end")
+    .select("id, price_naira, quantity_available, quantity_sold, sales_start, sales_end, group_size")
     .eq("id", ticketTypeId)
     .eq("event_id", event.id)
     .maybeSingle();
@@ -115,6 +119,15 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   if (ticket.quantity_available != null && ticket.quantity_sold >= ticket.quantity_available) {
     return NextResponse.json({ error: "This ticket type is sold out." }, { status: 409 });
   }
+
+  // Group tickets: every extra seat must be a named guest, and only in-person
+  // events (each guest checks in at the door with their own QR).
+  const groupSize = Math.max(1, Number(ticket.group_size ?? 1));
+  if (groupSize > 1 && event.event_format === "virtual") {
+    return NextResponse.json({ error: "Group tickets aren't available for virtual events." }, { status: 400 });
+  }
+  const guestCheck = validateGroupGuests(groupSize, guests, email);
+  if (!guestCheck.ok) return NextResponse.json({ error: guestCheck.error }, { status: 400 });
 
   const listedPriceNaira = Number(ticket.price_naira);
   if (!(listedPriceNaira > 0)) {
@@ -160,7 +173,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   // sale. Fee-exempt organizations pay nothing. Paystack splits the payment by this
   // exact amount; finalize later records what it actually took (fees_split).
   const { data: feeSettings } = await admin.from("platform_settings").select("ticket_fee_percentage, ticket_fee_flat_naira").eq("id", true).maybeSingle();
-  const platformFeeMinor = org.is_fee_exempt ? 0 : ticketFeeMinor(amountNaira, ticketFeeFromSettings(feeSettings));
+  const platformFeeMinor = org.is_fee_exempt ? 0 : ticketFeeMinor(amountNaira, ticketFeeFromSettings(feeSettings), groupSize);
 
   const referralId = await resolveReferralId(admin, event.id, ref);
 
@@ -184,6 +197,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       customAnswers: customAnswers || {},
       source: resolvedSource,
       hideFromGuestList: Boolean(hideFromGuestList),
+      guests: guestCheck.guests,
     },
   });
   if (insertError) {

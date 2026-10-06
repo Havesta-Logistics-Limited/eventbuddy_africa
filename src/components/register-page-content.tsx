@@ -22,10 +22,12 @@ import {
   Tag,
   Ticket,
   Video,
-  X,
-} from "lucide-react";
+  X, Users } from "lucide-react";
 import { EventRecord, TicketType } from "@/lib/types";
 import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/components/dynamic-registration-form";
+import { GroupGuestFields } from "@/components/group-guest-fields";
+import { validateGroupGuests, type GroupGuest } from "@/lib/group-tickets";
+import { ticketCtaLabel } from "@/lib/ticket-cta";
 import { OneOnOneRequestStep } from "@/components/one-on-one-request-step";
 import { EventHostCard } from "@/components/event-host-card";
 import { RichTextDisplay } from "@/components/rich-text-display";
@@ -45,9 +47,11 @@ export function PublicHeader() {
 }
 
 type PublicEvent = EventRecord & { hasStaffCode: boolean; hasRepCode: boolean };
-type PublicTicketType = Pick<TicketType, "id" | "name" | "description" | "priceNaira" | "quantityAvailable" | "quantitySold" | "salesStart" | "salesEnd">;
+type PublicTicketType = Pick<TicketType, "id" | "name" | "description" | "priceNaira" | "quantityAvailable" | "quantitySold" | "salesStart" | "salesEnd" | "groupSize">;
 
 type Confirmation = {
+  /** Group tickets: how many guests were also sent their own ticket. */
+  guestCount?: number;
   /** Unset for virtual events — no physical check-in, so no reference ID/QR is issued;
    *  the registration is captured straight as a lead instead. */
   referenceId?: string;
@@ -277,6 +281,10 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   const [ticketTypes, setTicketTypes] = useState<PublicTicketType[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [guests, setGuests] = useState<GroupGuest[]>([]);
+  // "Just me" vs "Group": only offered when the event sells both kinds.
+  const [ticketMode, setTicketMode] = useState<"single" | "group">("single");
+  const [guestError, setGuestError] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -395,9 +403,12 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         if (cancelled) return;
         if (json.success) {
           const storedIdentity = sessionStorage.getItem(PENDING_IDENTITY_KEY);
+          let guestCount = 0;
           if (storedIdentity) {
             try {
-              setAttendeeIdentity(JSON.parse(storedIdentity));
+              const parsed = JSON.parse(storedIdentity);
+              guestCount = Number(parsed.guestCount) || 0;
+              setAttendeeIdentity({ fullName: parsed.fullName, email: parsed.email, phone: parsed.phone });
             } catch {
               // Malformed/stale value — the 1-on-1 step just won't have a name/email
               // prefilled, no worse than if this round-trip storage didn't exist.
@@ -407,6 +418,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
           setConfirmation({
             referenceId: json.referenceId ?? undefined,
             emailSent: true,
+            guestCount,
             hubUrl: json.hubUrl ?? undefined,
             event: {
               name: event.name,
@@ -492,7 +504,21 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
       return;
     }
     const selectedTicket = ticketTypes.find((t) => t.id === selectedTicketId);
-    const identity = { fullName: `${values.firstName.trim()} ${values.lastName.trim()}`.trim(), email: values.email.trim(), phone: values.phone.trim() || undefined };
+    // Group tickets: check the guests here first so the buyer sees the problem
+    // next to the fields, not after a round trip (the API enforces it too).
+    const groupSize = selectedTicket?.groupSize ?? 1;
+    const guestCheck = validateGroupGuests(groupSize, guests.slice(0, groupSize - 1), values.email);
+    if (!guestCheck.ok) {
+      setGuestError(guestCheck.error);
+      return;
+    }
+    setGuestError("");
+    const identity = {
+      fullName: `${values.firstName.trim()} ${values.lastName.trim()}`.trim(),
+      email: values.email.trim(),
+      phone: values.phone.trim() || undefined,
+      guestCount: guestCheck.guests.length,
+    };
     setSubmitError("");
     setSubmitting(true);
     try {
@@ -500,7 +526,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/ticket-purchase/initialize`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket.id, discountCode: appliedDiscount?.code, ref: storedRef(event.id), ...values }),
+          body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket.id, discountCode: appliedDiscount?.code, ref: storedRef(event.id), ...values, guests: guestCheck.guests }),
         });
         const json = await res.json();
         if (!res.ok || !json.authorizationUrl) {
@@ -628,11 +654,14 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   }
 
   const selectedTicket = ticketTypes.find((t) => t.id === selectedTicketId);
+  const hasBothKinds = ticketTypes.some((t) => t.groupSize > 1) && ticketTypes.some((t) => t.groupSize <= 1);
+  const visibleTicketTypes = hasBothKinds ? ticketTypes.filter((t) => (ticketMode === "group" ? t.groupSize > 1 : t.groupSize <= 1)) : ticketTypes;
   const discountedPrice =
     selectedTicket && appliedDiscount ? applyDiscount(selectedTicket.priceNaira, appliedDiscount.discountType, appliedDiscount.discountValue, appliedDiscount.maxDiscountNaira) : null;
 
   const minPriceNaira = ticketTypes.length > 0 ? Math.min(...ticketTypes.map((t) => t.priceNaira)) : 0;
   const isFreeEvent = ticketTypes.length === 0 || minPriceNaira === 0;
+  const ctaLabel = ticketCtaLabel(ticketTypes.map((t) => t.priceNaira));
   const priceLabel = isFreeEvent ? "Free" : ticketTypes.length > 1 ? `From ${formatNaira(minPriceNaira)}` : formatNaira(minPriceNaira);
 
   const badges = [STATUS_LABEL[status], event.eventFormat === "virtual" ? "Virtual" : "In Person", event.category].filter(Boolean) as string[];
@@ -719,7 +748,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 style={{ background: "#C21FAF" }}
               >
                 <Ticket size={16} />
-                {isFreeEvent ? "Register free" : `Register · ${priceLabel}`}
+                {ctaLabel === "Register" ? "Register free" : ctaLabel === "Buy Ticket" ? `Buy Ticket · ${priceLabel}` : ctaLabel}
               </a>
               <AddToCalendarMenu event={event} orgSlug={orgSlug} />
             </div>
@@ -855,6 +884,9 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                       : confirmation.emailSent
                         ? "We've also emailed you this confirmation. Keep it — you'll need it to check in."
                         : "Keep this reference ID — you'll need it to check in."}
+                    {confirmation.guestCount
+                      ? ` Your ${confirmation.guestCount} guest${confirmation.guestCount === 1 ? "" : "s"} each got their own ticket and QR code by email.`
+                      : ""}
                   </p>
 
                   {confirmation.referenceId && (
@@ -924,10 +956,17 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                   <div className="p-6">
                     {ticketTypes.length === 1 && ticketTypes[0].priceNaira > 0 && (
                       <div className="flex items-center justify-between gap-3 p-3.5 mb-5 rounded-xl bg-surface/5 border border-white/15">
-                        <p className="text-sm text-white/80 flex items-center gap-2">
-                          <Ticket size={14} className="text-[#FF8AF5]" />
-                          {ticketTypes[0].name}
-                        </p>
+                        <div className="min-w-0">
+                          <p className="text-sm text-white/80 flex items-center gap-2">
+                            <Ticket size={14} className="text-[#FF8AF5]" />
+                            {ticketTypes[0].name}
+                          </p>
+                          {ticketTypes[0].groupSize > 1 && (
+                            <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#FF8AF5]/15 px-2 py-0.5 text-[11px] font-semibold text-[#FF8AF5]">
+                              <Users size={11} aria-hidden="true" /> Admits {ticketTypes[0].groupSize} · {formatNaira(Math.round(ticketTypes[0].priceNaira / ticketTypes[0].groupSize))} each
+                            </p>
+                          )}
+                        </div>
                         {discountedPrice != null ? (
                           <span className="flex items-center gap-2">
                             <span className="text-xs text-white/40 line-through">{formatNaira(ticketTypes[0].priceNaira)}</span>
@@ -942,8 +981,42 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                     {ticketTypes.length > 1 && (
                       <div className="mb-5">
                         <h2 className="text-sm font-semibold text-white mb-2">Choose a ticket</h2>
+                        {hasBothKinds && (
+                          <div role="radiogroup" aria-label="Who is this for?" className="mb-3 grid grid-cols-2 gap-1 rounded-xl border border-white/15 bg-white/[0.03] p-1">
+                            {(
+                              [
+                                { mode: "single", label: "Just me", Icon: Ticket },
+                                { mode: "group", label: "Group", Icon: Users },
+                              ] as const
+                            ).map(({ mode, label, Icon }) => {
+                              const on = ticketMode === mode;
+                              return (
+                                <button
+                                  key={mode}
+                                  type="button"
+                                  role="radio"
+                                  aria-checked={on}
+                                  onClick={() => {
+                                    if (on) return;
+                                    setTicketMode(mode);
+                                    // a mode with one ticket needs no second tap
+                                    const inMode = ticketTypes.filter((t) => (mode === "group" ? t.groupSize > 1 : t.groupSize <= 1) && isTicketAvailable(t));
+                                    setSelectedTicketId(inMode.length === 1 ? inMode[0].id : null);
+                                    setGuestError("");
+                                    handleRemoveDiscount();
+                                  }}
+                                  className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition-colors ${
+                                    on ? "bg-[#FF8AF5] text-[#1a0b1f]" : "text-white/60 hover:text-white"
+                                  }`}
+                                >
+                                  <Icon size={14} aria-hidden="true" /> {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                         <div className="space-y-2">
-                          {ticketTypes.map((t) => {
+                          {visibleTicketTypes.map((t) => {
                             const available = isTicketAvailable(t);
                             const selected = selectedTicketId === t.id;
                             return (
@@ -965,6 +1038,11 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                                     {t.name}
                                   </p>
                                   {t.description && <p className="text-xs text-white/50 mt-0.5">{t.description}</p>}
+                                  {t.groupSize > 1 && (
+                                    <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#FF8AF5]/15 px-2 py-0.5 text-[11px] font-semibold text-[#FF8AF5]">
+                                      <Users size={11} aria-hidden="true" /> Admits {t.groupSize} · {formatNaira(Math.round(t.priceNaira / t.groupSize))} each
+                                    </p>
+                                  )}
                                   {!available && <p className="text-xs text-rose-300 mt-0.5">Sold out or unavailable</p>}
                                 </div>
                                 <span className="font-semibold text-white shrink-0">{t.priceNaira > 0 ? formatNaira(t.priceNaira) : "Free"}</span>
@@ -1034,7 +1112,26 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                     ) : ticketTypes.length === 1 && !isTicketAvailable(ticketTypes[0]) ? (
                       <p className="text-sm text-white/40 text-center py-4">This event&apos;s ticket is sold out or unavailable.</p>
                     ) : (
-                      <DynamicRegistrationForm fields={event.customFields || []} onSubmit={handleSubmit} submitting={submitting} submitError="" onProgress={handleFormProgress} />
+                      <DynamicRegistrationForm
+                        fields={event.customFields || []}
+                        onSubmit={handleSubmit}
+                        submitting={submitting}
+                        submitError=""
+                        onProgress={handleFormProgress}
+                        submitLabel={
+                          selectedTicket && selectedTicket.priceNaira > 0
+                            ? selectedTicket.groupSize > 1
+                              ? `Buy Ticket for ${selectedTicket.groupSize} people`
+                              : "Buy Ticket"
+                            : undefined
+                        }
+                        submittingLabel={selectedTicket && selectedTicket.priceNaira > 0 ? "Opening payment…" : undefined}
+                        beforeSubmit={
+                          selectedTicket && selectedTicket.groupSize > 1 ? (
+                            <GroupGuestFields groupSize={selectedTicket.groupSize} guests={guests} onChange={setGuests} error={guestError} />
+                          ) : undefined
+                        }
+                      />
                     )}
                   </div>
 

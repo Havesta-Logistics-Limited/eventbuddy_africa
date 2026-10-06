@@ -101,3 +101,21 @@ describe("ticketFeeFromSettings", () => {
     expect(ticketFeeFromSettings({ ticket_fee_percentage: 5, ticket_fee_flat_naira: 0 })).toEqual({ percentage: 5, flatNaira: 0 });
   });
 });
+
+describe("ticketFeeMinor for group tickets", () => {
+  const fee = { percentage: 5, flatNaira: 100 };
+  it("charges the flat part once per person admitted", () => {
+    // ₦40,000 bundle for 4: 5% = ₦2,000, plus ₦100 × 4 = ₦400 → ₦2,400
+    expect(ticketFeeMinor(40000, fee, 4)).toBe(240000);
+  });
+  it("matches four single tickets of the same total", () => {
+    expect(ticketFeeMinor(40000, fee, 4)).toBe(ticketFeeMinor(10000, fee) * 4);
+  });
+  it("treats a bad head count as one person", () => {
+    expect(ticketFeeMinor(10000, fee, 0)).toBe(60000);
+  });
+  it("still never exceeds the payment", () => {
+    expect(ticketFeeMinor(300, fee, 4)).toBe(30000);
+  });
+});
+

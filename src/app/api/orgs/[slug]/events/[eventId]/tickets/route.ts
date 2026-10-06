@@ -10,6 +10,7 @@ type TicketTypeRow = {
   quantity_sold: number;
   sales_start: string | null;
   sales_end: string | null;
+  group_size?: number | null;
 };
 
 /**
@@ -35,6 +36,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       quantitySold: t.quantity_sold,
       salesStart: t.sales_start ?? undefined,
       salesEnd: t.sales_end ?? undefined,
+      groupSize: Math.max(1, Number(t.group_size ?? 1)),
     })),
   });
 }

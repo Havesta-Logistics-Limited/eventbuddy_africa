@@ -258,6 +258,9 @@ export interface TicketType {
   quantitySold: number;
   salesStart?: string;
   salesEnd?: string;
+  /** People one purchase admits: 1 = an ordinary ticket, more = a group
+   *  bundle where every person gets their own registration and QR (0101). */
+  groupSize: number;
   createdAt: string;
 }
 

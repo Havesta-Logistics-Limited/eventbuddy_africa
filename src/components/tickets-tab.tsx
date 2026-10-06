@@ -33,7 +33,7 @@ function timeAgo(iso: string): string {
   return `${days}d ago`;
 }
 
-const EMPTY_FORM = { id: "", name: "", description: "", priceNaira: "0", quantityAvailable: "" };
+const EMPTY_FORM = { id: "", name: "", description: "", priceNaira: "0", quantityAvailable: "", groupSize: "1" };
 const EMPTY_CODE_FORM = {
   id: "",
   code: "",
@@ -240,8 +240,23 @@ export function TicketsTab({
     e.preventDefault();
     const priceNaira = Number(form.priceNaira) || 0;
     const quantityAvailable = form.quantityAvailable.trim() ? Number(form.quantityAvailable) : null;
+    const groupSize = Math.floor(Number(form.groupSize) || 1);
     if (!form.name.trim()) {
       setFormError("Give this ticket a name.");
+      return;
+    }
+    if (groupSize < 1 || groupSize > 20) {
+      setFormError("A ticket can admit between 1 and 20 people.");
+      return;
+    }
+    // Group bundles go through checkout (each guest is named and gets their own
+    // QR), so they need a price and an in-person event with door check-in.
+    if (groupSize > 1 && priceNaira <= 0) {
+      setFormError("Group tickets need a price. For free group entry, add a free single ticket instead.");
+      return;
+    }
+    if (groupSize > 1 && event.eventFormat === "virtual") {
+      setFormError("Group tickets are for in-person events, where each guest checks in at the door.");
       return;
     }
     if (priceNaira > 0 && !hasPayoutsConfigured) {
@@ -251,7 +266,7 @@ export function TicketsTab({
     setFormError("");
     setSaving(true);
     try {
-      const payload = { eventId: event.id, name: form.name.trim(), description: form.description.trim(), priceNaira, quantityAvailable };
+      const payload = { eventId: event.id, name: form.name.trim(), description: form.description.trim(), priceNaira, quantityAvailable, groupSize };
       if (form.id) await updateTicketType(form.id, payload);
       else await addTicketType(payload);
       toast.success(form.id ? "Ticket type updated" : "Ticket type added");
@@ -458,6 +473,12 @@ export function TicketsTab({
                   {t.priceNaira > 0 ? formatNaira(t.priceNaira) : "Free"} · {t.quantitySold} sold
                   {t.quantityAvailable != null && ` of ${t.quantityAvailable}`}
                 </p>
+                {t.groupSize > 1 && (
+                  <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-brand-500/15 px-2 py-0.5 text-[11px] font-semibold text-brand-500 ring-1 ring-inset ring-brand-500/25">
+                    <Users size={11} aria-hidden="true" />
+                    Group · admits {t.groupSize}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                 <button
@@ -468,6 +489,7 @@ export function TicketsTab({
                       description: t.description || "",
                       priceNaira: String(t.priceNaira),
                       quantityAvailable: t.quantityAvailable != null ? String(t.quantityAvailable) : "",
+                      groupSize: String(t.groupSize ?? 1),
                     });
                     setFormError("");
                     setShowForm(true);
@@ -835,6 +857,25 @@ export function TicketsTab({
                     className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-fg-2 mb-1.5">
+                  Admits <span className="text-subtle font-normal">(people per ticket)</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  step="1"
+                  value={form.groupSize}
+                  onChange={(e) => setForm({ ...form, groupSize: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                />
+                <p className="mt-1.5 text-xs text-subtle">
+                  {Number(form.groupSize) > 1
+                    ? `A group ticket: one purchase admits ${Math.floor(Number(form.groupSize))} people. The buyer names every guest, and each gets their own QR code. Quantity counts groups, not people.`
+                    : "1 for a normal ticket. Set 2 or more to sell a group bundle, e.g. \u201cSquad of 4\u201d."}
+                </p>
               </div>
               {formError && (
                 <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">

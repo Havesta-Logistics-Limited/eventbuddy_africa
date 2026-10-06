@@ -1,6 +1,6 @@
 import DefaultImage from "@/app/opengraph-image";
 import { createAnonClient } from "@/lib/supabase/anon";
-import { buildEventOgImage, eventOgImageSize, resolveEventForOg } from "@/lib/event-og-image";
+import { buildEventOgImage, eventCtaLabel, eventOgImageSize, resolveEventForOg } from "@/lib/event-og-image";
 
 export const alt = "eventbuddy";
 export const size = eventOgImageSize;
@@ -17,5 +17,5 @@ export default async function Image({ params }: { params: Promise<{ orgSlug: str
   if (!data) return DefaultImage();
   const event = await resolveEventForOg(data.org_slug, data.event_id);
   if (!event) return DefaultImage();
-  return buildEventOgImage(event);
+  return buildEventOgImage(event, await eventCtaLabel(event.id));
 }

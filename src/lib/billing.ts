@@ -29,12 +29,16 @@ export function formatTicketFee(fee: TicketFee): string {
 
 /** eventbuddy's cut of one paid ticket, in kobo — what checkout passes to Paystack
  *  as transaction_charge. Computed on the price actually paid (after any discount).
- *  Never more than the payment itself, so a very cheap ticket can't produce a charge
+ *  For a group ticket, pass `people` (how many it admits): the flat part is
+ *  charged per person. Never more than the payment itself, so a very cheap ticket can't produce a charge
  *  Paystack would reject; at that point the whole payment is the fee. */
-export function ticketFeeMinor(amountNaira: number, fee: TicketFee): number {
+export function ticketFeeMinor(amountNaira: number, fee: TicketFee, people = 1): number {
   const amountMinor = Math.round(amountNaira * 100);
   if (amountMinor <= 0) return 0;
-  const feeMinor = Math.round(amountMinor * (fee.percentage / 100)) + Math.round(fee.flatNaira * 100);
+  // A group ticket pays the flat part once per person admitted (2026-10-06):
+  // a bundle for 4 earns the same as 4 single tickets.
+  const heads = Math.max(1, Math.floor(people));
+  const feeMinor = Math.round(amountMinor * (fee.percentage / 100)) + Math.round(fee.flatNaira * 100) * heads;
   return Math.min(Math.max(0, feeMinor), amountMinor);
 }
 

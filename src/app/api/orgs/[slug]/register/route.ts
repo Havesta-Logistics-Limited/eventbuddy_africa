@@ -112,10 +112,14 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   let ticketTypeIdForRegistration: string | null = null;
   if (ticketTypeId) {
-    const { data: ticket } = await supabase.from("ticket_types").select("id, price_naira").eq("id", ticketTypeId).eq("event_id", event.id).maybeSingle();
+    const { data: ticket } = await supabase.from("ticket_types").select("id, price_naira, group_size").eq("id", ticketTypeId).eq("event_id", event.id).maybeSingle();
     if (!ticket) return NextResponse.json({ error: "This ticket type couldn't be found." }, { status: 404 });
     if (Number(ticket.price_naira) > 0) {
       return NextResponse.json({ error: "This ticket requires payment — please use the payment link instead." }, { status: 400 });
+    }
+    // Group tickets only sell through checkout, where every guest is named.
+    if (Number(ticket.group_size ?? 1) > 1) {
+      return NextResponse.json({ error: "This is a group ticket — please complete checkout to name your guests." }, { status: 400 });
     }
     ticketTypeIdForRegistration = ticket.id;
   }

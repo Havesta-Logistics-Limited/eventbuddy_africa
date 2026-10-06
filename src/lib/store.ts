@@ -357,6 +357,7 @@ function mapTicketTypeRow(t: {
   quantity_sold: number;
   sales_start: string | null;
   sales_end: string | null;
+  group_size?: number | null;
   created_at: string;
 }): TicketType {
   return {
@@ -369,6 +370,7 @@ function mapTicketTypeRow(t: {
     quantitySold: t.quantity_sold,
     salesStart: t.sales_start ?? undefined,
     salesEnd: t.sales_end ?? undefined,
+    groupSize: Math.max(1, Number(t.group_size ?? 1)),
     createdAt: t.created_at,
   };
 }
@@ -381,6 +383,7 @@ function ticketTypeToRow(input: Partial<Omit<TicketType, "id" | "createdAt" | "q
   if (input.quantityAvailable !== undefined) row.quantity_available = input.quantityAvailable;
   if (input.salesStart !== undefined) row.sales_start = input.salesStart || null;
   if (input.salesEnd !== undefined) row.sales_end = input.salesEnd || null;
+  if (input.groupSize !== undefined) row.group_size = Math.min(20, Math.max(1, Math.floor(input.groupSize)));
   return row;
 }
 function mapReferralRow(r: {
@@ -1259,6 +1262,7 @@ export async function duplicateEvent(id: string): Promise<EventRecord | undefine
       description: t.description,
       priceNaira: t.priceNaira,
       quantityAvailable: t.quantityAvailable,
+      groupSize: t.groupSize ?? 1,
       salesStart: t.salesStart,
       salesEnd: t.salesEnd,
     });
