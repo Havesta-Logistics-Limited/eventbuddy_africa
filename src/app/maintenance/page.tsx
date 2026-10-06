@@ -1,6 +1,6 @@
-import { Wrench } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { Logo } from "@/components/logo";
+import { AuthCentered } from "@/components/auth/auth-shell";
+import { OrbsObject } from "@/components/landing/event-objects";
 import { MaintenanceAutoRefresh } from "@/components/maintenance-auto-refresh";
 import { DEFAULT_MAINTENANCE_MESSAGE, DEFAULT_MAINTENANCE_TITLE } from "@/lib/maintenance";
 
@@ -18,45 +18,21 @@ export default async function MaintenancePage() {
   const message = data?.maintenance_message || DEFAULT_MAINTENANCE_MESSAGE;
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center text-white p-6 relative overflow-hidden"
-      style={{ background: "radial-gradient(ellipse 140% 110% at 50% 0%, #FF8AF5 0%, #C21FAF 55%, #170821 130%)" }}
-    >
-      {/* Faint grid texture — the same "quiet detail" as the dashboard's empty
-          states, keeps the huge flat gradient from feeling like an inert slide. */}
-      <div
-        className="absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
-          backgroundSize: "56px 56px",
-        }}
-      />
-
+    <AuthCentered>
       <MaintenanceAutoRefresh />
-
-      <div className="relative max-w-lg w-full text-center animate-fade-in-up">
-        <div className="flex justify-center mb-10">
-          <Logo tone="white" height={17} />
+      <div className="text-center">
+        <div className="mx-auto mb-6 w-28 lp-bob" style={{ ["--bob" as string]: "6.4s" }} aria-hidden="true">
+          <OrbsObject />
         </div>
-
-        <div className="w-16 h-16 rounded-2xl bg-surface/10 border border-white/15 flex items-center justify-center mx-auto mb-6 animate-idle-float">
-          <Wrench size={26} className="text-[#FF8AF5]" />
-        </div>
-
-        <h1 className="font-display text-3xl sm:text-4xl leading-tight mb-3">{title}</h1>
-        <p className="text-white/70 text-base leading-relaxed max-w-md mx-auto">{message}</p>
-
-        <div className="flex items-center justify-center gap-1.5 mt-9" aria-hidden="true">
+        <h1 className="eb-auth-title mb-3">{title}</h1>
+        <p className="mx-auto max-w-md text-[15px] leading-relaxed text-fg-3">{message}</p>
+        <div className="mt-8 flex items-center justify-center gap-1.5" aria-hidden="true">
           {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="w-1.5 h-1.5 rounded-full bg-surface/40 animate-pulse"
-              style={{ animationDelay: `${i * 200}ms`, animationDuration: "1.2s" }}
-            />
+            <span key={i} className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-500" style={{ animationDelay: `${i * 200}ms`, animationDuration: "1.2s" }} />
           ))}
         </div>
-        <p className="text-white/40 text-xs mt-4">This page will refresh automatically once we&apos;re back.</p>
+        <p className="mt-4 text-xs text-subtle">This page will refresh automatically once we&apos;re back.</p>
       </div>
-    </div>
+    </AuthCentered>
   );
 }

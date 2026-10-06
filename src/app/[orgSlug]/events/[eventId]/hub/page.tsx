@@ -389,9 +389,9 @@ export default function EventHubPage() {
 
   return (
     <div className="min-h-screen bg-canvas pb-16">
-      <div className="pt-10 pb-16 px-4" style={{ background: "#C21FAF" }}>
+      <div className="eb-hub-band pt-10 pb-16 px-4">
         <div className="max-w-2xl mx-auto text-white">
-          <p className="text-xs uppercase tracking-wider text-white/60 mb-2">Event Hub</p>
+          <p className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-brand-500"><span className="lp-live-dot bg-brand-500!" />Event Hub</p>
           <h1 className="font-display text-2xl mb-2">{event.name}</h1>
           <span className="flex items-center gap-1.5 text-sm text-white/80">
             <Calendar size={14} />
@@ -400,7 +400,7 @@ export default function EventHubPage() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 -mt-8">
+      <div className="relative z-10 max-w-2xl mx-auto px-4 -mt-8">
         <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden">
           <div className="flex border-b border-line-soft overflow-x-auto">
             {SECTIONS.map((s) => (

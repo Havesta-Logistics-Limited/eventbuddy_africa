@@ -243,7 +243,7 @@ export function RegistrantDetailModal({
             <div className="flex flex-col items-center gap-2 p-5 rounded-xl bg-canvas border border-line">
               {qrDataUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={qrDataUrl} alt={`QR code for ${registration.referenceId}`} className="w-44 h-44" />
+                <img src={qrDataUrl} alt={`QR code for ${registration.referenceId}`} className="eb-light w-44 h-44 rounded-lg p-2" />
               ) : (
                 <div className="w-44 h-44 flex items-center justify-center text-subtle text-xs">Generating…</div>
               )}

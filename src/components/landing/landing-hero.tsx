@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { formatTicketFee, type TicketFee } from "@/lib/billing";
@@ -11,6 +12,8 @@ import { ProductShowcase } from "./product-showcase";
 /* ------------------------------------------------------------------ nav */
 
 export function LandingNav() {
+  const pathname = usePathname();
+  const current = (href: string) => (pathname === href || pathname.startsWith(href + "/") ? "page" : undefined);
   return (
     <header className="lp-nav sticky top-0 z-40">
       <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between px-5 sm:px-8">
@@ -20,8 +23,8 @@ export function LandingNav() {
           <span className="hidden sm:block"><Logo height={24} /></span>
         </span>
         <nav className="flex items-center gap-1 sm:gap-2" aria-label="Main">
-          <Link href="/discover" className="lp-navlink hidden sm:inline-flex">Events</Link>
-          <Link href="/pricing" className="lp-navlink hidden sm:inline-flex">Pricing</Link>
+          <Link href="/discover" aria-current={current("/discover")} className="lp-navlink hidden sm:inline-flex">Events</Link>
+          <Link href="/pricing" aria-current={current("/pricing")} className="lp-navlink hidden sm:inline-flex">Pricing</Link>
           <span className="mx-2 hidden h-5 w-px bg-white/15 sm:block" aria-hidden="true" />
           <Link href="/login" className="lp-navlink">Sign in</Link>
           <Link href="/signup" className="lp-navcta">Sign up</Link>

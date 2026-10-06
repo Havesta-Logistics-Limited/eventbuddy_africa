@@ -288,7 +288,7 @@ export default function RsvpPage() {
                         <div className="text-center">
                           {qrDataUrls[a.referenceId] && (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={qrDataUrls[a.referenceId]} alt={`${a.name}'s QR code`} className="mx-auto mb-3 rounded-lg border border-line" width={160} height={160} />
+                            <img src={qrDataUrls[a.referenceId]} alt={`${a.name}'s QR code`} className="eb-light rounded-lg p-2 mx-auto mb-3 rounded-lg border border-line" width={160} height={160} />
                           )}
                           <button
                             type="button"

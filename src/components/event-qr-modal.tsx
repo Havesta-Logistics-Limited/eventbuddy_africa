@@ -42,7 +42,7 @@ export function EventQrModal({
           <p className="text-sm text-muted mb-4">{description}</p>
           {qrDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={qrDataUrl} alt={title} className="mx-auto rounded-lg border border-line" width={220} height={220} />
+            <img src={qrDataUrl} alt={title} className="eb-light mx-auto rounded-lg p-2.5" width={220} height={220} />
           ) : (
             <div className="w-[220px] h-[220px] mx-auto rounded-lg bg-fill animate-pulse" />
           )}

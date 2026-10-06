@@ -119,9 +119,14 @@ select {
   padding-right: 2.5rem !important;
 }
 
+/* Headings everywhere share the landing page's display voice: SF Pro,
+   semibold, tight tracking. */
 .font-display {
   font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.03em;
 }
+h1.font-display { letter-spacing: -0.04em; line-height: 1.05; }
 
 /* Heavy-weight serif for spots that need real bold display type (e.g. the
    homepage trust band's stat numbers) — see layout.tsx for why this isn't just
@@ -447,6 +452,7 @@ select {
   transition: background-color 160ms ease, color 160ms ease;
 }
 .lp-navlink:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
+.lp-navlink[aria-current="page"] { color: #fff; background: rgba(255, 138, 245, 0.12); }
 .lp-navcta {
   margin-left: 4px;
   padding: 7px 14px;
@@ -1208,6 +1214,7 @@ select {
   .lp-acc-body { transition: none; }
   .eb-nav-pill { transition: none; }
   .eb-auth-card, .eb-auth-panel, .eb-alert { animation: none; }
+  .eb-page-hero > * { animation: none; }
   .lp-bar { animation: none; }
   .lp-marquee-pause { display: none; }
   .lp-rise { transform: none; }
@@ -1550,6 +1557,50 @@ select {
   .eb-auth-card { padding: 26px 20px; border-radius: 18px; }
   .eb-auth-title { font-size: 26px; }
 }
+
+/* Public page hero: the landing glow behind the first section, rising in on
+   load. Applied to the first <section> after the nav on marketing pages. */
+.eb-page-hero { position: relative; isolation: isolate; padding-top: 72px !important; }
+.eb-page-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: -120px;
+  width: min(1100px, 170vw);
+  height: 520px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(ellipse 34% 32% at 50% 40%, rgba(255, 138, 245, 0.22), transparent 70%),
+    radial-gradient(ellipse 52% 46% at 50% 46%, rgba(109, 40, 217, 0.32), transparent 74%);
+  filter: blur(4px);
+  pointer-events: none;
+}
+.eb-page-hero > * { animation: eb-card-in 640ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.eb-page-hero > *:nth-child(2) { animation-delay: 80ms; }
+.eb-page-hero > *:nth-child(3) { animation-delay: 160ms; }
+.eb-page-hero > *:nth-child(n + 4) { animation-delay: 220ms; }
+.eb-page-hero h1 { font-size: clamp(2.2rem, 4.4vw, 3.1rem); text-wrap: balance; }
+
+/* Event Hub header: the landing glow instead of a flat brand band */
+.eb-hub-band {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-line-soft);
+  background: var(--color-canvas);
+}
+.eb-hub-band::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -40% -10% -60%;
+  background:
+    radial-gradient(ellipse 40% 60% at 30% 40%, rgba(237, 28, 220, 0.32), transparent 70%),
+    radial-gradient(ellipse 50% 70% at 70% 60%, rgba(109, 40, 217, 0.4), transparent 72%);
+  pointer-events: none;
+}
+.eb-hub-band h1 { animation: eb-card-in 600ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 
 /* Light islands: content that must stay light on the dark theme (QR codes on
    white for scannability, printable previews). */

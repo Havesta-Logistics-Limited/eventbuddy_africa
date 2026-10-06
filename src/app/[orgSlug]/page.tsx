@@ -115,7 +115,7 @@ export default async function RootSlugPage({ params }: { params: Promise<Params>
   }
 
   return (
-    <div className="min-h-screen bg-[#22103A]">
+    <div className="min-h-screen bg-canvas">
       <PublicHeader />
       <div className="flex items-center justify-center p-6 py-32">
         <div className="text-center text-white/60 max-w-sm">

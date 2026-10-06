@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { brandedQrDataUrl } from "@/lib/branded-qr";
@@ -26,7 +25,6 @@ import {
   X,
 } from "lucide-react";
 import { EventRecord, TicketType } from "@/lib/types";
-import { Logo } from "@/components/logo";
 import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/components/dynamic-registration-form";
 import { OneOnOneRequestStep } from "@/components/one-on-one-request-step";
 import { EventHostCard } from "@/components/event-host-card";
@@ -36,37 +34,14 @@ import { formatDate, formatTime, safeHttpUrl } from "@/lib/utils";
 import { applyDiscount, formatNaira } from "@/lib/billing";
 import { getEventStatus, zonedTimeToUtc } from "@/lib/capture-window";
 import { captureRef, storedRef } from "@/lib/referral-capture";
+import { LandingNav } from "@/components/landing/landing-hero";
+import { LandingFooter } from "@/components/landing/landing-close";
 
 /** Same sticky public header as /discover — a shared visual identity across every
  *  public-facing page, and a visitor's only way back to the rest of the site from a
  *  link an organizer shared directly. */
 export function PublicHeader() {
-  return (
-    <header className="sticky top-0 z-30 bg-surface/70 backdrop-blur-md border-b border-line/70">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-        <span className="sm:hidden">
-          <Logo height={18} />
-        </span>
-        <span className="hidden sm:block">
-          <Logo height={26} />
-        </span>
-        <nav className="flex items-center gap-3 sm:gap-6">
-          <Link href="/discover" className="text-sm font-medium text-fg-3 hover:text-fg hidden sm:block">
-            Events
-          </Link>
-          <Link href="/pricing" className="text-sm font-medium text-fg-3 hover:text-fg hidden sm:block">
-            Pricing
-          </Link>
-          <Link href="/login" className="text-sm font-medium text-fg-3 hover:text-fg">
-            Sign in
-          </Link>
-          <Link href="/signup" className="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors">
-            Get Started
-          </Link>
-        </nav>
-      </div>
-    </header>
-  );
+  return <LandingNav />;
 }
 
 type PublicEvent = EventRecord & { hasStaffCode: boolean; hasRepCode: boolean };
@@ -580,7 +555,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#22103A]">
+      <div className="min-h-screen bg-canvas">
         <PublicHeader />
         <div className="flex items-center justify-center py-32">
           <MapPinCheckInside size={26} className="text-[#FF8AF5]/40 animate-pulse" />
@@ -591,7 +566,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   if (loadError || !event) {
     return (
-      <div className="min-h-screen bg-[#22103A]">
+      <div className="min-h-screen bg-canvas">
         <PublicHeader />
         <div className="flex items-center justify-center p-6 py-32">
           <div className="text-center text-white/60 max-w-sm">
@@ -605,7 +580,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   if (verifyingPayment && !confirmation) {
     return (
-      <div className="min-h-screen bg-[#22103A]">
+      <div className="min-h-screen bg-canvas">
         <PublicHeader />
         <div className="flex items-center justify-center p-6 py-32">
           <div className="text-center text-white/60">
@@ -619,7 +594,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   if (event.eventFormat !== "virtual" && event.selfRegistrationEnabled === false) {
     return (
-      <div className="min-h-screen bg-[#22103A]">
+      <div className="min-h-screen bg-canvas">
         <PublicHeader />
         <div className="flex items-center justify-center p-6 py-32">
           <div className="text-center text-white/60 max-w-sm">
@@ -640,7 +615,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   // responses after the fact), same override the server-side gate honors.
   if (status === "completed" && event.captureOverride !== "open") {
     return (
-      <div className="min-h-screen bg-[#22103A]">
+      <div className="min-h-screen bg-canvas">
         <PublicHeader />
         <div className="flex items-center justify-center p-6 py-32">
           <div className="text-center text-white/60 max-w-sm">
@@ -666,7 +641,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
     !!confirmation && confirmation.status !== "pending" && confirmation.status !== "waitlisted" && oneOnOneEnabled && !oneOnOneDismissed;
 
   return (
-    <div className="min-h-screen bg-[#22103A]">
+    <div className="min-h-screen bg-canvas">
       {/* Ambient glow behind the glass cards — fixed + its own overflow-hidden so it
           never affects the sticky registration panel's containing block. Purely
           atmospheric: slow, low-opacity, never the thing a visitor consciously notices. */}
@@ -707,7 +682,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
             {badges.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
                 {badges.map((b) => (
-                  <span key={b} className="text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full bg-brand-500/10 text-[#93147D]">
+                  <span key={b} className="text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full bg-brand-500/15 text-brand-500 ring-1 ring-inset ring-brand-500/25">
                     {b}
                   </span>
                 ))}
@@ -885,7 +860,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                   {confirmation.referenceId && (
                     <>
                       {qrDataUrl && (
-                        <div className="inline-block p-3 bg-surface rounded-lg mb-4">
+                        <div className="inline-block p-3 eb-light rounded-lg mb-4">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={qrDataUrl} alt="Registration QR code" width={164} height={164} />
                         </div>
@@ -1099,50 +1074,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         </div>
       </div>
 
-      <footer className="text-white mt-16" style={{ background: "#170821" }}>
-        <div className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
-          <div>
-            <Logo tone="white" variant="full" height={16} />
-            <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">
-              Registration, ticketing, and check-in for any event — education fairs, job fairs, conferences, and more.
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-3">Product</p>
-            <div className="flex flex-col gap-2.5 text-sm">
-              <Link href="/discover" className="text-white/70 hover:text-white">
-                Discover Events
-              </Link>
-              <Link href="/pricing" className="text-white/70 hover:text-white">
-                Pricing
-              </Link>
-              <Link href="/signup" className="text-white/70 hover:text-white">
-                Get Started
-              </Link>
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-3">Legal</p>
-            <div className="flex flex-col gap-2.5 text-sm">
-              <Link href="/privacy" className="text-white/70 hover:text-white">
-                Privacy Policy
-              </Link>
-              <Link href="/terms" className="text-white/70 hover:text-white">
-                Terms &amp; Conditions
-              </Link>
-              <Link href="/contact" className="text-white/70 hover:text-white">
-                Contact
-              </Link>
-            </div>
-          </div>
-        </div>
-        <div className="h-1 w-full flex">
-          <div className="flex-1" style={{ background: "#C21FAF" }} />
-          <div className="flex-1" style={{ background: "#6D28D9" }} />
-          <div className="flex-1" style={{ background: "#E85D0A" }} />
-          <div className="flex-1" style={{ background: "#B8119C" }} />
-        </div>
-      </footer>
+      <div className="mt-16"><LandingFooter /></div>
       </div>
     </div>
   );

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Calendar, ChevronLeft, ChevronRight, LayoutGrid, List, MapPin, Video, BadgeCheck, CalendarX } from "lucide-react";
-import { Logo } from "@/components/logo";
+import { LandingNav } from "@/components/landing/landing-hero";
+import { LandingFooter } from "@/components/landing/landing-close";
 import { FollowOrgButton } from "@/components/follow-org-button";
 import { formatDate, formatTime } from "@/lib/utils";
 import { formatNaira } from "@/lib/billing";
@@ -222,27 +223,7 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
 
   return (
     <div className="min-h-screen bg-canvas">
-      <header className="sticky top-0 z-30 bg-surface/70 backdrop-blur-md border-b border-line/70">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <span className="sm:hidden">
-            <Logo height={18} />
-          </span>
-          <span className="hidden sm:block">
-            <Logo height={26} />
-          </span>
-          <nav className="flex items-center gap-3 sm:gap-6">
-            <Link href="/discover" className="text-sm font-medium text-fg-3 hover:text-fg hidden sm:block">
-              Discover Events
-            </Link>
-            <Link href="/login" className="text-sm font-medium text-fg-3 hover:text-fg">
-              Sign in
-            </Link>
-            <Link href="/signup" className="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors">
-              Get Started
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <LandingNav />
 
       {loading ? (
         <div className="max-w-6xl mx-auto px-6 py-20 text-center text-subtle">Loading…</div>
@@ -354,50 +335,7 @@ export function OrgProfileContent({ orgSlug }: { orgSlug: string }) {
         </>
       )}
 
-      <footer className="text-white" style={{ background: "#170821" }}>
-        <div className="max-w-5xl mx-auto px-6 py-14 grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_1fr] gap-10">
-          <div>
-            <Logo tone="white" variant="full" height={16} />
-            <p className="text-sm text-white/50 mt-4 max-w-xs leading-relaxed">
-              Registration, ticketing, and check-in for any event — education fairs, job fairs, conferences, and more.
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-3">Product</p>
-            <div className="flex flex-col gap-2.5 text-sm">
-              <Link href="/discover" className="text-white/70 hover:text-white">
-                Discover Events
-              </Link>
-              <Link href="/pricing" className="text-white/70 hover:text-white">
-                Pricing
-              </Link>
-              <Link href="/signup" className="text-white/70 hover:text-white">
-                Get Started
-              </Link>
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-3">Legal</p>
-            <div className="flex flex-col gap-2.5 text-sm">
-              <Link href="/privacy" className="text-white/70 hover:text-white">
-                Privacy Policy
-              </Link>
-              <Link href="/terms" className="text-white/70 hover:text-white">
-                Terms &amp; Conditions
-              </Link>
-              <Link href="/contact" className="text-white/70 hover:text-white">
-                Contact
-              </Link>
-            </div>
-          </div>
-        </div>
-        <div className="h-1 w-full flex">
-          <div className="flex-1" style={{ background: "#C21FAF" }} />
-          <div className="flex-1" style={{ background: "#6D28D9" }} />
-          <div className="flex-1" style={{ background: "#E85D0A" }} />
-          <div className="flex-1" style={{ background: "#B8119C" }} />
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   );
 }
