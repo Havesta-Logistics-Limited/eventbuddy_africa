@@ -1,9 +1,11 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, Plus, Users, X, Landmark, ShieldCheck, UserCircle, Loader2, Receipt } from "lucide-react";
+import { AlertCircle, AlertTriangle, Plus, Users, X, Landmark, ShieldCheck, UserCircle, Loader2, Receipt, Sparkles } from "lucide-react";
+import { PlanSettings } from "@/components/plan-settings";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -24,7 +26,7 @@ import { StaffCard } from "@/components/admin-staff-card";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
-type Tab = "profile" | "staff" | "ledger" | "payouts";
+type Tab = "profile" | "staff" | "ledger" | "payouts" | "plan";
 
 type PayoutChangeStatus = "none" | "requested" | "approved";
 
@@ -60,7 +62,7 @@ function AdminPageContent() {
   // Settings → Payouts on their own.
   const [tab, setTab] = useState<Tab>(() => {
     const requested = searchParams.get("tab");
-    return requested === "payouts" || requested === "ledger" ? requested : "staff";
+    return requested === "payouts" || requested === "ledger" || requested === "plan" ? requested : "staff";
   });
 
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
@@ -592,6 +594,7 @@ function AdminPageContent() {
   const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
     { id: "profile", label: "Profile", icon: UserCircle },
     { id: "staff", label: "Staff", icon: Users },
+    { id: "plan", label: "Plan", icon: Sparkles },
     { id: "ledger", label: "Ledger", icon: Receipt },
     { id: "payouts", label: "Payouts", icon: Landmark },
   ];
@@ -1287,13 +1290,15 @@ function AdminPageContent() {
           </div>
         )}
 
+        {tab === "plan" && <PlanSettings />}
+
         {tab === "ledger" && (
           <div key="ledger" className="animate-tab-fade">
             <div className="mb-4">
               <h2 className="font-semibold text-fg">Ledger</h2>
               <p className="text-sm text-muted mt-0.5">
-                A running record of every ticket sale. Paystack settles each sale straight into your bank account automatically — this is a summary of
-                what&apos;s already been paid out, not a balance you withdraw from.
+                A running record of every ticket sale: what each event earned and eventbuddy&apos;s fee. Your withdrawable balance and payout
+                requests are on the <Link href="/payouts" className="eb-link">Payouts</Link> page.
               </p>
             </div>
 
@@ -1362,8 +1367,8 @@ function AdminPageContent() {
             <div className="mb-4">
               <h2 className="font-semibold text-fg">Ticket payouts</h2>
               <p className="text-sm text-muted mt-0.5">
-                Add your bank account once — every paid ticket sold on eventbuddy settles straight into it automatically, minus eventbuddy&apos;s
-                transaction fee. eventbuddy never holds or forwards this money itself.
+                The bank account your payouts are sent to. Ticket sales collect in your eventbuddy balance, and you request a payout to this
+                account from the <Link href="/payouts" className="eb-link">Payouts</Link> page.
               </p>
             </div>
 

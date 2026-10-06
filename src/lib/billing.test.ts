@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyDiscount, formatNaira, formatTicketFee, ticketFeeFromSettings, ticketFeeMinor } from "./billing";
+import { applyDiscount, formatNaira, formatTicketFee, ticketFeeFromSettings, ticketFeeMinor, planTicketFee } from "./billing";
 
 describe("applyDiscount", () => {
   it("applies a percentage discount", () => {
@@ -116,6 +116,20 @@ describe("ticketFeeMinor for group tickets", () => {
   });
   it("still never exceeds the payment", () => {
     expect(ticketFeeMinor(300, fee, 4)).toBe(30000);
+  });
+});
+
+describe("planTicketFee", () => {
+  const platform = { percentage: 5, flatNaira: 100 };
+  it("uses the platform default when the plan has no fee (Launch)", () => {
+    expect(planTicketFee({ fee_percentage: null, fee_flat_naira: null }, platform)).toEqual(platform);
+    expect(planTicketFee(null, platform)).toEqual(platform);
+  });
+  it("uses the plan's own fee", () => {
+    expect(planTicketFee({ fee_percentage: "3.00", fee_flat_naira: "100.00" }, platform)).toEqual({ percentage: 3, flatNaira: 100 });
+  });
+  it("allows a zero flat fee", () => {
+    expect(planTicketFee({ fee_percentage: 4, fee_flat_naira: 0 }, platform)).toEqual({ percentage: 4, flatNaira: 0 });
   });
 });
 

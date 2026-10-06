@@ -12,7 +12,7 @@ import { faqs } from "./faqs";
 const SELF_SERVE_INCLUDED = [
   "Virtual and in-person events, from templates or your own custom form",
   "Free & paid ticketing with QR codes, powered by Paystack",
-  "Ticket revenue splits straight to your own bank account, automatically",
+  "Request payouts to your bank right from your dashboard",
   "Unlimited staff and rep accounts, unlimited leads",
   "Access codes per event for staff and rep check-in",
   "Live analytics, tailored to your event's own fields",

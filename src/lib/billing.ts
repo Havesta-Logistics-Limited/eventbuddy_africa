@@ -27,6 +27,21 @@ export function formatTicketFee(fee: TicketFee): string {
   return fee.flatNaira > 0 ? `${pct} + ${formatNaira(fee.flatNaira)}` : pct;
 }
 
+/** An organizer plan's ticket fee (migration 0104). Launch stores no fee of its
+ *  own and uses the platform default, so the existing platform fee editor stays
+ *  the Launch rate; Grow and Scale set their own. */
+export function planTicketFee(
+  plan: { fee_percentage?: unknown; fee_flat_naira?: unknown } | null | undefined,
+  platformDefault: TicketFee
+): TicketFee {
+  const pct = plan?.fee_percentage == null ? NaN : Number(plan.fee_percentage);
+  const flat = plan?.fee_flat_naira == null ? NaN : Number(plan.fee_flat_naira);
+  return {
+    percentage: Number.isFinite(pct) ? pct : platformDefault.percentage,
+    flatNaira: Number.isFinite(flat) ? flat : platformDefault.flatNaira,
+  };
+}
+
 /** eventbuddy's cut of one paid ticket, in kobo — what checkout passes to Paystack
  *  as transaction_charge. Computed on the price actually paid (after any discount).
  *  For a group ticket, pass `people` (how many it admits): the flat part is

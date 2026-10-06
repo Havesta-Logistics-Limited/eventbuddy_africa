@@ -19,8 +19,8 @@ async function sendPayoutsConfiguredEmail(to: string, firstName: string, bankNam
     <p style="margin:0 0 16px;">Hi ${escapeHtml(firstName)},</p>
     <h1 style="font-size:19px; margin:0 0 12px;">Payouts are set up</h1>
     <p style="margin:0 0 20px; color:#666;">
-      Your bank account is connected — ${escapeHtml(bankName)} · ${maskedAccount}. Every paid ticket sold from now on settles straight into it automatically,
-      minus eventbuddy's transaction fee. eventbuddy never holds or forwards this money itself.
+      Your bank account is connected — ${escapeHtml(bankName)} · ${maskedAccount}. Ticket sales collect in your eventbuddy balance, minus the
+      transaction fee, and you can request a payout to this account from your dashboard's Payouts page whenever money is available.
     </p>
     ${emailButton(dashboardUrl, "Go to your dashboard", "#0d7c6e")}
   `;
@@ -31,7 +31,7 @@ async function sendPayoutsConfiguredEmail(to: string, firstName: string, bankNam
       from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
       to,
       subject: "Your eventbuddy payouts are set up",
-      text: `Payouts are set up — ${bankName} ${maskedAccount}. Ticket sales now split straight to this account automatically.`,
+      text: `Payouts are set up — ${bankName} ${maskedAccount}. Request payouts to this account from your dashboard's Payouts page.`,
       html: renderEmailShell({ color: "#0d7c6e", label: "Payouts connected", emoji: "🏦" }, bodyHtml),
     });
     return !error;

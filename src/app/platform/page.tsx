@@ -53,6 +53,7 @@ import { isValidEmail } from "@/lib/validation";
 import { PlatformDocumentsTab } from "@/components/platform-documents-tab";
 import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { PlatformPayoutQueue } from "@/components/platform-payout-queue";
+import { PlatformPlansEditor } from "@/components/platform-plans-editor";
 
 const SIDEBAR_BG = "#22103A";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -1726,8 +1727,8 @@ export default function PlatformDashboard() {
                 </div>
                 <p className="text-xs text-muted mb-3">
                   eventbuddy&apos;s cut of every paid self-serve ticket: a percentage of the price paid plus a flat amount per ticket. The rest
-                  settles straight to the organizer&apos;s own bank account via their Paystack subaccount. A change applies to every
-                  organization&apos;s next sale; fee-exempt organizations pay nothing.
+                  goes to the organizer: credited to their payout balance when holding is on (Payouts tab), or split to their bank at checkout
+                  when it&apos;s off. A change applies to every organization&apos;s next sale; fee-exempt organizations pay nothing.
                 </p>
                 {editingFeePct ? (
                   <div className="flex flex-wrap items-center gap-2">
@@ -1788,11 +1789,13 @@ export default function PlatformDashboard() {
                 )}
               </div>
 
+              <PlatformPlansEditor />
+
               <div className="mb-6">
                 <h2 className="font-semibold text-fg mb-1">Ticket sales &amp; commission</h2>
                 <p className="text-xs text-muted mb-4">
-                  Every paid ticket checkout, split automatically by Paystack between the organizer&apos;s bank account and eventbuddy&apos;s cut —
-                  eventbuddy&apos;s only revenue mechanism.
+                  Every paid ticket checkout and eventbuddy&apos;s cut of it, whether it was held for a payout request or split to the organizer&apos;s
+                  bank at checkout — eventbuddy&apos;s only revenue mechanism.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                   {[

@@ -33,6 +33,9 @@ import {
   PayoutRequest,
   PayoutSettings,
   PayoutStatus,
+  MyPlan,
+  OrganizerPlan,
+  PlanId,
 } from "./types";
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { copyEventMedia, deleteEventMedia, isEventMediaUrl, uploadEventMedia } from "./supabase/storage";
@@ -2518,4 +2521,40 @@ export async function cancelPayout(payoutId: string): Promise<void> {
   const supabase = createSupabaseBrowserClient();
   const { error } = await supabase.rpc("cancel_payout", { p_payout: payoutId });
   if (error) throw new PersistError(error);
+}
+
+// ---- Organizer plans (migration 0104) ---------------------------------------
+
+export async function getOrganizerPlans(): Promise<OrganizerPlan[]> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("organizer_plans").select("*").order("sort");
+  if (error) throw new PersistError(error);
+  return (data ?? []).map((p) => ({
+    id: p.id as PlanId,
+    name: p.name,
+    priceMonthlyNaira: Number(p.price_monthly_naira),
+    feePercentage: p.fee_percentage == null ? null : Number(p.fee_percentage),
+    feeFlatNaira: p.fee_flat_naira == null ? null : Number(p.fee_flat_naira),
+    maxPromotersPerEvent: p.max_promoters_per_event,
+    purchasable: p.id !== "launch" && Boolean(p.paystack_plan_code) && Number(p.price_monthly_naira) > 0,
+  }));
+}
+
+export async function getMyPlan(): Promise<MyPlan | null> {
+  const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) return null;
+  const [{ data: org, error }, { data: effective }] = await Promise.all([
+    supabase.from("organizations").select("plan_id, plan_status, plan_period_end, plan_comped").eq("id", orgId).maybeSingle(),
+    supabase.rpc("effective_plan_id", { p_org: orgId }),
+  ]);
+  if (error) throw new PersistError(error);
+  if (!org) return null;
+  return {
+    planId: org.plan_id as PlanId,
+    effectivePlanId: ((effective as string | null) ?? "launch") as PlanId,
+    status: org.plan_status as MyPlan["status"],
+    periodEnd: org.plan_period_end,
+    comped: org.plan_comped,
+  };
 }

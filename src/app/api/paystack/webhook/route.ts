@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { finalizePaystackTransaction, handleRefundOrDispute, handleTransferEvent } from "@/lib/paystack";
+import { finalizePaystackTransaction, handleRefundOrDispute, handleSubscriptionEvent, handleTransferEvent } from "@/lib/paystack";
 
 /**
  * Paystack calls this directly, server-to-server — no user session, so the signature
@@ -47,6 +47,23 @@ export async function POST(request: Request) {
   // (data.reference, data.transaction_reference, data.transaction.reference) —
   // checked in priority order rather than assuming one fixed shape.
   const reference = event.data?.reference || event.data?.transaction_reference || event.data?.transaction?.reference;
+
+  // Organizer plan subscriptions (migration 0104). A renewal's charge.success
+  // carries a reference eventbuddy never created, so it's handled here rather
+  // than by finalizePaystackTransaction.
+  const subscriptionEvents = ["subscription.create", "subscription.not_renew", "subscription.disable", "invoice.payment_failed"];
+  if (event.event && subscriptionEvents.includes(event.event)) {
+    await handleSubscriptionEvent(createAdminClient(), event.event, (event.data ?? {}) as Parameters<typeof handleSubscriptionEvent>[2]);
+    return NextResponse.json({ received: true });
+  }
+  if (event.event === "charge.success" && reference && (event.data as { plan?: { plan_code?: string } } | undefined)?.plan?.plan_code) {
+    const admin = createAdminClient();
+    const { data: known } = await admin.from("paystack_transactions").select("id").eq("reference", reference).maybeSingle();
+    if (!known) {
+      await handleSubscriptionEvent(admin, "charge.success", (event.data ?? {}) as Parameters<typeof handleSubscriptionEvent>[2]);
+      return NextResponse.json({ received: true });
+    }
+  }
 
   if (event.event === "charge.success" && reference) {
     const admin = createAdminClient();

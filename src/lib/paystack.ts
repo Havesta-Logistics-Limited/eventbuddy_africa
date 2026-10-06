@@ -59,6 +59,9 @@ export async function paystackInitialize(params: {
    *  Omitted (or 0) leaves the subaccount's own percentage in force, which is 0 for
    *  fee-exempt organizations. */
   transactionChargeMinor?: number;
+  /** A Paystack plan code: the first charge also starts a monthly
+   *  subscription to it (organizer plans, migration 0104). */
+  plan?: string;
 }): Promise<{ authorizationUrl: string; accessCode: string }> {
   const res = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
     method: "POST",
@@ -74,6 +77,7 @@ export async function paystackInitialize(params: {
       ...(params.subaccount && params.transactionChargeMinor && params.transactionChargeMinor > 0
         ? { transaction_charge: params.transactionChargeMinor }
         : {}),
+      ...(params.plan ? { plan: params.plan } : {}),
     }),
   });
   const json = (await res.json()) as PaystackInitializeResponse;
@@ -216,6 +220,128 @@ export async function paystackRefund(reference: string): Promise<void> {
   }
 }
 
+// ---- Organizer plans: Paystack Subscriptions (migration 0104) ----------------
+
+/** One month from `from`, for a plan period. Paystack's subscription webhook
+ *  later replaces it with the real next_payment_date. */
+function oneMonthFrom(from: Date): string {
+  const d = new Date(from);
+  d.setMonth(d.getMonth() + 1);
+  return d.toISOString();
+}
+
+/** First payment of a paid plan: verifies it like a ticket payment, then moves
+ *  the organization onto the plan. Idempotent on the transaction status. */
+async function finalizeSubscriptionPayment(
+  supabase: SupabaseClient,
+  txn: { id: string; reference: string; organization_id: string; status: string; plan_id: string | null; charge_amount_minor: number | string; charge_currency: string }
+): Promise<FinalizeResult> {
+  const planId = txn.plan_id ?? "launch";
+  if (txn.status === "success") return { ok: true, purpose: "subscription", planId, alreadyProcessed: true };
+  let verified: PaystackVerification;
+  try {
+    verified = await paystackVerify(txn.reference);
+  } catch {
+    return { ok: false, reason: "verify_error" };
+  }
+  if (verified.status !== "success" || verified.currency !== txn.charge_currency || verified.amount < Number(txn.charge_amount_minor)) {
+    await supabase.from("paystack_transactions").update({ status: "failed", paystack_event: verified }).eq("id", txn.id).eq("status", "pending");
+    return { ok: false, reason: verified.status !== "success" ? "payment_failed" : "amount_mismatch" };
+  }
+  const { data: updated } = await supabase
+    .from("paystack_transactions")
+    .update({ status: "success", verified_at: new Date().toISOString(), paystack_event: verified, platform_fee_naira: Number(txn.charge_amount_minor) / 100, net_amount_naira: 0 })
+    .eq("id", txn.id)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
+  if (!updated) return { ok: true, purpose: "subscription", planId, alreadyProcessed: true };
+  const customerCode = (verified as { customer?: { customer_code?: string } }).customer?.customer_code ?? null;
+  await supabase
+    .from("organizations")
+    .update({
+      plan_id: planId,
+      plan_status: "active",
+      plan_comped: false,
+      plan_period_end: oneMonthFrom(new Date()),
+      ...(customerCode ? { paystack_customer_code: customerCode } : {}),
+    })
+    .eq("id", txn.organization_id);
+  return { ok: true, purpose: "subscription", planId, alreadyProcessed: false };
+}
+
+/** Creates or updates the Paystack plan behind an organizer plan; returns its code. */
+export async function upsertPaystackPlan(params: { code?: string | null; name: string; amountMinor: number }): Promise<string> {
+  const body = JSON.stringify({ name: `eventbuddy ${params.name}`, amount: params.amountMinor, interval: "monthly", currency: "NGN" });
+  const res = await fetch(params.code ? `${PAYSTACK_BASE}/plan/${encodeURIComponent(params.code)}` : `${PAYSTACK_BASE}/plan`, {
+    method: params.code ? "PUT" : "POST",
+    headers: { Authorization: `Bearer ${paystackKey()}`, "Content-Type": "application/json" },
+    body,
+  });
+  const json = (await res.json()) as { status: boolean; message: string; data?: { plan_code?: string } };
+  if (!res.ok || !json.status) throw new Error(json.message || "Paystack couldn't save this plan.");
+  return params.code ?? json.data!.plan_code!;
+}
+
+/** Stops a subscription renewing. The organization keeps the plan until its
+ *  current period ends (effective_plan_id handles the lapse). */
+export async function disablePaystackSubscription(code: string, token: string): Promise<void> {
+  const res = await fetch(`${PAYSTACK_BASE}/subscription/disable`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${paystackKey()}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ code, token }),
+  });
+  const json = (await res.json()) as { status: boolean; message: string };
+  if (!res.ok || !json.status) throw new Error(json.message || "Paystack couldn't cancel this subscription.");
+}
+
+type SubscriptionEventData = {
+  subscription_code?: string;
+  email_token?: string;
+  next_payment_date?: string;
+  status?: string;
+  customer?: { customer_code?: string };
+  plan?: { plan_code?: string };
+  subscription?: { subscription_code?: string; next_payment_date?: string };
+  paid_at?: string;
+};
+
+/** Paystack subscription lifecycle webhooks → the organization's plan. Matched
+ *  by customer code, set when the first plan payment finalized. */
+export async function handleSubscriptionEvent(supabase: SupabaseClient, event: string, data: SubscriptionEventData): Promise<boolean> {
+  const customerCode = data.customer?.customer_code;
+  if (!customerCode) return false;
+  const { data: org } = await supabase.from("organizations").select("id, plan_id").eq("paystack_customer_code", customerCode).maybeSingle();
+  if (!org) return false;
+  const planCode = data.plan?.plan_code;
+  const { data: plan } = planCode ? await supabase.from("organizer_plans").select("id").eq("paystack_plan_code", planCode).maybeSingle() : { data: null };
+
+  if (event === "subscription.create") {
+    await supabase
+      .from("organizations")
+      .update({
+        ...(plan ? { plan_id: plan.id } : {}),
+        plan_status: "active",
+        plan_comped: false,
+        paystack_subscription_code: data.subscription_code ?? null,
+        paystack_subscription_token: data.email_token ?? null,
+        ...(data.next_payment_date ? { plan_period_end: data.next_payment_date } : {}),
+      })
+      .eq("id", org.id);
+  } else if (event === "charge.success" && plan) {
+    // a monthly renewal: extend the period
+    const next = data.subscription?.next_payment_date ?? oneMonthFrom(data.paid_at ? new Date(data.paid_at) : new Date());
+    await supabase.from("organizations").update({ plan_id: plan.id, plan_status: "active", plan_period_end: next }).eq("id", org.id);
+  } else if (event === "invoice.payment_failed") {
+    await supabase.from("organizations").update({ plan_status: "past_due" }).eq("id", org.id);
+  } else if (event === "subscription.not_renew" || event === "subscription.disable") {
+    await supabase.from("organizations").update({ plan_status: "cancelling" }).eq("id", org.id);
+  } else {
+    return false;
+  }
+  return true;
+}
+
 /** Creates (or, for the same account, re-fetches) a Paystack transfer
  *  recipient for a Nigerian bank account: the "who" of a payout transfer. */
 export async function createTransferRecipient(params: { name: string; accountNumber: string; bankCode: string }): Promise<{ recipientCode: string }> {
@@ -264,6 +390,7 @@ export async function handleTransferEvent(supabase: SupabaseClient, reference: s
 
 export type FinalizeResult =
   | { ok: true; purpose: "ticket_purchase"; eventId: string; referenceId: string | null; hubUrl?: string; alreadyProcessed: boolean }
+  | { ok: true; purpose: "subscription"; planId: string; alreadyProcessed: boolean }
   | { ok: true; purpose: "other"; eventId: string; alreadyProcessed: true }
   | { ok: false; reason: "unknown_reference" | "payment_failed" | "amount_mismatch" | "verify_error" };
 
@@ -310,6 +437,9 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
   const { data: txn } = await supabase.from("paystack_transactions").select("*").eq("reference", reference).maybeSingle();
   if (!txn) return { ok: false, reason: "unknown_reference" };
 
+  if (txn.purpose === "subscription") {
+    return finalizeSubscriptionPayment(supabase, txn);
+  }
   if (txn.purpose !== "ticket_purchase") {
     return { ok: true, purpose: "other", eventId: txn.event_id, alreadyProcessed: true };
   }

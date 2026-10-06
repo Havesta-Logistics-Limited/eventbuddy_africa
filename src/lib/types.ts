@@ -643,3 +643,26 @@ export interface PayoutSettings {
   payoutFeeNaira: number;
   unverifiedLockDays: number;
 }
+
+export type PlanId = "launch" | "grow" | "scale";
+
+/** An organizer plan (migration 0104). Launch's fee is null: it uses the platform default. */
+export interface OrganizerPlan {
+  id: PlanId;
+  name: string;
+  priceMonthlyNaira: number;
+  feePercentage: number | null;
+  feeFlatNaira: number | null;
+  /** null = unlimited */
+  maxPromotersPerEvent: number | null;
+  purchasable: boolean;
+}
+
+export interface MyPlan {
+  planId: PlanId;
+  /** What the organization actually gets now (a lapsed paid plan is Launch). */
+  effectivePlanId: PlanId;
+  status: "active" | "past_due" | "cancelling";
+  periodEnd: string | null;
+  comped: boolean;
+}

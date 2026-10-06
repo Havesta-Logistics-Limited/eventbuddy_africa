@@ -495,7 +495,7 @@ const TABS = [
   { id: "share", label: "Share", path: "dashboard/events/rooftop/share", dur: 7.5, caption: "One link does it all. Drop it in WhatsApp, Instagram or anywhere your people are.", Scene: ShareScene },
   { id: "checkin", label: "Check in", path: "checkin", dur: 7.5, caption: "Staff scan QR tickets at the door with an access code, with no account needed. Repeat scans get caught.", Scene: CheckinScene },
   { id: "engage", label: "Engage", path: "rooftop/events/hub", dur: 8, caption: "Every attendee gets a live hub: the agenda, moderated Q&A and live polls, all from the same ticket link.", Scene: EngageScene },
-  { id: "paid", label: "Get paid", path: "dashboard", dur: 7.5, caption: "Every sale settles straight to your own bank account, automatically. You only pay when a ticket sells.", Scene: PaidScene },
+  { id: "paid", label: "Get paid", path: "dashboard", dur: 7.5, caption: "Every sale lands in your balance. Request a payout to your bank whenever it clears. You only pay when a ticket sells.", Scene: PaidScene },
 ] as const;
 
 export function ProductShowcase({ fee }: { fee: TicketFee }) {

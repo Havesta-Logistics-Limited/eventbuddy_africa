@@ -23,7 +23,7 @@ export function faqs(feeLabel: string) {
     },
     {
       q: "How do I actually get paid for ticket sales?",
-      a: "Ticket revenue splits automatically the moment someone pays — your share settles straight to your own bank account. eventbuddy never holds your money; it only ever takes its transaction fee off the top.",
+      a: "Every sale goes into your eventbuddy balance, minus the transaction fee, and clears the next business day. Once your event has ended (or during it, if your account is verified), request a payout from your dashboard and we send it to your bank, usually within 24 hours. Refunds simply come off your balance, so there's never anything to chase.",
     },
     {
       q: "Can I try it before paying for anything?",
