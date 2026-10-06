@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
 @theme {
+  --font-hero: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), "Segoe UI", system-ui, sans-serif;
   --font-display: var(--font-dm-serif), Georgia, serif;
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  /* Default face: SF Pro, via the system stack. Apple's licence doesn't allow
+     self-hosting SF Pro on the web, so Apple devices render their own copy
+     (macOS/iOS switch to SF Pro Display at large sizes automatically) and
+     everyone else falls back to Inter, loaded in layout.tsx. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", var(--font-inter), "Segoe UI", system-ui, sans-serif;
 
   /* Brand palette v5 — full rebrand to the new "eventbuddy" flower mark: primary
      is the orchid pink #FF8AF5 the mark's wordmark and pale petal use, with
@@ -442,7 +447,7 @@ select {
 .lp-hero ::selection { background: #c21faf; color: #fff; }
 
 .lp-title {
-  font-family: var(--font-hero), system-ui, sans-serif;
+  font-family: var(--font-hero);
   font-weight: 600;
   font-size: clamp(2.65rem, 6.6vw, 5.25rem);
   line-height: 1.02;
@@ -568,11 +573,18 @@ select {
 .lp-tilt-band { transform: rotate(-7deg); }
 
 /* product window: a glowing bezel that rises over the objects as you scroll */
-.lp-window-wrap {
+/* the whole tour (bezel + tabs) rises together, driven by --rise */
+.lp-rise {
   position: relative;
   z-index: 2;
   max-width: 1100px;
   margin: -118px auto 0;
+  transform: translateY(calc((1 - var(--rise)) * 150px)) scale(calc(0.93 + var(--rise) * 0.07));
+  transform-origin: 50% 0;
+  will-change: transform;
+}
+.lp-window-wrap {
+  position: relative;
   padding: 8px;
   border-radius: 26px;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -581,9 +593,6 @@ select {
     0 -34px 120px -24px rgba(237, 28, 220, 0.6),
     0 0 90px -10px rgba(139, 92, 246, 0.45),
     0 50px 90px -30px rgba(0, 0, 0, 0.7);
-  transform: translateY(calc((1 - var(--rise)) * 150px)) scale(calc(0.93 + var(--rise) * 0.07));
-  transform-origin: 50% 0;
-  will-change: transform;
 }
 .lp-window {
   overflow: hidden;
@@ -627,6 +636,105 @@ select {
   to { opacity: 1; transform: none; }
 }
 
+/* product tour: scene change, pause, tabs */
+.lp-scene { animation: lp-scene-in 520ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes lp-scene-in {
+  from { opacity: 0; transform: translateY(6px); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+.lp-wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 70% at 50% 60%, rgba(196, 168, 255, 0.85), rgba(139, 92, 246, 0.5) 50%, rgba(237, 28, 220, 0.25));
+  animation: lp-wash 640ms ease-out both;
+}
+@keyframes lp-wash {
+  0% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+.lp-pop { animation: lp-pop 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes lp-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+.lp-pause {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: rgba(23, 8, 33, 0.78);
+  color: #fff;
+  box-shadow: 0 6px 16px -6px rgba(23, 8, 33, 0.6);
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+.lp-pause:hover { background: #170821; }
+.lp-pause:active { transform: scale(0.94); }
+.lp-pause:focus-visible { outline: 2px solid #c21faf; outline-offset: 2px; }
+
+.lp-tabs-wrap { margin-top: 28px; text-align: center; }
+.lp-tabs {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 5px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+}
+.lp-tabs::-webkit-scrollbar { display: none; }
+.lp-tab-indicator {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.07);
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1), width 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lp-tab {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  padding: 9px 20px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #b9a9c8;
+  white-space: nowrap;
+  transition: color 200ms ease;
+}
+.lp-tab:hover { color: #fff; }
+.lp-tab[aria-selected="true"] { color: #fff; }
+.lp-tab:focus-visible { outline: 2px solid #ff8af5; outline-offset: -2px; }
+.lp-tab-progress {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.lp-tab-progress span { display: block; height: 100%; background: #ff8af5; }
+.lp-caption {
+  max-width: 40rem;
+  margin: 16px auto 0;
+  padding: 0 8px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #c9bcd6;
+  animation: lp-pop 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (max-width: 767px) {
   .lp-hero { padding-bottom: 64px; }
   .lp-objects { height: 190px; }
@@ -634,13 +742,18 @@ select {
   .lp-obj-badge { width: 84px; left: calc(50% + 44px); top: -4px; }
   .lp-obj-band { width: 108px; left: calc(50% - 62px); top: 96px; }
   .lp-obj-orbs { width: 82px; left: calc(50% + 100px); top: 112px; }
-  .lp-window-wrap { margin-top: -70px; padding: 5px; border-radius: 18px; }
+  .lp-rise { margin-top: -70px; }
+  .lp-window-wrap { padding: 5px; border-radius: 18px; }
+  .lp-tab { padding: 8px 14px; font-size: 13px; }
+  .lp-tab-progress { left: 14px; right: 14px; }
   .lp-window { border-radius: 13px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .lp-obj, .lp-bob, .lp-star, .lp-live-dot, .lp-feed-new { animation: none !important; }
-  .lp-window-wrap { transform: none; }
+  .lp-rise { transform: none; }
+  .lp-scene, .lp-wash, .lp-pop, .lp-caption { animation: none !important; }
+  .lp-wash { opacity: 0; }
 }
 
 /* Single global reduced-motion reset — covers every animation/transition in the

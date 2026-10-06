@@ -147,7 +147,7 @@ export default function MarketingHomePage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <LandingNav />
-      <LandingHero feeLabel={feeLabel} />
+      <LandingHero fee={fee} />
 
       <div className="h-1.5 w-full flex">
         <div className="flex-1" style={{ background: "#C21FAF" }} />

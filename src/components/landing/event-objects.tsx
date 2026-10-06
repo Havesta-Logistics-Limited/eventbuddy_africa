@@ -66,10 +66,10 @@ export function TicketObject({ className = "" }: { className?: string }) {
         <rect x="2" y="4" width="256" height="112" rx="16" fill="url(#tk-body)" />
         <rect x="2" y="4" width="256" height="58" rx="16" fill="url(#tk-gloss)" />
         <line x1="182" y1="18" x2="182" y2="102" stroke="#fff" strokeOpacity="0.55" strokeWidth="2" strokeDasharray="5 6" strokeLinecap="round" />
-        <text x="24" y="44" fill="#fff" fontFamily="var(--font-hero), system-ui" fontWeight="700" fontSize="13" letterSpacing="2.4">ADMIT ONE</text>
-        <text x="24" y="78" fill="#fff" fontFamily="var(--font-hero), system-ui" fontWeight="700" fontSize="26" letterSpacing="-0.5">Regular</text>
-        <text x="24" y="98" fill="#fff" fillOpacity="0.8" fontFamily="var(--font-sans), system-ui" fontWeight="500" fontSize="11">SAT 14 NOV · 7PM</text>
-        <text x="220" y="70" fill="#fff" fillOpacity="0.92" fontFamily="var(--font-hero), system-ui" fontWeight="700" fontSize="13" letterSpacing="2" textAnchor="middle" transform="rotate(-90 220 64)">No. 0124</text>
+        <text x="24" y="44" fill="#fff" style={{ fontFamily: "var(--font-hero)" }} fontWeight="700" fontSize="13" letterSpacing="2.4">ADMIT ONE</text>
+        <text x="24" y="78" fill="#fff" style={{ fontFamily: "var(--font-hero)" }} fontWeight="700" fontSize="26" letterSpacing="-0.5">Regular</text>
+        <text x="24" y="98" fill="#fff" fillOpacity="0.8" style={{ fontFamily: "var(--font-sans)" }} fontWeight="500" fontSize="11">SAT 14 NOV · 7PM</text>
+        <text x="220" y="70" fill="#fff" fillOpacity="0.92" style={{ fontFamily: "var(--font-hero)" }} fontWeight="700" fontSize="13" letterSpacing="2" textAnchor="middle" transform="rotate(-90 220 64)">No. 0124</text>
       </g>
     </svg>
   );
@@ -108,8 +108,8 @@ export function BadgeObject({ className = "" }: { className?: string }) {
       <rect x="11" y="52" width="146" height="186" rx="16" fill="url(#bd-face)" />
       <path d="M11 68 a16 16 0 0 1 16 -16 h114 a16 16 0 0 1 16 16 v22 h-146 z" fill="url(#bd-head)" />
       <circle cx="84" cy="54" r="5" fill="#2A0C4A" />
-      <text x="26" y="82" fill="#fff" fontFamily="var(--font-hero), system-ui" fontWeight="700" fontSize="11" letterSpacing="1.8">ATTENDEE</text>
-      <text x="26" y="116" fill="#170821" fontFamily="var(--font-hero), system-ui" fontWeight="700" fontSize="17" letterSpacing="-0.3">Amara Okafor</text>
+      <text x="26" y="82" fill="#fff" style={{ fontFamily: "var(--font-hero)" }} fontWeight="700" fontSize="11" letterSpacing="1.8">ATTENDEE</text>
+      <text x="26" y="116" fill="#170821" style={{ fontFamily: "var(--font-hero)" }} fontWeight="700" fontSize="17" letterSpacing="-0.3">Amara Okafor</text>
       <g transform="translate(40 128)">
         <rect x="-5" y="-5" width={21 * q + 10} height={21 * q + 10} rx="6" fill="#fff" />
         {cells.map(([x, y]) => (
@@ -144,7 +144,7 @@ export function WristbandObject({ className = "" }: { className?: string }) {
       {/* snap tab */}
       <rect x="88" y="96" width="44" height="30" rx="7" fill="#170821" />
       <rect x="88" y="96" width="44" height="12" rx="6" fill="#fff" fillOpacity="0.14" />
-      <text x="110" y="117" fill="#FFDAB8" fontFamily="var(--font-hero), system-ui" fontWeight="800" fontSize="12" letterSpacing="1.6" textAnchor="middle">VIP</text>
+      <text x="110" y="117" fill="#FFDAB8" style={{ fontFamily: "var(--font-hero)" }} fontWeight="800" fontSize="12" letterSpacing="1.6" textAnchor="middle">VIP</text>
     </svg>
   );
 }
