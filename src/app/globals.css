@@ -964,6 +964,96 @@ select {
 .lp-bar { animation: lp-bar 900ms cubic-bezier(0.16, 1, 0.3, 1) both; transform-origin: left; }
 @keyframes lp-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
+/* FAQ: heading on the left, the accordion flush on the right */
+.lp-split--faq { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
+.lp-faq-title {
+  margin: 0;
+  font-family: var(--font-hero);
+  font-size: clamp(1.9rem, 3.2vw, 2.6rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+.lp-faq-title span { display: block; margin-top: 6px; font-size: 0.55em; font-weight: 500; letter-spacing: -0.015em; color: #8f7f9f; }
+.lp-cell--faq { border-left: 1px solid rgba(255, 255, 255, 0.07); }
+.lp-accordion--flush { margin-top: 0; }
+.lp-chapter:has(.lp-split--faq) .lp-split { border-top: 0; }
+/* the closing section brings its own glow and space, so the FAQ needs less below it */
+.lp-chapter:has(.lp-split--faq) > .lp-rails { padding-bottom: 64px; }
+
+/* Closing call to action: every object from the hero, gathered in the glow */
+.lp-close { position: relative; overflow: hidden; background: #07030c; color: #fff; padding: 40px 20px 136px; text-align: center; }
+.lp-close::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 40px;
+  width: min(1200px, 180vw);
+  height: 560px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(ellipse 34% 30% at 50% 45%, rgba(255, 138, 245, 0.42), transparent 70%),
+    radial-gradient(ellipse 50% 42% at 50% 50%, rgba(237, 28, 220, 0.3), transparent 72%),
+    radial-gradient(ellipse 62% 52% at 50% 55%, rgba(109, 40, 217, 0.4), transparent 75%);
+  filter: blur(4px);
+  pointer-events: none;
+}
+.lp-close-objects { position: relative; height: 300px; max-width: 760px; margin: 0 auto; }
+.lp-close-obj { position: absolute; }
+.lp-close-obj svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 26px 28px rgba(8, 2, 18, 0.6)); }
+.lp-close-ticket { width: 250px; left: calc(50% - 330px); top: 92px; }
+.lp-close-badge { width: 150px; left: calc(50% - 60px); top: 6px; z-index: 2; }
+.lp-close-band { width: 180px; left: calc(50% + 90px); top: 150px; }
+.lp-close-orbs { width: 150px; left: calc(50% + 160px); top: 40px; }
+.lp-close-copy { position: relative; max-width: 44rem; margin: 18px auto 0; }
+.lp-close-title {
+  margin: 0;
+  font-family: var(--font-hero);
+  font-size: clamp(2.3rem, 5.4vw, 4.25rem);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+.lp-close-title span { display: block; color: #ff8af5; }
+.lp-close-sub { max-width: 36rem; margin: 22px auto 0; font-size: 17px; line-height: 1.6; color: #c9bcd6; }
+
+/* Footer */
+.lp-footer { background: #07030c; color: #fff; }
+.lp-footer::before {
+  content: "";
+  display: block;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #ff7d2d 18%, #ed1cdc 42%, #ff8af5 62%, #5b4bf0 84%, transparent);
+}
+.lp-footer-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr);
+  gap: 48px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 64px 40px 56px;
+}
+.lp-footer-brand p { max-width: 22rem; margin: 18px 0 0; font-size: 14px; line-height: 1.6; color: #9d8dad; }
+.lp-footer-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
+.lp-footer-h { margin: 0 0 14px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8f7f9f; }
+.lp-footer-cols ul { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; }
+.lp-footer-cols a { font-size: 14px; color: #e9def2; text-underline-offset: 4px; transition: color 160ms ease; }
+.lp-footer-cols a:hover { color: #fff; text-decoration: underline; }
+.lp-footer-cols a:focus-visible { outline: 2px solid #ff8af5; outline-offset: 3px; border-radius: 3px; }
+.lp-footer-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 20px 40px 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 12px;
+  color: #8f7f9f;
+}
+.lp-footer-bar p { margin: 0; }
+
 /* Self-Serve: the organizer's events list, cropped at the cell's foot */
 .lp-mini {
   overflow: hidden;
@@ -1069,6 +1159,18 @@ select {
   .lp-acc-item button { font-size: 16px; }
   .lp-hubstage { min-height: 560px; border-left: 0; border-top: 1px solid rgba(255, 255, 255, 0.07); }
   .lp-hubphone { width: 280px; }
+  .lp-split--faq { grid-template-columns: 1fr; }
+  .lp-cell--faq { border-left: 0; padding-top: 12px; }
+  .lp-close { padding: 24px 16px 88px; }
+  .lp-close-objects { height: 190px; }
+  .lp-close-ticket { width: 150px; left: calc(50% - 178px); top: 64px; }
+  .lp-close-badge { width: 92px; left: calc(50% - 40px); top: 4px; }
+  .lp-close-band { width: 108px; left: calc(50% + 40px); top: 104px; }
+  .lp-close-orbs { width: 84px; left: calc(50% + 92px); top: 30px; }
+  .lp-close-sub { font-size: 15px; }
+  .lp-footer-inner { grid-template-columns: 1fr; gap: 36px; padding: 48px 20px 40px; }
+  .lp-footer-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-footer-bar { flex-direction: column; padding: 18px 20px 26px; }
   .lp-tab-progress { left: 14px; right: 14px; }
   .lp-window { border-radius: 13px; }
 }
