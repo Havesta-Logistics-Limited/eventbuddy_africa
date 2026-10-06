@@ -10,8 +10,6 @@ import {
   ShieldCheck,
   Mail,
   ArrowRight,
-  Settings2,
-  Link2,
   QrCode,
   Calendar,
   Check,
@@ -27,24 +25,6 @@ import { TrustedBy } from "@/components/landing/trusted-by";
 import { LandingWays } from "@/components/landing/landing-ways";
 import { DEFAULT_TICKET_FEE, fetchCurrentTicketFee, formatTicketFee } from "@/lib/billing";
 import { faqs } from "@/app/pricing/faqs";
-
-const STEPS = [
-  {
-    icon: Settings2,
-    title: "Set up the event",
-    body: "Choose a template, lock in your dates and venue, and add ticket types if you're charging for entry. Your staff access code is ready the moment you save.",
-  },
-  {
-    icon: Link2,
-    title: "Open registration",
-    body: "Hand out a single link — attendees use it to register or grab a ticket, and your staff use that same one to check people in.",
-  },
-  {
-    icon: QrCode,
-    title: "Run the day",
-    body: "Every attendee's QR code gets scanned at the door, and your dashboard fills in behind them — sign-ups, sales, and leads, all in real time.",
-  },
-];
 
 function getFeatures(feeLabel: string) {
   return [
@@ -105,40 +85,6 @@ export default function MarketingHomePage() {
       <TrustedBy />
 
       <LandingWays feeLabel={feeLabel} />
-
-      {/* How it works — a connected horizontal sequence, not three boxed cards.
-          The step order carries real information (setup must happen before the link
-          is shared), so the numbering earns its place here. */}
-      <section className="max-w-5xl mx-auto px-6 py-20 text-center">
-        <h2 className="font-display text-3xl sm:text-4xl text-slate-900 mb-4">
-          Three steps between you <em className="text-brand-600">and a live event.</em>
-        </h2>
-        <p className="text-slate-500 max-w-lg mx-auto mb-16">
-          Skip the group chats and the last-minute panic — set it up once, and the rest runs itself.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-6 relative">
-          <div className="hidden sm:block absolute top-7 left-[16.5%] right-[16.5%] h-px bg-brand-100" />
-          {STEPS.map((s, i) => (
-            <div key={s.title} className="relative">
-              <div className="relative z-10 w-14 h-14 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center mx-auto mb-5">
-                <s.icon size={22} className="text-brand-600" />
-                <span className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-brand-600 text-white text-xs font-bold flex items-center justify-center">
-                  {i + 1}
-                </span>
-              </div>
-              <h3 className="font-semibold text-slate-900 text-lg mb-1.5">{s.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed max-w-xs mx-auto">{s.body}</p>
-            </div>
-          ))}
-        </div>
-        <Link
-          href="/signup"
-          className="inline-flex items-center gap-2 mt-14 px-6 py-3 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 transition-colors"
-        >
-          Get Started
-          <ArrowRight size={16} />
-        </Link>
-      </section>
 
       {/* Event Hub — the attendee-facing continuation of "run the day," so the page's
           own journey (set up → open registration → run the day) doesn't stop the
