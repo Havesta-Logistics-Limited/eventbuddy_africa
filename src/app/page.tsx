@@ -24,6 +24,7 @@ import {
 import { Logo } from "@/components/logo";
 import { LandingHero, LandingNav } from "@/components/landing/landing-hero";
 import { TrustedBy } from "@/components/landing/trusted-by";
+import { LandingStats } from "@/components/landing/landing-stats";
 import { DEFAULT_TICKET_FEE, fetchCurrentTicketFee, formatTicketFee } from "@/lib/billing";
 import { faqs } from "@/app/pricing/faqs";
 
@@ -138,13 +139,6 @@ export default function MarketingHomePage() {
       });
   }, []);
 
-  // The scrolling effect is confined to a centered box, not the full width of the
-  // section — it should read as a focused strip in the middle, not a marquee that
-  // spans edge to edge. The box widens as more real events accumulate (so it never
-  // looks stretched-thin with only a couple of names), capped so it never grows
-  // past a sensible width even with a long event list.
-  const eventBoxWidth = Math.min(260 + eventNames.length * 220, 880);
-
   return (
     <div className="min-h-screen bg-slate-50">
       <LandingNav />
@@ -152,60 +146,7 @@ export default function MarketingHomePage() {
 
       <TrustedBy />
 
-      {/* Trust — real usage figures, provided directly by eventbuddy (not observable
-          from this environment's own database, which only holds test data — these
-          numbers were confirmed explicitly before publishing). */}
-      <section className="bg-brand-50/60 border-b border-slate-200">
-        <div className="max-w-5xl mx-auto px-6 py-14">
-          <h2 className="font-display-bold font-bold text-xl text-slate-900 text-center mb-10">Trusted by event teams across Africa and beyond</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
-            {[
-              { value: "1,000+", label: "Event Creators", caption: "Real organizers, from first-timers to seasoned teams" },
-              { value: "15,000+", label: "Tickets & Registrations", caption: "Sign-ups and ticket sales, tracked the moment they happen" },
-              { value: "2,000+", label: "Events Powered", caption: "Small meetups and multi-day programs alike" },
-              { value: "5+", label: "Countries", caption: "Rooted in Africa, built to work anywhere" },
-            ].map(({ value, label, caption }) => (
-              <div key={label} className="text-center">
-                <p className="font-display-bold font-black text-4xl sm:text-5xl text-slate-900 tabular-nums">{value}</p>
-                <p className="text-sm font-semibold text-brand-600 mt-1.5">{label}</p>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{caption}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Events powered — real, live event names from the featured org's hosted-
-          events list (any published event ever, past or upcoming — see
-          0037_marquee_hosted_events.sql), growing forever as new events are
-          created. Unconditionally rendered — eventNames starts seeded with
-          generic category labels and only ever gets replaced once real names
-          load, so this strip can never go empty and disappear. */}
-      <div className="relative bg-white border-b border-slate-200 py-6">
-        <p className="text-center text-xs font-medium text-slate-400 mb-4">Events powered by eventbuddy</p>
-        <div
-          className="relative overflow-hidden mx-auto"
-          style={{
-            width: eventBoxWidth,
-            maxWidth: "92vw",
-            maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
-            WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
-          }}
-        >
-          <div className="flex w-max mx-auto animate-marquee-reverse">
-            {[0, 1].map((copy) => (
-              <div key={copy} className="flex items-center gap-10 pr-10" aria-hidden={copy === 1}>
-                {eventNames.map((name) => (
-                  <span key={name} className="flex items-center gap-2 text-base font-semibold text-slate-400 whitespace-nowrap">
-                    <Calendar size={15} className="text-slate-300 shrink-0" />
-                    {name}
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <LandingStats eventNames={eventNames} />
 
       {/* Two ways to work with us — deliberately unequal weight: Self-Serve is a
           quiet, plain-text option; Full-Service & Enterprise gets the featured
