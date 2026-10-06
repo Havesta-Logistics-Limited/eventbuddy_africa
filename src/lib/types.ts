@@ -1,4 +1,4 @@
-export type Role = "admin" | "staff" | "rep" | "event_support";
+export type Role = "admin" | "staff" | "rep" | "event_support" | "promoter";
 
 /** Owned by exactly one event — not shared across an org's events. Two events that
  *  both need "United Kingdom" each get their own independent Destination row (and
@@ -197,6 +197,8 @@ export interface StaffRecord {
   lastSyncAt?: string;
   /** Admin only — the org's slug, e.g. for building /[orgSlug]/staff-setup links to share. */
   orgSlug?: string;
+  /** Promoters only (migration 0105): their public handle. */
+  promoterHandle?: string;
 }
 
 export type LevelOfInterest = "BSc" | "MSc" | "PhD";
@@ -550,6 +552,9 @@ export interface ReferralPartner {
   clickCount: number;
   notes?: string;
   createdAt: string;
+  /** Set when this link belongs to a marketplace promoter (migration 0105):
+   *  their commission is paid by eventbuddy from the ledger, not owed by hand. */
+  promoterId?: string;
 }
 
 /** A named invite for an invite-only (RSVP) event — see events.isInviteOnly.
@@ -623,7 +628,20 @@ export interface PayoutRequest {
   failureReason: string | null;
 }
 
-export type LedgerKind = "sale" | "fee" | "refund" | "dispute" | "payout" | "payout_fee" | "payout_return" | "payout_fee_return" | "adjustment";
+export type LedgerKind =
+  | "sale"
+  | "fee"
+  | "refund"
+  | "dispute"
+  | "payout"
+  | "payout_fee"
+  | "payout_return"
+  | "payout_fee_return"
+  | "adjustment"
+  | "commission"
+  | "commission_refund"
+  | "commission_earned"
+  | "commission_reversal";
 
 export interface LedgerEntry {
   id: string;

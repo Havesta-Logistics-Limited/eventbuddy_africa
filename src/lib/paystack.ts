@@ -6,6 +6,7 @@ import { sendPushToAttendee } from "@/lib/push";
 import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { formatNaira } from "@/lib/billing";
+import { promoterCommission } from "@/lib/promoters";
 
 /**
  * Server-only — imports nothing that can't run in a Route Handler. Never import this
@@ -523,7 +524,11 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
  *  the browser callback racing can't double-credit. A failure is logged, not
  *  thrown: the buyer has paid and must still get their ticket, and the entry
  *  can be re-posted from the transaction row. */
-async function postHeldSale(supabase: SupabaseClient, txn: { id: string; organization_id: string; event_id: string; amount_naira: number | string; created_at?: string }, feeNaira: number) {
+async function postHeldSale(
+  supabase: SupabaseClient,
+  txn: { id: string; organization_id: string; event_id: string; amount_naira: number | string; created_at?: string; referral_id?: string | null; registrant_data?: PendingTicketTxn["registrant_data"] },
+  feeNaira: number
+) {
   const { data: clearsAt } = await supabase.rpc("ledger_clear_time", { p_at: new Date().toISOString() });
   const rows = [
     { organization_id: txn.organization_id, event_id: txn.event_id, transaction_id: txn.id, kind: "sale", amount_naira: Number(txn.amount_naira), clears_at: clearsAt ?? new Date().toISOString(), note: "Ticket sale" },
@@ -535,6 +540,47 @@ async function postHeldSale(supabase: SupabaseClient, txn: { id: string; organiz
   ];
   const { error } = await supabase.from("ledger_entries").upsert(rows, { onConflict: "transaction_id,kind", ignoreDuplicates: true });
   if (error) console.error(`[ledger] couldn't credit held sale ${txn.id} for org ${txn.organization_id} — needs manual posting:`, error.message);
+  if (txn.referral_id) await postPromoterCommission(supabase, txn, feeNaira, clearsAt ?? new Date().toISOString());
+}
+
+/** A held sale that came through a promoter's link (migration 0105): moves
+ *  their commission from the organizer's balance to the promoter's. Skipped
+ *  when the event's program is off, the promoter is suspended, or the
+ *  promoter bought the ticket for themselves (or put themselves in the group). */
+async function postPromoterCommission(
+  supabase: SupabaseClient,
+  txn: { id: string; organization_id: string; event_id: string; amount_naira: number | string; referral_id?: string | null; registrant_data?: PendingTicketTxn["registrant_data"] },
+  feeNaira: number,
+  clearsAt: string
+) {
+  const { data: ref } = await supabase.from("event_referrals").select("promoter_id").eq("id", txn.referral_id!).maybeSingle();
+  if (!ref?.promoter_id) return;
+  const [{ data: promoter }, { data: event }] = await Promise.all([
+    supabase.from("promoters").select("id, email, is_suspended").eq("id", ref.promoter_id).maybeSingle(),
+    supabase.from("events").select("promoter_program_enabled, promoter_commission_pct, promoter_commission_cap_naira").eq("id", txn.event_id).maybeSingle(),
+  ]);
+  if (!promoter || promoter.is_suspended || !event?.promoter_program_enabled) return;
+  const info = txn.registrant_data;
+  const emails = [info?.email, ...(info?.guests ?? []).map((g) => g.email)].filter(Boolean).map((e) => String(e).trim().toLowerCase());
+  if (emails.includes(String(promoter.email).trim().toLowerCase())) return;
+
+  const commission = promoterCommission({
+    amountNaira: Number(txn.amount_naira),
+    feeNaira,
+    pct: Number(event.promoter_commission_pct),
+    capNaira: event.promoter_commission_cap_naira == null ? null : Number(event.promoter_commission_cap_naira),
+    people: 1 + (info?.guests?.length ?? 0),
+  });
+  if (!(commission > 0)) return;
+  const base = { event_id: txn.event_id, transaction_id: txn.id, clears_at: clearsAt };
+  const { error } = await supabase.from("ledger_entries").upsert(
+    [
+      { ...base, organization_id: txn.organization_id, promoter_id: null, kind: "commission", amount_naira: -commission, note: "Promoter commission" },
+      { ...base, organization_id: null, promoter_id: promoter.id, kind: "commission_earned", amount_naira: commission, note: "Commission earned" },
+    ],
+    { onConflict: "transaction_id,kind", ignoreDuplicates: true }
+  );
+  if (error) console.error(`[ledger] couldn't post promoter commission on ${txn.id} — needs manual posting:`, error.message);
 }
 
 type PendingTicketTxn = {
@@ -869,6 +915,19 @@ export async function handleRefundOrDispute(supabase: SupabaseClient, reference:
         { onConflict: "transaction_id,kind", ignoreDuplicates: true }
       );
       if (error) console.error(`[ledger] couldn't debit ${kind} transaction ${txn.id} — needs manual posting:`, error.message);
+      // A promoter's commission on it comes back to the organizer.
+      const { data: earned } = await supabase.from("ledger_entries").select("promoter_id, amount_naira").eq("transaction_id", txn.id).eq("kind", "commission_earned").maybeSingle();
+      if (earned) {
+        const base = { event_id: txn.event_id, transaction_id: txn.id, clears_at: new Date().toISOString() };
+        const { error: cErr } = await supabase.from("ledger_entries").upsert(
+          [
+            { ...base, organization_id: txn.organization_id, promoter_id: null, kind: "commission_refund", amount_naira: Number(earned.amount_naira), note: "Promoter commission returned" },
+            { ...base, organization_id: null, promoter_id: earned.promoter_id, kind: "commission_reversal", amount_naira: -Number(earned.amount_naira), note: kind === "refunded" ? "Ticket refunded" : "Payment disputed" },
+          ],
+          { onConflict: "transaction_id,kind", ignoreDuplicates: true }
+        );
+        if (cErr) console.error(`[ledger] couldn't reverse promoter commission on ${txn.id}:`, cErr.message);
+      }
     }
   }
   // Any other purpose (historical event-publish transactions only — that flat

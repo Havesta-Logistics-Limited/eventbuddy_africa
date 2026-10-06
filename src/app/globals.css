@@ -2453,3 +2453,38 @@ input[type="radio"], input[type="checkbox"] { accent-color: #ff8af5; }
 .eb-plan-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--color-fg-3); }
 .eb-plan-list svg { margin-top: 3px; flex-shrink: 0; color: var(--pl-a); }
 @media (prefers-reduced-motion: reduce) { .eb-plan:hover { transform: none; } }
+
+/* ---- Promoter marketplace cards ------------------------------------------ */
+.eb-market-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0) 30%), #120b1a;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 240ms ease;
+}
+.eb-market-card:hover {
+  transform: translateY(-3px);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), inset 0 0 0 1px rgb(255 138 245 / 0.35), 0 18px 44px -18px rgb(176 21 143 / 0.7);
+}
+.eb-market-cover { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: linear-gradient(140deg, #ff5fd8, #6d28d9); }
+.eb-market-cover img { height: 100%; width: 100%; object-fit: cover; }
+.eb-market-cover-ph { display: grid; height: 100%; place-items: center; padding: 16px; text-align: center; font-family: var(--font-display, inherit); font-size: 1.15rem; font-weight: 600; color: #fff; }
+.eb-market-rate {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  padding: 6px 11px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #1a0b1f;
+  background: linear-gradient(180deg, #ffd1fa, #ff8af5);
+  box-shadow: 0 8px 22px -8px rgb(255 138 245 / 0.8);
+}
+.eb-market-rate small { font-size: 10.5px; font-weight: 600; opacity: 0.75; }
+@media (prefers-reduced-motion: reduce) { .eb-market-card:hover { transform: none; } }

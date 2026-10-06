@@ -8,6 +8,7 @@ import { COMMISSION_LABELS, referralLink, type ReferralTally } from "@/lib/refer
 import { addReferral, deleteReferral, fetchReferralTallies, updateReferral, PersistError } from "@/lib/store";
 import { formatNaira } from "@/lib/billing";
 import { downloadCsv, referralsToCsv } from "@/lib/csv";
+import { PromoterProgramPanel } from "@/components/promoter-program-panel";
 
 const EMPTY: ReferralTally = { registrations: 0, paidTickets: 0, grossNaira: 0, netNaira: 0, commissionNaira: 0 };
 
@@ -78,10 +79,12 @@ export function ReferralsTab({
         acc.registrations += t.registrations;
         acc.paidTickets += t.paidTickets;
         acc.grossNaira += t.grossNaira;
-        acc.commissionNaira += t.commissionNaira;
+        // promoters are paid by eventbuddy from your balance, not owed by hand
+        if (r.promoterId) acc.promoterPaidNaira += t.commissionNaira;
+        else acc.commissionNaira += t.commissionNaira;
         return acc;
       },
-      { registrations: 0, paidTickets: 0, grossNaira: 0, commissionNaira: 0 }
+      { registrations: 0, paidTickets: 0, grossNaira: 0, commissionNaira: 0, promoterPaidNaira: 0 }
     );
   }, [mine, tallies]);
 
@@ -159,6 +162,8 @@ export function ReferralsTab({
 
   return (
     <div className="space-y-6">
+      <PromoterProgramPanel event={event} />
+
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h2 className="font-semibold text-fg">Referral partners</h2>
@@ -260,7 +265,9 @@ export function ReferralsTab({
               { label: "Signups referred", value: totals.registrations.toLocaleString("en-NG") },
               { label: "Paid tickets", value: totals.paidTickets.toLocaleString("en-NG") },
               { label: "Revenue referred", value: formatNaira(totals.grossNaira) },
-              { label: "Commission owed", value: formatNaira(totals.commissionNaira), accent: true },
+              totals.promoterPaidNaira > 0 && totals.commissionNaira === 0
+                ? { label: "Paid to promoters", value: formatNaira(totals.promoterPaidNaira), accent: true }
+                : { label: "Commission owed", value: formatNaira(totals.commissionNaira), accent: true },
             ].map((s) => (
               <div key={s.label} className={`rounded-xl border p-4 ${s.accent ? "border-[#C21FAF]/30 bg-brand-500/10" : "border-line bg-surface"}`}>
                 <p className="text-xs font-medium uppercase tracking-wide text-muted">{s.label}</p>
@@ -297,6 +304,7 @@ export function ReferralsTab({
                           {COMMISSION_LABELS[r.commissionType]}
                           {r.commissionType !== "none" && ` · ${r.commissionType.startsWith("percent") ? `${r.commissionRate}%` : formatNaira(r.commissionRate)}`}
                           {!r.isActive && " · inactive"}
+                          {r.promoterId && " · paid automatically"}
                         </div>
                       </td>
                       <td className="px-4 py-3">

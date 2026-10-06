@@ -10,6 +10,7 @@ function fallbackRouteFor(role: Role, eventId?: string) {
   if (role === "admin") return "/dashboard";
   if (role === "event_support") return eventId ? `/events/${eventId}` : "/dashboard";
   if (role === "staff") return "/collect";
+  if (role === "promoter") return "/promoter";
   return "/leads";
 }
 

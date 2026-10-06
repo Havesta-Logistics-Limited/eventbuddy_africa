@@ -8,7 +8,7 @@ import { createServerClient } from "@supabase/ssr";
  * session (see src/lib/store.ts's loginAsStaff/loginAsRep), not Supabase Auth, and stays
  * protected client-side by useRequireRole as it already is.
  */
-const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/events", "/platform"];
+const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/events", "/platform", "/promoter"];
 
 const PLATFORM_LOGIN_PATH = "/platform/login";
 const MAINTENANCE_PATH = "/maintenance";

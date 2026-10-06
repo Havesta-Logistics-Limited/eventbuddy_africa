@@ -6,14 +6,14 @@ import { PayoutsView } from "@/components/payouts-view";
 import { useRequireRole } from "@/lib/auth";
 import type { Role } from "@/lib/types";
 
-const ADMIN_ONLY: Role[] = ["admin"];
+const PROMOTER_ONLY: Role[] = ["promoter"];
 
-export default function PayoutsPage() {
-  const session = useRequireRole(ADMIN_ONLY);
+export default function PromoterPayoutsPage() {
+  const session = useRequireRole(PROMOTER_ONLY);
   if (!session) return <AuthLoading />;
   return (
     <Shell>
-      <PayoutsView kind="organizer" />
+      <PayoutsView kind="promoter" />
     </Shell>
   );
 }

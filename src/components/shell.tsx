@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Calendar, Users, Settings, LogOut, Menu, X, BookOpen, ScanLine, ShieldCheck, Megaphone, Wallet } from "lucide-react";
+import { Calendar, Users, Settings, LogOut, Menu, X, BookOpen, ScanLine, ShieldCheck, Megaphone, Wallet, Store } from "lucide-react";
 import { getDestinationById, getEventById, getUniversityById, logout, useSession } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/logo";
@@ -24,6 +24,11 @@ const staffNav = [
 ];
 
 const repNav = [{ to: "/leads", label: "Leads", icon: Users }];
+const promoterNav = [
+  { to: "/promoter", label: "My events", icon: Megaphone },
+  { to: "/marketplace", label: "Marketplace", icon: Store },
+  { to: "/promoter/payouts", label: "Payouts", icon: Wallet },
+];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const session = useSession();
@@ -35,6 +40,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const isRep = session?.role === "rep";
   const isStaff = session?.role === "staff";
   const isEventSupport = session?.role === "event_support";
+  const isPromoter = session?.role === "promoter";
 
   // Platform-admin status is a separate axis from the org role above — an org owner
   // may or may not also be a platform admin — so it needs its own check.
@@ -56,9 +62,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
       : adminNav
     : isEventSupport
       ? [] // locked to their one event page — nothing else to navigate to
-      : isRep
-        ? repNav
-        : staffNav;
+      : isPromoter
+        ? promoterNav
+        : isRep
+          ? repNav
+          : staffNav;
 
   const staffDest = session?.destinationId ? getDestinationById(session.destinationId) : null;
   const staffUni = session?.universityId ? getUniversityById(session.universityId) : null;
@@ -155,7 +163,11 @@ type NavItem = { to: string; label: string; icon: React.ComponentType<{ size?: n
 /** The nav list. One pill marks the active page and glides between items as the
  *  route changes, so moving around the app reads as one continuous surface. */
 function NavList({ items, pathname, onNavigate }: { items: NavItem[]; pathname: string; onNavigate?: () => void }) {
-  const activeIndex = items.findIndex(({ to }) => pathname === to || pathname.startsWith(to + "/"));
+  // the longest matching item wins, so /promoter/payouts highlights Payouts, not /promoter
+  const activeIndex = items.reduce(
+    (best, { to }, i) => ((pathname === to || pathname.startsWith(to + "/")) && (best < 0 || to.length > items[best].to.length) ? i : best),
+    -1
+  );
   return (
     <nav className="relative flex-1 px-3 py-4" aria-label="Main">
       <ul className="relative space-y-0.5">

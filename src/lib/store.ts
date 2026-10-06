@@ -408,6 +408,7 @@ function mapReferralRow(r: {
   click_count: number;
   notes: string | null;
   created_at: string;
+  promoter_id?: string | null;
 }): ReferralPartner {
   return {
     id: r.id,
@@ -422,6 +423,7 @@ function mapReferralRow(r: {
     clickCount: r.click_count ?? 0,
     notes: r.notes ?? undefined,
     createdAt: r.created_at,
+    promoterId: r.promoter_id ?? undefined,
   };
 }
 
@@ -861,7 +863,8 @@ async function fetchSessionData() {
 function ensureDataFetched() {
   if (orgDataFetched || orgDataFetching || !sessionCache) return;
   if (sessionCache.role === "admin" || sessionCache.role === "event_support") fetchAdminData();
-  else fetchSessionData();
+  // promoters load their own data per page (promoter dashboard routes)
+  else if (sessionCache.role !== "promoter") fetchSessionData();
 }
 
 /** Force a refetch of org-scoped data (events/leads/registrations/staff/...) right now,
@@ -875,7 +878,7 @@ export async function refreshData(): Promise<void> {
   // fetchOrgLeads and pull the rows.
   leadsFullFetchAt = 0;
   if (sessionCache.role === "admin" || sessionCache.role === "event_support") await fetchAdminData();
-  else await fetchSessionData();
+  else if (sessionCache.role !== "promoter") await fetchSessionData();
 }
 
 /** Refetch when the tab regains focus, so multi-device changes (e.g. a staff member's
@@ -1412,10 +1415,10 @@ export async function fetchReferralTallies(eventId: string): Promise<Record<stri
     fetchAllRows<{ referral_id: string | null }>((from, to) =>
       supabase.from("leads").select("referral_id").eq("event_id", eventId).not("referral_id", "is", null).order("id").range(from, to)
     ),
-    fetchAllRows<{ referral_id: string | null; amount_naira: number | string | null; net_amount_naira: number | string | null }>((from, to) =>
+    fetchAllRows<{ id: string; referral_id: string | null; amount_naira: number | string | null; net_amount_naira: number | string | null }>((from, to) =>
       supabase
         .from("paystack_transactions")
-        .select("referral_id, amount_naira, net_amount_naira")
+        .select("id, referral_id, amount_naira, net_amount_naira")
         .eq("event_id", eventId)
         .eq("purpose", "ticket_purchase")
         .eq("status", "success")
@@ -1444,7 +1447,25 @@ export async function fetchReferralTallies(eventId: string): Promise<Record<stri
 
   for (const [id, tally] of Object.entries(tallies)) {
     const partner = referralsCache.find((r) => r.id === id);
-    tally.commissionNaira = partner ? commissionFor(partner, tally) : 0;
+    tally.commissionNaira = partner && !partner.promoterId ? commissionFor(partner, tally) : 0;
+  }
+
+  // Marketplace promoters: what eventbuddy actually moved to them in the ledger
+  // (net of refund reversals), with the event's cap applied, rather than an
+  // estimate from the rate.
+  const promoterRefIds = new Set(referralsCache.filter((r) => r.promoterId).map((r) => r.id));
+  const promoterTxns = txnRes.data.filter((t) => t.referral_id && promoterRefIds.has(t.referral_id));
+  if (promoterTxns.length) {
+    const refByTxn = new Map(promoterTxns.map((t) => [t.id, t.referral_id!]));
+    const { data: lines } = await supabase
+      .from("ledger_entries")
+      .select("transaction_id, amount_naira")
+      .in("transaction_id", [...refByTxn.keys()])
+      .in("kind", ["commission", "commission_refund"]);
+    for (const l of lines ?? []) {
+      const ref = refByTxn.get(l.transaction_id as string);
+      if (ref) bucket(ref).commissionNaira += -Number(l.amount_naira);
+    }
   }
   return tallies;
 }
@@ -2220,6 +2241,18 @@ async function finishAdminLogin(
   }
 
   if (!org) {
+    // Not an organizer at all: a promoter (migration 0105) signs in here too.
+    const { data: promoter } = await supabase.from("promoters").select("id, full_name, handle, is_suspended").eq("user_id", user.id).maybeSingle();
+    if (promoter) {
+      if (promoter.is_suspended) {
+        await supabase.auth.signOut();
+        return { success: false, error: "This promoter account has been suspended. Contact support for help." };
+      }
+      hydrateSession();
+      sessionCache = { id: user.id, name: promoter.full_name || `@${promoter.handle}`, email: user.email || "", role: "promoter", promoterHandle: promoter.handle };
+      persistSession();
+      return { success: true };
+    }
     await supabase.auth.signOut();
     return { success: false, error: "This organization no longer exists. Contact support for help." };
   }
@@ -2404,7 +2437,7 @@ export async function logout(): Promise<void> {
 
 type PayoutRow = {
   id: string;
-  organization_id: string;
+  organization_id: string | null;
   amount_naira: number | string;
   fee_naira: number | string;
   status: PayoutStatus;
@@ -2421,7 +2454,7 @@ type PayoutRow = {
 export function mapPayoutRow(p: PayoutRow): PayoutRequest {
   return {
     id: p.id,
-    organizationId: p.organization_id,
+    organizationId: p.organization_id ?? "",
     amountNaira: Number(p.amount_naira),
     feeNaira: Number(p.fee_naira),
     status: p.status,
@@ -2557,4 +2590,190 @@ export async function getMyPlan(): Promise<MyPlan | null> {
     periodEnd: org.plan_period_end,
     comped: org.plan_comped,
   };
+}
+
+// ---- Promoters (migration 0105) ---------------------------------------------
+
+export type PromoterProfile = {
+  id: string;
+  handle: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  bankName: string | null;
+  accountLast4: string | null;
+  accountName: string | null;
+  bankChangeStatus: "none" | "requested" | "approved";
+};
+
+export async function getMyPromoter(): Promise<PromoterProfile | null> {
+  const supabase = createSupabaseBrowserClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from("promoters")
+    .select("id, handle, full_name, email, phone, payout_bank_name, payout_account_number, payout_account_name, payout_change_status")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (error) throw new PersistError(error);
+  if (!data) return null;
+  return {
+    id: data.id,
+    handle: data.handle,
+    fullName: data.full_name,
+    email: data.email,
+    phone: data.phone,
+    bankName: data.payout_bank_name,
+    accountLast4: data.payout_account_number ? String(data.payout_account_number).slice(-4) : null,
+    accountName: data.payout_account_name,
+    bankChangeStatus: data.payout_change_status as PromoterProfile["bankChangeStatus"],
+  };
+}
+
+export async function getPromoterBalance(): Promise<AccountBalance | null> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("promoter_balance").maybeSingle<{
+    total_naira: number;
+    pending_naira: number;
+    locked_naira: number;
+    available_naira: number;
+    paid_out_naira: number;
+  }>();
+  if (error) throw new PersistError(error);
+  return {
+    totalNaira: Number(data?.total_naira ?? 0),
+    pendingNaira: Number(data?.pending_naira ?? 0),
+    lockedNaira: Number(data?.locked_naira ?? 0),
+    availableNaira: Number(data?.available_naira ?? 0),
+    paidOutNaira: Number(data?.paid_out_naira ?? 0),
+  };
+}
+
+export async function getPromoterPayoutRequests(): Promise<PayoutRequest[]> {
+  const supabase = createSupabaseBrowserClient();
+  const { data: pid } = await supabase.rpc("my_promoter_id");
+  if (!pid) return [];
+  const { data, error } = await supabase.from("payout_requests").select("*").eq("promoter_id", pid).order("requested_at", { ascending: false }).limit(100);
+  if (error) throw new PersistError(error);
+  return (data ?? []).map((p) => mapPayoutRow(p as PayoutRow));
+}
+
+export async function getPromoterLedgerEntries(limit = 200): Promise<LedgerEntry[]> {
+  const supabase = createSupabaseBrowserClient();
+  const { data: pid } = await supabase.rpc("my_promoter_id");
+  if (!pid) return [];
+  const { data, error } = await supabase
+    .from("ledger_entries")
+    .select("id, event_id, kind, amount_naira, clears_at, note, created_at")
+    .eq("promoter_id", pid)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new PersistError(error);
+  return (data ?? []).map((l) => ({
+    id: l.id,
+    eventId: l.event_id,
+    eventName: null,
+    kind: l.kind as LedgerKind,
+    amountNaira: Number(l.amount_naira),
+    clearsAt: l.clears_at,
+    note: l.note,
+    createdAt: l.created_at,
+  }));
+}
+
+export async function requestPromoterPayout(amountNaira: number): Promise<string> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("request_promoter_payout", { p_amount: amountNaira });
+  if (error) throw new PersistError(error);
+  return data as string;
+}
+
+export type PromoterEventRow = {
+  referralId: string;
+  active: boolean;
+  code: string;
+  clicks: number;
+  eventId: string;
+  eventName: string;
+  eventSlug: string | null;
+  orgSlug: string;
+  orgName: string;
+  eventDate: string;
+  eventEndDate: string | null;
+  coverImage: string | null;
+  commissionPct: number;
+  commissionCapNaira: number | null;
+  programEnabled: boolean;
+  shareCaption: string | null;
+  paidSales: number;
+  earnedNaira: number;
+};
+
+export async function getPromoterDashboard(): Promise<PromoterEventRow[]> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("promoter_dashboard");
+  if (error) throw new PersistError(error);
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    referralId: String(r.referral_id),
+    active: Boolean(r.is_active),
+    code: String(r.code),
+    clicks: Number(r.clicks ?? 0),
+    eventId: String(r.event_id),
+    eventName: String(r.event_name),
+    eventSlug: (r.event_slug as string | null) ?? null,
+    orgSlug: String(r.org_slug),
+    orgName: String(r.org_name),
+    eventDate: String(r.event_date),
+    eventEndDate: (r.event_end_date as string | null) ?? null,
+    coverImage: (r.cover_image as string | null) ?? null,
+    commissionPct: Number(r.commission_pct),
+    commissionCapNaira: r.commission_cap_naira == null ? null : Number(r.commission_cap_naira),
+    programEnabled: Boolean(r.program_enabled),
+    shareCaption: (r.share_caption as string | null) ?? null,
+    paidSales: Number(r.paid_sales ?? 0),
+    earnedNaira: Number(r.earned_naira ?? 0),
+  }));
+}
+
+export type MarketplaceEvent = {
+  eventId: string;
+  slug: string | null;
+  orgSlug: string;
+  orgName: string;
+  name: string;
+  date: string;
+  startTime: string | null;
+  venue: string | null;
+  location: string | null;
+  coverImage: string | null;
+  eventFormat: string | null;
+  commissionPct: number;
+  commissionCapNaira: number | null;
+  access: "open" | "verified" | "invite";
+  minPriceNaira: number | null;
+};
+
+export async function getMarketplace(): Promise<MarketplaceEvent[]> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("public_promoter_marketplace");
+  if (error) throw new PersistError(error);
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    eventId: String(r.event_id),
+    slug: (r.slug as string | null) ?? null,
+    orgSlug: String(r.org_slug),
+    orgName: String(r.org_name),
+    name: String(r.name),
+    date: String(r.date),
+    startTime: (r.start_time as string | null) ?? null,
+    venue: (r.venue as string | null) ?? null,
+    location: (r.location as string | null) ?? null,
+    coverImage: (r.cover_image as string | null) ?? null,
+    eventFormat: (r.event_format as string | null) ?? null,
+    commissionPct: Number(r.commission_pct),
+    commissionCapNaira: r.commission_cap_naira == null ? null : Number(r.commission_cap_naira),
+    access: r.access as MarketplaceEvent["access"],
+    minPriceNaira: r.min_price_naira == null ? null : Number(r.min_price_naira),
+  }));
 }

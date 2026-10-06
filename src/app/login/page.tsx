@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (session) {
-      router.replace(session.role === "admin" ? "/dashboard" : session.role === "rep" ? "/leads" : "/collect");
+      router.replace(session.role === "admin" ? "/dashboard" : session.role === "promoter" ? "/promoter" : session.role === "rep" ? "/leads" : "/collect");
     }
   }, [session, router]);
 

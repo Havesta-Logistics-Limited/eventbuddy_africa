@@ -8,7 +8,8 @@ import { PersistError, getPayoutSettings, mapPayoutRow } from "@/lib/store";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { PayoutRequest, PayoutSettings } from "@/lib/types";
 
-type QueueRow = PayoutRequest & { orgName: string; orgVerified: boolean; availableNaira: number | null };
+type QueueRow = PayoutRequest & { orgName: string; orgVerified: boolean; availableNaira: number | null; promoterId: string | null };
+type BankChange = { id: string; handle: string; full_name: string; payout_bank_name: string | null; payout_account_number: string | null; payout_change_requested_at: string | null };
 
 async function post(url: string, body: unknown): Promise<{ ok: boolean; error?: string; status?: string }> {
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -26,6 +27,7 @@ export function PlatformPayoutQueue() {
   const [filter, setFilter] = useState<"open" | "all">("open");
   const [busy, setBusy] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<{ id: string; note: string } | null>(null);
+  const [bankChanges, setBankChanges] = useState<BankChange[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -33,22 +35,36 @@ export function PlatformPayoutQueue() {
       setSettings(s);
       setForm({ held: s.heldFundsEnabled, min: String(s.payoutMinNaira), fee: String(s.payoutFeeNaira), lock: String(s.unverifiedLockDays) });
       const supabase = createSupabaseBrowserClient();
-      let q = supabase.from("payout_requests").select("*, organizations(name, payout_verified)").order("requested_at", { ascending: false }).limit(200);
+      let q = supabase.from("payout_requests").select("*, organizations(name, payout_verified), promoters(handle, full_name)").order("requested_at", { ascending: false }).limit(200);
       if (filter === "open") q = q.in("status", ["requested", "processing"]);
       const { data, error } = await q;
       if (error) throw new PersistError(error);
       const list = await Promise.all(
         (data ?? []).map(async (p) => {
           const org = p.organizations as unknown as { name: string; payout_verified: boolean } | null;
+          const promoter = p.promoters as unknown as { handle: string; full_name: string } | null;
           let availableNaira: number | null = null;
           if (p.status === "requested") {
-            const { data: b } = await supabase.rpc("account_balance", { p_org: p.organization_id }).maybeSingle<{ available_naira: number }>();
+            const { data: b } = p.promoter_id
+              ? await supabase.rpc("promoter_balance", { p_promoter: p.promoter_id }).maybeSingle<{ available_naira: number }>()
+              : await supabase.rpc("account_balance", { p_org: p.organization_id }).maybeSingle<{ available_naira: number }>();
             availableNaira = b ? Number(b.available_naira) : null;
           }
-          return { ...mapPayoutRow(p), orgName: org?.name ?? "Unknown organization", orgVerified: Boolean(org?.payout_verified), availableNaira };
+          return {
+            ...mapPayoutRow(p),
+            orgName: promoter ? `${promoter.full_name} (@${promoter.handle}) · promoter` : (org?.name ?? "Unknown organization"),
+            orgVerified: Boolean(org?.payout_verified),
+            availableNaira,
+            promoterId: p.promoter_id ?? null,
+          };
         })
       );
       setRows(list);
+      const { data: changes } = await supabase
+        .from("promoters")
+        .select("id, handle, full_name, payout_bank_name, payout_account_number, payout_change_requested_at")
+        .eq("payout_change_status", "requested");
+      setBankChanges((changes ?? []) as BankChange[]);
     } catch (err) {
       toast.error(err instanceof PersistError ? err.message : "Couldn't load payout requests.");
     }
@@ -78,6 +94,15 @@ export function PlatformPayoutQueue() {
     if (!res.ok) return toast.error(res.error || "Couldn't update this payout.");
     toast.success(action === "reject" ? "Payout rejected, money returned to the organizer's balance" : res.status === "paid" ? "Payout marked as paid" : "Transfer sent to Paystack");
     setRejecting(null);
+    load();
+  }
+
+  async function decideBankChange(promoterId: string, action: "approve" | "decline") {
+    setBusy(promoterId);
+    const res = await post("/api/platform/payouts/promoter-bank", { promoterId, action });
+    setBusy(null);
+    if (!res.ok) return toast.error(res.error || "Couldn't update the request.");
+    toast.success(action === "approve" ? "Approved: the promoter can now enter their new bank account" : "Bank change declined");
     load();
   }
 
@@ -198,14 +223,45 @@ export function PlatformPayoutQueue() {
                     </button>
                   </div>
                 )}
-                <button type="button" disabled={busy === r.organizationId} onClick={() => setVerified(r.organizationId, !r.orgVerified)} className="eb-link mt-2 text-xs">
-                  {r.orgVerified ? "Remove payout verification" : "Verify this organizer for early payouts"}
-                </button>
+                {!r.promoterId && (
+                  <button type="button" disabled={busy === r.organizationId} onClick={() => setVerified(r.organizationId, !r.orgVerified)} className="eb-link mt-2 text-xs">
+                    {r.orgVerified ? "Remove payout verification" : "Verify this organizer for early payouts"}
+                  </button>
+                )}
               </div>
             ))
           )}
         </div>
       </section>
+
+      {bankChanges.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-fg">Promoter bank changes</h2>
+          <div className="eb-card divide-y divide-line-soft">
+            {bankChanges.map((b) => (
+              <div key={b.id} className="flex flex-row flex-wrap items-center justify-between gap-3 p-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-fg">
+                    {b.full_name} <span className="font-normal text-muted">@{b.handle}</span>
+                  </p>
+                  <p className="text-xs text-muted">
+                    Currently {b.payout_bank_name} ••••{(b.payout_account_number ?? "").slice(-4)}
+                    {b.payout_change_requested_at && ` · asked ${new Date(b.payout_change_requested_at).toLocaleDateString("en-GB")}`}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" disabled={busy === b.id} onClick={() => decideBankChange(b.id, "approve")} className="eb-btn eb-btn--primary">
+                    Allow change
+                  </button>
+                  <button type="button" disabled={busy === b.id} onClick={() => decideBankChange(b.id, "decline")} className="eb-btn eb-btn--ghost">
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

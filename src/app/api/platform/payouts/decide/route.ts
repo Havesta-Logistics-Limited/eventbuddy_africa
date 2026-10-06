@@ -45,15 +45,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, status: "paid" });
   }
 
-  // transfer
-  const { data: org } = await admin
-    .from("organizations")
-    .select("id, name, payout_bank_code, payout_account_number, payout_account_name, payout_recipient_code, payout_change_status")
-    .eq("id", payout.organization_id)
+  // transfer: the account is an organization's or a promoter's (migration 0105)
+  const accountTable = payout.promoter_id ? "promoters" : "organizations";
+  const { data: account } = await admin
+    .from(accountTable)
+    .select(`id, ${payout.promoter_id ? "full_name" : "name"}, payout_bank_code, payout_account_number, payout_account_name, payout_recipient_code, payout_change_status`)
+    .eq("id", payout.promoter_id ?? payout.organization_id)
     .maybeSingle();
-  if (!org?.payout_account_number || !org.payout_bank_code) return NextResponse.json({ error: "This organizer has no bank account on file." }, { status: 400 });
+  const org = account as unknown as {
+    id: string;
+    name?: string;
+    full_name?: string;
+    payout_bank_code: string | null;
+    payout_account_number: string | null;
+    payout_account_name: string | null;
+    payout_recipient_code: string | null;
+    payout_change_status: string;
+  } | null;
+  const accountName = org?.name ?? org?.full_name ?? "account";
+  if (!org?.payout_account_number || !org.payout_bank_code) return NextResponse.json({ error: "This account has no bank details on file." }, { status: 400 });
   if (org.payout_change_status === "requested") {
-    return NextResponse.json({ error: "This organizer has a bank account change waiting. Resolve it before sending money." }, { status: 409 });
+    return NextResponse.json({ error: "This account has a bank change waiting. Resolve it before sending money." }, { status: 409 });
   }
 
   // Claim the payout first so a double click can't send two transfers. A
@@ -72,14 +84,14 @@ export async function POST(request: Request) {
   try {
     let recipientCode = org.payout_recipient_code;
     if (!recipientCode) {
-      ({ recipientCode } = await createTransferRecipient({ name: org.payout_account_name || org.name, accountNumber: org.payout_account_number, bankCode: org.payout_bank_code }));
-      await admin.from("organizations").update({ payout_recipient_code: recipientCode }).eq("id", org.id);
+      ({ recipientCode } = await createTransferRecipient({ name: org.payout_account_name || accountName, accountNumber: org.payout_account_number, bankCode: org.payout_bank_code }));
+      await admin.from(accountTable).update({ payout_recipient_code: recipientCode }).eq("id", org.id);
     }
     const { transferCode, status } = await initiateTransfer({
       amountMinor: Math.round(Number(payout.amount_naira) * 100),
       recipientCode: recipientCode!,
       reference,
-      reason: `eventbuddy payout to ${org.name}`,
+      reason: `eventbuddy payout to ${accountName}`,
     });
     await admin.from("payout_requests").update({ transfer_code: transferCode, ...(status === "success" ? { status: "paid", paid_at: new Date().toISOString() } : {}) }).eq("id", payoutId);
     return NextResponse.json({ success: true, status: status === "success" ? "paid" : "processing" });
