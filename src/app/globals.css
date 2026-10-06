@@ -792,6 +792,10 @@ select {
 /* Feature chapter — reusable: an intro over the glow, then a bento of cells
    inside the rails. Text leads each cell; a product visual bleeds off its foot. */
 .lp-chapter { position: relative; background: #07030c; color: #fff; overflow: hidden; }
+/* every chapter closes with open space under its bento, inside the rails, so
+   the next chapter's intro never butts against the previous panels */
+.lp-chapter > .lp-rails { padding-bottom: 136px; }
+.lp-chapter + .lp-chapter .lp-chapter-intro { padding-top: 56px; }
 .lp-chapter-intro {
   position: relative;
   padding: 112px 24px 72px;
@@ -869,6 +873,96 @@ select {
   -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
   mask-image: linear-gradient(to bottom, #000 55%, transparent);
 }
+
+.lp-chapter-icon--badge { width: 92px; }
+
+/* Split row: copy + accordion on the left, a glowing product stage on the right */
+.lp-split {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.lp-split > .lp-cell { padding-bottom: 48px; }
+.lp-accordion { margin-top: 36px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.lp-acc-item { border-top: 1px solid rgba(255, 255, 255, 0.1); }
+.lp-acc-item h3 { margin: 0; }
+.lp-acc-item button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+  text-align: left;
+  font-size: 18px;
+  font-weight: 500;
+  color: #c9bcd6;
+  transition: color 180ms ease;
+}
+.lp-acc-item button:hover,
+.lp-acc-item[data-open] button { color: #fff; }
+.lp-acc-item button svg { flex-shrink: 0; color: #ff8af5; transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1); }
+.lp-acc-item[data-open] button svg { transform: rotate(45deg); }
+.lp-acc-item button:focus-visible { outline: 2px solid #ff8af5; outline-offset: 2px; border-radius: 4px; }
+.lp-acc-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 320ms cubic-bezier(0.16, 1, 0.3, 1); }
+.lp-acc-item[data-open] .lp-acc-body { grid-template-rows: 1fr; }
+.lp-acc-body > div { overflow: hidden; }
+.lp-acc-body p { margin: 0; padding: 0 32px 20px 0; font-size: 15px; line-height: 1.55; color: #9d8dad; }
+
+.lp-hubstage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 640px;
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 45%, rgba(237, 28, 220, 0.32), transparent 70%),
+    radial-gradient(ellipse 80% 70% at 50% 60%, rgba(109, 40, 217, 0.35), transparent 75%),
+    #0b0512;
+  overflow: hidden;
+}
+.lp-hubphone {
+  position: relative;
+  width: 300px;
+  overflow: hidden;
+  border-radius: 36px;
+  border: 7px solid #120a1a;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 40px 80px -30px rgba(0, 0, 0, 0.8), 0 0 90px -20px rgba(237, 28, 220, 0.55);
+}
+.lp-hubphone-head { padding: 26px 20px 34px; background: #c21faf; }
+.lp-hubphone-body {
+  position: relative;
+  margin: -16px 10px 14px;
+  height: 392px;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid #f1eef3;
+  background: #fff;
+  box-shadow: 0 6px 18px -10px rgba(23, 8, 33, 0.25);
+}
+.lp-hubtoast {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  translate: -50% 0; /* separate from transform, which the entrance animation owns */
+  white-space: nowrap;
+  padding: 7px 12px;
+  border-radius: 9999px;
+  background: #170821;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 10px 24px -10px rgba(23, 8, 33, 0.7);
+}
+.lp-hubtoast svg { color: #34d399; }
+.lp-bar { animation: lp-bar 900ms cubic-bezier(0.16, 1, 0.3, 1) both; transform-origin: left; }
+@keyframes lp-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 /* Self-Serve: the organizer's events list, cropped at the cell's foot */
 .lp-mini {
@@ -964,11 +1058,17 @@ select {
   .lp-trust { padding: 32px 0 38px; }
   .lp-marquee-set { gap: 56px; padding-right: 56px; }
   .lp-chapter-intro { padding: 80px 20px 52px; }
+  .lp-chapter > .lp-rails { padding-bottom: 88px; }
+  .lp-chapter + .lp-chapter .lp-chapter-intro { padding-top: 40px; }
   .lp-chapter-icon { width: 84px; }
   .lp-bento { grid-template-columns: 1fr; }
   .lp-cell { padding: 36px 20px 0; }
   .lp-cell + .lp-cell { border-left: 0; border-top: 1px solid rgba(255, 255, 255, 0.07); }
   .lp-lead { font-size: 16px; }
+  .lp-split { grid-template-columns: 1fr; }
+  .lp-acc-item button { font-size: 16px; }
+  .lp-hubstage { min-height: 560px; border-left: 0; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+  .lp-hubphone { width: 280px; }
   .lp-tab-progress { left: 14px; right: 14px; }
   .lp-window { border-radius: 13px; }
 }
@@ -977,6 +1077,8 @@ select {
   .lp-obj, .lp-bob, .lp-star, .lp-live-dot, .lp-feed-new { animation: none !important; }
   .lp-marquee-track { animation: none !important; }
   .lp-runsheet-tick { transition: none; }
+  .lp-acc-body { transition: none; }
+  .lp-bar { animation: none; }
   .lp-marquee-pause { display: none; }
   .lp-rise { transform: none; }
   .lp-scene, .lp-wash, .lp-pop, .lp-caption { animation: none !important; }
