@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { LandingHero, LandingNav } from "@/components/landing/landing-hero";
+import { TrustedBy } from "@/components/landing/trusted-by";
 import { DEFAULT_TICKET_FEE, fetchCurrentTicketFee, formatTicketFee } from "@/lib/billing";
 import { faqs } from "@/app/pricing/faqs";
 
@@ -149,31 +150,7 @@ export default function MarketingHomePage() {
       <LandingNav />
       <LandingHero fee={fee} />
 
-      <div className="h-1.5 w-full flex">
-        <div className="flex-1" style={{ background: "#C21FAF" }} />
-        <div className="flex-1" style={{ background: "#6D28D9" }} />
-        <div className="flex-1" style={{ background: "#E85D0A" }} />
-        <div className="flex-1" style={{ background: "#B8119C" }} />
-        <div className="flex-1" style={{ background: "#170821" }} />
-      </div>
-
-      {/* Continuous event-type marquee — the track is the list rendered twice back
-          to back, animated exactly -50% so the seam is invisible; a horizontal
-          fade mask on the viewport hides the strip's own hard edges. */}
-      <div className="marquee-viewport relative overflow-hidden bg-white border-b border-slate-200 py-5" style={{ maskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)", WebkitMaskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)" }}>
-        <div className="flex w-max animate-marquee">
-          {[0, 1].map((copy) => (
-            <div key={copy} className="flex items-center gap-3 pr-3" aria-hidden={copy === 1}>
-              {MARQUEE_EVENT_TYPES.map((label) => (
-                <span key={label} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-slate-100 text-slate-600 whitespace-nowrap">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-600 shrink-0" />
-                  {label}
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
+      <TrustedBy />
 
       {/* Trust — real usage figures, provided directly by eventbuddy (not observable
           from this environment's own database, which only holds test data — these
