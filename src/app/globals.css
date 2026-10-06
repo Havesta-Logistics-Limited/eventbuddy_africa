@@ -2488,3 +2488,26 @@ input[type="radio"], input[type="checkbox"] { accent-color: #ff8af5; }
 }
 .eb-market-rate small { font-size: 10.5px; font-weight: 600; opacity: 0.75; }
 @media (prefers-reduced-motion: reduce) { .eb-market-card:hover { transform: none; } }
+
+/* ---- Promoter badges (migration 0106) ------------------------------------ */
+.eb-badge {
+  --bd-a: #7dd3fc;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--bd-a);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0) 60%),
+    color-mix(in srgb, var(--bd-a) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bd-a) 35%, transparent), 0 0 14px -6px var(--bd-a);
+}
+.eb-badge[data-size="md"] { padding: 4px 12px; font-size: 12.5px; }
+.eb-badge[data-badge="seller"] { --bd-a: #ff8af5; }
+.eb-badge[data-badge="reliable"] { --bd-a: #a78bfa; }
+.eb-badge[data-badge="captain"] { --bd-a: #fcd34d; }
+.eb-badge[data-badge="none"] { --bd-a: #9d8dad; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12); }

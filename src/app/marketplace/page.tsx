@@ -8,7 +8,8 @@ import { Shell } from "@/components/shell";
 import { LandingNav } from "@/components/landing/landing-hero";
 import { LandingFooter } from "@/components/landing/landing-close";
 import { formatNaira } from "@/lib/billing";
-import { PersistError, getMarketplace, getPromoterDashboard, useSession, type MarketplaceEvent } from "@/lib/store";
+import { PersistError, getMarketplace, getMyPromoterStats, getPromoterDashboard, useSession, type MarketplaceEvent } from "@/lib/store";
+import { meetsVerified, type PromoterBadge } from "@/lib/promoters";
 import { formatDate } from "@/lib/utils";
 
 /** The promoter marketplace (migration 0105): upcoming events whose organizers
@@ -34,6 +35,7 @@ function MarketplaceContent({ isPromoter }: { isPromoter: boolean }) {
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [badge, setBadge] = useState<PromoterBadge | null>(null);
 
   useEffect(() => {
     getMarketplace()
@@ -49,6 +51,9 @@ function MarketplaceContent({ isPromoter }: { isPromoter: boolean }) {
     // events this promoter already promotes show their link instead of a button
     getPromoterDashboard()
       .then((rows) => setJoined(Object.fromEntries(rows.filter((r) => r.active).map((r) => [r.eventId, ""]))))
+      .catch(() => {});
+    getMyPromoterStats()
+      .then((s) => setBadge(s.badge))
       .catch(() => {});
   }, [isPromoter]);
 
@@ -138,9 +143,10 @@ function MarketplaceContent({ isPromoter }: { isPromoter: boolean }) {
                       <p className="flex items-center justify-center gap-1.5 rounded-lg bg-fill py-2.5 text-xs font-medium text-muted">
                         <Lock size={12} aria-hidden="true" /> Invite only
                       </p>
-                    ) : e.access === "verified" ? (
+                    ) : e.access === "verified" && !(e.eventId in joined) && !(isPromoter && meetsVerified(badge)) ? (
+                      // verified-only: Seller badge or higher (migration 0106)
                       <p className="flex items-center justify-center gap-1.5 rounded-lg bg-fill py-2.5 text-xs font-medium text-muted">
-                        <Lock size={12} aria-hidden="true" /> Verified promoters only
+                        <Lock size={12} aria-hidden="true" /> Seller badge or higher
                       </p>
                     ) : !isPromoter ? (
                       <Link href="/promote" className="eb-btn eb-btn--ghost w-full">

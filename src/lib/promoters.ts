@@ -33,3 +33,33 @@ export function promoterLink(siteUrl: string, e: { slug?: string | null; orgSlug
   const base = siteUrl.replace(/\/$/, "");
   return e.slug ? `${base}/${e.slug}/${handle}` : `${base}/${e.orgSlug}/events/${e.eventId}/register?ref=${encodeURIComponent(handle)}`;
 }
+
+/** Promoter badges (migration 0106): earned from real attributed sales only.
+ *  Keep in step with _promoter_stats in the migration. */
+export type PromoterBadge = "starter" | "seller" | "reliable" | "captain";
+
+export const BADGES: { id: PromoterBadge; label: string; minSales: number; maxRefundPct?: number }[] = [
+  { id: "starter", label: "Starter", minSales: 1 },
+  { id: "seller", label: "Seller", minSales: 10 },
+  { id: "reliable", label: "Reliable", minSales: 50, maxRefundPct: 5 },
+  { id: "captain", label: "Captain", minSales: 200, maxRefundPct: 5 },
+];
+
+export function badgeRank(b: PromoterBadge | null | undefined): number {
+  return b ? BADGES.findIndex((x) => x.id === b) + 1 : 0;
+}
+
+/** Verified-only events take promoters with the Seller badge or higher. */
+export function meetsVerified(b: PromoterBadge | null | undefined): boolean {
+  return badgeRank(b) >= badgeRank("seller");
+}
+
+/** What the next badge needs, for the promoter's own dashboard. */
+export function nextBadgeHint(sales: number, refunded: number, current: PromoterBadge | null): string | null {
+  const next = BADGES[badgeRank(current)];
+  if (!next) return null;
+  const missing = Math.max(0, next.minSales - sales);
+  if (missing > 0) return `${missing} more ticket${missing === 1 ? "" : "s"} sold to reach ${next.label}`;
+  if (next.maxRefundPct != null) return `Keep refunds under ${next.maxRefundPct}% to reach ${next.label}`;
+  return null;
+}

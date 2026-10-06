@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePromoter } from "@/lib/promoter-auth";
 import { addPromoterToEvent } from "@/lib/promoter-referral";
-import { promoterLink } from "@/lib/promoters";
+import { meetsVerified, promoterLink, type PromoterBadge } from "@/lib/promoters";
 
 const Schema = z.object({ eventId: z.string().uuid() });
 
@@ -22,7 +22,13 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (!event?.published || !event.promoter_program_enabled) return NextResponse.json({ error: "This event isn't taking promoters." }, { status: 404 });
   if (event.promoter_access === "invite") return NextResponse.json({ error: "This event is invite only. The organizer adds promoters by handle." }, { status: 403 });
-  if (event.promoter_access === "verified") return NextResponse.json({ error: "This event is for verified promoters only." }, { status: 403 });
+  if (event.promoter_access === "verified") {
+    // Seller badge or higher (migration 0106), from real attributed sales
+    const { data: stats } = await admin.rpc("_promoter_stats", { p_promoter: auth.promoter.id }).maybeSingle<{ badge: PromoterBadge | null }>();
+    if (!meetsVerified(stats?.badge)) {
+      return NextResponse.json({ error: "This event is for verified promoters: you need the Seller badge (10 tickets sold) or higher." }, { status: 403 });
+    }
+  }
 
   const result = await addPromoterToEvent(admin, event, auth.promoter);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });

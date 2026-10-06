@@ -5,7 +5,8 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { AlertCircle, Megaphone, PauseCircle, PlayCircle, UserPlus } from "lucide-react";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getMyPlan, getOrganizerPlans, refreshData } from "@/lib/store";
+import { getEventPromoterBadges, getMyPlan, getOrganizerPlans, refreshData, type PromoterStats } from "@/lib/store";
+import { PromoterBadgeChip } from "@/components/promoter-badge";
 import type { EventRecord, OrganizerPlan } from "@/lib/types";
 
 type Settings = { enabled: boolean; pct: string; cap: string; access: "open" | "verified" | "invite"; caption: string };
@@ -20,6 +21,7 @@ export function PromoterProgramPanel({ event }: { event: EventRecord }) {
   const [saved, setSaved] = useState<Settings | null>(null);
   const [promoters, setPromoters] = useState<PromoterRow[]>([]);
   const [plan, setPlan] = useState<OrganizerPlan | null>(null);
+  const [badges, setBadges] = useState<Record<string, { badge: PromoterStats["badge"]; sales: number }>>({});
   const [invite, setInvite] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export function PromoterProgramPanel({ event }: { event: EventRecord }) {
       setSaved(next);
     }
     setPromoters((rows ?? []) as PromoterRow[]);
+    setBadges(await getEventPromoterBadges(event.id).catch(() => ({})));
     setPlan(plans.find((p) => p.id === (mine?.effectivePlanId ?? "launch")) ?? null);
   }, [event.id]);
 
@@ -132,6 +135,7 @@ export function PromoterProgramPanel({ event }: { event: EventRecord }) {
             <label htmlFor="pp-access" className="eb-label">Who can promote</label>
             <select id="pp-access" value={s.access} onChange={(e) => setS({ ...s, access: e.target.value as Settings["access"] })} className="eb-input">
               <option value="open">Open: any promoter</option>
+              <option value="verified">Verified: Seller badge or higher</option>
               <option value="invite">Invite only: you add them by handle</option>
             </select>
           </div>
@@ -195,7 +199,10 @@ export function PromoterProgramPanel({ event }: { event: EventRecord }) {
               {promoters.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
                   <div className="min-w-0">
-                    <p className={`truncate text-sm ${p.is_active ? "text-fg" : "text-muted line-through"}`}>{p.partner_name}</p>
+                    <p className={`flex min-w-0 items-center gap-2 text-sm ${p.is_active ? "text-fg" : "text-muted line-through"}`}>
+                      <span className="truncate">{p.partner_name}</span>
+                      <PromoterBadgeChip badge={badges[p.id]?.badge ?? null} />
+                    </p>
                     <p className="text-xs text-subtle">{p.click_count} clicks · stats in the table below</p>
                   </div>
                   <button type="button" disabled={busy === p.id} onClick={() => toggle(p)} className="eb-btn eb-btn--ghost">

@@ -17,13 +17,16 @@ import { Shell } from "@/components/shell";
 import { AuthLoading } from "@/components/auth-loading";
 import { useRequireRole } from "@/lib/auth";
 import { formatNaira } from "@/lib/billing";
-import { promoterLink } from "@/lib/promoters";
+import { nextBadgeHint, promoterLink } from "@/lib/promoters";
 import {
   PersistError,
   getPromoterBalance,
   getPromoterDashboard,
   type PromoterEventRow,
+  getMyPromoterStats,
+  type PromoterStats,
 } from "@/lib/store";
+import { PromoterBadgeChip } from "@/components/promoter-badge";
 import { formatDate } from "@/lib/utils";
 import type { AccountBalance, Role } from "@/lib/types";
 
@@ -41,13 +44,12 @@ export default function PromoterDashboardPage() {
   const session = useRequireRole(PROMOTER_ONLY);
   const [rows, setRows] = useState<PromoterEventRow[] | null>(null);
   const [balance, setBalance] = useState<AccountBalance | null>(null);
+  const [stats, setStats] = useState<PromoterStats | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [r, b] = await Promise.all([
-        getPromoterDashboard(),
-        getPromoterBalance(),
-      ]);
+      const [r, b, st] = await Promise.all([getPromoterDashboard(), getPromoterBalance(), getMyPromoterStats()]);
+      setStats(st);
       setRows(r);
       setBalance(b);
     } catch (err) {
@@ -86,6 +88,12 @@ export default function PromoterDashboardPage() {
               You&apos;re promoting as @{handle}. Share your links; every ticket
               sold through them earns you commission.
             </p>
+            {stats && (
+              <p className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
+                <PromoterBadgeChip badge={stats.badge} size="md" />
+                {nextBadgeHint(stats.sales, stats.refunded, stats.badge)}
+              </p>
+            )}
           </div>
           <Link href="/marketplace" className="eb-btn eb-btn--primary">
             <Store size={16} aria-hidden="true" /> Find events to promote

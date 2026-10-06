@@ -2777,3 +2777,20 @@ export async function getMarketplace(): Promise<MarketplaceEvent[]> {
     minPriceNaira: r.min_price_naira == null ? null : Number(r.min_price_naira),
   }));
 }
+
+export type PromoterStats = { sales: number; refunded: number; badge: import("./promoters").PromoterBadge | null };
+
+export async function getMyPromoterStats(): Promise<PromoterStats> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("my_promoter_stats").maybeSingle<{ sales: number; refunded: number; badge: string | null }>();
+  if (error) throw new PersistError(error);
+  return { sales: Number(data?.sales ?? 0), refunded: Number(data?.refunded ?? 0), badge: (data?.badge ?? null) as PromoterStats["badge"] };
+}
+
+/** Badge per promoter referral on one event, for its organizer. */
+export async function getEventPromoterBadges(eventId: string): Promise<Record<string, { badge: PromoterStats["badge"]; sales: number }>> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("event_promoter_badges", { p_event: eventId });
+  if (error) throw new PersistError(error);
+  return Object.fromEntries(((data ?? []) as { referral_id: string; badge: string | null; sales: number }[]).map((r) => [r.referral_id, { badge: r.badge as PromoterStats["badge"], sales: Number(r.sales) }]));
+}

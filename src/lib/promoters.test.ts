@@ -38,3 +38,23 @@ describe("promoterLink", () => {
     expect(promoterLink("https://eventbuddy.africa", { slug: null, orgSlug: "acme", eventId: "123" }, "kingjesse")).toBe("https://eventbuddy.africa/acme/events/123/register?ref=kingjesse");
   });
 });
+
+import { badgeRank, meetsVerified, nextBadgeHint } from "./promoters";
+
+describe("badges", () => {
+  it("ranks badges", () => {
+    expect([badgeRank(null), badgeRank("starter"), badgeRank("seller"), badgeRank("captain")]).toEqual([0, 1, 2, 4]);
+  });
+  it("verified means Seller or higher", () => {
+    expect(meetsVerified("starter")).toBe(false);
+    expect(meetsVerified("seller")).toBe(true);
+    expect(meetsVerified("captain")).toBe(true);
+    expect(meetsVerified(null)).toBe(false);
+  });
+  it("hints at the next badge", () => {
+    expect(nextBadgeHint(0, 0, null)).toBe("1 more ticket sold to reach Starter");
+    expect(nextBadgeHint(7, 0, "starter")).toBe("3 more tickets sold to reach Seller");
+    expect(nextBadgeHint(60, 9, "seller")).toBe("Keep refunds under 5% to reach Reliable");
+    expect(nextBadgeHint(300, 0, "captain")).toBeNull();
+  });
+});
