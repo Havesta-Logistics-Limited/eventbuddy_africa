@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Serif_Display, Inter, Playfair_Display } from "next/font/google";
+import { Bricolage_Grotesque, DM_Serif_Display, Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { OfflineSupport } from "@/components/offline-support";
@@ -21,6 +21,14 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
   weight: ["700", "900"],
+});
+
+// Landing-page display face (redesign, 2026-10). A grotesque with real character
+// at large sizes, scoped to the marketing surface via --font-hero.
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-hero",
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
 });
 
 const inter = Inter({
@@ -96,7 +104,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dmSerif.variable} ${inter.variable} ${playfair.variable} antialiased`}>
+    <html lang="en" className={`${dmSerif.variable} ${inter.variable} ${playfair.variable} ${bricolage.variable} antialiased`}>
       <body>
         {/* Static, hardcoded JSON — no user input ever flows into this, safe to inject as-is. */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />

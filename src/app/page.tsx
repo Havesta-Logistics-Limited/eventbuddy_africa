@@ -14,7 +14,6 @@ import {
   Link2,
   QrCode,
   Calendar,
-  MapPin,
   Check,
   X,
   Ticket,
@@ -23,6 +22,7 @@ import {
   Megaphone,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { LandingHero, LandingNav } from "@/components/landing/landing-hero";
 import { DEFAULT_TICKET_FEE, fetchCurrentTicketFee, formatTicketFee } from "@/lib/billing";
 import { faqs } from "@/app/pricing/faqs";
 
@@ -146,135 +146,8 @@ export default function MarketingHomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Nav — sticky + glassmorphic: translucent bg with backdrop-blur so content
-          scrolling underneath stays legibly frosted rather than a flat overlay. */}
-      <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <span className="sm:hidden">
-            <Logo height={18} />
-          </span>
-          <span className="hidden sm:block">
-            <Logo height={26} />
-          </span>
-          <nav className="flex items-center gap-3 sm:gap-6">
-            <Link href="/discover" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
-              Events
-            </Link>
-            <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">
-              Pricing
-            </Link>
-            <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
-              Sign in
-            </Link>
-            <Link href="/signup" className="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors">
-              Get Started
-            </Link>
-          </nav>
-        </div>
-      </header>
-
-      {/* Hero — the headline carries the positioning itself now; no separate label
-          floating above it. */}
-      <section className="relative overflow-hidden text-white" style={{ background: "#170821" }}>
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url(https://images.unsplash.com/photo-1531058020387-3be344556be6?w=1600&h=900&fit=crop&q=75&auto=format)" }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 130% 100% at 25% -10%, rgba(255,138,245,0.9) 0%, rgba(194,31,175,0.85) 45%, rgba(23,8,33,0.65) 75%, rgba(23,8,33,0.75) 100%)",
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-[0.07]"
-          style={{ backgroundImage: "radial-gradient(circle at center, rgba(255,255,255,0.4) 1px, transparent 1px)", backgroundSize: "28px 28px" }}
-        />
-        <div className="relative max-w-6xl mx-auto px-6 pt-16 sm:pt-20 pb-16 lg:pb-28 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
-          <div>
-            <h1 className="font-display text-4xl sm:text-5xl leading-tight text-balance">
-              Africa&apos;s #1 event digital infrastructure.
-              <br />
-              <em>Less chaos, better events.</em>
-            </h1>
-            <p className="mt-5 text-white/70 text-base sm:text-lg max-w-lg">
-              Registration, ticketing, RSVPs, virtual events, and a live event hub — for education fairs, job fairs,
-              conferences, or anything else. Set it up yourself, or bring eventbuddy&apos;s own team on-site to run
-              the day for you.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/signup"
-                className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-white text-brand-600 hover:bg-white/90 transition-colors"
-              >
-                Sell Tickets
-                <ArrowRight size={16} />
-              </Link>
-              <Link
-                href="/pricing"
-                className="px-6 py-3 rounded-xl text-sm font-semibold border border-white/30 text-white hover:bg-white/10 transition-colors"
-              >
-                See pricing
-              </Link>
-            </div>
-            <p className="mt-4 text-white/50 text-xs">Free to start · {feeLabel} on tickets sold · no subscription</p>
-          </div>
-
-          {/* Realistic dashboard mockup — the actual stat-tile and event-card visual
-              language from the real app (see src/app/dashboard/page.tsx), not a
-              generic illustration, so what a visitor sees here is what they get after
-              signing up. Always rendered (not lg:hidden) so mobile visitors get
-              product proof too, stacked below the text instead of beside it. */}
-          <div className="relative animate-idle-float hover-bounce">
-            <div className="absolute -inset-6 rounded-[2rem] bg-white/5 animate-hero-card-settle-back hidden lg:block" />
-            <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden text-slate-900 animate-hero-card-settle-front">
-              <div className="flex items-center gap-1.5 px-4 py-3 border-b border-slate-100 bg-slate-50">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-300" />
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-300" />
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-300" />
-                <span className="ml-2 text-xs text-slate-400 font-medium">eventbuddy dashboard</span>
-              </div>
-              <div className="p-5">
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  {[
-                    { label: "Total Registration", value: "13,000" },
-                    { label: "Total Attendees", value: "7,000" },
-                    { label: "Total Leads", value: "4,000" },
-                  ].map((s) => (
-                    <div key={s.label} className="rounded-lg bg-slate-50 p-3">
-                      <p className="text-[11px] text-slate-500 mb-0.5 truncate">{s.label}</p>
-                      <p className="text-lg font-bold text-slate-900 tabular-nums">{s.value}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="rounded-xl border border-slate-200 p-3.5">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="font-semibold text-sm text-slate-900 truncate mr-2">Global Education Fair</p>
-                    <span className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Live</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <Calendar size={11} />
-                      22 Aug 2026
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin size={11} />
-                      Abuja
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-100 p-3">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                  <p className="text-xs text-emerald-800">
-                    <span className="font-semibold">Amaka Obi</span> just checked in — MSc Computer Science
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <LandingNav />
+      <LandingHero feeLabel={feeLabel} />
 
       <div className="h-1.5 w-full flex">
         <div className="flex-1" style={{ background: "#C21FAF" }} />

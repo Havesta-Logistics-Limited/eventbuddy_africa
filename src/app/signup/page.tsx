@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Eye, EyeOff, MailCheck } from "lucide-react";
@@ -8,11 +9,24 @@ import { AttendeeBadgeArt } from "@/components/attendee-badge-art";
 import { Logo } from "@/components/logo";
 import { isValidEmail, isValidPhone, sanitizePhoneInput } from "@/lib/validation";
 
+// useSearchParams needs a Suspense boundary so the rest of the page can still be
+// prerendered; the form itself renders immediately inside it.
 export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupForm() {
+  // The landing page's email field hands its value over as ?email=, so the visitor
+  // doesn't have to type it twice.
+  const prefillEmail = useSearchParams().get("email") ?? "";
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [organizationName, setOrganizationName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefillEmail);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
