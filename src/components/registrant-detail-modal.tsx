@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { brandedQrDataUrl } from "@/lib/branded-qr";
+import { printQrBadge } from "@/lib/print-qr";
+import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
-import { X, QrCode, Mail, Phone, Calendar, CheckCircle2, MapPin, BookMarked, GraduationCap, Globe2, Building2, MessageSquare, Ticket, Send, Check, ArrowUpCircle, Undo2, AlertCircle } from "lucide-react";
+import { X, QrCode, Mail, Phone, Calendar, CheckCircle2, MapPin, BookMarked, GraduationCap, Globe2, Building2, MessageSquare, Ticket, Send, Check, ArrowUpCircle, Undo2, AlertCircle, Printer, Download } from "lucide-react";
 import { Destination, EventRecord, LeadRecord, RegistrationRecord, TicketType, University } from "@/lib/types";
 import { updateRegistrationStatus, decideRegistration, refundRegistration } from "@/lib/store";
 import { formatNaira } from "@/lib/billing";
@@ -66,7 +68,8 @@ export function RegistrantDetailModal({
   }
 
   useEffect(() => {
-    brandedQrDataUrl(registration.referenceId, { width: 220, margin: 1 })
+    // 600px so the printed badge stays crisp; the modal shows it scaled down
+    brandedQrDataUrl(registration.referenceId, { width: 600, margin: 1 })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(""));
   }, [registration.referenceId]);
@@ -249,6 +252,29 @@ export function RegistrantDetailModal({
               )}
               <p className="font-mono text-sm text-fg-3 tracking-wide">{registration.referenceId}</p>
               <p className="text-xs text-subtle">The code this attendee was issued at registration</p>
+              {qrDataUrl && (
+                <div className="mt-2 flex w-full max-w-xs gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      printQrBadge({
+                        qrDataUrl,
+                        name: registration.fullName,
+                        referenceId: registration.referenceId,
+                        eventName: event.name,
+                        ticketName: ticketType?.name,
+                        dateLine: event.date ? `${formatDate(event.date)}${event.venue ? ` · ${event.venue}` : ""}` : undefined,
+                      })
+                    }
+                    className="eb-btn eb-btn--primary flex-1"
+                  >
+                    <Printer size={15} aria-hidden="true" /> Print
+                  </button>
+                  <a href={qrDataUrl} download={`${registration.referenceId}-${registration.fullName.replace(/[^\w]+/g, "-")}.png`} className="eb-btn eb-btn--ghost flex-1">
+                    <Download size={15} aria-hidden="true" /> Download
+                  </a>
+                </div>
+              )}
             </div>
           )}
 

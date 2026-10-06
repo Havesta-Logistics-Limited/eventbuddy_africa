@@ -83,6 +83,57 @@ function isTicketAvailable(t: PublicTicketType) {
   return true;
 }
 
+// Same tone cycle as the organizer's ticket cards (globals.css .eb-tt).
+const TICKET_TONES = ["pink", "violet", "orange", "indigo"] as const;
+
+/** One ticket as a glossy stub: price on the coloured stub, name, group badge
+ *  and a low-stock hint on the body. A button in the picker, plain otherwise. */
+function TicketStub({ t, tone, selected, available, onSelect }: { t: PublicTicketType; tone: string; selected?: boolean; available: boolean; onSelect?: () => void }) {
+  const isGroup = t.groupSize > 1;
+  const left = t.quantityAvailable != null ? t.quantityAvailable - t.quantitySold : null;
+  const inner = (
+    <>
+      <span className="eb-tt-stub">
+        <span className="eb-tt-stub-icon" aria-hidden="true">
+          {isGroup ? <Users size={15} /> : <Ticket size={15} />}
+        </span>
+        <span>
+          <span className="eb-tt-price block">{t.priceNaira > 0 ? formatNaira(t.priceNaira) : "Free"}</span>
+          {isGroup && t.priceNaira > 0 && <span className="eb-tt-per block">{formatNaira(Math.round(t.priceNaira / t.groupSize))} each</span>}
+        </span>
+      </span>
+      <span className="eb-tt-perf" aria-hidden="true" />
+      <span className="eb-tt-body">
+        <span className="eb-tt-name block">{t.name}</span>
+        {t.description && <span className="eb-tt-desc block">{t.description}</span>}
+        <span className="flex flex-wrap items-center gap-2">
+          {isGroup && (
+            <span className="eb-tt-chip">
+              <Users size={11} aria-hidden="true" /> Admits {t.groupSize}
+            </span>
+          )}
+          {!available ? (
+            <span className="eb-tt-hint text-rose-300!">Sold out or unavailable</span>
+          ) : left != null && left <= 10 ? (
+            <span className="eb-tt-hint">Only {left} left</span>
+          ) : null}
+        </span>
+      </span>
+      {onSelect && (
+        <span className="eb-tt-check" aria-hidden="true">
+          <Check size={13} strokeWidth={3} />
+        </span>
+      )}
+    </>
+  );
+  if (!onSelect) return <div className="eb-tt eb-tt--pick eb-tt--static" data-tone={tone}>{inner}</div>;
+  return (
+    <button type="button" className="eb-tt eb-tt--pick" data-tone={tone} aria-pressed={Boolean(selected)} disabled={!available} onClick={onSelect}>
+      {inner}
+    </button>
+  );
+}
+
 function formatFullDate(date: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
@@ -1015,40 +1066,20 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                             })}
                           </div>
                         )}
-                        <div className="space-y-2">
-                          {visibleTicketTypes.map((t) => {
-                            const available = isTicketAvailable(t);
-                            const selected = selectedTicketId === t.id;
-                            return (
-                              <button
-                                key={t.id}
-                                type="button"
-                                disabled={!available}
-                                onClick={() => {
-                                  setSelectedTicketId(t.id);
-                                  handleRemoveDiscount();
-                                }}
-                                className={`w-full text-left p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                                  selected ? "border-[#FF8AF5] bg-[#FF8AF5]/10" : "border-white/15 hover:border-white/30"
-                                }`}
-                              >
-                                <div className="min-w-0">
-                                  <p className="font-medium text-white flex items-center gap-2">
-                                    <Ticket size={14} className={selected ? "text-[#FF8AF5]" : "text-white/40"} />
-                                    {t.name}
-                                  </p>
-                                  {t.description && <p className="text-xs text-white/50 mt-0.5">{t.description}</p>}
-                                  {t.groupSize > 1 && (
-                                    <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#FF8AF5]/15 px-2 py-0.5 text-[11px] font-semibold text-[#FF8AF5]">
-                                      <Users size={11} aria-hidden="true" /> Admits {t.groupSize} · {formatNaira(Math.round(t.priceNaira / t.groupSize))} each
-                                    </p>
-                                  )}
-                                  {!available && <p className="text-xs text-rose-300 mt-0.5">Sold out or unavailable</p>}
-                                </div>
-                                <span className="font-semibold text-white shrink-0">{t.priceNaira > 0 ? formatNaira(t.priceNaira) : "Free"}</span>
-                              </button>
-                            );
-                          })}
+                        <div className="space-y-3">
+                          {visibleTicketTypes.map((t) => (
+                            <TicketStub
+                              key={t.id}
+                              t={t}
+                              tone={TICKET_TONES[ticketTypes.indexOf(t) % TICKET_TONES.length]}
+                              available={isTicketAvailable(t)}
+                              selected={selectedTicketId === t.id}
+                              onSelect={() => {
+                                setSelectedTicketId(t.id);
+                                handleRemoveDiscount();
+                              }}
+                            />
+                          ))}
                         </div>
                       </div>
                     )}

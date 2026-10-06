@@ -1939,3 +1939,429 @@ input[type="radio"], input[type="checkbox"] { accent-color: #ff8af5; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- Ticket types as glossy ticket stubs (organizer Tickets tab) ----------
+   A coloured stub carries the price, a perforated tear line with notches
+   splits it from the body (name, group badge, capacity bar, actions). Tones
+   cycle through the brand orb colours via --tt-a / --tt-b. */
+.eb-tt {
+  --tt-a: #ff5fd8;
+  --tt-b: #b0158f;
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.075), rgb(255 255 255 / 0) 42%),
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--tt-a) 16%, transparent), transparent 55%),
+    #120b1a;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    0 10px 30px -12px color-mix(in srgb, var(--tt-b) 55%, transparent);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 260ms ease;
+  animation: eb-card-in 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+.eb-tt[data-tone="violet"] { --tt-a: #a78bfa; --tt-b: #6d28d9; }
+.eb-tt[data-tone="orange"] { --tt-a: #ffa25e; --tt-b: #e2540f; }
+.eb-tt[data-tone="indigo"] { --tt-a: #818cf8; --tt-b: #3f3fd0; }
+.eb-tt:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.16),
+    inset 0 0 0 1px color-mix(in srgb, var(--tt-a) 40%, transparent),
+    0 18px 44px -14px color-mix(in srgb, var(--tt-b) 75%, transparent);
+}
+/* the light sweep */
+.eb-tt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.10) 48%, transparent 60%);
+  transform: translateX(-110%);
+}
+.eb-tt:hover::after { transform: translateX(110%); transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+.eb-tt-stub {
+  position: relative;
+  display: flex;
+  width: 168px;
+  flex-shrink: 0;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px;
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.28), rgb(255 255 255 / 0) 48%),
+    linear-gradient(140deg, var(--tt-a), var(--tt-b));
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.25);
+}
+.eb-tt-stub-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 11px;
+  background: rgb(255 255 255 / 0.2);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+.eb-tt-price { font-family: var(--font-display, inherit); font-size: 1.45rem; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.eb-tt-per { margin-top: 3px; font-size: 11px; font-weight: 500; opacity: 0.85; }
+
+/* perforation: dashed tear line plus a notch top and bottom */
+.eb-tt-perf { position: relative; width: 0; flex-shrink: 0; border-left: 2px dashed rgb(255 255 255 / 0.16); }
+.eb-tt-perf::before,
+.eb-tt-perf::after {
+  content: "";
+  position: absolute;
+  left: -12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--color-canvas);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+.eb-tt-perf::before { top: -11px; }
+.eb-tt-perf::after { bottom: -11px; }
+
+.eb-tt-body { display: flex; min-width: 0; flex: 1; flex-direction: column; justify-content: center; gap: 10px; padding: 18px 20px 18px 24px; }
+.eb-tt-name { font-size: 1.05rem; font-weight: 600; color: var(--color-fg); }
+.eb-tt-desc { margin-top: 2px; font-size: 13px; color: var(--color-muted); }
+.eb-tt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tt-a);
+  background: color-mix(in srgb, var(--tt-a) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tt-a) 30%, transparent);
+}
+.eb-tt-bar { height: 6px; overflow: hidden; border-radius: 999px; background: rgb(255 255 255 / 0.08); }
+.eb-tt-bar > span {
+  display: block;
+  height: 100%;
+  min-width: 6px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--tt-b), var(--tt-a));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tt-a) 60%, transparent);
+  transition: width 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.eb-tt-meta > span { white-space: nowrap; }
+.eb-tt-meta { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: 12px; row-gap: 2px; font-size: 12px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.eb-tt-actions { display: flex; align-items: flex-start; gap: 4px; padding: 14px 14px 0 0; }
+.eb-tt-act {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--color-subtle);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  transition: color 160ms ease, background 160ms ease;
+}
+.eb-tt-act:hover { color: #fff; background: rgb(255 255 255 / 0.1); }
+.eb-tt-act--danger:hover { color: #fda4af; background: rgb(244 63 94 / 0.14); }
+.eb-tt-act:focus-visible { outline: 2px solid var(--tt-a); outline-offset: 2px; }
+
+@media (max-width: 639px) {
+  .eb-tt-stub { width: 128px; padding: 14px 12px 14px 14px; }
+  .eb-tt-price { font-size: 1rem; }
+  .eb-tt-body { padding: 14px 12px 14px 18px; }
+  .eb-tt-actions { padding: 10px 10px 0 0; flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .eb-tt, .eb-tt:hover { transform: none; animation: none; }
+  .eb-tt::after { display: none; }
+}
+
+/* ---- Ticket picker on the public register page (.eb-tt--pick) ------------
+   The organizer stub, compact and selectable: no notches (the panel behind it
+   is a gradient, not canvas), a glowing ring and check when chosen, greyed
+   when it can't be bought. */
+.eb-tt--pick { width: 100%; border-radius: 14px; text-align: left; cursor: pointer; animation-duration: 500ms; }
+.eb-tt--pick .eb-tt-stub { width: 118px; gap: 10px; padding: 12px 12px 12px 14px; }
+.eb-tt--pick .eb-tt-stub-icon { width: 28px; height: 28px; border-radius: 9px; }
+.eb-tt--pick .eb-tt-price { font-size: 1.02rem; }
+.eb-tt--pick .eb-tt-per { font-size: 10.5px; }
+.eb-tt--pick .eb-tt-perf::before,
+.eb-tt--pick .eb-tt-perf::after { display: none; }
+.eb-tt--pick .eb-tt-body { gap: 6px; padding: 12px 40px 12px 16px; }
+.eb-tt--pick .eb-tt-name { font-size: 0.95rem; color: #fff; }
+.eb-tt--pick .eb-tt-desc { font-size: 12px; color: rgb(255 255 255 / 0.55); }
+.eb-tt-hint { font-size: 11px; font-weight: 600; color: #fdba74; }
+.eb-tt-check {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 999px;
+  color: transparent;
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.25);
+  transform: translateY(-50%);
+  transition: background 200ms ease, color 200ms ease, box-shadow 200ms ease;
+}
+.eb-tt--pick[aria-pressed="true"] {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.16),
+    inset 0 0 0 2px var(--tt-a),
+    0 0 0 4px color-mix(in srgb, var(--tt-a) 18%, transparent),
+    0 16px 40px -12px color-mix(in srgb, var(--tt-b) 85%, transparent);
+}
+.eb-tt--pick[aria-pressed="true"] .eb-tt-check { color: #1a0b1f; background: var(--tt-a); box-shadow: 0 0 14px color-mix(in srgb, var(--tt-a) 70%, transparent); }
+.eb-tt--pick:focus-visible { outline: 2px solid #ff8af5; outline-offset: 3px; }
+.eb-tt--pick:disabled { cursor: not-allowed; filter: grayscale(0.85); opacity: 0.5; }
+.eb-tt--pick:disabled:hover { transform: none; }
+.eb-tt--pick:disabled::after { display: none; }
+.eb-tt--static { cursor: default; }
+.eb-tt--static:hover { transform: none; }
+
+/* ---- Drop-off follow-up panels (Tickets tab) ------------------------------
+   "Started checkout, never paid" and "Started the form, never submitted":
+   a glossy panel with an amber (checkout) or violet (form) accent, a header
+   that sums what's at stake, and one row per person with quick actions. */
+.eb-drop {
+  --dp-a: #fbbf24;
+  --dp-b: #d97706;
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0) 40%),
+    radial-gradient(90% 120% at 0% 0%, color-mix(in srgb, var(--dp-a) 13%, transparent), transparent 55%),
+    #120b1a;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    0 12px 32px -16px color-mix(in srgb, var(--dp-b) 60%, transparent);
+}
+.eb-drop[data-accent="violet"] { --dp-a: #c4b5fd; --dp-b: #7c3aed; }
+.eb-drop-head { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 16px 18px; }
+.eb-drop-toggle { display: flex; min-width: 0; flex: 1; align-items: center; gap: 14px; text-align: left; border-radius: 12px; }
+.eb-drop-toggle:focus-visible { outline: 2px solid var(--dp-a); outline-offset: 4px; }
+.eb-drop-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 13px;
+  color: #1a0b1f;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.4), rgb(255 255 255 / 0) 55%),
+    linear-gradient(140deg, var(--dp-a), var(--dp-b));
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--dp-b) 80%, transparent), inset 0 1px 0 rgb(255 255 255 / 0.5);
+}
+.eb-drop-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--color-fg); }
+.eb-drop-count {
+  border-radius: 999px;
+  padding: 1px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dp-a);
+  background: color-mix(in srgb, var(--dp-a) 15%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dp-a) 30%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+.eb-drop-sub { margin-top: 3px; font-size: 12.5px; color: var(--color-muted); }
+.eb-drop-sub strong { color: var(--dp-a); font-weight: 600; }
+.eb-drop-chev { flex-shrink: 0; color: var(--color-subtle); transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1); }
+.eb-drop[data-open] .eb-drop-chev { transform: rotate(180deg); }
+.eb-drop-copyall {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 11px;
+  padding: 8px 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-fg-2);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  transition: background 160ms ease, color 160ms ease;
+}
+.eb-drop-copyall:hover { color: #fff; background: rgb(255 255 255 / 0.1); }
+
+.eb-drop-body { border-top: 1px solid rgb(255 255 255 / 0.07); padding: 6px 10px 12px; }
+.eb-drop-tip { display: flex; align-items: flex-start; gap: 8px; margin: 8px 8px 10px; font-size: 12.5px; line-height: 1.5; color: var(--color-muted); }
+.eb-drop-list { max-height: 360px; overflow-y: auto; }
+.eb-drop-row {
+  --tt-a: #ff5fd8;
+  --tt-b: #b0158f;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 12px;
+  padding: 10px;
+  transition: background 160ms ease;
+  animation: eb-card-in 450ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+.eb-drop-row[data-tone="violet"] { --tt-a: #a78bfa; --tt-b: #6d28d9; }
+.eb-drop-row[data-tone="orange"] { --tt-a: #ffa25e; --tt-b: #e2540f; }
+.eb-drop-row[data-tone="indigo"] { --tt-a: #818cf8; --tt-b: #3f3fd0; }
+.eb-drop-row:hover { background: rgb(255 255 255 / 0.04); }
+.eb-drop-avatar {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0) 55%),
+    linear-gradient(140deg, var(--tt-a), var(--tt-b));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+  text-transform: uppercase;
+}
+.eb-drop-who { min-width: 0; flex: 1; }
+.eb-drop-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 500; color: var(--color-fg); }
+.eb-drop-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; color: var(--color-subtle); }
+.eb-drop-ticket {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tt-a);
+  background: color-mix(in srgb, var(--tt-a) 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tt-a) 28%, transparent);
+}
+.eb-drop-amt { flex-shrink: 0; text-align: right; }
+.eb-drop-amt b { display: block; font-size: 14px; font-weight: 600; color: var(--color-fg); font-variant-numeric: tabular-nums; }
+.eb-drop-amt span { font-size: 11.5px; color: var(--color-subtle); }
+.eb-drop-acts { display: flex; flex-shrink: 0; gap: 4px; }
+.eb-drop-act {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 9px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-fg-2);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.09);
+  transition: background 160ms ease, color 160ms ease;
+}
+.eb-drop-act:hover { color: #1a0b1f; background: var(--dp-a); }
+.eb-drop-act--icon { width: 32px; padding: 0; }
+.eb-drop-act--icon:hover { color: #fff; background: rgb(255 255 255 / 0.12); }
+.eb-drop-act:focus-visible, .eb-drop-copyall:focus-visible { outline: 2px solid var(--dp-a); outline-offset: 2px; }
+
+@media (max-width: 639px) {
+  .eb-drop-head { padding: 14px; }
+  .eb-drop-copyall { width: 100%; justify-content: center; }
+  .eb-drop-row { flex-wrap: wrap; }
+  .eb-drop-who { flex: 1 1 0; }
+  .eb-drop-list { max-height: none; }
+  .eb-drop-acts { width: 100%; padding-left: 50px; }
+  .eb-drop-acts .eb-drop-act:not(.eb-drop-act--icon) { flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .eb-drop-row { animation: none; }
+}
+
+/* ---- Discount codes as glossy coupons (Tickets tab) -----------------------
+   Same stub anatomy as .eb-tt in a mint tone so codes read apart from
+   tickets; the code itself is a dashed "cut here" chip that copies on click. */
+.eb-tt[data-tone="mint"] { --tt-a: #5eead4; --tt-b: #0f9488; }
+.eb-tt-off { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.9; }
+.eb-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  padding: 5px 10px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: rgb(255 255 255 / 0.05);
+  border: 1.5px dashed color-mix(in srgb, var(--tt-a) 55%, transparent);
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.eb-code svg { color: var(--color-subtle); }
+.eb-code:hover { background: color-mix(in srgb, var(--tt-a) 12%, transparent); border-color: var(--tt-a); }
+.eb-code:hover svg { color: var(--tt-a); }
+.eb-code:focus-visible { outline: 2px solid var(--tt-a); outline-offset: 2px; }
+.eb-tt-rules { display: flex; flex-wrap: wrap; gap: 6px; }
+.eb-tt-rule {
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-fg-3);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+.eb-tt-rule[data-tone] {
+  font-weight: 600;
+  color: var(--rt-a);
+  background: color-mix(in srgb, var(--rt-a) 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rt-a) 28%, transparent);
+}
+.eb-tt-rule[data-tone="pink"] { --rt-a: #ff5fd8; }
+.eb-tt-rule[data-tone="violet"] { --rt-a: #a78bfa; }
+.eb-tt-rule[data-tone="orange"] { --rt-a: #ffa25e; }
+.eb-tt-rule[data-tone="indigo"] { --rt-a: #818cf8; }
+.eb-tt-act--text { display: inline-flex; align-items: center; width: auto; gap: 6px; padding: 0 11px; font-size: 12px; font-weight: 600; }
+.eb-tt-act:disabled { cursor: not-allowed; opacity: 0.4; }
+.eb-tt-act:disabled:hover { color: var(--color-subtle); background: rgb(255 255 255 / 0.04); }
+@media (max-width: 639px) {
+  .eb-tt-act--text span { display: none; }
+  .eb-tt-act--text { width: 34px; padding: 0; }
+}
+
+/* Ticket filter chips inside a drop-off panel */
+.eb-drop-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 8px 8px; }
+.eb-drop-filter {
+  --rt-a: var(--dp-a);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-fg-3);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+.eb-drop-filter[data-tone="pink"] { --rt-a: #ff5fd8; }
+.eb-drop-filter[data-tone="violet"] { --rt-a: #a78bfa; }
+.eb-drop-filter[data-tone="orange"] { --rt-a: #ffa25e; }
+.eb-drop-filter[data-tone="indigo"] { --rt-a: #818cf8; }
+.eb-drop-filter span {
+  border-radius: 999px;
+  padding: 0 6px;
+  font-size: 11px;
+  background: rgb(255 255 255 / 0.08);
+  font-variant-numeric: tabular-nums;
+}
+.eb-drop-filter:hover { color: #fff; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rt-a) 45%, transparent); }
+.eb-drop-filter[aria-pressed="true"] {
+  color: var(--rt-a);
+  background: color-mix(in srgb, var(--rt-a) 16%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--rt-a) 60%, transparent), 0 0 14px -4px color-mix(in srgb, var(--rt-a) 60%, transparent);
+}
+.eb-drop-filter[aria-pressed="true"] span { background: color-mix(in srgb, var(--rt-a) 22%, transparent); }
+.eb-drop-filter:focus-visible { outline: 2px solid var(--rt-a); outline-offset: 2px; }

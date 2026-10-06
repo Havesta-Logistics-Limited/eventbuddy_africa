@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, ArrowRight, Sparkles, Users2, Building2 } from "lucide-react";
+import { Check, ArrowRight, Plus, Sparkles, Users2, Building2 } from "lucide-react";
 import { LandingNav } from "@/components/landing/landing-hero";
 import { OrbsObject } from "@/components/landing/event-objects";
 import { LandingFooter } from "@/components/landing/landing-close";
@@ -43,6 +43,7 @@ export default function PricingContent() {
   }, []);
   const feeLabel = formatTicketFee(fee);
   const FAQS = faqs(feeLabel);
+  const [openFaq, setOpenFaq] = useState(-1);
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -121,7 +122,7 @@ export default function PricingContent() {
                   </li>
                 ))}
               </ul>
-              <Link href="/managed-events" className="eb-btn eb-btn--ghost mt-auto w-full">
+              <Link href="/managed-events" className="eb-btn eb-btn--primary mt-auto w-full">
                 {cta}
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
@@ -131,14 +132,34 @@ export default function PricingContent() {
       </section>
 
       <section className="max-w-3xl mx-auto px-6 py-16">
-        <h2 className="font-display text-3xl text-fg mb-10">Questions, answered</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-7">
-          {FAQS.map(({ q, a }) => (
-            <div key={q} className="pt-5 border-t border-line">
-              <h3 className="font-semibold text-fg text-sm mb-1.5">{q}</h3>
-              <p className="text-sm text-muted leading-relaxed">{a}</p>
-            </div>
-          ))}
+        <h2 className="font-display text-3xl text-fg">Questions, answered</h2>
+        {/* Collapsed by default so the page stays short; same accordion as the
+            landing FAQ. Every answer stays in the DOM (and in the FAQPage data). */}
+        <div className="lp-accordion">
+          {FAQS.map(({ q, a }, i) => {
+            const isOpen = i === openFaq;
+            return (
+              <div key={q} className="lp-acc-item" data-open={isOpen || undefined}>
+                <h3>
+                  <button
+                    type="button"
+                    id={`pr-faq-${i}`}
+                    aria-expanded={isOpen}
+                    aria-controls={`pr-faq-panel-${i}`}
+                    onClick={() => setOpenFaq(isOpen ? -1 : i)}
+                  >
+                    {q}
+                    <Plus size={18} aria-hidden="true" />
+                  </button>
+                </h3>
+                <div id={`pr-faq-panel-${i}`} role="region" aria-labelledby={`pr-faq-${i}`} className="lp-acc-body">
+                  <div>
+                    <p>{a}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 

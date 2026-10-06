@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { AlertCircle, ChevronDown, Clock, Copy, DollarSign, Edit2, FileEdit, Percent, Plus, Tag, Ticket, TrendingUp, Trash2, Users, X } from "lucide-react";
+import { AlertCircle, ChevronDown, Clock, Copy, Edit2, FileEdit, Lightbulb, Mail, Percent, Plus, Tag, Ticket, TrendingUp, Trash2, Users, X } from "lucide-react";
 import { DiscountCode, DiscountRedemption, EventRecord, RegistrationFormStart, TicketPurchaseAttempt, TicketType } from "@/lib/types";
 import {
   PersistError,
@@ -33,6 +33,128 @@ function timeAgo(iso: string): string {
   return `${days}d ago`;
 }
 
+type DropRow = { key: string; email: string; name?: string; ticketId?: string | null; ticketName?: string | null; tone?: string; amountNaira?: number; note?: string; when: string };
+
+/** A drop-off list (abandoned checkouts, unsent forms) as a follow-up panel:
+ *  what's at stake in the header, one row per person with Email and Copy. */
+function DropOffPanel({
+  accent,
+  icon,
+  title,
+  summary,
+  tip,
+  rows,
+  open,
+  onToggle,
+  onCopyAll,
+  mailSubject,
+}: {
+  accent: "amber" | "violet";
+  icon: React.ReactNode;
+  title: string;
+  /** Gets the rows currently shown, so totals follow the ticket filter. */
+  summary: (visible: DropRow[]) => React.ReactNode;
+  tip: string;
+  rows: DropRow[];
+  open: boolean;
+  onToggle: () => void;
+  onCopyAll: (emails: string[]) => void;
+  mailSubject: string;
+}) {
+  const panelId = `drop-${accent}`;
+  // Ticket filter: one chip per ticket type that appears in the list, plus
+  // "No ticket chosen" for form drop-offs who never picked one.
+  const [filter, setFilter] = useState<string>("all");
+  const options: { id: string; label: string; tone?: string; count: number }[] = [];
+  for (const r of rows) {
+    const id = r.ticketId ?? "none";
+    const existing = options.find((o) => o.id === id);
+    if (existing) existing.count++;
+    else options.push({ id, label: r.ticketName || "No ticket chosen", tone: r.tone, count: 1 });
+  }
+  const active = filter !== "all" && options.some((o) => o.id === filter) ? filter : "all";
+  const visible = active === "all" ? rows : rows.filter((r) => (r.ticketId ?? "none") === active);
+  return (
+    <section className="eb-drop" data-accent={accent} data-open={open || undefined}>
+      <div className="eb-drop-head">
+        <button type="button" className="eb-drop-toggle" onClick={onToggle} aria-expanded={open} aria-controls={panelId}>
+          <span className="eb-drop-icon" aria-hidden="true">{icon}</span>
+          <span className="min-w-0 flex-1">
+            <span className="eb-drop-title">
+              {title} <span className="eb-drop-count">{visible.length}</span>
+            </span>
+            <span className="eb-drop-sub block">{summary(visible)}</span>
+          </span>
+          <ChevronDown size={18} className="eb-drop-chev" aria-hidden="true" />
+        </button>
+        <button type="button" onClick={() => onCopyAll(visible.map((r) => r.email))} className="eb-drop-copyall">
+          <Copy size={14} aria-hidden="true" /> {active === "all" ? "Copy all emails" : `Copy ${visible.length} email${visible.length === 1 ? "" : "s"}`}
+        </button>
+      </div>
+      {open && (
+        <div id={panelId} className="eb-drop-body">
+          <p className="eb-drop-tip">
+            <Lightbulb size={14} className="mt-0.5 shrink-0" style={{ color: "var(--dp-a)" }} aria-hidden="true" />
+            {tip}
+          </p>
+          <div className="eb-drop-filters" role="group" aria-label="Filter by ticket type">
+            <button type="button" className="eb-drop-filter" aria-pressed={active === "all"} onClick={() => setFilter("all")}>
+              All tickets <span>{rows.length}</span>
+            </button>
+            {options.map((o) => (
+              <button key={o.id} type="button" className="eb-drop-filter" data-tone={o.tone} aria-pressed={active === o.id} onClick={() => setFilter(o.id)}>
+                {o.id !== "none" && <Ticket size={11} aria-hidden="true" />}
+                {o.label} <span>{o.count}</span>
+              </button>
+            ))}
+          </div>
+          <ul className="eb-drop-list">
+            {visible.map((r, i) => (
+              <li key={r.key} className="eb-drop-row" data-tone={r.tone} style={{ ["--i" as string]: i }}>
+                <span className="eb-drop-avatar" aria-hidden="true">{(r.name || r.email).trim().charAt(0) || "?"}</span>
+                <div className="eb-drop-who">
+                  <p className="eb-drop-name">{r.name || r.email}</p>
+                  <p className="eb-drop-meta">
+                    {r.name && <span className="truncate">{r.email}</span>}
+                    {r.ticketName && (
+                      <span className="eb-drop-ticket">
+                        <Ticket size={10} aria-hidden="true" /> {r.ticketName}
+                      </span>
+                    )}
+                    {r.note && <span>{r.note}</span>}
+                  </p>
+                </div>
+                <div className="eb-drop-amt">
+                  {r.amountNaira != null && <b>{formatNaira(r.amountNaira)}</b>}
+                  <span>{timeAgo(r.when)}</span>
+                </div>
+                <div className="eb-drop-acts">
+                  <a className="eb-drop-act" href={`mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent(mailSubject)}`}>
+                    <Mail size={13} aria-hidden="true" /> Email
+                  </a>
+                  <button
+                    type="button"
+                    className="eb-drop-act eb-drop-act--icon"
+                    aria-label={`Copy ${r.email}`}
+                    onClick={() => {
+                      navigator.clipboard.writeText(r.email);
+                      toast.success("Email copied");
+                    }}
+                  >
+                    <Copy size={13} aria-hidden="true" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// Ticket cards cycle through the brand orb colours (globals.css .eb-tt).
+const TICKET_TONES = ["pink", "violet", "orange", "indigo"] as const;
 const EMPTY_FORM = { id: "", name: "", description: "", priceNaira: "0", quantityAvailable: "", groupSize: "1" };
 const EMPTY_CODE_FORM = {
   id: "",
@@ -181,8 +303,8 @@ export function TicketsTab({
   const totalDiscountGiven = Array.from(discountGivenByCode.values()).reduce((sum, v) => sum + v, 0);
   const hasPaidTicketTypes = ticketTypes.some((t) => t.priceNaira > 0);
 
-  function copyAbandonedEmails() {
-    const emails = Array.from(new Set(abandonedTxns.map((t) => t.email).filter((e) => e && e !== "—")));
+  function copyAbandonedEmails(list: string[]) {
+    const emails = Array.from(new Set(list.filter((e) => e && e !== "—")));
     navigator.clipboard.writeText(emails.join(", "));
     toast.success(`Copied ${emails.length} email${emails.length !== 1 ? "s" : ""}`);
   }
@@ -217,8 +339,8 @@ export function TicketsTab({
   const [showAbandonedCheckouts, setShowAbandonedCheckouts] = useState(false);
   const [showFormStarts, setShowFormStarts] = useState(false);
 
-  function copyFormStartEmails() {
-    const emails = Array.from(new Set(neverSubmitted.map((f) => f.email)));
+  function copyFormStartEmails(list: string[]) {
+    const emails = Array.from(new Set(list));
     navigator.clipboard.writeText(emails.join(", "));
     toast.success(`Copied ${emails.length} email${emails.length !== 1 ? "s" : ""}`);
   }
@@ -339,99 +461,67 @@ export function TicketsTab({
           )}
 
           {abandonedTxns.length > 0 && (
-            <div className="bg-surface rounded-xl border border-line p-4 mt-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <button
-                  onClick={() => setShowAbandonedCheckouts((v) => !v)}
-                  className="flex items-center gap-1.5 text-sm font-medium text-fg"
-                >
-                  <ChevronDown size={15} className={`text-subtle transition-transform ${showAbandonedCheckouts ? "" : "-rotate-90"}`} />
-                  <Clock size={14} className="text-amber-400" />
-                  Started checkout, never paid ({abandonedTxns.length})
-                </button>
-                <button
-                  onClick={copyAbandonedEmails}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-2 hover:bg-canvas"
-                >
-                  <Copy size={13} />
-                  Copy emails
-                </button>
-              </div>
-              {showAbandonedCheckouts && (
-                <>
-                  <p className="text-xs text-subtle mt-3 mb-3">
-                    Good candidates for a follow-up email — especially if you add a discount code after they dropped off.
-                  </p>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {abandonedTxns.map((t, i) => {
-                      const ticketName = ticketTypes.find((tt) => tt.id === t.ticketTypeId)?.name ?? "Ticket";
-                      return (
-                        <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-line-soft first:border-t-0 first:pt-0">
-                          <div className="min-w-0">
-                            <p className="text-fg truncate">{t.email}</p>
-                            <p className="text-xs text-subtle">
-                              {ticketName} · {formatNaira(t.amountNaira)}
-                              {t.discountCodeId && " · tried a discount code"}
-                            </p>
-                          </div>
-                          <span className="text-xs text-subtle shrink-0">{timeAgo(t.createdAt)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+            <div className="mt-3">
+              <DropOffPanel
+                accent="amber"
+                icon={<Clock size={20} strokeWidth={2.4} />}
+                title="Started checkout, never paid"
+                summary={(visible) => (
+                  <>
+                    <strong>{formatNaira(visible.reduce((sum, r) => sum + (r.amountNaira ?? 0), 0))}</strong> left unpaid at checkout
+                  </>
+                )}
+                tip="Good candidates for a follow-up email, especially if you add a discount code after they dropped off."
+                rows={abandonedTxns.map((t, i) => {
+                  const idx = ticketTypes.findIndex((tt) => tt.id === t.ticketTypeId);
+                  return {
+                    key: `${t.email}-${t.createdAt}-${i}`,
+                    email: t.email,
+                    name: t.fullName && t.fullName !== "—" ? t.fullName : undefined,
+                    ticketId: t.ticketTypeId,
+                    ticketName: idx >= 0 ? ticketTypes[idx].name : "Ticket",
+                    tone: idx >= 0 ? TICKET_TONES[idx % TICKET_TONES.length] : undefined,
+                    amountNaira: t.amountNaira,
+                    note: t.discountCodeId ? "tried a discount code" : undefined,
+                    when: t.createdAt,
+                  };
+                })}
+                open={showAbandonedCheckouts}
+                onToggle={() => setShowAbandonedCheckouts((v) => !v)}
+                onCopyAll={copyAbandonedEmails}
+                mailSubject={`Your ${event.name} ticket is still waiting`}
+              />
             </div>
           )}
         </div>
       )}
 
       {neverSubmitted.length > 0 && (
-        <div className="bg-surface rounded-xl border border-line p-4 mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <button
-              onClick={() => setShowFormStarts((v) => !v)}
-              className="flex items-center gap-1.5 text-sm font-medium text-fg"
-            >
-              <ChevronDown size={15} className={`text-subtle transition-transform ${showFormStarts ? "" : "-rotate-90"}`} />
-              <FileEdit size={14} className="text-amber-400" />
-              Started the form, never submitted ({neverSubmitted.length})
-            </button>
-            <button
-              onClick={copyFormStartEmails}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-2 hover:bg-canvas"
-            >
-              <Copy size={13} />
-              Copy emails
-            </button>
-          </div>
-          {showFormStarts && (
-            <>
-              <p className="text-xs text-subtle mt-3 mb-3">
-                They typed an email into this event&apos;s registration form but never hit submit — didn&apos;t even reach checkout.
-              </p>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {neverSubmitted.map((f, i) => {
-                  const ticketName = f.ticketTypeId ? ticketTypes.find((tt) => tt.id === f.ticketTypeId)?.name : null;
-                  return (
-                    <div key={i} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-line-soft first:border-t-0 first:pt-0">
-                      <div className="min-w-0">
-                        <p className="text-fg truncate">{f.email}</p>
-                        {(f.fullName || ticketName) && (
-                          <p className="text-xs text-subtle">
-                            {f.fullName}
-                            {f.fullName && ticketName && " · "}
-                            {ticketName && `was looking at ${ticketName}`}
-                          </p>
-                        )}
-                      </div>
-                      <span className="text-xs text-subtle shrink-0">{timeAgo(f.updatedAt)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
+        <div className="mb-6">
+          <DropOffPanel
+            accent="violet"
+            icon={<FileEdit size={20} strokeWidth={2.4} />}
+            title="Started the form, never submitted"
+            summary={() => "Typed an email into the registration form, then left before checkout"}
+            tip="They showed interest but never reached checkout. A short reminder with the event link often brings them back."
+            rows={neverSubmitted.map((f, i) => {
+              const idx = f.ticketTypeId ? ticketTypes.findIndex((tt) => tt.id === f.ticketTypeId) : -1;
+              return {
+                key: `${f.email}-${i}`,
+                email: f.email,
+                name: f.fullName || undefined,
+                ticketId: idx >= 0 ? f.ticketTypeId : null,
+                ticketName: idx >= 0 ? ticketTypes[idx].name : null,
+                tone: idx >= 0 ? TICKET_TONES[idx % TICKET_TONES.length] : undefined,
+                note: idx >= 0 ? "was looking at this" : undefined,
+                when: f.updatedAt,
+              };
+            })}
+            open={showFormStarts}
+            onToggle={() => setShowFormStarts((v) => !v)}
+            onCopyAll={copyFormStartEmails}
+            mailSubject={`Finish registering for ${event.name}`}
+          />
         </div>
       )}
 
@@ -461,49 +551,73 @@ export function TicketsTab({
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {ticketTypes.map((t) => (
-            <div key={t.id} className="bg-surface rounded-xl border border-line p-4 flex items-center gap-4 group hover:border-brand-600/30 hover:shadow-sm transition-all">
-              <div className="w-10 h-10 rounded-full bg-brand-600/10 flex items-center justify-center text-brand-500 shrink-0">
-                <DollarSign size={16} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-fg">{t.name}</p>
-                <p className="text-sm text-muted">
-                  {t.priceNaira > 0 ? formatNaira(t.priceNaira) : "Free"} · {t.quantitySold} sold
-                  {t.quantityAvailable != null && ` of ${t.quantityAvailable}`}
-                </p>
-                {t.groupSize > 1 && (
-                  <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-brand-500/15 px-2 py-0.5 text-[11px] font-semibold text-brand-500 ring-1 ring-inset ring-brand-500/25">
-                    <Users size={11} aria-hidden="true" />
-                    Group · admits {t.groupSize}
+        <div className="space-y-4">
+          {ticketTypes.map((t, i) => {
+            const isGroup = t.groupSize > 1;
+            const cap = t.quantityAvailable;
+            const pct = cap ? Math.min(100, Math.round((t.quantitySold / cap) * 100)) : 0;
+            const edit = () => {
+              setForm({
+                id: t.id,
+                name: t.name,
+                description: t.description || "",
+                priceNaira: String(t.priceNaira),
+                quantityAvailable: t.quantityAvailable != null ? String(t.quantityAvailable) : "",
+                groupSize: String(t.groupSize ?? 1),
+              });
+              setFormError("");
+              setShowForm(true);
+            };
+            return (
+              <article key={t.id} className="eb-tt" data-tone={TICKET_TONES[i % TICKET_TONES.length]} style={{ ["--i" as string]: i }}>
+                <div className="eb-tt-stub">
+                  <span className="eb-tt-stub-icon" aria-hidden="true">
+                    {isGroup ? <Users size={17} /> : <Ticket size={17} />}
                   </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                <button
-                  onClick={() => {
-                    setForm({
-                      id: t.id,
-                      name: t.name,
-                      description: t.description || "",
-                      priceNaira: String(t.priceNaira),
-                      quantityAvailable: t.quantityAvailable != null ? String(t.quantityAvailable) : "",
-                      groupSize: String(t.groupSize ?? 1),
-                    });
-                    setFormError("");
-                    setShowForm(true);
-                  }}
-                  className="p-1.5 text-subtle hover:text-brand-500 rounded-md hover:bg-fill"
-                >
-                  <Edit2 size={16} />
-                </button>
-                <button onClick={() => handleDelete(t.id, t.name)} className="p-1.5 text-subtle hover:text-rose-300 rounded-md hover:bg-rose-500/10">
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
+                  <div>
+                    <p className="eb-tt-price">{t.priceNaira > 0 ? formatNaira(t.priceNaira) : "Free"}</p>
+                    {isGroup && t.priceNaira > 0 && <p className="eb-tt-per">{formatNaira(Math.round(t.priceNaira / t.groupSize))} per person</p>}
+                  </div>
+                </div>
+                <div className="eb-tt-perf" aria-hidden="true" />
+                <div className="eb-tt-body">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="eb-tt-name">{t.name}</h3>
+                      {isGroup && (
+                        <span className="eb-tt-chip">
+                          <Users size={11} aria-hidden="true" /> Admits {t.groupSize}
+                        </span>
+                      )}
+                    </div>
+                    {t.description && <p className="eb-tt-desc">{t.description}</p>}
+                  </div>
+                  <div>
+                    {cap != null && (
+                      <div className="eb-tt-bar" role="progressbar" aria-label={`${t.name} sold`} aria-valuemin={0} aria-valuemax={cap} aria-valuenow={t.quantitySold}>
+                        <span style={{ width: `${pct}%` }} />
+                      </div>
+                    )}
+                    <p className="eb-tt-meta mt-2">
+                      <span>
+                        <strong className="font-semibold text-fg">{t.quantitySold}</strong> {isGroup ? "groups" : "sold"}
+                        {cap != null ? ` of ${cap}` : " · unlimited"}
+                      </span>
+                      {cap != null && <span>{cap - t.quantitySold > 0 ? `${cap - t.quantitySold} left` : "Sold out"}</span>}
+                    </p>
+                  </div>
+                </div>
+                <div className="eb-tt-actions">
+                  <button type="button" onClick={edit} className="eb-tt-act" aria-label={`Edit ${t.name}`}>
+                    <Edit2 size={15} />
+                  </button>
+                  <button type="button" onClick={() => handleDelete(t.id, t.name)} className="eb-tt-act eb-tt-act--danger" aria-label={`Delete ${t.name}`}>
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
 
@@ -529,42 +643,82 @@ export function TicketsTab({
           <p className="text-xs text-subtle mt-1.5">A code applies to every paid ticket type on this event — great for early-bird or group pricing.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {discountCodes.map((d) => (
-            <div key={d.id} className="bg-surface rounded-xl border border-line p-4 flex items-center gap-4 group hover:border-brand-600/30 hover:shadow-sm transition-all">
-              <div className="w-10 h-10 rounded-full bg-brand-600/10 flex items-center justify-center text-brand-500 shrink-0">
-                {d.discountType === "percentage" ? <Percent size={16} /> : <DollarSign size={16} />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-mono font-medium text-fg">{d.code}</p>
-                <p className="text-sm text-muted">
-                  {d.discountType === "percentage" ? `${d.discountValue}% off` : `${formatNaira(d.discountValue)} off`}
-                  {d.maxDiscountNaira != null && ` (up to ${formatNaira(d.maxDiscountNaira)})`} · {d.usesCount} used
-                  {d.maxUses != null && ` of ${d.maxUses}`}
-                  {d.perCustomerLimit === "single" && " · once per customer"}
-                  {(discountGivenByCode.get(d.id) ?? 0) > 0 && ` · ${formatNaira(discountGivenByCode.get(d.id) ?? 0)} given`}
-                </p>
-                <p className="text-xs text-subtle mt-0.5">
-                  {d.ticketTypeIds && d.ticketTypeIds.length > 0
-                    ? `${d.ticketTypeIds.length} ticket type${d.ticketTypeIds.length !== 1 ? "s" : ""}`
-                    : "All ticket types"}
-                  {d.minSpendNaira != null && ` · min. ${formatNaira(d.minSpendNaira)} ticket`}
-                  {d.startsAt && ` · from ${new Date(d.startsAt).toLocaleDateString()}`}
-                  {d.endsAt && ` · until ${new Date(d.endsAt).toLocaleDateString()}`}
-                </p>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => handleViewUsage(d)}
-                  disabled={d.usesCount === 0}
-                  title={d.usesCount === 0 ? "No redemptions yet" : "View who used this code"}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-fg-3 hover:bg-fill disabled:opacity-40 disabled:hover:bg-transparent"
-                >
-                  <Users size={14} />
-                  Usage
-                </button>
-                <button
-                  onClick={() => {
+        <div className="space-y-4">
+          {discountCodes.map((d, i) => {
+            const given = discountGivenByCode.get(d.id) ?? 0;
+            const usePct = d.maxUses ? Math.min(100, Math.round((d.usesCount / d.maxUses) * 100)) : 0;
+            const scoped = d.ticketTypeIds && d.ticketTypeIds.length > 0 ? ticketTypes.filter((tt) => d.ticketTypeIds!.includes(tt.id)) : null;
+            return (
+              <article key={d.id} className="eb-tt" data-tone="mint" style={{ ["--i" as string]: i }}>
+                <div className="eb-tt-stub">
+                  <span className="eb-tt-stub-icon" aria-hidden="true">
+                    {d.discountType === "percentage" ? <Percent size={17} /> : <Tag size={17} />}
+                  </span>
+                  <div>
+                    <p className="eb-tt-price">{d.discountType === "percentage" ? `${d.discountValue}%` : formatNaira(d.discountValue)}</p>
+                    <p className="eb-tt-off mt-1">off{d.maxDiscountNaira != null ? ` · max ${formatNaira(d.maxDiscountNaira)}` : ""}</p>
+                  </div>
+                </div>
+                <div className="eb-tt-perf" aria-hidden="true" />
+                <div className="eb-tt-body">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className="eb-code"
+                      title="Copy code"
+                      onClick={() => {
+                        navigator.clipboard.writeText(d.code);
+                        toast.success(`Copied ${d.code}`);
+                      }}
+                    >
+                      {d.code} <Copy size={13} aria-hidden="true" />
+                    </button>
+                    {given > 0 && <span className="eb-tt-chip">{formatNaira(given)} given</span>}
+                  </div>
+                  <div className="eb-tt-rules">
+                    {scoped ? (
+                      scoped.map((tt) => (
+                        <span key={tt.id} className="eb-tt-rule" data-tone={TICKET_TONES[ticketTypes.indexOf(tt) % TICKET_TONES.length]}>
+                          {tt.name}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="eb-tt-rule">All ticket types</span>
+                    )}
+                    {d.perCustomerLimit === "single" && <span className="eb-tt-rule">Once per customer</span>}
+                    {d.minSpendNaira != null && <span className="eb-tt-rule">Min. {formatNaira(d.minSpendNaira)} ticket</span>}
+                    {d.startsAt && <span className="eb-tt-rule">From {new Date(d.startsAt).toLocaleDateString()}</span>}
+                    {d.endsAt && <span className="eb-tt-rule">Until {new Date(d.endsAt).toLocaleDateString()}</span>}
+                  </div>
+                  <div>
+                    {d.maxUses != null && (
+                      <div className="eb-tt-bar" role="progressbar" aria-label={`${d.code} uses`} aria-valuemin={0} aria-valuemax={d.maxUses} aria-valuenow={d.usesCount}>
+                        <span style={{ width: `${usePct}%` }} />
+                      </div>
+                    )}
+                    <p className="eb-tt-meta mt-2">
+                      <span>
+                        <strong className="font-semibold text-fg">{d.usesCount}</strong> used{d.maxUses != null ? ` of ${d.maxUses}` : " · unlimited"}
+                      </span>
+                      {d.maxUses != null && <span>{d.maxUses - d.usesCount > 0 ? `${d.maxUses - d.usesCount} left` : "Used up"}</span>}
+                    </p>
+                  </div>
+                </div>
+                <div className="eb-tt-actions">
+                  <button
+                    type="button"
+                    onClick={() => handleViewUsage(d)}
+                    disabled={d.usesCount === 0}
+                    title={d.usesCount === 0 ? "No redemptions yet" : "View who used this code"}
+                    className="eb-tt-act eb-tt-act--text"
+                    aria-label={`Usage for ${d.code}`}
+                  >
+                    <Users size={15} aria-hidden="true" />
+                    <span>Usage</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
                     setCodeForm({
                       id: d.id,
                       code: d.code,
@@ -581,20 +735,19 @@ export function TicketsTab({
                     });
                     setCodeFormError("");
                     setShowCodeForm(true);
-                  }}
-                  className="p-1.5 text-subtle hover:text-brand-500 rounded-md hover:bg-fill"
-                >
-                  <Edit2 size={16} />
-                </button>
-                <button
-                  onClick={() => handleDeleteCode(d.id, d.code)}
-                  className="p-1.5 text-subtle hover:text-rose-300 rounded-md hover:bg-rose-500/10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
+                    }}
+                    className="eb-tt-act"
+                    aria-label={`Edit ${d.code}`}
+                  >
+                    <Edit2 size={15} />
+                  </button>
+                  <button type="button" onClick={() => handleDeleteCode(d.id, d.code)} className="eb-tt-act eb-tt-act--danger" aria-label={`Delete ${d.code}`}>
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
 
