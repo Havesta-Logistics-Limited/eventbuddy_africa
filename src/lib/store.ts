@@ -36,6 +36,7 @@ import {
   MyPlan,
   OrganizerPlan,
   PlanId,
+  TourRecord,
 } from "./types";
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { copyEventMedia, deleteEventMedia, isEventMediaUrl, uploadEventMedia } from "./supabase/storage";
@@ -80,6 +81,7 @@ let eventSpeakersCache: EventSpeaker[] = [];
 let eventOneOnOneRequestsCache: EventOneOnOneRequest[] = [];
 let eventAnnouncementsCache: EventAnnouncement[] = [];
 let eventGuestsCache: EventGuest[] = [];
+let toursCache: TourRecord[] = [];
 let sessionCache: Session | null = null;
 let sessionHydrated = false;
 
@@ -166,6 +168,7 @@ function mapEventRow(e: {
   waitlist_enabled: boolean | null;
   series_id: string | null;
   series_occurrence_index: number | null;
+  tour_id?: string | null;
   survey_enabled: boolean | null;
   survey_fields: FieldDef[] | null;
   created_at: string;
@@ -208,6 +211,7 @@ function mapEventRow(e: {
     waitlistEnabled: e.waitlist_enabled ?? false,
     seriesId: e.series_id ?? undefined,
     seriesOccurrenceIndex: e.series_occurrence_index ?? undefined,
+    tourId: e.tour_id ?? undefined,
     surveyEnabled: e.survey_enabled ?? false,
     surveyFields: e.survey_fields ?? [],
     createdAt: e.created_at,
@@ -249,6 +253,7 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.waitlistEnabled !== undefined) row.waitlist_enabled = input.waitlistEnabled;
   if (input.seriesId !== undefined) row.series_id = input.seriesId ?? null;
   if (input.seriesOccurrenceIndex !== undefined) row.series_occurrence_index = input.seriesOccurrenceIndex ?? null;
+  if (input.tourId !== undefined) row.tour_id = input.tourId ?? null;
   if (input.surveyEnabled !== undefined) row.survey_enabled = input.surveyEnabled;
   if (input.surveyFields !== undefined) row.survey_fields = input.surveyFields;
   return row;
@@ -734,6 +739,7 @@ async function fetchAdminData() {
       eventOneOnOneRequestsCache = [];
       eventAnnouncementsCache = [];
       eventGuestsCache = [];
+      toursCache = [];
       orgDataFetched = true;
       return;
     }
@@ -755,6 +761,7 @@ async function fetchAdminData() {
       oneOnOneRequestRes,
       announcementRes,
       guestRes,
+      tourRes,
     ] = await Promise.all([
       // Refreshes the cached session's org name/slug in case either changed since
       // login (e.g. an approved name change, or a slug edit) — sessionCache is only
@@ -779,6 +786,7 @@ async function fetchAdminData() {
       supabase.from("event_one_on_one_requests").select("*").eq("organization_id", orgId),
       supabase.from("event_announcements").select("*").eq("organization_id", orgId),
       supabase.from("event_guests").select("*").eq("organization_id", orgId),
+      supabase.from("tours").select("*").eq("organization_id", orgId).order("created_at"),
     ]);
     if (orgRes.data && sessionCache && (sessionCache.orgSlug !== (orgRes.data.slug ?? undefined) || sessionCache.name !== orgRes.data.name)) {
       sessionCache = { ...sessionCache, name: orgRes.data.name || sessionCache.name, orgSlug: orgRes.data.slug ?? undefined };
@@ -814,6 +822,8 @@ async function fetchAdminData() {
     eventOneOnOneRequestsCache = (oneOnOneRequestRes.data ?? []).map(mapEventOneOnOneRequestRow);
     eventAnnouncementsCache = (announcementRes.data ?? []).map(mapEventAnnouncementRow);
     eventGuestsCache = (guestRes.data ?? []).map(mapEventGuestRow);
+    // tolerates migration 0109 not being applied yet: no tours, nothing breaks
+    if (!tourRes.error) toursCache = (tourRes.data ?? []).map(mapTourRow);
     orgDataFetched = true;
   } finally {
     orgDataFetching = false;
@@ -938,6 +948,7 @@ export function useDataReady() {
 const destinationsSnap = snap(() => destinationsCache, [] as Destination[]);
 const universitiesSnap = snap(() => universitiesCache, [] as University[]);
 const eventsSnap = snap(() => eventsCache, [] as EventRecord[]);
+const toursSnap = snap(() => toursCache, [] as TourRecord[]);
 const staffSnap = snap(() => staffCache, [] as StaffRecord[]);
 const leadsSnap = snap(() => leadsCache, [] as LeadRecord[]);
 const registrationsSnap = snap(() => registrationsCache, [] as RegistrationRecord[]);
@@ -962,6 +973,10 @@ export function useUniversities() {
 export function useEvents() {
   useEnsureDataFetched();
   return useSyncExternalStore(subscribe, eventsSnap.client, eventsSnap.server);
+}
+export function useTours() {
+  useEnsureDataFetched();
+  return useSyncExternalStore(subscribe, toursSnap.client, toursSnap.server);
 }
 export function useStaff() {
   useEnsureDataFetched();
@@ -1220,7 +1235,10 @@ export async function updateEvent(id: string, patch: Partial<Omit<EventRecord, "
  *  source. Every event created by this function from here on owns 100%
  *  independent destination/university rows, so editing or deleting anything on
  *  it can never again reach into another event's data. */
-export async function duplicateEvent(id: string): Promise<EventRecord | undefined> {
+export async function duplicateEvent(
+  id: string,
+  overrides: Partial<Pick<EventRecord, "name" | "date" | "endDate" | "startTime" | "endTime" | "location" | "venue" | "tourId" | "published">> = {}
+): Promise<EventRecord | undefined> {
   const source = eventsCache.find((e) => e.id === id);
   if (!source) return undefined;
   // Cleared, not carried over — otherwise addEvent would try to reuse the source
@@ -1235,6 +1253,7 @@ export async function duplicateEvent(id: string): Promise<EventRecord | undefine
     ...source,
     name: `${source.name} (Copy)`,
     published: true,
+    ...overrides,
     slug: undefined,
     staffCheckinSlug: undefined,
     repCheckinSlug: undefined,
@@ -2825,4 +2844,119 @@ export async function getEventSales(eventId: string): Promise<EventSale[]> {
       netNaira: t.net_amount_naira != null ? Number(t.net_amount_naira) : amount - fee,
     };
   });
+}
+
+// ---- tours: one event in several cities (migration 0109) ----
+
+function mapTourRow(t: { id: string; name: string; slug: string; description: string | null; created_at: string }): TourRecord {
+  return { id: t.id, name: t.name, slug: t.slug, description: t.description ?? undefined, createdAt: t.created_at };
+}
+
+function slugifyTourName(name: string) {
+  return (
+    name
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60)
+      .replace(/-+$/g, "") || "tour"
+  );
+}
+
+/** Turns an existing event into the first city of a new tour. */
+export async function createTourFromEvent(eventId: string, name: string): Promise<TourRecord> {
+  const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) throw new PersistError(undefined);
+  const base = slugifyTourName(name);
+  let tour: TourRecord | null = null;
+  for (let attempt = 1; attempt <= 6 && !tour; attempt++) {
+    const slug = attempt === 1 ? base : `${base}-${attempt}`;
+    const { data, error } = await supabase.from("tours").insert({ organization_id: orgId, name: name.trim(), slug }).select().single();
+    if (data) tour = mapTourRow(data);
+    else if (error?.code !== "23505") throw new PersistError(error);
+  }
+  if (!tour) throw new PersistError(undefined);
+  toursCache = [...toursCache, tour];
+  await updateEvent(eventId, { tourId: tour.id });
+  return tour;
+}
+
+export async function updateTour(id: string, patch: { name?: string; description?: string }): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const row: Record<string, unknown> = {};
+  if (patch.name !== undefined) row.name = patch.name.trim();
+  if (patch.description !== undefined) row.description = patch.description.trim() || null;
+  const { data, error } = await supabase.from("tours").update(row).eq("id", id).select().single();
+  if (error || !data) throw new PersistError(error);
+  const record = mapTourRow(data);
+  toursCache = toursCache.map((t) => (t.id === id ? record : t));
+  emitChange();
+}
+
+/** Deletes the tour grouping only; every city stays as its own event. */
+export async function deleteTour(id: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("tours").delete().eq("id", id);
+  if (error) throw new PersistError(error);
+  toursCache = toursCache.filter((t) => t.id !== id);
+  eventsCache = eventsCache.map((e) => (e.tourId === id ? { ...e, tourId: undefined } : e));
+  emitChange();
+}
+
+/** Adds a city by copying an existing city of the tour (details, cover, form,
+ *  ticket types, discount codes), with its own date and venue. Starts as a
+ *  draft so the organizer can check ticket quantities before it goes live. */
+export async function addTourCity(
+  tourId: string,
+  sourceEventId: string,
+  city: { name: string; location: string; venue: string; date: string; startTime?: string; endTime?: string }
+): Promise<EventRecord | undefined> {
+  return duplicateEvent(sourceEventId, {
+    name: city.name,
+    location: city.location,
+    venue: city.venue,
+    date: city.date,
+    endDate: undefined,
+    startTime: city.startTime,
+    endTime: city.endTime,
+    tourId,
+    published: false,
+  });
+}
+
+/** Takes an event out of its tour (the event itself is untouched). */
+export async function removeFromTour(eventId: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.from("events").update({ tour_id: null }).eq("id", eventId);
+  if (error) throw new PersistError(error);
+  eventsCache = eventsCache.map((e) => (e.id === eventId ? { ...e, tourId: undefined } : e));
+  emitChange();
+}
+
+/** Copies the shared details (description, form questions, category, and
+ *  optionally the cover image) from one city to every other city of the tour.
+ *  Dates, venues, tickets and stock are never touched. */
+export async function applyTourDetails(tourId: string, sourceEventId: string, opts: { cover: boolean }): Promise<number> {
+  const source = eventsCache.find((e) => e.id === sourceEventId);
+  if (!source) throw new PersistError(undefined);
+  const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  const targets = eventsCache.filter((e) => e.tourId === tourId && e.id !== sourceEventId);
+  for (const t of targets) {
+    await updateEvent(t.id, { description: source.description, customFields: source.customFields, category: source.category });
+    if (opts.cover && source.coverImage) {
+      let url = source.coverImage;
+      // each city owns its own cover file, so deleting one city never breaks another
+      if (orgId && isEventMediaUrl(source.coverImage)) {
+        url = (await copyEventMedia(`${orgId}/covers/${source.id}`, `${orgId}/covers/${t.id}`)) ?? url;
+      }
+      const { error } = await supabase.from("events").update({ cover_image: url }).eq("id", t.id);
+      if (error) throw new PersistError(error);
+      eventsCache = eventsCache.map((e) => (e.id === t.id ? { ...e, coverImage: url } : e));
+    }
+  }
+  emitChange();
+  return targets.length;
 }

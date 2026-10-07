@@ -46,6 +46,7 @@ import { getTemplate } from "@/lib/event-templates";
 import { EventWizard, type EventWizardData } from "@/components/event-wizard";
 import { EventLeadsCard } from "@/components/event-leads-card";
 import { EventAnalytics } from "@/components/event-analytics";
+import { TourButton } from "@/components/tour-button";
 import { UniversitiesTab } from "@/components/universities-tab";
 import { DestinationsUniversitiesManagement } from "@/components/destinations-universities-management";
 import { ProspectsTab } from "@/components/prospects-tab";
@@ -501,6 +502,7 @@ export default function EventDetailPage() {
                   </button>
                 )}
                 <QrCodesMenu onRegistrationQr={() => setShowRegQr(true)} onHubQr={() => setShowHubQr(true)} onCheckinQr={() => setShowCheckinQr(true)} />
+                <TourButton event={event} />
                 <button
                   onClick={handleDuplicate}
                   disabled={duplicating}

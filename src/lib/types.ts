@@ -157,6 +157,10 @@ export interface EventRecord {
   /** 1-based position within the series (seriesId) it belongs to — unset when
    *  seriesId is unset. */
   seriesOccurrenceIndex?: number;
+  /** Set when this event is one city of a tour (migration 0109): the same event
+   *  running in several cities, grouped under one public page and dashboard.
+   *  Each city stays a fully independent event. */
+  tourId?: string;
   /** Shows a "Survey" tab on the Event Hub once the event has ended (see
    *  getEventStatus) — off by default so an event with no questions defined
    *  doesn't show an empty survey to attendees. */
@@ -686,4 +690,15 @@ export interface MyPlan {
   status: "active" | "past_due" | "cancelling";
   periodEnd: string | null;
   comped: boolean;
+}
+
+/** A tour: one event running in several cities (migration 0109). The cities
+ *  are ordinary events linked by EventRecord.tourId. */
+export interface TourRecord {
+  id: string;
+  name: string;
+  /** Public page: /{orgSlug}/tours/{slug} */
+  slug: string;
+  description?: string;
+  createdAt: string;
 }

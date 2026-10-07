@@ -3,7 +3,7 @@
 
 /** Handles are public and part of share links: 3–24 lower-case letters,
  *  digits or underscores, and never a word the [slug]/[handle] route uses. */
-const RESERVED_HANDLES = new Set(["events", "rep-login", "staff-setup", "register", "rsvp", "hub", "admin", "eventbuddy", "support", "promoter", "promoters", "marketplace"]);
+const RESERVED_HANDLES = new Set(["events", "rep-login", "staff-setup", "register", "rsvp", "hub", "admin", "eventbuddy", "support", "promoter", "promoters", "marketplace", "tours"]);
 
 export function normalizeHandle(raw: string): string {
   return raw.trim().replace(/^@/, "").toLowerCase();

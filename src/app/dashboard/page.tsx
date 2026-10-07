@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Plus, Calendar, MapPin, Users, QrCode, Clock, CheckCircle2, AlertCircle, Search, SlidersHorizontal, Presentation } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
-import { PersistError, addEvent, addEventSeries, useDataReady, useDestinations, useEvents, useLeads, useRegistrations } from "@/lib/store";
+import { PersistError, addEvent, addEventSeries, useDataReady, useDestinations, useEvents, useLeads, useRegistrations, useTours } from "@/lib/store";
 import { EventRecord, EventStatus, Role } from "@/lib/types";
 import { getEventStatus } from "@/lib/capture-window";
 import { formatTime, generateRecurrenceDates, getEventCity, getEventMonthLabel, sortEventsByProximity } from "@/lib/utils";
@@ -38,6 +38,7 @@ function EventCard({ event }: { event: EventRecord }) {
   const cfg = statusConfig[status];
   const eventDests = destinations.filter((d) => event.destinationIds.includes(d.id));
   const [imgError, setImgError] = useState(false);
+  const tour = useTours().find((t) => t.id === event.tourId);
 
   return (
     <Link
@@ -64,6 +65,11 @@ function EventCard({ event }: { event: EventRecord }) {
             </span>
           )}
         </div>
+        {tour && (
+          <span className="absolute top-3 right-3 max-w-[60%] truncate rounded-full bg-surface/90 px-2.5 py-1 text-xs font-medium text-[#ff8af5] shadow-sm backdrop-blur-sm" title={`Part of the tour ${tour.name}`}>
+            Tour · {event.location || "city"}
+          </span>
+        )}
       </div>
       <div className="p-5 flex flex-col flex-1">
         <h3 className="font-semibold text-fg text-base mb-2 leading-snug">{event.name}</h3>
