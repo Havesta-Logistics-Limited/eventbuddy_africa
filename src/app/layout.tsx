@@ -36,7 +36,7 @@ const title = "eventbuddy — Less Chaos, Better Events";
 // a live event hub) rather than generic marketing filler, since that's what both
 // Google and a reader scanning a search snippet actually need to see.
 const description =
-  "Africa's #1 event digital infrastructure — registration, ticketing, RSVPs, virtual events, and a live event hub. Free to start, pay only when tickets sell.";
+  "Africa's #1 event digital infrastructure — ticketing, registration, check-in, promoters who sell on commission, exhibitor stand booking, multi-city tours and a live event hub. Free to start, pay only when tickets sell.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -50,8 +50,9 @@ export const metadata: Metadata = {
     "RSVP software",
     "invite-only event platform",
     "virtual event platform",
-    "education fair software",
-    "job fair lead management",
+    "event promoters commission",
+    "exhibitor stand booking",
+    "multi-city event tour tickets",
     "conference ticketing",
     "event management software Africa",
     "event management software Nigeria",

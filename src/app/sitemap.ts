@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createAnonClient } from "@/lib/supabase/anon";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -24,7 +25,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: { path: string; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number }[] = [
     { path: "", changeFrequency: "daily", priority: 1 },
     { path: "/discover", changeFrequency: "daily", priority: 0.9 },
+    { path: "/create", changeFrequency: "monthly", priority: 0.8 },
     { path: "/pricing", changeFrequency: "monthly", priority: 0.5 },
+    { path: "/promote", changeFrequency: "monthly", priority: 0.6 },
+    { path: "/marketplace", changeFrequency: "daily", priority: 0.6 },
+    { path: "/contact", changeFrequency: "yearly", priority: 0.3 },
     { path: "/managed-events", changeFrequency: "monthly", priority: 0.7 },
     { path: "/privacy", changeFrequency: "monthly", priority: 0.3 },
     { path: "/terms", changeFrequency: "monthly", priority: 0.3 },
@@ -50,5 +55,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-  return [...staticEntries, ...eventEntries];
+  // Public tour pages and exhibitor pages (2026-10). These need rows anon
+  // can't list, so they're read with the service role, safe columns only.
+  const admin = createAdminClient();
+  const [{ data: tours }, { data: exhibitEvents }] = await Promise.all([
+    admin.from("tours").select("slug, organizations(slug), events!inner(published)").eq("events.published", true),
+    admin.from("events").select("slug").eq("published", true).eq("exhibitors_enabled", true).not("slug", "is", null),
+  ]);
+  const tourEntries: MetadataRoute.Sitemap = ((tours ?? []) as unknown as { slug: string; organizations: { slug: string } | null }[])
+    .filter((t) => t.organizations?.slug)
+    .map((t) => ({ url: `${siteUrl}/${t.organizations!.slug}/tours/${t.slug}`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.6 }));
+  const exhibitEntries: MetadataRoute.Sitemap = ((exhibitEvents ?? []) as { slug: string }[]).map((e) => ({
+    url: `${siteUrl}/${e.slug}/exhibit`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.5,
+  }));
+
+  return [...staticEntries, ...eventEntries, ...tourEntries, ...exhibitEntries];
 }

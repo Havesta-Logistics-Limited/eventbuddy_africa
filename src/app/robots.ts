@@ -26,6 +26,12 @@ export default function robots(): MetadataRoute.Robots {
         "/forgot-password",
         "/reset-password",
         "/api/",
+        // signed-in areas added with held funds, promoters and tours (2026-10).
+        // The exhibitor portal and stand payment pages are NOT listed: they
+        // carry a noindex tag instead, which crawlers can only see if allowed in.
+        "/payouts",
+        "/promoter",
+        "/tours/",
         "/*/staff-setup",
         "/*/rep-login",
         "/*/events/*/register",

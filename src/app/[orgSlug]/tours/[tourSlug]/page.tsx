@@ -4,7 +4,7 @@ import { MapPin } from "lucide-react";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { PublicHeader } from "@/components/register-page-content";
 import { LandingFooter } from "@/components/landing/landing-close";
-import { canonicalEventPath } from "@/lib/event-og-image";
+import { canonicalEventPath, safeJsonLdString } from "@/lib/event-og-image";
 import { getEventStatus } from "@/lib/capture-window";
 import { formatNaira } from "@/lib/billing";
 import { formatTime } from "@/lib/utils";
@@ -82,8 +82,39 @@ export default async function TourPublicPage({ params, searchParams }: { params:
   });
   const upcoming = cities.filter((c) => !c.ended).length;
 
+  // One schema.org Event per upcoming city, so search can show each date
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://eventbuddy.africa";
+  const jsonLd = cities
+    .filter((c) => !c.ended)
+    .map((c) => {
+      const path = canonicalEventPath(tour.org_slug, { id: c.event_id, slug: c.slug ?? undefined } as Parameters<typeof canonicalEventPath>[1]);
+      const virtual = c.event_format === "virtual";
+      return {
+        "@context": "https://schema.org",
+        "@type": "Event",
+        name: c.name,
+        startDate: `${c.date}T${c.start_time || "00:00:00"}`,
+        ...(c.end_date ? { endDate: `${c.end_date}T23:59:59` } : {}),
+        eventStatus: "https://schema.org/EventScheduled",
+        eventAttendanceMode: virtual ? "https://schema.org/OnlineEventAttendanceMode" : "https://schema.org/OfflineEventAttendanceMode",
+        location: virtual ? { "@type": "VirtualLocation", url: `${siteUrl}${path}` } : { "@type": "Place", name: c.venue || c.location, address: c.location },
+        url: `${siteUrl}${path}`,
+        ...(c.cover_image && /^https?:\/\//.test(c.cover_image) ? { image: [c.cover_image] } : {}),
+        superEvent: { "@type": "EventSeries", name: tour.tour_name, url: `${siteUrl}/${tour.org_slug}/tours/${tourSlug}` },
+        organizer: { "@type": "Organization", name: tour.org_name, url: `${siteUrl}/${tour.org_slug}` },
+        offers: {
+          "@type": "Offer",
+          url: `${siteUrl}${path}`,
+          price: !c.has_tickets ? 0 : Number(c.min_price ?? 0),
+          priceCurrency: "NGN",
+          availability: c.sold_out ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+        },
+      };
+    });
+
   return (
     <div className="min-h-screen bg-canvas text-fg">
+      {jsonLd.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLdString(jsonLd) }} />}
       <PublicHeader />
       <main>
         <section className="eb-page-hero mx-auto max-w-4xl px-4 pb-10 text-center sm:px-6">
