@@ -47,6 +47,7 @@ import { EventWizard, type EventWizardData } from "@/components/event-wizard";
 import { EventLeadsCard } from "@/components/event-leads-card";
 import { EventAnalytics } from "@/components/event-analytics";
 import { TourButton } from "@/components/tour-button";
+import { ExhibitorsTab } from "@/components/exhibitors-tab";
 import { UniversitiesTab } from "@/components/universities-tab";
 import { DestinationsUniversitiesManagement } from "@/components/destinations-universities-management";
 import { ProspectsTab } from "@/components/prospects-tab";
@@ -90,7 +91,8 @@ type TabId =
   | "polls"
   | "announcements"
   | "guests"
-  | "survey";
+  | "survey"
+  | "exhibitors";
 
 export default function EventDetailPage() {
   const session = useRequireRole(ADMIN_ONLY);
@@ -130,7 +132,8 @@ export default function EventDetailPage() {
   const [hasPayoutsConfigured, setHasPayoutsConfigured] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  // ?tab= opens a tab directly (e.g. emailed "review this application" links)
+  const [activeTab, setActiveTab] = useState<TabId>(() => (searchParams.get("tab") === "exhibitors" ? "exhibitors" : "dashboard"));
   const [refreshTick, setRefreshTick] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -370,6 +373,7 @@ export default function EventDetailPage() {
     ...(usesDestinations ? ([{ id: "universities", label: "Universities" }] as const) : []),
     ...(event.eventFormat !== "virtual" && event.selfRegistrationEnabled !== false ? ([{ id: "prospects", label: "Prospects" }] as const) : []),
     ...(event.eventFormat === "virtual" || event.selfRegistrationEnabled !== false ? ([{ id: "tickets", label: "Tickets" }] as const) : []),
+    ...(event.eventFormat !== "virtual" ? ([{ id: "exhibitors", label: "Exhibitors" }] as const) : []),
     { id: "leads", label: "Leads" },
     { id: "checkin-staff", label: "Check-in Staff" },
     ...(event.selfRegistrationEnabled !== false || event.eventFormat === "virtual"
@@ -656,6 +660,12 @@ export default function EventDetailPage() {
         {activeTab === "dashboard" && (
           <div key="dashboard" className="animate-tab-fade">
             <EventAnalytics event={event} leads={leads} registrations={registrations} destinations={destinations} universities={universities} />
+          </div>
+        )}
+
+        {activeTab === "exhibitors" && (
+          <div key="exhibitors" className="animate-tab-fade">
+            <ExhibitorsTab event={event} />
           </div>
         )}
 

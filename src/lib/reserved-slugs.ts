@@ -33,6 +33,7 @@ export const RESERVED_SLUGS = new Set([
   "signup",
   "create",
   "tours",
+  "exhibit",
   "terms",
   "robots.txt",
   "sitemap.xml",

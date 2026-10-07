@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ExhibitCta } from "@/components/exhibit-cta";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { brandedQrDataUrl } from "@/lib/branded-qr";
@@ -883,6 +884,8 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 </a>
               </div>
             )}
+
+            {event.eventFormat !== "virtual" && <ExhibitCta eventId={event.id} />}
 
             <div className="animate-fade-in-up" style={{ animationDelay: event.description ? "180ms" : "120ms" }}>
               <EventHostCard orgSlug={orgSlug} eventId={event.id} orgName={orgName} orgLogoUrl={orgLogoUrl} attendeeSummary={attendeeSummary} />

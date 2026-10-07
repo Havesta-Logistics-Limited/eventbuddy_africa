@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { recordSaleRisk } from "./sales-guard";
+import { emailPaid } from "./exhibitors";
 import { Resend } from "resend";
 import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail } from "@/lib/registration-email";
@@ -394,6 +395,7 @@ export type FinalizeResult =
   | { ok: true; purpose: "ticket_purchase"; eventId: string; referenceId: string | null; hubUrl?: string; alreadyProcessed: boolean }
   | { ok: true; purpose: "subscription"; planId: string; alreadyProcessed: boolean }
   | { ok: true; purpose: "other"; eventId: string; alreadyProcessed: true }
+  | { ok: true; purpose: "stand_booking"; eventId: string; alreadyProcessed: boolean }
   | { ok: false; reason: "unknown_reference" | "payment_failed" | "amount_mismatch" | "verify_error" };
 
 /** Best-effort — resolves the same Hub link a fresh fulfillment would have emailed,
@@ -479,6 +481,9 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
   if (txn.purpose === "subscription") {
     return finalizeSubscriptionPayment(supabase, txn);
   }
+  if (txn.purpose === "stand_booking") {
+    return finalizeStandBooking(supabase, txn);
+  }
   if (txn.purpose !== "ticket_purchase") {
     return { ok: true, purpose: "other", eventId: txn.event_id, alreadyProcessed: true };
   }
@@ -552,6 +557,69 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
   return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId, hubUrl, alreadyProcessed: false };
 }
 
+/** An exhibitor's stand payment (migration 0112): verified like a ticket,
+ *  credited to the organizer's held balance, the booking marked paid, and
+ *  both sides emailed. Idempotent on the pending → success update. */
+async function finalizeStandBooking(
+  supabase: SupabaseClient,
+  txn: PendingTicketTxn & {
+    status: string;
+    reference: string;
+    charge_currency: string;
+    charge_amount_minor: number | string;
+    amount_naira: number | string;
+    platform_fee_naira?: number | string | null;
+    exhibitor_id?: string | null;
+  }
+): Promise<FinalizeResult> {
+  if (txn.status === "success") return { ok: true, purpose: "stand_booking", eventId: txn.event_id, alreadyProcessed: true };
+  let verified: PaystackVerification;
+  try {
+    verified = await paystackVerify(txn.reference);
+  } catch {
+    return { ok: false, reason: "verify_error" };
+  }
+  if (verified.status !== "success") {
+    await supabase.from("paystack_transactions").update({ status: "failed", paystack_event: verified }).eq("reference", txn.reference).eq("status", "pending");
+    return { ok: false, reason: "payment_failed" };
+  }
+  if (verified.currency !== txn.charge_currency || verified.amount < Number(txn.charge_amount_minor)) {
+    await supabase.from("paystack_transactions").update({ status: "failed", paystack_event: verified }).eq("reference", txn.reference).eq("status", "pending");
+    return { ok: false, reason: "amount_mismatch" };
+  }
+  const feeNaira = Number(txn.platform_fee_naira ?? 0);
+  const { data: updated } = await supabase
+    .from("paystack_transactions")
+    .update({ status: "success", verified_at: new Date().toISOString(), paystack_event: verified })
+    .eq("reference", txn.reference)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
+  if (!updated) return { ok: true, purpose: "stand_booking", eventId: txn.event_id, alreadyProcessed: true };
+
+  await postHeldSale(supabase, txn, feeNaira, "Exhibitor stand");
+  if (txn.exhibitor_id) {
+    const { data: x } = await supabase
+      .from("exhibitors")
+      .update({ status: "paid", paid_at: new Date().toISOString() })
+      .eq("id", txn.exhibitor_id)
+      .select("email, company_name, contact_name, stand_label, amount_naira, events(name), stand_types(name), organizations(email)")
+      .maybeSingle();
+    if (x) {
+      const orgEmail = (x.organizations as unknown as { email: string | null } | null)?.email;
+      await emailPaid([x.email, ...(orgEmail ? [orgEmail] : [])], {
+        company: x.company_name,
+        contact: x.contact_name,
+        eventName: (x.events as unknown as { name: string } | null)?.name ?? "the event",
+        standName: (x.stand_types as unknown as { name: string } | null)?.name ?? "Stand",
+        standLabel: x.stand_label,
+        price: Number(x.amount_naira ?? txn.amount_naira),
+      });
+    }
+  }
+  return { ok: true, purpose: "stand_booking", eventId: txn.event_id, alreadyProcessed: false };
+}
+
 /** Credits a held sale to the organizer's ledger: the full sale, then
  *  eventbuddy's fee off it. Unique per (transaction, kind), so a webhook and
  *  the browser callback racing can't double-credit. A failure is logged, not
@@ -560,11 +628,12 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
 async function postHeldSale(
   supabase: SupabaseClient,
   txn: { id: string; organization_id: string; event_id: string; amount_naira: number | string; created_at?: string; referral_id?: string | null; registrant_data?: PendingTicketTxn["registrant_data"] },
-  feeNaira: number
+  feeNaira: number,
+  saleNote = "Ticket sale"
 ) {
   const { data: clearsAt } = await supabase.rpc("ledger_clear_time", { p_at: new Date().toISOString() });
   const rows = [
-    { organization_id: txn.organization_id, event_id: txn.event_id, transaction_id: txn.id, kind: "sale", amount_naira: Number(txn.amount_naira), clears_at: clearsAt ?? new Date().toISOString(), note: "Ticket sale" },
+    { organization_id: txn.organization_id, event_id: txn.event_id, transaction_id: txn.id, kind: "sale", amount_naira: Number(txn.amount_naira), clears_at: clearsAt ?? new Date().toISOString(), note: saleNote },
     ...(feeNaira > 0
       ? // every row in one upsert must carry the same columns, or PostgREST sends
         // the missing ones as null instead of letting the default apply
@@ -919,7 +988,12 @@ export async function handleRefundOrDispute(supabase: SupabaseClient, reference:
     .maybeSingle();
   if (!updated) return { handled: true };
 
-  if (txn.purpose === "ticket_purchase") {
+  // a stand payment (0112) is refunded the same way: the booking is cancelled
+  // and the money comes off the organizer's held balance below
+  if (txn.purpose === "ticket_purchase" || txn.purpose === "stand_booking") {
+    if (txn.exhibitor_id) {
+      await supabase.from("exhibitors").update({ status: "cancelled" }).eq("id", txn.exhibitor_id);
+    }
     if (txn.registration_id) {
       await supabase.from("registrations").update({ status: "cancelled" }).eq("id", txn.registration_id);
       // a group ticket's guests point at the buyer's row; the refund covers them too

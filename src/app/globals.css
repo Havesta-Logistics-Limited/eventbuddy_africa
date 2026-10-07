@@ -3094,3 +3094,18 @@ tbody tr.cursor-pointer:hover { background: rgba(237, 28, 220, 0.06); box-shadow
 .eb-tour-row:not([data-off]):hover { box-shadow: inset 0 0 0 1px rgba(255, 138, 245, 0.45), 0 0 34px -10px rgba(237, 28, 220, 0.65); }
 .eb-tour-row[data-off] { opacity: 0.6; }
 .eb-tour-row .eb-tour-date { width: 54px; }
+
+/* ---- Exhibitors (0112): application status pills ---- */
+.eb-exh-status { border-radius: 999px; padding: 1px 9px; font-size: 11px; font-weight: 600; }
+.eb-exh-status[data-status="applied"] { color: #f5c6ff; background: rgb(255 138 245 / 0.14); }
+.eb-exh-status[data-status="approved"] { color: #fcd34d; background: rgb(251 191 36 / 0.12); }
+.eb-exh-status[data-status="paid"] { color: #9fe8c9; background: rgb(52 211 153 / 0.12); }
+.eb-exh-status[data-status="declined"],
+.eb-exh-status[data-status="cancelled"] { color: var(--color-subtle); background: rgb(255 255 255 / 0.06); }
+.eb-stand-opt { display: flex; cursor: pointer; align-items: center; gap: 14px; border-radius: 16px; padding: 14px 16px; background: #110b18; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1); transition: box-shadow 200ms ease, background-color 200ms ease; }
+.eb-stand-opt:hover:not([data-full]) { box-shadow: inset 0 0 0 1px rgba(255, 138, 245, 0.45), 0 0 30px -12px rgba(237, 28, 220, 0.6); }
+.eb-stand-opt[data-selected] { background: rgb(255 138 245 / 0.08); box-shadow: inset 0 0 0 2px #ff8af5, 0 0 34px -12px rgba(237, 28, 220, 0.7); }
+.eb-stand-opt[data-full] { cursor: not-allowed; opacity: 0.5; }
+.eb-stand-opt:has(input:focus-visible) { outline: 2px solid #ff8af5; outline-offset: 2px; }
+.eb-exhibit-cta { display: flex; align-items: center; gap: 14px; border-radius: 16px; padding: 16px 18px; background: rgb(255 255 255 / 0.05); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15); backdrop-filter: blur(20px); transition: box-shadow 220ms ease; }
+.eb-exhibit-cta:hover { box-shadow: inset 0 0 0 1px rgba(255, 138, 245, 0.55), 0 0 34px -10px rgba(237, 28, 220, 0.65); }
