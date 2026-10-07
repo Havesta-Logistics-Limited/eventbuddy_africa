@@ -2993,3 +2993,90 @@ aside.eb-shell--platform { --glow-a: 167, 139, 250; --glow-b: 109, 40, 217; }
 .eb-early-note-close:hover { background: rgb(251 191 36 / 0.16); }
 .eb-early-note-close:focus-visible { outline: 2px solid #fbbf24; outline-offset: 2px; }
 .eb-walkup-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 1px 8px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: 1px; color: #bfe3ff; background: rgb(79 179 255 / 0.14); box-shadow: inset 0 0 0 1px rgb(79 179 255 / 0.35); }
+
+/* ---- Event Dashboard overview (number cards, daily bars, latest list) ---- */
+.eb-ov-card {
+  height: 100%;
+  border-radius: 18px;
+  padding: 20px 22px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0) 40%), #110b18;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 0 0 1px rgb(255 255 255 / 0.09);
+}
+.eb-ov-label { font-size: 14px; font-weight: 500; color: var(--color-muted); }
+.eb-ov-value { margin-top: 6px; font-family: var(--font-display, inherit); font-size: clamp(1.9rem, 3vw, 2.5rem); font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; color: #fff; font-variant-numeric: tabular-nums; }
+.eb-ov-sub { margin-top: 6px; font-size: 13px; color: var(--color-subtle); }
+.eb-ov-title { font-size: 15px; font-weight: 600; color: var(--color-fg-2); }
+.eb-ov-bars { display: flex; height: 240px; align-items: flex-end; gap: 6px; }
+@media (min-width: 640px) { .eb-ov-bars { gap: 10px; } }
+.eb-ov-col { display: flex; height: 100%; min-width: 0; flex: 1; flex-direction: column; justify-content: flex-end; align-items: stretch; gap: 6px; }
+.eb-ov-stack {
+  display: flex;
+  min-height: 4px;
+  flex-direction: column-reverse;
+  overflow: hidden;
+  border-radius: 6px 6px 3px 3px;
+  transform-origin: bottom;
+  animation: eb-ov-grow 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.eb-ov-stack span { display: block; min-height: 2px; }
+.eb-ov-stack span + span { box-shadow: 0 -2px 0 #110b18 inset; }
+.eb-ov-col:hover .eb-ov-stack { filter: brightness(1.15); }
+.eb-ov-day { text-align: center; font-size: 10.5px; color: var(--color-subtle); font-variant-numeric: tabular-nums; }
+.eb-ov-row { display: flex; align-items: center; gap: 12px; border-radius: 12px; padding: 10px 12px; background: rgb(255 255 255 / 0.035); }
+@keyframes eb-ov-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .eb-ov-stack { animation: none; } }
+
+/* ---- Hover glow, app-wide (2026-10) ----
+   One glow language for everything you can click, after the landing page:
+   bordered controls (buttons, option cards, fields, chips) get a pink rim and
+   a soft bloom; filled pink buttons bloom brighter; borderless text controls
+   (tabs, nav, accordion rows, links) lift to white with a faint pink halo.
+   Inputs keep the glow while focused. Disabled controls never glow. */
+:is(button, a, label, summary, select, input, textarea, [role="button"], [role="tab"])[class*="border"]:not([class*="border-0"], [class*="border-none"], [class*="border-transparent"], [data-no-glow]) {
+  transition: border-color 180ms ease, box-shadow 220ms ease, background-color 180ms ease, color 180ms ease;
+}
+:is(button, a, label, summary, select, [role="button"], [role="tab"])[class*="border"]:not([class*="border-0"], [class*="border-none"], [class*="border-transparent"], [data-no-glow], :disabled, [aria-disabled="true"]):hover,
+:is(input, select, textarea)[class*="border"]:not([data-no-glow], :disabled):hover,
+:is(input, select, textarea)[class*="border"]:not([data-no-glow]):focus,
+.eb-input:not(:disabled):hover,
+.eb-btn--ghost:hover:not(:disabled) {
+  border-color: rgba(255, 138, 245, 0.75);
+  box-shadow: 0 0 0 3px rgba(255, 138, 245, 0.12), 0 0 26px -6px rgba(237, 28, 220, 0.6);
+}
+.eb-btn--primary:hover:not(:disabled),
+.eb-portal-cta:hover:not(:disabled) {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35) inset, 0 0 34px -4px rgba(255, 138, 245, 0.85);
+}
+.eb-btn--primary,
+.eb-portal-cta { transition: background-color 180ms ease, box-shadow 220ms ease, transform 120ms ease; }
+
+/* clickable cards (links/buttons styled as cards) */
+:is(a, button).eb-card:hover,
+.eb-tt:hover,
+.eb-ov-row:hover {
+  border-color: rgba(255, 138, 245, 0.45);
+  box-shadow: 0 0 0 1px rgba(255, 138, 245, 0.25), 0 0 34px -10px rgba(237, 28, 220, 0.65), 0 24px 50px -28px rgba(237, 28, 220, 0.5);
+}
+.eb-ov-row { transition: box-shadow 220ms ease, background-color 180ms ease; }
+.eb-ov-row:hover { background: rgb(255 255 255 / 0.055); }
+
+/* borderless text controls: lift to white with a faint pink halo */
+.eb-nav-item:hover,
+.eb-seg button:hover,
+[role="tab"]:not([class*="border"]):hover,
+.lp-acc-item button:hover {
+  color: #fff;
+  text-shadow: 0 0 18px rgba(255, 138, 245, 0.55);
+}
+.eb-nav-item:hover .eb-nav-icon { color: #ff8af5; filter: drop-shadow(0 0 6px rgba(255, 138, 245, 0.6)); }
+.lp-acc-item button:hover svg { filter: drop-shadow(0 0 6px rgba(255, 138, 245, 0.8)); }
+.eb-nav-item, .eb-seg button, [role="tab"] { transition: color 180ms ease, text-shadow 220ms ease, background-color 180ms ease; }
+
+/* clickable table rows: a soft pink wash with a lit left edge */
+tbody tr.cursor-pointer { transition: background-color 160ms ease, box-shadow 200ms ease; }
+tbody tr.cursor-pointer:hover { background: rgba(237, 28, 220, 0.06); box-shadow: inset 2px 0 0 #ff8af5; }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(button, a, label, summary, select, input, textarea, [role="button"], [role="tab"]),
+  .eb-ov-row, .eb-nav-item, tbody tr.cursor-pointer { transition: none; }
+}

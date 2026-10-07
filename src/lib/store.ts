@@ -2796,3 +2796,33 @@ export async function getEventPromoterBadges(eventId: string): Promise<Record<st
   if (error) throw new PersistError(error);
   return Object.fromEntries(((data ?? []) as { referral_id: string; badge: string | null; sales: number }[]).map((r) => [r.referral_id, { badge: r.badge as PromoterStats["badge"], sales: Number(r.sales) }]));
 }
+
+/** One settled ticket payment for an event's dashboard (amount the buyer paid,
+ *  eventbuddy's fee, what the organizer keeps). RLS limits it to the org's own. */
+export type EventSale = { at: string; name: string; ticketTypeId: string | null; amountNaira: number; feeNaira: number; netNaira: number };
+
+export async function getEventSales(eventId: string): Promise<EventSale[]> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from("paystack_transactions")
+    .select("created_at, verified_at, ticket_type_id, amount_naira, platform_fee_naira, net_amount_naira, registrant_data")
+    .eq("event_id", eventId)
+    .eq("purpose", "ticket_purchase")
+    .eq("status", "success")
+    .order("created_at", { ascending: false })
+    .limit(1000);
+  if (error) throw new PersistError(error);
+  return (data ?? []).map((t) => {
+    const info = t.registrant_data as { firstName?: string; lastName?: string; email?: string } | null;
+    const amount = Number(t.amount_naira) || 0;
+    const fee = Number(t.platform_fee_naira ?? 0) || 0;
+    return {
+      at: t.verified_at ?? t.created_at,
+      name: info ? `${info.firstName ?? ""} ${info.lastName ?? ""}`.trim() || info.email || "Buyer" : "Buyer",
+      ticketTypeId: t.ticket_type_id,
+      amountNaira: amount,
+      feeNaira: fee,
+      netNaira: t.net_amount_naira != null ? Number(t.net_amount_naira) : amount - fee,
+    };
+  });
+}

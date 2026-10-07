@@ -1,10 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { CheckCircle2, GraduationCap, Globe2, BookMarked, Clock, MinusCircle, ListChecks, Ticket, Users, UserCheck, Award, ClipboardList, Building2 } from "lucide-react";
+import { CheckCircle2, GraduationCap, Globe2, BookMarked, Clock, MinusCircle, ListChecks, Users, Award, Building2 } from "lucide-react";
 import { Destination, EventRecord, FieldDef, LeadRecord, RegistrationRecord, University } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
 import { Reveal } from "@/components/reveal";
+import { EventOverview } from "@/components/event-overview";
 
 const CHOICE_FIELD_TYPES: FieldDef["type"][] = ["dropdown", "multiple_choice", "checkboxes"];
 
@@ -14,23 +15,6 @@ function pct(count: number, total: number) {
 
 const NO_DATA_COLOR = "#cbd5e1";
 const NO_DATA_COLOR_VERTICAL = "#cbd5e1";
-
-const REGISTRATION_STATUS_COLORS: Record<RegistrationRecord["status"], string> = {
-  registered: "#E85D0A",
-  checked_in: "#0d7c6e",
-  cancelled: "#94a3b8",
-  pending: "#D97706",
-  waitlisted: "#7c3aed",
-  declined: "#dc2626",
-};
-const REGISTRATION_STATUS_LABELS: Record<RegistrationRecord["status"], string> = {
-  registered: "Registered",
-  checked_in: "Checked In",
-  cancelled: "Cancelled",
-  pending: "Pending",
-  waitlisted: "Waitlisted",
-  declined: "Declined",
-};
 
 /** A short vertical bar comparison — used for Registrations vs Participants and for
  *  Highest Education, mirroring the reference dashboard's mix of vertical and
@@ -111,12 +95,7 @@ export function EventAnalytics({
 
   if (leads.length === 0 && registrations.length === 0) return null;
 
-  const participants = registrations.filter((r) => r.status === "checked_in");
-  const conversion = pct(participants.length, registrations.length);
 
-  const registrationStatusRows = (["registered", "checked_in", "cancelled"] as const)
-    .map((s) => ({ key: s, count: registrations.filter((r) => r.status === s).length, label: REGISTRATION_STATUS_LABELS[s], color: REGISTRATION_STATUS_COLORS[s] }))
-    .filter((r) => r.count > 0);
 
   const byDestAll = eventDests.map((d) => ({ dest: d, count: leads.filter((l) => l.destinationId === d.id).length }));
   const byDest = byDestAll.filter((x) => x.count > 0).sort((a, b) => b.count - a.count);
@@ -196,13 +175,11 @@ export function EventAnalytics({
   }
 
   const stats = [
-    { label: "Total Leads", value: leads.length, icon: Users, accent: "#C21FAF", bg: "#FFF3FD" },
-    { label: "Registrations", value: registrations.length, icon: Ticket, accent: "#ED1CDC", bg: "#FDECFB" },
-    ...(registrations.length > 0 ? [{ label: "Participants", value: participants.length, icon: UserCheck, accent: "#0d9488", bg: "#e7f6f0" }] : []),
+    { label: "Total Leads", value: leads.length, icon: Users, accent: "#ff8af5" },
     ...(isEducationFair
       ? [
-          { label: "IELTS Ready", value: leads.filter((l) => l.takenIELTS === "Yes").length, icon: CheckCircle2, accent: "#059669", bg: "#e7f6f0" },
-          { label: "PhD Prospects", value: leads.filter((l) => l.levelOfInterest === "PhD").length, icon: GraduationCap, accent: "#b45309", bg: "#fdf1e2" },
+          { label: "IELTS Ready", value: leads.filter((l) => l.takenIELTS === "Yes").length, icon: CheckCircle2, accent: "#5eead4" },
+          { label: "PhD Prospects", value: leads.filter((l) => l.levelOfInterest === "PhD").length, icon: GraduationCap, accent: "#ffa25e" },
         ]
       : []),
   ];
@@ -211,50 +188,24 @@ export function EventAnalytics({
 
   return (
     <div className="mb-6">
-      <h2 className="font-display text-lg text-fg mb-4">Analytics</h2>
+      <h2 className="font-display text-lg text-fg mb-4">Overview</h2>
 
-      <div className={`grid grid-cols-2 ${statsLgCols} gap-4 mb-5`}>
-        {stats.map((s, i) => (
-          <Reveal key={s.label} index={i}>
-            <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-surface/85 hover:shadow-md active:translate-y-0 active:scale-[0.98]">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: s.bg }}>
-                <s.icon size={18} style={{ color: s.accent }} />
+      <EventOverview event={event} registrations={registrations} />
+
+      {/* lead-collection events keep their lead tallies under the overview */}
+      {(leads.length > 0 || isEducationFair) && (
+        <div className={`grid grid-cols-2 ${statsLgCols} gap-4 mb-5`}>
+          {stats.map((s, i) => (
+            <Reveal key={s.label} index={i}>
+              <div className="eb-kpi" style={{ ["--k" as string]: s.accent }}>
+                <div className="eb-kpi-icon mb-2">
+                  <s.icon size={16} />
+                </div>
+                <p className="eb-kpi-value">{s.value}</p>
+                <p className="text-xs text-muted mt-0.5">{s.label}</p>
               </div>
-              <p className="text-2xl font-bold text-fg leading-none">{s.value}</p>
-              <p className="text-xs text-muted mt-1.5">{s.label}</p>
-            </div>
-          </Reveal>
-        ))}
-      </div>
-
-      {registrations.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-          <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Ticket size={16} className="text-brand-500" />
-              <h3 className="font-semibold text-fg">Registrations &amp; Participants</h3>
-            </div>
-            <VerticalBars
-              items={[
-                { label: "Registrations", value: registrations.length, color: "#6D28D9" },
-                { label: `Participants (${conversion}%)`, value: participants.length, color: "#5eead4" },
-              ]}
-            />
-          </div>
-
-          {registrationStatusRows.length > 0 && (
-            <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <ClipboardList size={16} className="text-brand-500" />
-                <h3 className="font-semibold text-fg">Registration Status</h3>
-              </div>
-              <BarList
-                rows={registrationStatusRows.map((r) => ({ key: r.key, label: r.label, count: r.count, color: r.color }))}
-                total={registrations.length}
-                color="#6D28D9"
-              />
-            </div>
-          )}
+            </Reveal>
+          ))}
         </div>
       )}
 
