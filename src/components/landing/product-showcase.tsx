@@ -587,13 +587,14 @@ function PaidScene({ t, fee }: SceneProps) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+      {/* phones: "Sold" on its own row, the two money figures side by side */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
         {[
           { k: "Sold", v: String(sold), s: "of 200 tickets" },
           { k: "Ticket sales", v: formatNaira(gross), s: "paid by buyers" },
           { k: "To your bank", v: formatNaira(Math.max(0, gross - feeTotal)), s: `after ${formatTicketFee(fee)} per ticket` },
         ].map((m) => (
-          <div key={m.k} className="rounded-xl border border-slate-200/80 bg-white p-2.5 sm:p-3.5">
+          <div key={m.k} className={`min-w-0 rounded-xl border border-slate-200/80 bg-white p-2.5 sm:p-3.5 ${m.k === "Sold" ? "col-span-2 sm:col-span-1" : ""}`}>
             <p className="truncate text-[10px] font-medium text-slate-500 sm:text-xs">{m.k}</p>
             <p className="mt-1 text-base font-semibold tabular-nums tracking-tight text-slate-900 sm:text-2xl">{m.v}</p>
             <p className="text-[10px] leading-tight text-slate-400 sm:text-[11px]">{m.s}</p>
@@ -751,13 +752,15 @@ export function ProductShowcase({ fee }: { fee: TicketFee }) {
           <span /><span /><span />
           <p>eventbuddy.africa/{TABS[tab].path}</p>
         </div>
-        <div className="grid grid-cols-[52px_1fr] sm:grid-cols-[60px_1fr]">
-          <div className="flex flex-col items-center gap-5 border-r border-slate-200/80 bg-slate-50 py-5 text-slate-400" aria-hidden="true">
+        {/* the app's icon rail is desktop-only: on a phone the scene needs the width */}
+        <div className="grid grid-cols-1 sm:grid-cols-[60px_1fr]">
+          <div className="hidden flex-col items-center gap-5 border-r border-slate-200/80 bg-slate-50 py-5 text-slate-400 sm:flex" aria-hidden="true">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#C21FAF] text-white"><LayoutGrid size={16} /></span>
-            <Ticket size={18} className={tab === 0 ? "text-[#C21FAF]" : ""} />
-            <Link2 size={18} className={tab === 1 ? "text-[#C21FAF]" : ""} />
-            <ScanLine size={18} className={tab === 2 ? "text-[#C21FAF]" : ""} />
-            <Megaphone size={18} className={tab === 3 ? "text-[#C21FAF]" : ""} />
+            <Ticket size={18} className={TABS[tab].id === "sell" ? "text-[#C21FAF]" : ""} />
+            <Link2 size={18} className={TABS[tab].id === "share" || TABS[tab].id === "promote" ? "text-[#C21FAF]" : ""} />
+            <ScanLine size={18} className={TABS[tab].id === "checkin" ? "text-[#C21FAF]" : ""} />
+            <Store size={18} className={TABS[tab].id === "exhibit" ? "text-[#C21FAF]" : ""} />
+            <Megaphone size={18} className={TABS[tab].id === "engage" ? "text-[#C21FAF]" : ""} />
             <Users size={18} />
             <Settings size={18} className="mt-auto" />
           </div>
@@ -770,7 +773,7 @@ export function ProductShowcase({ fee }: { fee: TicketFee }) {
               id={`lp-panel-${TABS[tab].id}`}
               role="tabpanel"
               aria-labelledby={`lp-tab-${TABS[tab].id}`}
-              className="lp-scene h-[440px] p-4 sm:h-[490px] sm:p-6"
+              className="lp-scene h-[500px] p-4 sm:h-[490px] sm:p-6"
               key={TABS[tab].id}
             >
               <Active t={sceneT} fee={fee} />
