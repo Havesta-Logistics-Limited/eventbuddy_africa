@@ -88,7 +88,7 @@ export function eventLeadsToCsv(leads: LeadRecord[], event: EventRecord): string
  *  registration form was built, same convention as eventLeadsToCsv. */
 export function registrationsToCsv(registrations: RegistrationRecord[], event: EventRecord): string {
   const fields = event.customFields ?? [];
-  const headers = ["Reference ID", "Name", "Email", "Phone", ...fields.map((f) => f.label || "Untitled"), "Status", "Checked In", "Registered"];
+  const headers = ["Reference ID", "Name", "Email", "Phone", ...fields.map((f) => f.label || "Untitled"), "Status", "Checked In", "Registered", "Signed up via"];
 
   const rows = registrations.map((r) => [
     r.referenceId,
@@ -102,6 +102,7 @@ export function registrationsToCsv(registrations: RegistrationRecord[], event: E
     r.status,
     r.checkedInAt ? new Date(r.checkedInAt).toLocaleString("en-GB") : "",
     new Date(r.createdAt).toLocaleDateString("en-GB"),
+    r.source === "kiosk" ? "Kiosk (walk-up)" : r.source === "mobile" ? "Mobile app" : "Web",
   ]);
 
   return [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");

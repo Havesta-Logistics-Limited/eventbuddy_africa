@@ -338,6 +338,7 @@ function mapRegistrationRow(r: {
   checked_in_by: string | null;
   ticket_type_id: string | null;
   hide_from_guest_list?: boolean | null;
+  source?: string | null;
   created_at: string;
 }): RegistrationRecord {
   return {
@@ -353,6 +354,7 @@ function mapRegistrationRow(r: {
     checkedInBy: r.checked_in_by ?? undefined,
     ticketTypeId: r.ticket_type_id ?? undefined,
     hideFromGuestList: r.hide_from_guest_list ?? false,
+    source: (r.source as RegistrationRecord["source"]) ?? "web",
     createdAt: r.created_at,
   };
 }

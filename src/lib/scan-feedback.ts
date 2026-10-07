@@ -6,6 +6,7 @@
 export type ScanOutcome = "success" | "already" | "error" | "early";
 
 let ctx: AudioContext | null = null;
+let out: AudioNode | null = null;
 const MUTE_KEY = "eventbuddy:scan-muted";
 
 export function isScanMuted(): boolean {
@@ -28,13 +29,32 @@ export function unlockScanAudio() {
   if (typeof window === "undefined") return;
   const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return;
-  if (!ctx) ctx = new AC();
+  if (!ctx) {
+    ctx = new AC();
+    // Same sounds, just louder: a clean volume boost, then a limiter that only
+    // touches the very top so loud peaks can't crackle on small speakers.
+    const boost = ctx.createGain();
+    boost.gain.value = 2.6;
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -2;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.001;
+    limiter.release.value = 0.05;
+    boost.connect(limiter).connect(ctx.destination);
+    out = boost;
+  }
   if (ctx.state === "suspended") ctx.resume().catch(() => {});
 }
 
 /** One note: frequency (Hz), start offset and length (s), waveform, peak gain. */
 function tone(freq: number, at: number, dur: number, type: OscillatorType, peak: number, slideTo?: number) {
-  if (!ctx) return;
+  if (!ctx || !out) return;
+  voice(freq, at, dur, type, peak, slideTo);
+}
+
+function voice(freq: number, at: number, dur: number, type: OscillatorType, peak: number, slideTo?: number) {
+  if (!ctx || !out) return;
   const t0 = ctx.currentTime + at;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
@@ -44,7 +64,7 @@ function tone(freq: number, at: number, dur: number, type: OscillatorType, peak:
   gain.gain.setValueAtTime(0.0001, t0);
   gain.gain.exponentialRampToValueAtTime(peak, t0 + 0.012);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  osc.connect(gain).connect(ctx.destination);
+  osc.connect(gain).connect(out);
   osc.start(t0);
   osc.stop(t0 + dur + 0.02);
 }

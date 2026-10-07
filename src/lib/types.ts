@@ -418,6 +418,9 @@ export interface RegistrationRecord {
   /** Attendee-chosen — excludes them from the public "N Going" name sample on the
    *  register page (migration 0060/0061). The aggregate count still includes them. */
   hideFromGuestList?: boolean;
+  /** Where the sign-up came from: the public page, the mobile app, or the
+   *  staff Kiosk at the door (a walk-up, migration 0108). */
+  source?: "web" | "mobile" | "kiosk";
   createdAt: string;
 }
 

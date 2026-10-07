@@ -265,7 +265,10 @@ export function FastScanStage({
           <span className="eb-scanstage-start-icon">
             <Camera size={34} />
           </span>
-          <span className="eb-portal-cta w-auto px-8">Start scanning</span>
+          {/* half the stage width (the cta is full-width by default) */}
+          <span className="eb-portal-cta" style={{ width: "50%", minWidth: 220 }}>
+            Start scanning
+          </span>
           <span className="text-sm text-white/60">The camera stays on and checks in each ticket you show it.</span>
           {error && <span className="max-w-md text-sm text-rose-300">{error}</span>}
         </button>

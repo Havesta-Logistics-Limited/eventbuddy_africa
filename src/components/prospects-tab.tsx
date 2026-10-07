@@ -282,7 +282,14 @@ export function ProspectsTab({
               {shown.map((r) => (
                 <tr key={r.id} onClick={() => setSelectedId(r.id)} className="hover:bg-canvas cursor-pointer">
                   <td className="px-4 py-3 font-mono text-xs text-fg-3 whitespace-nowrap">{r.referenceId}</td>
-                  <td className="px-4 py-3 font-medium text-fg whitespace-nowrap">{r.fullName}</td>
+                  <td className="px-4 py-3 font-medium text-fg whitespace-nowrap">
+                    {r.fullName}
+                    {r.source === "kiosk" && (
+                      <span className="eb-walkup-badge ml-2" title="Registered at the door from the staff Kiosk">
+                        Walk-up
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-muted max-w-[180px] truncate">{r.email}</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{r.phone || "—"}</td>
                   {showTicketColumn && (
