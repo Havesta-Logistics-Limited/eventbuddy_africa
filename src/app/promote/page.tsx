@@ -91,7 +91,7 @@ function PromoterSignupForm() {
 
           <form onSubmit={handleSubmit} className="eb-form-compact">
             {/* Pairs share a row from sm up so the whole form fits one screen. */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
               <div>
                 <label htmlFor="su-name" className={`${labelClass} eb-req`}>Full name</label>
                 <input
@@ -131,7 +131,7 @@ function PromoterSignupForm() {
               </div>
             </div>
             <p id="su-handle-hint" className="eb-hint -mt-1.5">Your links look like eventbuddy.africa/event-name/{handle || "yourhandle"}.</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
               <div>
                 <label htmlFor="su-email" className={`${labelClass} eb-req`}>Email</label>
                 <input id="su-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@mail.com" required aria-required="true" className={fieldClass} />
@@ -159,7 +159,7 @@ function PromoterSignupForm() {
                 <button
                   type="button"
                   onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-fg-3"
+                  className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-lg text-subtle hover:text-fg-3"
                   aria-label={showPw ? "Hide password" : "Show password"}
                 >
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}

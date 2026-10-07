@@ -24,7 +24,11 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const { data: payout } = await admin.from("payout_requests").select("*").eq("id", payoutId).maybeSingle();
   if (!payout) return NextResponse.json({ error: "Payout not found." }, { status: 404 });
-  if (payout.status !== "requested") return NextResponse.json({ error: `This payout is already ${payout.status}.` }, { status: 409 });
+  // a "processing" payout whose transfer call failed can still be settled by
+  // hand (marked paid once checked in Paystack, or rejected); only a new
+  // request can be sent through Paystack
+  const settleable = payout.status === "requested" || (payout.status === "processing" && action !== "transfer");
+  if (!settleable) return NextResponse.json({ error: `This payout is already ${payout.status}.` }, { status: 409 });
 
   if (action === "reject") {
     if (!note) return NextResponse.json({ error: "Give the organizer a reason for rejecting this payout." }, { status: 400 });
@@ -38,7 +42,7 @@ export async function POST(request: Request) {
       .from("payout_requests")
       .update({ status: "paid", paid_at: new Date().toISOString(), decided_by: auth.userId, decided_at: new Date().toISOString(), decision_note: note || "Paid manually" })
       .eq("id", payoutId)
-      .eq("status", "requested")
+      .in("status", ["requested", "processing"])
       .select("id")
       .maybeSingle();
     if (!updated) return NextResponse.json({ error: "This payout changed while you were looking at it. Refresh and try again." }, { status: 409 });
@@ -96,9 +100,12 @@ export async function POST(request: Request) {
     await admin.from("payout_requests").update({ transfer_code: transferCode, ...(status === "success" ? { status: "paid", paid_at: new Date().toISOString() } : {}) }).eq("id", payoutId);
     return NextResponse.json({ success: true, status: status === "success" ? "paid" : "processing" });
   } catch (err) {
-    // Nothing left Paystack: put the request back so it can be retried or
-    // marked paid by hand.
-    await admin.from("payout_requests").update({ status: "requested", decided_by: null, decided_at: null }).eq("id", payoutId).eq("status", "processing");
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Paystack couldn't send this payout." }, { status: 502 });
+    // The call failed, but Paystack may still have accepted the transfer (a
+    // timeout after it was sent). Resetting to "requested" would let the
+    // organizer cancel and get the money back while it's also being paid, so
+    // the request stays "processing": check it in the Paystack dashboard, then
+    // mark it paid, or reject it to return the money.
+    await admin.from("payout_requests").update({ failure_reason: `Transfer call failed, check Paystack before retrying: ${err instanceof Error ? err.message : "unknown error"}` }).eq("id", payoutId).eq("status", "processing");
+    return NextResponse.json({ error: "Paystack didn't confirm this transfer. It's left as processing: check the Paystack dashboard, then mark it paid or reject it." }, { status: 502 });
   }
 }

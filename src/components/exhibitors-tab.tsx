@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { copyText } from "@/lib/copy-text";
 import { toast } from "sonner";
 import { Check, Copy, ExternalLink, Globe, ImagePlus, Mail, Map as MapIcon, Pencil, Phone, Plus, Store, Trash2, X } from "lucide-react";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -260,7 +261,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
         {settings.enabled && link && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded-lg bg-fill px-3 py-2 text-xs text-fg-2">{link}</code>
-            <button type="button" className="eb-btn eb-btn--ghost" onClick={() => navigator.clipboard.writeText(link).then(() => toast.success("Exhibit page link copied"))}>
+            <button type="button" className="eb-btn eb-btn--ghost" onClick={() => copyText(link).then(() => toast.success("Exhibit page link copied"))}>
               <Copy size={14} /> Copy link
             </button>
             <a href={link} target="_blank" rel="noreferrer" className="eb-btn eb-btn--ghost">
@@ -443,7 +444,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
                         <button
                           type="button"
                           className="eb-link"
-                          onClick={() => navigator.clipboard.writeText(`${window.location.origin}/exhibitor/${r.portal_token}`).then(() => toast.success("Portal link copied. Share it only with this exhibitor."))}
+                          onClick={() => copyText(`${window.location.origin}/exhibitor/${r.portal_token}`).then(() => toast.success("Portal link copied. Share it only with this exhibitor."))}
                         >
                           Copy portal link
                         </button>

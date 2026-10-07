@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { copyText } from "@/lib/copy-text";
 import Link from "next/link";
 import { toast } from "sonner";
 import { AlertCircle, ChevronDown, Clock, Copy, Edit2, FileEdit, Lightbulb, Mail, Percent, Plus, Tag, Ticket, TrendingUp, Trash2, Users, X } from "lucide-react";
@@ -137,8 +138,7 @@ function DropOffPanel({
                     className="eb-drop-act eb-drop-act--icon"
                     aria-label={`Copy ${r.email}`}
                     onClick={() => {
-                      navigator.clipboard.writeText(r.email);
-                      toast.success("Email copied");
+                      copyText(r.email).then(() => toast.success("Email copied"), () => toast.error("Couldn't copy. Press and hold to copy it instead."));
                     }}
                   >
                     <Copy size={13} aria-hidden="true" />
@@ -305,8 +305,7 @@ export function TicketsTab({
 
   function copyAbandonedEmails(list: string[]) {
     const emails = Array.from(new Set(list.filter((e) => e && e !== "—")));
-    navigator.clipboard.writeText(emails.join(", "));
-    toast.success(`Copied ${emails.length} email${emails.length !== 1 ? "s" : ""}`);
+    copyText(emails.join(", ")).then(() => toast.success(`Copied ${emails.length} email${emails.length !== 1 ? "s" : ""}`), () => toast.error("Couldn't copy. Press and hold to copy it instead."));
   }
 
   const [formStarts, setFormStarts] = useState<RegistrationFormStart[]>([]);
@@ -341,8 +340,7 @@ export function TicketsTab({
 
   function copyFormStartEmails(list: string[]) {
     const emails = Array.from(new Set(list));
-    navigator.clipboard.writeText(emails.join(", "));
-    toast.success(`Copied ${emails.length} email${emails.length !== 1 ? "s" : ""}`);
+    copyText(emails.join(", ")).then(() => toast.success(`Copied ${emails.length} email${emails.length !== 1 ? "s" : ""}`), () => toast.error("Couldn't copy. Press and hold to copy it instead."));
   }
 
   async function handleViewUsage(code: DiscountCode) {
@@ -667,8 +665,7 @@ export function TicketsTab({
                       className="eb-code"
                       title="Copy code"
                       onClick={() => {
-                        navigator.clipboard.writeText(d.code);
-                        toast.success(`Copied ${d.code}`);
+                        copyText(d.code).then(() => toast.success(`Copied ${d.code}`), () => toast.error("Couldn't copy. Press and hold to copy it instead."));
                       }}
                     >
                       {d.code} <Copy size={13} aria-hidden="true" />

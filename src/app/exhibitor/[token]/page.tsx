@@ -9,7 +9,7 @@ import { ExhibitorTile } from "@/components/exhibitor-tile";
 import { toast } from "sonner";
 import { FastScanStage, type ScanFlash } from "@/components/fast-scan-stage";
 import { playScanFeedback } from "@/lib/scan-feedback";
-import { downloadCsv } from "@/lib/csv";
+import { csvEscape, downloadCsv } from "@/lib/csv";
 
 type Portal = {
   status: "applied" | "approved" | "declined" | "paid" | "cancelled";
@@ -134,7 +134,7 @@ export default function ExhibitorPortalPage() {
 
   function exportCsv() {
     const rows = [["Name", "Email", "Phone", "Rating", "Notes", "Scanned by", "Scanned at"], ...(leads ?? []).map((l) => [l.name, l.email, l.phone ?? "", l.rating ?? "", l.notes, l.capturedBy ?? "", l.capturedAt ? new Date(l.capturedAt).toLocaleString("en-GB") : ""])];
-    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\n");
     downloadCsv(`${p?.company ?? "exhibitor"}_leads.csv`.replace(/[^a-z0-9_.]/gi, "_"), csv);
   }
 

@@ -3126,3 +3126,25 @@ tbody tr.cursor-pointer:hover { background: rgba(237, 28, 220, 0.06); box-shadow
 .eb-plan-pick[aria-pressed="true"] { color: #fff; background: rgb(255 138 245 / 0.12); box-shadow: inset 0 0 0 1px #ff8af5; }
 .eb-cat-chip { border-radius: 999px; padding: 5px 12px; font-size: 12.5px; font-weight: 600; color: var(--color-fg-3); background: rgb(255 255 255 / 0.05); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15); transition: background-color 160ms ease, color 160ms ease; }
 .eb-cat-chip[aria-pressed="true"] { color: #1a0b1f; background: #ff8af5; box-shadow: none; }
+
+/* ---- Cross-device fixes (pre-launch audit, 2026-10-07) ---- */
+/* iOS Safari zooms into any field under 16px when it's tapped */
+@media (max-width: 767px) {
+  .eb-input,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea { font-size: 16px; }
+}
+/* the early check-in card (with its two buttons) must fit small phones:
+   the stage grows to hold it, and it scrolls if it still can't */
+.eb-scanstage:has(.eb-scanflash-actions) { max-height: none; min-height: 440px; }
+.eb-scanflash:has(.eb-scanflash-actions) { overflow-y: auto; }
+@media (max-width: 360px), (max-height: 600px) {
+  .eb-scanflash-icon svg { width: 40px; height: 40px; }
+  .eb-scanflash { padding: 10px; }
+}
+/* header on 320px phones: buttons keep their labels on one line, the menu
+   button keeps its size, and "Sign in" (also in the menu) steps aside */
+.lp-navlink, .lp-navcta { white-space: nowrap; }
+.lp-navmenu { flex-shrink: 0; }
+@media (max-width: 359px) { .lp-navlink--signin { display: none; } }

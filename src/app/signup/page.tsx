@@ -90,7 +90,7 @@ function SignupForm() {
 
           <form onSubmit={handleSubmit} className="eb-form-compact">
             {/* Pairs share a row from sm up so the whole form fits one screen. */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
               <div>
                 <label htmlFor="su-name" className={`${labelClass} eb-req`}>Full name</label>
                 <input
@@ -122,7 +122,7 @@ function SignupForm() {
               </div>
             </div>
             <p id="su-org-hint" className="eb-hint -mt-1.5">Your organization name appears on your event links: eventbuddy.africa/your-org.</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
               <div>
                 <label htmlFor="su-email" className={`${labelClass} eb-req`}>Email</label>
                 <input id="su-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@mail.com" required aria-required="true" className={fieldClass} />
@@ -150,7 +150,7 @@ function SignupForm() {
                 <button
                   type="button"
                   onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-fg-3"
+                  className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-lg text-subtle hover:text-fg-3"
                   aria-label={showPw ? "Hide password" : "Show password"}
                 >
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}

@@ -255,7 +255,7 @@ function AccountStep({ draft, onBack, onDone }: { draft: GuestDraft; onBack: () 
         <strong className="text-fg">{draft.event.name}</strong> · {draft.tickets.length ? `${draft.tickets.length} ticket type${draft.tickets.length === 1 ? "" : "s"}` : "free registration"}
       </p>
       <form onSubmit={submit} className="eb-form-compact">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
           <div>
             <label htmlFor="ca-name" className="eb-label eb-req">Full name</label>
             <input id="ca-name" autoComplete="name" required className="eb-input" placeholder="Amaka Obi" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
@@ -266,7 +266,7 @@ function AccountStep({ draft, onBack, onDone }: { draft: GuestDraft; onBack: () 
           </div>
         </div>
         <p className="eb-hint -mt-1.5">Shown on your event links: eventbuddy.africa/your-org.</p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
           <div>
             <label htmlFor="ca-email" className="eb-label eb-req">Email</label>
             <input id="ca-email" type="email" autoComplete="email" required className="eb-input" placeholder="you@company.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />

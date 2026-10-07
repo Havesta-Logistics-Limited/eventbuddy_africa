@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { copyText } from "@/lib/copy-text";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -179,9 +180,12 @@ function PromotedEvent({
   const live = row.active && row.programEnabled;
 
   function copy(text: string, what: "link" | "caption" | "tour") {
-    navigator.clipboard.writeText(text);
-    setCopied(what);
-    setTimeout(() => setCopied(null), 1600);
+    copyText(text)
+      .then(() => {
+        setCopied(what);
+        setTimeout(() => setCopied(null), 1600);
+      })
+      .catch(() => toast.error("Couldn't copy. Press and hold to copy it instead."));
   }
 
   return (

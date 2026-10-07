@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { copyText } from "@/lib/copy-text";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -146,7 +147,7 @@ export default function TourPage() {
               type="button"
               className="eb-btn eb-btn--ghost"
               onClick={() => {
-                navigator.clipboard?.writeText(publicUrl).then(() => {
+                copyText(publicUrl).then(() => {
                   setCopied(true);
                   toast.success("Tour page link copied");
                   setTimeout(() => setCopied(false), 2000);

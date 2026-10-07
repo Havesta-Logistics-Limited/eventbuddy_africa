@@ -83,8 +83,13 @@ const REFERENCE_ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  *  it doesn't need to be, since the registrations table's RLS keeps them from being
  *  listed, only looked up one at a time server-side at check-in. */
 export function generateReferenceId(): string {
+  // a ticket code is a bearer credential (door entry, lead scans): use the
+  // platform's secure random source, not Math.random. 32 symbols divide 256,
+  // so byte % 32 has no bias.
+  const bytes = new Uint8Array(8);
+  globalThis.crypto.getRandomValues(bytes);
   let code = "";
-  for (let i = 0; i < 8; i++) code += REFERENCE_ID_ALPHABET[Math.floor(Math.random() * REFERENCE_ID_ALPHABET.length)];
+  for (let i = 0; i < 8; i++) code += REFERENCE_ID_ALPHABET[bytes[i] % REFERENCE_ID_ALPHABET.length];
   return `${code.slice(0, 4)}-${code.slice(4)}`;
 }
 

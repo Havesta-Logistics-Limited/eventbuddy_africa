@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { copyText } from "@/lib/copy-text";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Calendar, Check, Copy, Lock, MapPin, Megaphone, Search } from "lucide-react";
@@ -166,9 +167,12 @@ function MarketplaceContent({ isPromoter }: { isPromoter: boolean }) {
                           type="button"
                           className="eb-btn eb-btn--ghost w-full"
                           onClick={() => {
-                            navigator.clipboard.writeText(link);
-                            setCopied(e.eventId);
-                            setTimeout(() => setCopied(null), 1600);
+                            copyText(link)
+                              .then(() => {
+                                setCopied(e.eventId);
+                                setTimeout(() => setCopied(null), 1600);
+                              })
+                              .catch(() => toast.error("Couldn't copy. Press and hold to copy it instead."));
                           }}
                         >
                           {copied === e.eventId ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />} {copied === e.eventId ? "Copied" : "Copy your link"}

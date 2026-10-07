@@ -135,4 +135,34 @@ describe("handleRefundOrDispute", () => {
     expect(supabase.db.events[0].payment_status).toBe("paid");
     expect(supabase.db.paystack_transactions[0].status).toBe("disputed");
   });
+
+  it("reverses a payment only once when a dispute is followed by a refund (pre-launch audit)", async () => {
+    const supabase = createFakeSupabase({
+      paystack_transactions: [
+        {
+          id: "t9",
+          reference: "ref-9",
+          status: "success",
+          purpose: "ticket_purchase",
+          registration_id: "r9",
+          ticket_type_id: "tt9",
+          organization_id: "o9",
+          event_id: "e9",
+          amount_naira: 500,
+        },
+      ],
+      registrations: [{ id: "r9", status: "registered" }],
+    });
+    let decrements = 0;
+    supabase.setRpc("decrement_ticket_sold", () => {
+      decrements += 1;
+      return true;
+    });
+
+    await handleRefundOrDispute(supabase, "ref-9", "disputed");
+    await handleRefundOrDispute(supabase, "ref-9", "refunded");
+
+    expect(decrements).toBe(1);
+    expect(supabase.db.paystack_transactions[0].status).toBe("refunded");
+  });
 });

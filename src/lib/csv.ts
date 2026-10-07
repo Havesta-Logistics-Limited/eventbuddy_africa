@@ -4,8 +4,13 @@ import { getDestinationById, getEventById, getUniversityById } from "./store";
 import { formatCustomAnswers } from "./utils";
 import { getTemplate } from "./event-templates";
 
-function csvEscape(value: unknown): string {
-  return `"${String(value ?? "").replace(/"/g, '""')}"`;
+/** Quotes a cell, and defuses spreadsheet formulas: a value starting with
+ *  = + - @ (or a tab/CR) is prefixed with ' so Excel/Sheets show it as text
+ *  instead of running it (attendee names are user-supplied). */
+export function csvEscape(value: unknown): string {
+  let s = String(value ?? "");
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
 }
 
 export function leadsToCsv(leads: LeadRecord[], opts: { includeEvent?: boolean } = {}): string {

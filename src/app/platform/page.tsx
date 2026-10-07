@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
+import { copyText } from "@/lib/copy-text";
 import { MoveImagesCard } from "@/components/move-images-card";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -81,6 +82,8 @@ type OrgRow = {
   is_suspended: boolean;
   is_fee_exempt: boolean;
   is_verified: boolean;
+  /** organizer verification (0111/0118): lifts the sales limit, early payouts */
+  payout_verified: boolean;
   phone: string | null;
   email: string | null;
   paystack_subaccount_code: string | null;
@@ -265,7 +268,7 @@ export default function PlatformDashboard() {
       supabase
         .from("organizations_payout_masked")
         .select(
-          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number_masked, payout_account_name, payout_change_status, payout_change_requested_at, pending_name, name_change_status, name_change_requested_at, pending_login_email, login_email_change_status, login_email_change_requested_at, account_deletion_status, account_deletion_requested_at"
+          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, payout_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number_masked, payout_account_name, payout_change_status, payout_change_requested_at, pending_name, name_change_status, name_change_requested_at, pending_login_email, login_email_change_status, login_email_change_requested_at, account_deletion_status, account_deletion_requested_at"
         )
         .order("created_at", { ascending: false }),
       supabase
@@ -401,6 +404,21 @@ export default function PlatformDashboard() {
       toast.error(error.message);
     }
     setBusyOrgId(null);
+  }
+
+  /** Organizer verification switch (0118): verified organizers have no
+   *  paid-ticket limit and can take early payouts. */
+  async function toggleOrganizerVerified(org: OrgRow) {
+    const verified = !org.payout_verified;
+    if (verified && !window.confirm(`Verify ${org.name}? Their sales limit is lifted and they can take early payouts. Only do this once you've checked who they are.`)) return;
+    if (!verified && !window.confirm(`Remove ${org.name}'s verification? The unverified sales limit applies to them again.`)) return;
+    setBusyOrgId(org.id);
+    const res = await fetch("/api/platform/payouts/verify-org", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orgId: org.id, verified }) });
+    const json = await res.json().catch(() => ({}));
+    setBusyOrgId(null);
+    if (!res.ok) return toast.error(json.error || "Couldn't update verification.");
+    setOrgs((prev) => prev.map((o) => (o.id === org.id ? { ...o, payout_verified: verified } : o)));
+    toast.success(verified ? `${org.name} is verified` : `${org.name} is no longer verified`);
   }
 
   /** Re-sends the owner's original signup confirmation email — for someone stuck
@@ -801,7 +819,7 @@ export default function PlatformDashboard() {
   }
 
   function copyOrgId(id: string) {
-    navigator.clipboard.writeText(id).then(() => {
+    copyText(id).then(() => {
       setCopiedId(id);
       toast.success("Organization ID copied");
       setTimeout(() => setCopiedId(null), 2000);
@@ -809,7 +827,7 @@ export default function PlatformDashboard() {
   }
 
   function copyReference(reference: string) {
-    navigator.clipboard.writeText(reference).then(() => {
+    copyText(reference).then(() => {
       setCopiedId(reference);
       toast.success("Reference copied");
       setTimeout(() => setCopiedId(null), 2000);
@@ -817,7 +835,7 @@ export default function PlatformDashboard() {
   }
 
   function copyEmail(email: string) {
-    navigator.clipboard.writeText(email).then(() => {
+    copyText(email).then(() => {
       setCopiedId(email);
       toast.success("Email copied");
       setTimeout(() => setCopiedId(null), 2000);
@@ -1409,9 +1427,17 @@ export default function PlatformDashboard() {
                                     className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap ${
                                       org.is_verified ? "text-brand-500 bg-brand-500/15" : "text-amber-300 bg-amber-500/15"
                                     }`}
-                                    title={org.is_verified ? "Owner has verified their email" : "Owner hasn't verified their email yet"}
+                                    title={org.is_verified ? "Owner has confirmed their email" : "Owner hasn't confirmed their email yet"}
                                   >
-                                    {org.is_verified ? "Verified" : "Unverified"}
+                                    {org.is_verified ? "Email confirmed" : "Email unconfirmed"}
+                                  </span>
+                                  <span
+                                    className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap ${
+                                      org.payout_verified ? "text-emerald-300 bg-emerald-500/15" : "text-muted bg-fill"
+                                    }`}
+                                    title={org.payout_verified ? "Identity checked: no sales limit, early payouts" : "Not verified: unverified sales limit applies"}
+                                  >
+                                    {org.payout_verified ? "Organizer verified" : "Not verified"}
                                   </span>
                                   <span
                                     className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap ${
@@ -1428,6 +1454,17 @@ export default function PlatformDashboard() {
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center justify-end gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleOrganizerVerified(org)}
+                                    disabled={busyOrgId === org.id}
+                                    title={org.payout_verified ? "Remove organizer verification" : "Verify this organizer (lifts the sales limit)"}
+                                    aria-label={org.payout_verified ? "Remove organizer verification" : "Verify this organizer"}
+                                    aria-pressed={org.payout_verified}
+                                    className={`p-2 rounded-lg border transition-colors disabled:opacity-50 ${org.payout_verified ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20" : "border-line text-muted hover:bg-canvas"}`}
+                                  >
+                                    <ShieldCheck size={14} />
+                                  </button>
                                   {!org.is_verified && (
                                     <>
                                       <button

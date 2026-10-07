@@ -45,7 +45,9 @@ export async function POST(request: Request) {
       .select("reference_id, full_name, email")
       .single();
     if (data) pass = data;
-    else if (error?.code !== "23505") return NextResponse.json({ error: error?.message || "Couldn't create the pass." }, { status: 500 });
+    else if (error?.message?.includes("staff pass limit")) {
+      return NextResponse.json({ error: `Your ${x.standName} includes ${x.passesIncluded} pass${x.passesIncluded === 1 ? "" : "es"}. Ask the organizer if you need more.` }, { status: 409 });
+    } else if (error?.code !== "23505") return NextResponse.json({ error: error?.message || "Couldn't create the pass." }, { status: 500 });
   }
   if (!pass) return NextResponse.json({ error: "Couldn't create the pass. Please try again." }, { status: 500 });
   const emailed = await sendRegistrationEmail(email, pass.reference_id, x.event).catch(() => false);

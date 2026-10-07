@@ -44,7 +44,7 @@ export function LandingNav() {
           ))}
           <span className="mx-2 hidden h-5 w-px bg-white/15 sm:block" aria-hidden="true" />
           {/* on the promoter pages, sign-in opens with promoter wording */}
-          <Link href={pathname.startsWith("/marketplace") || pathname.startsWith("/promote") ? "/login?as=promoter" : "/login"} className="lp-navlink">Sign in</Link>
+          <Link href={pathname.startsWith("/marketplace") || pathname.startsWith("/promote") ? "/login?as=promoter" : "/login"} className="lp-navlink lp-navlink--signin">Sign in</Link>
           <Link href="/signup" className="lp-navcta">Sign up</Link>
           <button
             type="button"

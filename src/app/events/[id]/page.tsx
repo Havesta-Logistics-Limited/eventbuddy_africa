@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { copyText } from "@/lib/copy-text";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -284,7 +285,7 @@ export default function EventDetailPage() {
   async function handleCopyLink() {
     const link = registrationLink();
     if (!link) return;
-    await navigator.clipboard.writeText(link);
+    await copyText(link);
     setLinkCopied(true);
     toast.success("Link copied");
     setTimeout(() => setLinkCopied(false), 2000);

@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const { data: promoter } = await admin.from("promoters").select("id, handle, full_name, email, phone, is_suspended").ilike("handle", handle).maybeSingle();
   if (!promoter || promoter.is_suspended) return NextResponse.json({ error: `No promoter found with the handle @${handle}.` }, { status: 404 });
 
-  const result = await addPromoterToEvent(admin, event, promoter);
+  const result = await addPromoterToEvent(admin, event, promoter, { reactivate: true });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json({ success: true, promoter: { handle: promoter.handle, fullName: promoter.full_name } });
 }

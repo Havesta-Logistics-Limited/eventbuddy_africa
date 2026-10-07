@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { copyText } from "@/lib/copy-text";
 import { ExhibitCta } from "@/components/exhibit-cta";
 import { ExhibitorStrip } from "@/components/exhibitor-strip";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -612,7 +613,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
   async function copyReferenceId() {
     if (!confirmation?.referenceId) return;
-    await navigator.clipboard.writeText(confirmation.referenceId);
+    await copyText(confirmation.referenceId);
     setCopied(true);
     toast.success("Reference ID copied");
     setTimeout(() => setCopied(false), 2000);
@@ -628,7 +629,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
       }
       return;
     }
-    await navigator.clipboard.writeText(url);
+    await copyText(url);
     toast.success("Link copied");
   }
 

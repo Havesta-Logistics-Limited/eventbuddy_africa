@@ -181,7 +181,7 @@ function LoginForm() {
                     <button
                       type="button"
                       onClick={() => setShowPw((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-fg-3"
+                      className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-lg text-subtle hover:text-fg-3"
                       aria-label={showPw ? "Hide password" : "Show password"}
                     >
                       {showPw ? <EyeOff size={16} /> : <Eye size={16} />}

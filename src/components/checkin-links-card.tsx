@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { copyText } from "@/lib/copy-text";
 import { toast } from "sonner";
 import { Link2 } from "lucide-react";
 import { EventRecord } from "@/lib/types";
@@ -34,7 +35,7 @@ export function CheckinLinksCard({
   ];
 
   function copy(key: "staff" | "rep", url: string) {
-    navigator.clipboard.writeText(url).then(() => {
+    copyText(url).then(() => {
       setCopied(key);
       toast.success("Link copied");
       setTimeout(() => setCopied(null), 2000);

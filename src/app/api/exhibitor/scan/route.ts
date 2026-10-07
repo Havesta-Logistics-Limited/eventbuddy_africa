@@ -15,6 +15,8 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const x = await loadPortal(admin, parsed.data.token);
   if (!x) return NextResponse.json({ error: "This portal link isn't valid." }, { status: 404 });
+  // per exhibitor too: an IP limit alone can be spread across addresses
+  if (!(await checkRateLimit(`exhibitor-scan:portal:${x.id}`, 400, 60 * 60))) return rateLimitedResponse();
   if (x.status !== "paid") return NextResponse.json({ error: "Lead scanning opens once your stand is confirmed." }, { status: 403 });
 
   const ref = parsed.data.code.toUpperCase();
@@ -24,7 +26,8 @@ export async function POST(request: Request) {
     .eq("event_id", x.event_id)
     .eq("reference_id", ref)
     .maybeSingle();
-  if (!reg || ["cancelled", "declined"].includes(reg.status)) return NextResponse.json({ error: "No ticket for this event matches that code." }, { status: 404 });
+  // only real, active tickets: not pending approval, waitlisted, cancelled or declined
+  if (!reg || !["registered", "checked_in"].includes(reg.status)) return NextResponse.json({ error: "No ticket for this event matches that code." }, { status: 404 });
   if (reg.exhibitor_id === x.id) return NextResponse.json({ error: "That's one of your own staff passes." }, { status: 409 });
 
   const { data: existing } = await admin.from("exhibitor_leads").select("id, rating, notes").eq("exhibitor_id", x.id).eq("registration_id", reg.id).maybeSingle();

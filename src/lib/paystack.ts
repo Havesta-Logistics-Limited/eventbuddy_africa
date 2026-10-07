@@ -603,8 +603,18 @@ async function finalizeStandBooking(
       .from("exhibitors")
       .update({ status: "paid", paid_at: new Date().toISOString() })
       .eq("id", txn.exhibitor_id)
+      // only an approval still standing is confirmed; a stand cancelled or
+      // declined while the exhibitor was at checkout needs a refund instead
+      .eq("status", "approved")
       .select("email, company_name, contact_name, stand_label, amount_naira, portal_token, events(name), stand_types(name), organizations(email)")
       .maybeSingle();
+    if (!x) {
+      console.error(`[stands] payment ${txn.reference} arrived for exhibitor ${txn.exhibitor_id} whose approval was cancelled or declined: refund it from the platform portal`);
+      await supabase.from("risk_alerts").upsert(
+        { organization_id: txn.organization_id, event_id: txn.event_id, kind: "sales_spike", tickets: 0, dedupe_key: `stand_paid_after_cancel:${txn.id}` },
+        { onConflict: "dedupe_key", ignoreDuplicates: true }
+      );
+    }
     if (x) {
       const orgEmail = (x.organizations as unknown as { email: string | null } | null)?.email;
       // the exhibitor's copy carries their portal link; the organizer's doesn't
@@ -662,13 +672,17 @@ async function postPromoterCommission(
   const { data: ref } = await supabase.from("event_referrals").select("promoter_id").eq("id", txn.referral_id!).maybeSingle();
   if (!ref?.promoter_id) return;
   const [{ data: promoter }, { data: event }] = await Promise.all([
-    supabase.from("promoters").select("id, email, is_suspended").eq("id", ref.promoter_id).maybeSingle(),
+    supabase.from("promoters").select("id, email, phone, is_suspended").eq("id", ref.promoter_id).maybeSingle(),
     supabase.from("events").select("promoter_program_enabled, promoter_commission_pct, promoter_commission_cap_naira").eq("id", txn.event_id).maybeSingle(),
   ]);
   if (!promoter || promoter.is_suspended || !event?.promoter_program_enabled) return;
   const info = txn.registrant_data;
   const emails = [info?.email, ...(info?.guests ?? []).map((g) => g.email)].filter(Boolean).map((e) => String(e).trim().toLowerCase());
   if (emails.includes(String(promoter.email).trim().toLowerCase())) return;
+  // a promoter buying with another email but their own phone is still buying for themselves
+  const digits = (p: unknown) => String(p ?? "").replace(/\D/g, "").slice(-10);
+  const phones = [info?.phone, ...((info?.guests ?? []) as { phone?: string }[]).map((g) => g.phone)].map(digits).filter((p) => p.length === 10);
+  if (promoter.phone && phones.includes(digits(promoter.phone))) return;
 
   const commission = promoterCommission({
     amountNaira: Number(txn.amount_naira),
@@ -982,6 +996,8 @@ export async function handleRefundOrDispute(supabase: SupabaseClient, reference:
   const { data: txn } = await supabase.from("paystack_transactions").select("*").eq("reference", reference).maybeSingle();
   if (!txn) return { handled: false };
   if (txn.status === kind) return { handled: true };
+  // read before the update below changes it
+  const priorStatus: string = txn.status;
 
   const { data: updated } = await supabase
     .from("paystack_transactions")
@@ -991,6 +1007,9 @@ export async function handleRefundOrDispute(supabase: SupabaseClient, reference:
     .select()
     .maybeSingle();
   if (!updated) return { handled: true };
+  // a dispute later refunded (or the reverse) was already reversed once:
+  // record the new status but don't debit, cancel or decrement again
+  if (priorStatus === "refunded" || priorStatus === "disputed") return { handled: true };
 
   // a stand payment (0112) is refunded the same way: the booking is cancelled
   // and the money comes off the organizer's held balance below

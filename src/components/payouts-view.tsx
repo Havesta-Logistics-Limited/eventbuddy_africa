@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { formatNaira } from "@/lib/billing";
 import { PromoterBankCard } from "@/components/promoter-bank-card";
+import { VerificationCard } from "@/components/verification-card";
 import {
   PersistError,
   cancelPayout,
@@ -224,6 +225,8 @@ export function PayoutsView({ kind }: { kind: PayoutAccountKind }) {
               : "Your ticket money, what you can withdraw now, and every payout you've requested."}
           </p>
         </div>
+
+        {kind === "organizer" && <VerificationCard />}
 
         {!loading && settings && !settings.heldFundsEnabled && (
           <div className="eb-alert mb-6 flex items-start gap-2.5">

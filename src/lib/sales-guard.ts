@@ -26,11 +26,19 @@ async function readLimit(admin: SupabaseClient, orgId: string): Promise<Limit> {
   };
 }
 
-/** Before a paid purchase starts: may this organizer sell another ticket? */
+/** Before a paid purchase (ticket or stand) starts: may this organizer take
+ *  another payment? Counts completed sales plus checkouts started in the last
+ *  hour, so many buyers paying at once can't all slip past the limit. */
 export async function checkSalesCap(admin: SupabaseClient, orgId: string, eventId: string): Promise<{ allowed: true } | { allowed: false; message: string }> {
   try {
     const l = await readLimit(admin, orgId);
-    if (l.verified || l.cap == null || l.sold < l.cap) return { allowed: true };
+    if (l.verified || l.cap == null) return { allowed: true };
+    const since = new Date(Date.now() - 3600 * 1000).toISOString();
+    const [{ count: inCheckout }, { count: stands }] = await Promise.all([
+      admin.from("paystack_transactions").select("id", { count: "exact", head: true }).eq("organization_id", orgId).eq("status", "pending").in("purpose", ["ticket_purchase", "stand_booking"]).gt("amount_naira", 0).gte("created_at", since),
+      admin.from("paystack_transactions").select("id", { count: "exact", head: true }).eq("organization_id", orgId).eq("status", "success").eq("purpose", "stand_booking"),
+    ]);
+    if (l.sold + (stands ?? 0) + (inCheckout ?? 0) < l.cap) return { allowed: true };
     await raiseAlert(admin, { orgId, eventId, kind: "cap_reached", tickets: l.sold, key: `cap_reached:${orgId}` });
     return { allowed: false, message: "Ticket sales for this event are paused for now while the organizer's account is being verified. Please check back soon." };
   } catch (err) {

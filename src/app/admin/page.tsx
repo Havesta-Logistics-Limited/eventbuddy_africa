@@ -550,7 +550,9 @@ function AdminPageContent() {
 
   const staffUnis = staffForm.destinationId ? universities.filter((u) => u.destinationId === staffForm.destinationId) : [];
   const selectedStaffEvent = staffForm.eventId ? events.find((e) => e.id === staffForm.eventId) : undefined;
-  const staffEventUsesDestinations = selectedStaffEvent ? getTemplate(selectedStaffEvent.templateId).usesDestinations : true;
+  // destination/university only mean something for education-fair events:
+  // hidden until one of those is picked (generic events never see them)
+  const staffEventUsesDestinations = selectedStaffEvent ? getTemplate(selectedStaffEvent.templateId).usesDestinations : false;
 
   async function runSave(action: () => Promise<unknown>, onSuccess: () => void, successMessage: string) {
     setFormError("");
@@ -1217,7 +1219,7 @@ function AdminPageContent() {
                         value={staffForm.eventId}
                         onChange={(e) => {
                           const ev = events.find((x) => x.id === e.target.value);
-                          const usesDestinations = ev ? getTemplate(ev.templateId).usesDestinations : true;
+                          const usesDestinations = ev ? getTemplate(ev.templateId).usesDestinations : false;
                           setStaffForm({
                             ...staffForm,
                             eventId: e.target.value,

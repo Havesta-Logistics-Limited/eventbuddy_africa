@@ -6,6 +6,7 @@ import { AlertCircle, AlertTriangle, Check, Send, ShieldCheck, X } from "lucide-
 import { formatNaira } from "@/lib/billing";
 import { PersistError, getPayoutSettings, mapPayoutRow } from "@/lib/store";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { PlatformVerificationQueue } from "@/components/platform-verification-queue";
 import type { PayoutRequest, PayoutSettings } from "@/lib/types";
 
 type QueueRow = PayoutRequest & { orgName: string; orgVerified: boolean; availableNaira: number | null; promoterId: string | null };
@@ -160,6 +161,7 @@ export function PlatformPayoutQueue() {
 
   return (
     <div className="mb-8 space-y-6">
+      <PlatformVerificationQueue />
       {alertOrgs.length > 0 && (
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-fg">
@@ -286,11 +288,13 @@ export function PlatformPayoutQueue() {
                     )}
                     {(r.failureReason || r.decisionNote) && <p className="mt-1 text-xs text-subtle">{r.failureReason || r.decisionNote}</p>}
                   </div>
-                  {r.status === "requested" && (
+                  {(r.status === "requested" || r.status === "processing") && (
                     <div className="flex flex-wrap gap-2">
-                      <button type="button" disabled={busy === r.id} onClick={() => decide(r.id, "transfer")} className="eb-btn eb-btn--primary">
-                        <Send size={14} aria-hidden="true" /> Send via Paystack
-                      </button>
+                      {r.status === "requested" && (
+                        <button type="button" disabled={busy === r.id} onClick={() => decide(r.id, "transfer")} className="eb-btn eb-btn--primary">
+                          <Send size={14} aria-hidden="true" /> Send via Paystack
+                        </button>
+                      )}
                       <button type="button" disabled={busy === r.id} onClick={() => decide(r.id, "mark_paid")} className="eb-btn eb-btn--ghost">
                         <Check size={14} aria-hidden="true" /> Mark paid
                       </button>

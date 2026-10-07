@@ -5,6 +5,7 @@ import { nairaToChargeAmount, paystackInitialize } from "@/lib/paystack";
 import { newId } from "@/lib/utils";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 import { standFeeMinor } from "@/lib/exhibitors";
+import { checkSalesCap } from "@/lib/sales-guard";
 
 const Token = z.string().uuid();
 
@@ -50,6 +51,10 @@ export async function POST(request: Request) {
   if (x.status !== "approved") return NextResponse.json({ error: "This booking can't be paid for right now. Contact the organizer." }, { status: 409 });
   const org = x.organizations as unknown as { id: string; is_fee_exempt: boolean; is_suspended: boolean };
   if (org.is_suspended) return NextResponse.json({ error: "Payments for this event are unavailable right now." }, { status: 403 });
+
+  // unverified organizers' sales limit (0111) covers stands too
+  const cap = await checkSalesCap(admin, x.organization_id, x.event_id);
+  if (!cap.allowed) return NextResponse.json({ error: "Payments for this event are paused while the organizer's account is being verified. Please try again soon." }, { status: 409 });
 
   const amountNaira = Number(x.amount_naira);
   const { currency, amountMinor } = nairaToChargeAmount(amountNaira);

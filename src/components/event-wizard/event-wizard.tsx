@@ -253,14 +253,14 @@ export function EventWizard(props: {
             type="button"
             onClick={back}
             className={`eb-btn eb-btn--ghost ${
-              step === "review" && mode === "create" ? "px-4 shrink-0" : "flex-1"
+              step === "review" && (mode === "create" || mode === "guest") ? "px-4 shrink-0" : "flex-1"
             }`}
           >
             {stepIndex === 0 ? "Cancel" : "Back"}
           </button>
           {step === "review" && mode === "guest" ? (
             <button type="button" onClick={() => handleSubmit("draft")} disabled={submitting !== null} className="eb-btn eb-btn--primary flex-1">
-              Create free account to save
+              Save with a free account
             </button>
           ) : step === "review" ? (
             mode === "create" ? (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { copyText } from "@/lib/copy-text";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { brandedQrDataUrl } from "@/lib/branded-qr";
@@ -210,7 +211,7 @@ export default function RsvpPage() {
   }
 
   async function copyReferenceId(ref: string) {
-    await navigator.clipboard.writeText(ref);
+    await copyText(ref);
     setCopiedRef(ref);
     toast.success("Reference ID copied");
     setTimeout(() => setCopiedRef(null), 2000);

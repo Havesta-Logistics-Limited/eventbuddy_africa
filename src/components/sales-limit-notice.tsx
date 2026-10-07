@@ -31,11 +31,10 @@ export function SalesLimitNotice() {
             You&apos;ve sold <strong>{limit.sold} of {limit.cap}</strong> paid tickets new accounts can sell before eventbuddy verifies them.
           </>
         )}{" "}
-        Our team is reviewing your account.{" "}
-        <Link href="/contact" className="font-semibold underline underline-offset-4">
-          Contact us
+        <Link href="/payouts#verify" className="font-semibold underline underline-offset-4">
+          Get verified
         </Link>{" "}
-        to speed it up.
+        to lift the limit.
       </p>
     </div>
   );

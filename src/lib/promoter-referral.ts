@@ -7,11 +7,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export async function addPromoterToEvent(
   supabase: SupabaseClient,
   event: { id: string; organization_id: string; promoter_commission_pct: number | string },
-  promoter: { id: string; handle: string; full_name: string; email: string; phone?: string | null }
+  promoter: { id: string; handle: string; full_name: string; email: string; phone?: string | null },
+  // only the organizer (invite) may bring back a promoter they paused
+  opts: { reactivate?: boolean } = {}
 ): Promise<{ ok: true; referralId: string } | { ok: false; error: string; status: number }> {
   const { data: existing } = await supabase.from("event_referrals").select("id, is_active").eq("event_id", event.id).eq("promoter_id", promoter.id).maybeSingle();
   if (existing) {
     if (existing.is_active) return { ok: true, referralId: existing.id };
+    if (!opts.reactivate) return { ok: false, error: "The organizer has paused you on this event.", status: 403 };
     const { error } = await supabase.from("event_referrals").update({ is_active: true }).eq("id", existing.id);
     if (error) return { ok: false, error: error.message, status: 409 };
     return { ok: true, referralId: existing.id };

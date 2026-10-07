@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { copyText } from "@/lib/copy-text";
 import { Copy, Check, Plus, Trash2, Download, Loader2, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { CommissionType, EventRecord, ReferralPartner } from "@/lib/types";
@@ -90,7 +91,7 @@ export function ReferralsTab({
 
   async function copy(text: string, id: string) {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(id);
       setTimeout(() => setCopied((c) => (c === id ? null : c)), 2000);
     } catch {

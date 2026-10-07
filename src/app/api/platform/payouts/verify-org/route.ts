@@ -17,5 +17,12 @@ export async function POST(request: Request) {
     .update({ payout_verified: parsed.data.verified, payout_verified_at: parsed.data.verified ? new Date().toISOString() : null })
     .eq("id", parsed.data.orgId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (parsed.data.verified) {
+    // verifying from the switch settles any open request and risk alerts too (0118)
+    const now = new Date().toISOString();
+    const admin = createAdminClient();
+    await admin.from("organizer_verification_requests").update({ status: "approved", decided_at: now, decided_by: auth.userId }).eq("organization_id", parsed.data.orgId).eq("status", "pending");
+    await admin.from("risk_alerts").update({ resolved_at: now, resolved_by: auth.userId }).eq("organization_id", parsed.data.orgId).is("resolved_at", null);
+  }
   return NextResponse.json({ success: true });
 }

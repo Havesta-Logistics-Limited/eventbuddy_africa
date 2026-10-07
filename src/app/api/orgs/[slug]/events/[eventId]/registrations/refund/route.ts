@@ -65,11 +65,25 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { data: txn } = await admin
     .from("paystack_transactions")
-    .select("reference, amount_naira")
+    .select("reference, amount_naira, settlement")
     .eq("registration_id", purchaseRegistrationId)
     .eq("status", "success")
     .maybeSingle();
   if (!txn) return NextResponse.json({ error: "No successful paid transaction found for this registration — nothing to refund." }, { status: 400 });
+
+  // Held funds: a refund is paid out of eventbuddy's balance and debited from
+  // the organizer's. Once they've withdrawn the money, refunding would leave
+  // eventbuddy covering it, so the refund then goes through eventbuddy.
+  if (txn.settlement === "held") {
+    const { data: rows } = await admin.from("ledger_entries").select("amount_naira").eq("organization_id", org.id);
+    const owed = (rows ?? []).reduce((sum, r) => sum + Number(r.amount_naira), 0);
+    if (owed < Number(txn.amount_naira)) {
+      return NextResponse.json(
+        { error: "You've already been paid out more than this refund leaves you. Contact eventbuddy support to refund this buyer." },
+        { status: 409 }
+      );
+    }
+  }
 
   try {
     await paystackRefund(txn.reference);
