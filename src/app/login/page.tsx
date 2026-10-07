@@ -1,13 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { completeMfaLogin, login, useSession } from "@/lib/store";
 import { AuthSplit } from "@/components/auth/auth-shell";
 import { isValidEmail } from "@/lib/validation";
 
+// useSearchParams needs a Suspense boundary so the page can still prerender.
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+/** One sign-in for everyone: organizers, invited admins and promoters (the
+ *  account type is detected after sign-in). ?as=promoter, used by the promoter
+ *  pages' Sign in links, only swaps the copy for promoter-facing wording. */
+function LoginForm() {
+  const asPromoter = useSearchParams().get("as") === "promoter";
   const session = useSession();
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -69,9 +82,13 @@ export default function LoginPage() {
 
   return (
     <AuthSplit
-      headline="Sell your tickets."
-      accent="Then we run the whole event."
-      sub="Registration, ticketing, check-in and a live event hub for any event. Sign in to pick up where you left off."
+      headline={asPromoter ? "Share events you love." : "Sell your tickets."}
+      accent={asPromoter ? "Get paid for it." : "Then we run the whole event."}
+      sub={
+        asPromoter
+          ? "Sign in to see your events, links, earnings and payouts."
+          : "Registration, ticketing, check-in and a live event hub for any event. Sign in to pick up where you left off."
+      }
     >
 
           {mfaFactorId ? (
@@ -124,8 +141,10 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <h1 className="eb-auth-title">Welcome back</h1>
-              <p className="eb-auth-sub">Sign in to your account to continue.</p>
+              <h1 className="eb-auth-title">{asPromoter ? "Promoter sign in" : "Welcome back"}</h1>
+              <p className="eb-auth-sub">
+                {asPromoter ? "Sign in with the email you used to join as a promoter." : "Organizers and promoters both sign in here."}
+              </p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -196,9 +215,27 @@ export default function LoginPage() {
               <div className="eb-auth-foot">
                 <p>
                   New here?{" "}
-                  <button type="button" onClick={() => router.push("/signup")} className="eb-link text-xs">
-                    Create your organization account
-                  </button>
+                  {asPromoter ? (
+                    <>
+                      <button type="button" onClick={() => router.push("/promote")} className="eb-link text-xs">
+                        Become a promoter
+                      </button>
+                      {" · "}
+                      <button type="button" onClick={() => router.push("/signup")} className="eb-link text-xs">
+                        Organize an event
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button type="button" onClick={() => router.push("/signup")} className="eb-link text-xs">
+                        Create your organization account
+                      </button>
+                      {" · "}
+                      <button type="button" onClick={() => router.push("/promote")} className="eb-link text-xs">
+                        Become a promoter
+                      </button>
+                    </>
+                  )}
                 </p>
               </div>
             </>

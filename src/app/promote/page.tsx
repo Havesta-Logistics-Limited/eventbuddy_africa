@@ -71,7 +71,7 @@ function PromoterSignupForm() {
   if (submittedEmail) {
     return (
       <AuthCentered>
-        <CheckEmailPanel email={submittedEmail} emailSent={emailSent} onBack={() => router.push("/login")} />
+        <CheckEmailPanel email={submittedEmail} emailSent={emailSent} onBack={() => router.push("/login?as=promoter")} />
       </AuthCentered>
     );
   }
@@ -193,7 +193,7 @@ function PromoterSignupForm() {
             </Link>
             <br />
             Already have an account?{" "}
-            <button type="button" onClick={() => router.push("/login")} className="eb-link text-sm">
+            <button type="button" onClick={() => router.push("/login?as=promoter")} className="eb-link text-sm">
               Sign in
             </button>
           </p>

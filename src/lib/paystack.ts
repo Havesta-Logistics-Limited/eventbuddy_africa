@@ -434,6 +434,43 @@ async function resolveHubUrlForTxn(supabase: SupabaseClient, txn: PendingTicketT
  * that change; it's treated as an inert, already-settled record rather than
  * acted on.
  */
+/** The reference ID a successful ticket transaction produced, for a caller
+ *  that arrives after another one already claimed the transaction (the
+ *  webhook and the confirmation page both finalize; the page can also fire
+ *  twice). The first caller flips the status to success and only then creates
+ *  the registration, which takes a few seconds, so a second caller can get
+ *  here before it exists. Read the transaction's own registration_id, waiting
+ *  briefly for it, instead of guessing by email (which also broke for anyone
+ *  holding two tickets). Virtual events have no reference and return null. */
+async function awaitFulfilledReference(
+  supabase: SupabaseClient,
+  txn: { id: string; event_id: string; registrant_data?: unknown; ticket_type_id?: string | null }
+): Promise<string | null> {
+  const { data: event } = await supabase.from("events").select("event_format").eq("id", txn.event_id).maybeSingle();
+  if (event?.event_format === "virtual") return null;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const { data: row } = await supabase.from("paystack_transactions").select("registration_id").eq("id", txn.id).maybeSingle();
+    if (row?.registration_id) {
+      const { data: reg } = await supabase.from("registrations").select("reference_id").eq("id", row.registration_id).maybeSingle();
+      if (reg?.reference_id) return reg.reference_id;
+    }
+    await new Promise((r) => setTimeout(r, 750));
+  }
+  // Older transactions (before registration_id was recorded) fall back to the
+  // buyer's newest registration for this ticket type.
+  const { data: fallback } = await supabase
+    .from("registrations")
+    .select("reference_id")
+    .eq("event_id", txn.event_id)
+    .eq("email", (txn.registrant_data as { email?: string } | null)?.email ?? "")
+    .eq("ticket_type_id", txn.ticket_type_id ?? "")
+    .is("group_lead_id", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return fallback?.reference_id ?? null;
+}
+
 export async function finalizePaystackTransaction(supabase: SupabaseClient, reference: string): Promise<FinalizeResult> {
   const { data: txn } = await supabase.from("paystack_transactions").select("*").eq("reference", reference).maybeSingle();
   if (!txn) return { ok: false, reason: "unknown_reference" };
@@ -446,15 +483,9 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
   }
 
   if (txn.status === "success") {
-    const { data: existing } = await supabase
-      .from("registrations")
-      .select("reference_id")
-      .eq("event_id", txn.event_id)
-      .eq("email", (txn.registrant_data as { email?: string } | null)?.email ?? "")
-      .eq("ticket_type_id", txn.ticket_type_id)
-      .maybeSingle();
+    const referenceId = await awaitFulfilledReference(supabase, txn);
     const hubUrl = await resolveHubUrlForTxn(supabase, txn);
-    return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId: existing?.reference_id ?? null, hubUrl, alreadyProcessed: true };
+    return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId, hubUrl, alreadyProcessed: true };
   }
 
   let verified: PaystackVerification;

@@ -372,7 +372,7 @@ export default function EventDetailPage() {
     { id: "leads", label: "Leads" },
     { id: "checkin-staff", label: "Check-in Staff" },
     ...(event.selfRegistrationEnabled !== false || event.eventFormat === "virtual"
-      ? ([{ id: "referrals", label: "Referrals" }] as const)
+      ? ([{ id: "referrals", label: "Promoters" }] as const)
       : []),
     // Reps are an org-wide resource managed from here now (see RepsManagement) — the
     // tab itself only needs usesDestinations (is this an Education Fair event at
