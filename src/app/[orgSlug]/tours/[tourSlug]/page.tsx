@@ -53,8 +53,11 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 }
 
 /** The public tour page: every city's date with a ticket button per city. */
-export default async function TourPublicPage({ params }: { params: Promise<Params> }) {
+export default async function TourPublicPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ ref?: string | string[] }> }) {
   const { orgSlug, tourSlug } = await params;
+  // a promoter's handle (from their tour link) rides along to the city the buyer picks
+  const rawRef = (await searchParams).ref;
+  const ref = typeof rawRef === "string" && /^[A-Za-z0-9_-]{2,40}$/.test(rawRef) ? rawRef : null;
   const tour = await loadTour(orgSlug, tourSlug);
 
   if (!tour) {
@@ -107,7 +110,8 @@ export default async function TourPublicPage({ params }: { params: Promise<Param
             <ul className="space-y-3">
               {cities.map((c) => {
                 const d = new Date(`${c.date}T00:00:00`);
-                const href = canonicalEventPath(tour.org_slug, { id: c.event_id, slug: c.slug ?? undefined } as Parameters<typeof canonicalEventPath>[1]);
+                const path = canonicalEventPath(tour.org_slug, { id: c.event_id, slug: c.slug ?? undefined } as Parameters<typeof canonicalEventPath>[1]);
+                const href = ref ? `${path}?ref=${encodeURIComponent(ref)}` : path;
                 const free = !c.has_tickets || (c.min_price ?? 0) === 0;
                 const cta = c.ended ? "Ended" : c.sold_out ? "Sold out" : free ? "Register" : "Buy Ticket";
                 return (

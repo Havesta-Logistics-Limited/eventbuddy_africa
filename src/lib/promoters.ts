@@ -34,6 +34,12 @@ export function promoterLink(siteUrl: string, e: { slug?: string | null; orgSlug
   return e.slug ? `${base}/${e.slug}/${handle}` : `${base}/${e.orgSlug}/events/${e.eventId}/register?ref=${encodeURIComponent(handle)}`;
 }
 
+/** A promoter's link to a whole tour: the buyer picks their city on the tour
+ *  page and the handle rides along to that city's ticket page. */
+export function promoterTourLink(siteUrl: string, t: { orgSlug: string; tourSlug: string }, handle: string): string {
+  return `${siteUrl.replace(/\/$/, "")}/${t.orgSlug}/tours/${t.tourSlug}/${handle}`;
+}
+
 /** Promoter badges (migration 0106): earned from real attributed sales only.
  *  Keep in step with _promoter_stats in the migration. */
 export type PromoterBadge = "starter" | "seller" | "reliable" | "captain";

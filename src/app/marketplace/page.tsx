@@ -70,7 +70,11 @@ function MarketplaceContent({ isPromoter }: { isPromoter: boolean }) {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Couldn't join this event.");
       setJoined((j) => ({ ...j, [e.eventId]: json.link }));
-      toast.success(`You're promoting ${e.name}. Your link is ready.`);
+      toast.success(
+        json.tourLink && json.tourCities > 1
+          ? `You're promoting ${e.name} in all ${json.tourCities} cities of the tour. Your links are on your dashboard.`
+          : `You're promoting ${e.name}. Your link is ready.`
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't join this event.");
     } finally {

@@ -2730,6 +2730,8 @@ export type PromoterEventRow = {
   shareCaption: string | null;
   paidSales: number;
   earnedNaira: number;
+  /** Set when the event is one city of a tour (migration 0110). */
+  tour: { id: string; name: string; slug: string; cityCount: number } | null;
 };
 
 export async function getPromoterDashboard(): Promise<PromoterEventRow[]> {
@@ -2755,6 +2757,7 @@ export async function getPromoterDashboard(): Promise<PromoterEventRow[]> {
     shareCaption: (r.share_caption as string | null) ?? null,
     paidSales: Number(r.paid_sales ?? 0),
     earnedNaira: Number(r.earned_naira ?? 0),
+    tour: r.tour_id ? { id: r.tour_id as string, name: r.tour_name as string, slug: r.tour_slug as string, cityCount: Number(r.tour_city_count ?? 0) } : null,
   }));
 }
 
@@ -2913,7 +2916,7 @@ export async function addTourCity(
   sourceEventId: string,
   city: { name: string; location: string; venue: string; date: string; startTime?: string; endTime?: string }
 ): Promise<EventRecord | undefined> {
-  return duplicateEvent(sourceEventId, {
+  const created = await duplicateEvent(sourceEventId, {
     name: city.name,
     location: city.location,
     venue: city.venue,
@@ -2924,6 +2927,18 @@ export async function addTourCity(
     tourId,
     published: false,
   });
+  if (created) {
+    // the promoter programme isn't part of EventRecord, so copy it across here:
+    // the tour's promoters then carry on selling in the new city
+    const supabase = createSupabaseBrowserClient();
+    const { data: src } = await supabase
+      .from("events")
+      .select("promoter_program_enabled, promoter_commission_pct, promoter_commission_cap_naira, promoter_access, promoter_share_caption")
+      .eq("id", sourceEventId)
+      .maybeSingle();
+    if (src) await supabase.from("events").update(src).eq("id", created.id);
+  }
+  return created;
 }
 
 /** Takes an event out of its tour (the event itself is untouched). */

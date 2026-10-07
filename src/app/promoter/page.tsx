@@ -17,7 +17,7 @@ import { Shell } from "@/components/shell";
 import { AuthLoading } from "@/components/auth-loading";
 import { useRequireRole } from "@/lib/auth";
 import { formatNaira } from "@/lib/billing";
-import { nextBadgeHint, promoterLink } from "@/lib/promoters";
+import { nextBadgeHint, promoterLink, promoterTourLink } from "@/lib/promoters";
 import {
   PersistError,
   getPromoterBalance,
@@ -148,8 +148,9 @@ export default function PromoterDashboardPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {rows.map((r) => (
-              <PromotedEvent key={r.referralId} row={r} handle={handle} />
+            {rows.map((r, i) => (
+              // the whole-tour link shows once, on the tour's first card
+              <PromotedEvent key={r.referralId} row={r} handle={handle} showTour={!!r.tour && rows.findIndex((x) => x.tour?.id === r.tour?.id) === i} />
             ))}
           </div>
         )}
@@ -161,11 +162,14 @@ export default function PromoterDashboardPage() {
 function PromotedEvent({
   row,
   handle,
+  showTour,
 }: {
   row: PromoterEventRow;
   handle: string;
+  showTour: boolean;
 }) {
-  const [copied, setCopied] = useState<"link" | "caption" | null>(null);
+  const [copied, setCopied] = useState<"link" | "caption" | "tour" | null>(null);
+  const tourLink = showTour && row.tour && row.tour.cityCount > 1 ? promoterTourLink(siteUrl(), { orgSlug: row.orgSlug, tourSlug: row.tour.slug }, handle) : null;
   const link = promoterLink(
     siteUrl(),
     { slug: row.eventSlug, orgSlug: row.orgSlug, eventId: row.eventId },
@@ -174,7 +178,7 @@ function PromotedEvent({
   const caption = `${row.shareCaption?.trim() || `Join me at ${row.eventName} on ${formatDate(row.eventDate)}. Get your ticket here:`} ${link}`;
   const live = row.active && row.programEnabled;
 
-  function copy(text: string, what: "link" | "caption") {
+  function copy(text: string, what: "link" | "caption" | "tour") {
     navigator.clipboard.writeText(text);
     setCopied(what);
     setTimeout(() => setCopied(null), 1600);
@@ -268,6 +272,20 @@ function PromotedEvent({
               <MessageCircle size={14} aria-hidden="true" /> WhatsApp
             </a>
           </div>
+          {tourLink && row.tour && (
+            <div className="mt-3 rounded-xl bg-[rgb(255_138_245/0.07)] p-3 ring-1 ring-[rgb(255_138_245/0.22)]">
+              <p className="text-xs font-semibold text-[#ff8af5]">
+                Whole tour: {row.tour.name} · {row.tour.cityCount} cities
+              </p>
+              <p className="mt-0.5 text-xs text-muted">One link for every city. Buyers pick their city and you earn wherever they buy.</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded-lg bg-fill px-3 py-2 text-xs text-fg-2">{tourLink}</code>
+                <button type="button" className="eb-btn eb-btn--ghost" onClick={() => copy(tourLink, "tour")}>
+                  {copied === "tour" ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />} {copied === "tour" ? "Copied" : "Copy tour link"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </article>
