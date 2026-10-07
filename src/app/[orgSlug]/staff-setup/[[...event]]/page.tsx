@@ -9,6 +9,7 @@ import { getTemplate } from "@/lib/event-templates";
 import { EventPicker } from "@/components/event-picker";
 import { EventSignInHero } from "@/components/event-signin-hero";
 import { DarkAuroraShell } from "@/components/dark-aurora-shell";
+import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 
 type CheckinEvent = EventRecord & { hasStaffCode: boolean; hasRepCode: boolean };
 
@@ -113,7 +114,10 @@ export default function StaffSetupPage() {
         setError(result.error || "Couldn't check you in.");
         return;
       }
-      router.push("/collect");
+      // Before the event starts lead collection is still locked, but check-in
+      // is always open (early check-in), so land where staff can work.
+      const leadGate = selectedEvent ? getCaptureGate(windowFromEvent(selectedEvent), selectedEvent.timezone, selectedEvent.captureOverride) : null;
+      router.push(leadGate && !leadGate.open && leadGate.reason === "not_started" ? "/checkin" : "/collect");
     } finally {
       setSubmitting(false);
     }

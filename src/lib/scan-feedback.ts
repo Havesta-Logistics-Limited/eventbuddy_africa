@@ -3,7 +3,7 @@
  *  the Web Audio API, so there are no files to load and it works offline at a
  *  venue. Browsers only allow audio after a tap, so call unlockScanAudio() from
  *  the "Start camera" / "Check in" press. */
-export type ScanOutcome = "success" | "already" | "error";
+export type ScanOutcome = "success" | "already" | "error" | "early";
 
 let ctx: AudioContext | null = null;
 const MUTE_KEY = "eventbuddy:scan-muted";
@@ -53,6 +53,7 @@ const VIBRATE: Record<ScanOutcome, number[]> = {
   success: [60],
   already: [70, 80, 70],
   error: [220],
+  early: [40, 60, 40],
 };
 
 export function playScanFeedback(outcome: ScanOutcome, muted = isScanMuted()) {
@@ -74,6 +75,10 @@ export function playScanFeedback(outcome: ScanOutcome, muted = isScanMuted()) {
     // two even mid beeps: "seen this one"
     tone(740, 0, 0.13, "triangle", 0.35);
     tone(740, 0.2, 0.13, "triangle", 0.35);
+  } else if (outcome === "early") {
+    // a gentle "heads up": two soft rising notes, quieter than the others
+    tone(659.3, 0, 0.18, "sine", 0.26);
+    tone(880, 0.15, 0.3, "sine", 0.24);
   } else {
     // soft falling "uh-oh": D5 then a bent A4, rounded with a quiet
     // octave-down layer so it reads as "no" without a harsh buzz

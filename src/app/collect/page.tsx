@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { AlertCircle, CheckCircle2, Lock, ScanLine, Timer } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
@@ -86,7 +87,7 @@ export default function LeadCollectPage() {
   if (event && gate && !gate.open) {
     return (
       <Shell>
-        <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="eb-staff min-h-screen flex items-center justify-center p-6">
           <div className="text-center max-w-sm">
             <div className="w-20 h-20 rounded-full bg-amber-500/15 flex items-center justify-center mx-auto mb-5">
               <Lock size={32} className="text-amber-400" />
@@ -101,7 +102,13 @@ export default function LeadCollectPage() {
                   ? `Lead capture for ${event.name} opens ${formatDate(captureWindow!.date)}${captureWindow!.startTime ? ` at ${formatTime(captureWindow!.startTime)}` : ""}.`
                   : `Lead capture for ${event.name} closed ${formatDate(captureWindow!.endDate || captureWindow!.date)}${captureWindow!.endTime ? ` at ${formatTime(captureWindow!.endTime)}` : ""}.`}
             </p>
-            <p className="text-subtle text-sm mt-4">This page will unlock automatically once collection opens.</p>
+            <p className="text-subtle text-sm mt-4">
+              {gate.reason === "not_started" ? "This page unlocks automatically once collection opens." : "This page unlocks automatically if the organizer reopens it."}
+            </p>
+            {/* check-in is never locked before the start: early attendees can still be let in */}
+            <Link href="/checkin" className="eb-portal-cta mt-6 w-auto px-7">
+              <ScanLine size={18} aria-hidden="true" /> Go to Check-In
+            </Link>
           </div>
         </div>
       </Shell>

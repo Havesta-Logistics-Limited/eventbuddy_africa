@@ -1,17 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Camera, CheckCircle2, Clock3, ScanLine, Volume2, VolumeX, X } from "lucide-react";
+import { AlertCircle, CalendarClock, Camera, CheckCircle2, Clock3, ScanLine, Volume2, VolumeX, X } from "lucide-react";
 import { getQrDetector } from "@/lib/qr-detector";
 import { isScanMuted, setScanMuted, unlockScanAudio, type ScanOutcome } from "@/lib/scan-feedback";
 
 /** What the scan led to, shown over the camera picture. */
-export type ScanFlash = { key: number; outcome: ScanOutcome; title: string; name?: string; message: string };
+export type ScanFlash = {
+  key: number;
+  outcome: ScanOutcome;
+  title: string;
+  name?: string;
+  message: string;
+  /** A decision for staff (early check-in): the scanner stays paused until one is chosen. */
+  actions?: { primary: { label: string; onClick: () => void }; secondary: { label: string; onClick: () => void } };
+};
 
 const FLASH_ICON: Record<ScanOutcome, React.ReactNode> = {
   success: <CheckCircle2 size={64} strokeWidth={2.2} />,
   already: <Clock3 size={64} strokeWidth={2.2} />,
   error: <AlertCircle size={64} strokeWidth={2.2} />,
+  early: <CalendarClock size={64} strokeWidth={2.2} />,
 };
 
 /**
@@ -226,7 +235,17 @@ export function FastScanStage({
                 <p className="eb-scanflash-title">{flash.title}</p>
                 {flash.name && <p className="eb-scanflash-name">{flash.name}</p>}
                 <p className="eb-scanflash-msg">{flash.message}</p>
-                {countdown !== null && <p className="eb-scanflash-next">Next scan in {countdown}…</p>}
+                {flash.actions && (
+                  <div className="eb-scanflash-actions">
+                    <button type="button" className="eb-scanflash-btn" data-primary onClick={flash.actions.primary.onClick}>
+                      {flash.actions.primary.label}
+                    </button>
+                    <button type="button" className="eb-scanflash-btn" onClick={flash.actions.secondary.onClick}>
+                      {flash.actions.secondary.label}
+                    </button>
+                  </div>
+                )}
+                {countdown !== null && !flash.actions && <p className="eb-scanflash-next">Next scan in {countdown}…</p>}
               </div>
             </div>
           )}

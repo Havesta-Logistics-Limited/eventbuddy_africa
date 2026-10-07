@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, Clock3, Lock, ScanLine, Users } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3, Lock, ScanLine, Users, CalendarClock } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { useEvents } from "@/lib/store";
@@ -55,38 +55,87 @@ export default function CheckinPage() {
     return () => clearInterval(id);
   }, [gate?.open]);
 
-  async function checkIn(code: string) {
+  // Early check-in: before the event's start time the server holds the scan
+  // and asks. Staff can check that person in anyway, skip, or stop being asked
+  // for the rest of this session (the event's times never change).
+  const [earlyPrompt, setEarlyPrompt] = useState<{ code: string; name: string; opensAt: string } | null>(null);
+  const [skipEarlyAsk, setSkipEarlyAsk] = useState(false);
+  const skipEarlyAskRef = useRef(false);
+  const earlyDoneRef = useRef<(() => void) | null>(null);
+
+  function finishEarly() {
+    setEarlyPrompt(null);
+    setFlash(null);
+    earlyDoneRef.current?.();
+    earlyDoneRef.current = null;
+  }
+
+  async function confirmEarly(code: string) {
+    finishEarly();
+    await checkIn(code, true);
+  }
+
+  function askEarly(code: string, name: string, opensAt: string): Promise<void> {
+    playScanFeedback("early");
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    const opens = new Date(opensAt).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+    setEarlyPrompt({ code, name, opensAt });
+    setFlash({
+      key: Date.now(),
+      outcome: "early",
+      title: "Event hasn't started",
+      name,
+      message: `The event starts ${opens}.`,
+      actions: {
+        primary: { label: "Check in anyway", onClick: () => void confirmEarly(code) },
+        secondary: { label: "Not yet", onClick: finishEarly },
+      },
+    });
+    // the camera stays paused until staff decide
+    return new Promise((resolve) => {
+      earlyDoneRef.current = resolve;
+    });
+  }
+
+  async function checkIn(code: string, allowEarly = false): Promise<void> {
     if (!session || submittingRef.current || !code.trim()) return;
     submittingRef.current = true;
     setSubmitting(true);
     setResult(null);
+    let early: { name: string; opensAt: string } | null = null;
     try {
       const res = await fetch("/api/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staffId: session.id, referenceId: code.trim() }),
+        body: JSON.stringify({ staffId: session.id, referenceId: code.trim(), allowEarly: allowEarly || skipEarlyAskRef.current }),
       });
       const json = await res.json();
-      if (!res.ok) {
+      if (json.early) {
+        // handled after the request settles (below), so the prompt can wait for staff
+        early = { name: json.registration.fullName, opensAt: json.opensAt };
+      } else if (!res.ok) {
         announce({ kind: "error", message: json.error || "Couldn't check this attendee in." });
-        return;
-      }
-      if (json.alreadyCheckedIn) {
+      } else if (json.alreadyCheckedIn) {
         announce({
           kind: "already",
           name: json.registration.fullName,
           message: `Already checked in at ${new Date(json.registration.checkedInAt).toLocaleTimeString()}`,
         });
       } else {
-        announce({ kind: "success", name: json.registration.fullName, message: "Checked in successfully" });
+        announce({ kind: "success", name: json.registration.fullName, message: allowEarly || skipEarlyAskRef.current ? "Checked in early" : "Checked in successfully" });
         setSessionCount((c) => c + 1);
       }
-      setReferenceId("");
+      // keep a mistyped code in the box so it can be corrected
+      if (res.ok) setReferenceId("");
     } catch {
       announce({ kind: "error", message: "Couldn't reach the server. Check your connection and try again." });
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
+    }
+    if (early) {
+      setReferenceId("");
+      await askEarly(code.trim(), early.name, early.opensAt);
     }
   }
 
@@ -98,7 +147,9 @@ export default function CheckinPage() {
 
   if (!session) return <AuthLoading />;
 
-  if (event && gate && !gate.open) {
+  // Before the start the page stays usable (early check-in, see above); only a
+  // finished or organizer-closed check-in locks it.
+  if (event && gate && !gate.open && gate.reason !== "not_started") {
     return (
       <Shell>
         <div className="min-h-screen flex items-center justify-center p-6">
@@ -107,16 +158,14 @@ export default function CheckinPage() {
               <Lock size={32} className="text-amber-400" />
             </div>
             <h2 className="font-display text-2xl text-fg mb-2">
-              {gate.reason === "not_started" ? "Not open yet" : gate.reason === "manually_closed" ? "Check-in is closed" : "Check-in has ended"}
+              {gate.reason === "manually_closed" ? "Check-in is closed" : "Check-in has ended"}
             </h2>
             <p className="text-muted">
               {gate.reason === "manually_closed"
                 ? `Check-in for ${event.name} has been closed by the event organizer.`
-                : gate.reason === "not_started"
-                  ? `Check-in for ${event.name} opens ${formatDate(captureWindow!.date)}${captureWindow!.startTime ? ` at ${formatTime(captureWindow!.startTime)}` : ""}.`
-                  : `Check-in for ${event.name} closed ${formatDate(captureWindow!.endDate || captureWindow!.date)}${captureWindow!.endTime ? ` at ${formatTime(captureWindow!.endTime)}` : ""}.`}
+                : `Check-in for ${event.name} closed ${formatDate(captureWindow!.endDate || captureWindow!.date)}${captureWindow!.endTime ? ` at ${formatTime(captureWindow!.endTime)}` : ""}.`}
             </p>
-            <p className="text-subtle text-sm mt-4">This page will unlock automatically once check-in opens.</p>
+            {gate.reason === "manually_closed" && <p className="text-subtle text-sm mt-4">This page unlocks automatically if the organizer reopens it.</p>}
           </div>
         </div>
       </Shell>
@@ -142,9 +191,54 @@ export default function CheckinPage() {
           </div>
         </div>
 
+        {event && gate && !gate.open && gate.reason === "not_started" && (
+          <div className="eb-early-note" role="note">
+            <CalendarClock size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <div>
+              <p className="font-semibold text-white">
+                {event.name} hasn&apos;t started yet. It starts {formatDate(captureWindow!.date)}
+                {captureWindow!.startTime ? ` at ${formatTime(captureWindow!.startTime)}` : ""}.
+              </p>
+              <p className="mt-0.5">Check-in is open for early arrivals: each scan asks you to confirm.</p>
+              <label className="mt-2 flex cursor-pointer items-center gap-2 text-white">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={skipEarlyAsk}
+                  onChange={(e) => {
+                    setSkipEarlyAsk(e.target.checked);
+                    skipEarlyAskRef.current = e.target.checked;
+                  }}
+                />
+                Check everyone in early without asking (this session only)
+              </label>
+            </div>
+          </div>
+        )}
+
         <div className="mb-4">
           <FastScanStage onScan={checkIn} flash={flash} />
         </div>
+
+        {earlyPrompt && (
+          <div className="eb-scan-result" data-kind="early" role="alertdialog" aria-label="Event hasn't started">
+            <span className="eb-scan-result-icon" aria-hidden="true">
+              <CalendarClock size={34} strokeWidth={2.4} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="eb-scan-result-title">Event hasn&apos;t started</p>
+              <p className="eb-scan-result-name">{earlyPrompt.name}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" className="eb-scanflash-btn" data-primary onClick={() => void confirmEarly(earlyPrompt.code)}>
+                  Check in anyway
+                </button>
+                <button type="button" className="eb-scanflash-btn" onClick={finishEarly}>
+                  Not yet
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* last result, under the camera so the picture never jumps */}
         {result && (
