@@ -8,7 +8,8 @@ import { useEvents } from "@/lib/store";
 import { Role } from "@/lib/types";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 import { formatDate, formatTime } from "@/lib/utils";
-import { QrScannerPanel } from "@/components/qr-scanner-panel";
+import { FastScanStage, type ScanFlash } from "@/components/fast-scan-stage";
+import { playScanFeedback, unlockScanAudio } from "@/lib/scan-feedback";
 import { AuthLoading } from "@/components/auth-loading";
 
 const STAFF_ONLY: Role[] = ["staff"];
@@ -28,6 +29,18 @@ export default function CheckinPage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [sessionCount, setSessionCount] = useState(0);
+  const [flash, setFlash] = useState<ScanFlash | null>(null);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Every outcome gets its own sound, vibration and full-frame colour over the
+  // camera (green / amber / red), as well as the banner above it.
+  function announce(r: Result) {
+    setResult(r);
+    playScanFeedback(r.kind);
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    setFlash({ key: Date.now(), outcome: r.kind, title: RESULT[r.kind].title, name: r.name, message: r.message });
+    flashTimerRef.current = setTimeout(() => setFlash(null), 2600);
+  }
   const submittingRef = useRef(false);
   const [, forceTick] = useState(0); // re-render so the locked screen unlocks itself, no manual refresh
 
@@ -55,22 +68,22 @@ export default function CheckinPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setResult({ kind: "error", message: json.error || "Couldn't check this attendee in." });
+        announce({ kind: "error", message: json.error || "Couldn't check this attendee in." });
         return;
       }
       if (json.alreadyCheckedIn) {
-        setResult({
+        announce({
           kind: "already",
           name: json.registration.fullName,
           message: `Already checked in at ${new Date(json.registration.checkedInAt).toLocaleTimeString()}`,
         });
       } else {
-        setResult({ kind: "success", name: json.registration.fullName, message: "Checked in successfully" });
+        announce({ kind: "success", name: json.registration.fullName, message: "Checked in successfully" });
         setSessionCount((c) => c + 1);
       }
       setReferenceId("");
     } catch {
-      setResult({ kind: "error", message: "Couldn't reach the server. Check your connection and try again." });
+      announce({ kind: "error", message: "Couldn't reach the server. Check your connection and try again." });
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
@@ -79,6 +92,7 @@ export default function CheckinPage() {
 
   function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault();
+    unlockScanAudio();
     checkIn(referenceId);
   }
 
@@ -111,7 +125,7 @@ export default function CheckinPage() {
 
   return (
     <Shell>
-      <div className="eb-staff p-5 sm:p-8 max-w-lg mx-auto">
+      <div className="eb-staff p-4 sm:p-8 max-w-6xl mx-auto">
         <div className="flex items-start justify-between gap-4 mb-5">
           <div>
             <h1 className="eb-app-title flex items-center gap-2.5">
@@ -128,6 +142,11 @@ export default function CheckinPage() {
           </div>
         </div>
 
+        <div className="mb-4">
+          <FastScanStage onScan={checkIn} flash={flash} />
+        </div>
+
+        {/* last result, under the camera so the picture never jumps */}
         {result && (
           // key re-mounts it so the pop plays again for every scan
           <div key={`${result.kind}-${result.name}-${sessionCount}-${result.message}`} className="eb-scan-result" data-kind={result.kind} role="status" aria-live="assertive">
@@ -140,11 +159,7 @@ export default function CheckinPage() {
           </div>
         )}
 
-        <div className="mb-4">
-          <QrScannerPanel onScan={checkIn} label="Camera scan" />
-        </div>
-
-        <form onSubmit={handleManualSubmit} className="eb-card p-5">
+        <form onSubmit={handleManualSubmit} className="eb-card p-5 max-w-2xl">
           <label htmlFor="ck-ref" className="eb-label">Or enter the reference ID</label>
           <div className="flex flex-col gap-2.5 sm:flex-row">
             <input

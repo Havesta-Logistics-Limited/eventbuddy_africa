@@ -2837,3 +2837,121 @@ aside.eb-shell--platform { --glow-a: 167, 139, 250; --glow-b: 109, 40, 217; }
   filter: none;
 }
 :is(button, a):is([class~="bg-brand-600"][class~="text-white"], [class~="bg-[#C21FAF]"][class~="text-white"], [data-cta]):focus-visible { outline: 2px solid #ff8af5; outline-offset: 2px; }
+
+/* ---- Check-in: big continuous scanner with per-outcome effects (2026-10-07) */
+.eb-scanstage {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  min-height: 300px;
+  border-radius: 22px;
+  background: #05030a;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1), 0 24px 60px -30px rgb(79 179 255 / 0.55);
+}
+/* never taller than the screen, so the result and manual entry stay in view */
+.eb-scanstage { max-height: 68vh; }
+@media (max-width: 639px) { .eb-scanstage { aspect-ratio: 3 / 4; max-height: 62vh; } }
+.eb-scanstage-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* hide html5-qrcode's own thin box; our frame below replaces it */
+.eb-scanstage-target {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 3px rgb(79 179 255 / 0.55), inset 0 0 60px rgb(79 179 255 / 0.18);
+  transition: box-shadow 160ms ease;
+}
+.eb-scanstage-target[data-reading] { box-shadow: inset 0 0 0 5px #4fb3ff, inset 0 0 90px rgb(79 179 255 / 0.45); }
+.eb-scanstage-target::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #4fb3ff 20%, #4fb3ff 80%, transparent);
+  box-shadow: 0 0 16px #4fb3ff;
+  animation: eb-scanline 2.4s ease-in-out infinite;
+}
+@keyframes eb-scanline { 0%, 100% { top: 4%; } 50% { top: 96%; } }
+.eb-scanstage-top { position: absolute; inset: 14px 14px auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.eb-scan-chip { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 7px 13px; font-size: 13px; font-weight: 600; color: #fff; background: rgb(0 0 0 / 0.5); backdrop-filter: blur(10px); }
+.eb-scan-iconbtn { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 999px; color: #fff; background: rgb(0 0 0 / 0.5); backdrop-filter: blur(10px); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18); }
+.eb-scan-iconbtn:hover { background: rgb(0 0 0 / 0.7); }
+.eb-scan-iconbtn:focus-visible { outline: 2px solid #4fb3ff; outline-offset: 2px; }
+.eb-scanstage-hint {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  display: flex;
+  max-width: calc(100% - 28px);
+  align-items: center;
+  gap: 10px;
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: rgb(10 14 24 / 0.72);
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+}
+.eb-scanstage-start { display: flex; height: 100%; width: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; background: radial-gradient(60% 60% at 50% 45%, rgb(79 179 255 / 0.16), transparent 70%); }
+.eb-scanstage-start-icon { display: grid; width: 76px; height: 76px; place-items: center; border-radius: 999px; color: #4fb3ff; background: rgb(79 179 255 / 0.12); box-shadow: inset 0 0 0 1px rgb(79 179 255 / 0.4), 0 0 40px -6px rgb(79 179 255 / 0.6); }
+
+/* the result, over the whole picture: colour wash + pulse + a big card */
+.eb-scanflash {
+  --f: #34d399;
+  --f-ink: #022c1e;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--f) 38%, transparent);
+  box-shadow: inset 0 0 0 10px var(--f), inset 0 0 120px color-mix(in srgb, var(--f) 70%, transparent);
+  animation: eb-flash-in 260ms ease-out both;
+}
+.eb-scanflash[data-outcome="already"] { --f: #fbbf24; --f-ink: #2a1a00; }
+.eb-scanflash[data-outcome="error"] { --f: #fb7185; --f-ink: #2a0610; animation: eb-flash-in 260ms ease-out both, eb-flash-shake 420ms 60ms ease-in-out; }
+.eb-scanflash::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 160px;
+  height: 160px;
+  border-radius: 999px;
+  border: 6px solid var(--f);
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  animation: eb-flash-ring 900ms ease-out;
+}
+.eb-scanflash-card {
+  position: relative;
+  max-width: 460px;
+  border-radius: 24px;
+  padding: 22px 28px;
+  text-align: center;
+  color: var(--f-ink);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--f) 70%, #fff), var(--f));
+  box-shadow: 0 30px 70px -20px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.6);
+  animation: eb-scan-pop 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.eb-scanflash-icon { display: inline-grid; margin-bottom: 6px; }
+.eb-scanflash-title { font-size: 14px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; }
+.eb-scanflash-name { margin-top: 4px; font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; }
+.eb-scanflash-msg { margin-top: 6px; font-size: 15px; font-weight: 600; opacity: 0.85; }
+.eb-scanflash-next { margin-top: 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.65; }
+@keyframes eb-flash-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes eb-flash-ring { 0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.4); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(3.2); } }
+@keyframes eb-flash-shake { 0%, 100% { transform: none; } 20% { transform: translateX(-10px); } 40% { transform: translateX(9px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(4px); } }
+@media (prefers-reduced-motion: reduce) {
+  .eb-scanstage-target::after { animation: none; }
+  .eb-scanflash, .eb-scanflash::before, .eb-scanflash-card { animation: none; }
+}
+.eb-scanstage-hint--reading { color: #04121f; background: linear-gradient(180deg, #bfe3ff, #4fb3ff); }
+.eb-scanstage-hint--reading .eb-spinner { border-color: rgb(4 18 31 / 0.25); border-top-color: #04121f; }
+/* the detected code, outlined where it actually is in the picture */
+.eb-scan-outline { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.eb-scan-outline polygon { fill: rgb(79 179 255 / 0.18); stroke: #4fb3ff; stroke-width: 4; stroke-linejoin: round; filter: drop-shadow(0 0 10px #4fb3ff); }
