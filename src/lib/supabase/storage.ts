@@ -28,7 +28,25 @@ export async function uploadEventMedia(path: string, dataUrl: string): Promise<s
   const { error } = await supabase.storage.from(BUCKET).upload(fullPath, blob, { upsert: true, contentType: blob.type });
   if (error) throw error;
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(fullPath);
-  return data.publicUrl;
+  // a replaced image keeps its path, so version the URL or browsers and the
+  // CDN keep showing the old one
+  return `${data.publicUrl}?v=${Date.now()}`;
+}
+
+/** Server-side twin of uploadEventMedia for routes using the admin client
+ *  (e.g. sign-up saving a /create draft's cover). Returns the public URL, or
+ *  null if the upload failed. */
+export async function uploadEventMediaAdmin(
+  admin: { storage: ReturnType<typeof createClient>["storage"] },
+  path: string,
+  dataUrl: string
+): Promise<string | null> {
+  const m = dataUrl.match(/^data:(image\/[a-z+.-]+);base64,(.+)$/);
+  if (!m) return null;
+  const fullPath = `${path}.jpg`;
+  const { error } = await admin.storage.from(BUCKET).upload(fullPath, Buffer.from(m[2], "base64"), { upsert: true, contentType: m[1] });
+  if (error) return null;
+  return `${admin.storage.from(BUCKET).getPublicUrl(fullPath).data.publicUrl}?v=${Date.now()}`;
 }
 
 /** Removes the file at `{path}.jpg`, if any — used wherever a cover/logo/photo

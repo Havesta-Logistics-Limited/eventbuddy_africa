@@ -7,6 +7,7 @@ import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template"
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 import { RESERVED_SLUGS } from "@/lib/reserved-slugs";
 import { GuestDraftSchema, slugifyEventName, type GuestDraft } from "@/lib/guest-draft";
+import { uploadEventMediaAdmin } from "@/lib/supabase/storage";
 
 /** Best-effort welcome email — the account and org already exist by the time this
  *  runs (unconfirmed), so a failure here (missing Resend key, provider error) is
@@ -120,6 +121,11 @@ async function saveDraftEvent(supabase: ReturnType<typeof createAdminClient>, or
     }
   }
   if (!eventId) return null;
+  // the wizard hands covers over inline; keep them as files (inline if that fails)
+  if (e.coverImage?.startsWith("data:")) {
+    const url = await uploadEventMediaAdmin(supabase, `${orgId}/covers/${eventId}`, e.coverImage);
+    if (url) await supabase.from("events").update({ cover_image: url }).eq("id", eventId);
+  }
   if (draft.tickets.length) {
     const { error } = await supabase.from("ticket_types").insert(
       draft.tickets.map((t) => ({

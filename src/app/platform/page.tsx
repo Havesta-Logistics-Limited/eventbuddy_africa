@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
+import { MoveImagesCard } from "@/components/move-images-card";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -2385,6 +2386,8 @@ export default function PlatformDashboard() {
                   Take the site offline for every visitor except platform admins, and customize what they see while it&apos;s down.
                 </p>
               </div>
+
+              <MoveImagesCard />
 
               <div className="bg-surface rounded-2xl border border-line p-5 mb-6">
                 <div className="flex flex-wrap items-center justify-between gap-4">

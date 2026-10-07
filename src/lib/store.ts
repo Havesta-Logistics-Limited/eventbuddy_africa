@@ -1173,29 +1173,42 @@ export async function addEventSeries(name: string): Promise<string> {
  *  orgs' rows to pre-check a candidate under RLS — so it just attempts the insert and
  *  retries with a numeric suffix on a real 23505 conflict, exactly like the dashboard's
  *  manual slug editor already does for the update path. */
-/** TEMPORARY: cover_image is written straight through (a base64 data: URL, same
- *  as every event's cover already works today) instead of being uploaded to the
- *  event-media Storage bucket first. That bucket's write policies are rejecting
- *  every authenticated upload right now — verified directly against the database
- *  (correct RLS policies, correct grants, no blocking triggers — even a policy
- *  with zero ownership logic, `with check (bucket_id = 'event-media')`, is
- *  denied) and via this exact client library, so it isn't fixable from the app
- *  side; it needs Supabase support. Revert to uploadEventMedia
- *  (./supabase/storage) in both addEvent and updateEvent once that's resolved —
- *  the two-phase "upload after insert" dance and the update-time upload/cleanup
- *  logic it replaced are both still in git history. */
+/** Covers live in the event-media bucket at `{orgId}/covers/{eventId}.jpg`
+ *  (the bucket's missing SELECT policy that made uploads fail is fixed in
+ *  migration 0114). A new cover arrives as a data: URL from the wizard: the
+ *  event is inserted first (its id is the file name), then the image is
+ *  uploaded and the row points at the file. If the upload fails the cover is
+ *  kept inline rather than lost. */
+async function uploadCoverOrKeep(supabase: ReturnType<typeof createSupabaseBrowserClient>, eventId: string, dataUrl: string): Promise<string> {
+  try {
+    const orgId = await resolveMyOrgId(supabase);
+    if (!orgId) return dataUrl;
+    return await uploadEventMedia(`${orgId}/covers/${eventId}`, dataUrl);
+  } catch (err) {
+    console.error("[covers] upload failed, keeping the image inline:", err instanceof Error ? err.message : err);
+    return dataUrl;
+  }
+}
+
 export async function addEvent(input: Omit<EventRecord, "id" | "createdAt">): Promise<EventRecord> {
   const supabase = createSupabaseBrowserClient();
   const baseSlug = input.slug ? slugifyEventName(input.slug) : slugifyEventName(input.name);
+  const pendingCover = input.coverImage?.startsWith("data:") ? input.coverImage : undefined;
   let candidate = baseSlug;
   for (let attempt = 1; attempt <= 6; attempt++) {
     const { data, error } = await supabase
       .from("events")
-      .insert(eventToRow({ ...input, slug: candidate }))
+      .insert(eventToRow({ ...input, coverImage: pendingCover ? undefined : input.coverImage, slug: candidate }))
       .select()
       .single();
     if (data) {
-      const record = mapEventRow(data);
+      let row = data;
+      if (pendingCover) {
+        const url = await uploadCoverOrKeep(supabase, data.id, pendingCover);
+        const { data: withCover } = await supabase.from("events").update({ cover_image: url }).eq("id", data.id).select().single();
+        if (withCover) row = withCover;
+      }
+      const record = mapEventRow(row);
       eventsCache = [...eventsCache, record];
       emitChange();
       return record;
@@ -1210,7 +1223,19 @@ export async function addEvent(input: Omit<EventRecord, "id" | "createdAt">): Pr
 }
 export async function updateEvent(id: string, patch: Partial<Omit<EventRecord, "id" | "createdAt">>): Promise<void> {
   const supabase = createSupabaseBrowserClient();
-  const { data, error } = await supabase.from("events").update(eventToRow(patch)).eq("id", id).select().single();
+  const existing = eventsCache.find((e) => e.id === id);
+  let finalPatch = patch;
+  // the edit form resubmits the cover unchanged; only act on a real change
+  if (patch.coverImage !== undefined && patch.coverImage !== existing?.coverImage) {
+    if (patch.coverImage?.startsWith("data:")) {
+      finalPatch = { ...patch, coverImage: await uploadCoverOrKeep(supabase, id, patch.coverImage) };
+    } else if (existing?.coverImage && isEventMediaUrl(existing.coverImage)) {
+      // cleared, or replaced by a pasted link: the old file isn't used any more
+      const orgId = await resolveMyOrgId(supabase);
+      if (orgId) await deleteEventMedia(`${orgId}/covers/${id}`);
+    }
+  }
+  const { data, error } = await supabase.from("events").update(eventToRow(finalPatch)).eq("id", id).select().single();
   if (error || !data) throw new PersistError(error);
   const record = mapEventRow(data);
   eventsCache = eventsCache.map((e) => (e.id === id ? record : e));
