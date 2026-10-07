@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, BadgeCheck, CalendarDays, Download, Flame, IdCard, Mail, MapPin, Phone, ScanLine, Snowflake, Sun, Trash2, Users } from "lucide-react";
+import { AlertCircle, BadgeCheck, CalendarDays, Download, Flame, IdCard, ImagePlus, Mail, MapPin, Phone, ScanLine, Snowflake, Store, Sun, Trash2, Users } from "lucide-react";
+import { compressImageFile } from "@/lib/utils";
+import { ExhibitorTile } from "@/components/exhibitor-tile";
 import { toast } from "sonner";
 import { FastScanStage, type ScanFlash } from "@/components/fast-scan-stage";
 import { playScanFeedback } from "@/lib/scan-feedback";
@@ -21,9 +23,10 @@ type Portal = {
   passes?: { referenceId: string; name: string; email: string; checkedIn: boolean }[];
   leadCount?: number;
   leadsKeptUntil?: string;
+  profile?: { logoUrl: string | null; description: string; category: string; website: string; listed: boolean };
 };
 type Lead = { id: string; name: string; email: string; phone: string | null; rating: "hot" | "warm" | "cold" | null; notes: string; capturedBy?: string | null; capturedAt?: string };
-type Tab = "scan" | "leads" | "passes";
+type Tab = "scan" | "leads" | "passes" | "profile";
 
 const RATINGS = [
   { id: "hot", label: "Hot", icon: Flame },
@@ -181,11 +184,13 @@ export default function ExhibitorPortalPage() {
           <div className="eb-seg mb-5 w-full" role="group" aria-label="Portal sections">
             {([
               ["scan", "Scan", ScanLine],
-              ["leads", `Leads · ${p.leadCount ?? 0}`, Users],
-              ["passes", `Passes · ${p.passes?.length ?? 0}/${p.passesIncluded ?? 0}`, IdCard],
+              ["leads", `Leads\u00a0${p.leadCount ?? 0}`, Users],
+              ["passes", `Passes\u00a0${p.passes?.length ?? 0}/${p.passesIncluded ?? 0}`, IdCard],
+              ["profile", "Profile", Store],
             ] as const).map(([id, label, Icon]) => (
               <button key={id} type="button" aria-pressed={tab === id} onClick={() => setTab(id)} className="flex-1">
-                <Icon size={15} aria-hidden="true" /> {label}
+                {/* icons only from sm up: four sections must fit a phone */}
+                <Icon size={15} aria-hidden="true" className="hidden sm:inline" /> {label}
               </button>
             ))}
           </div>
@@ -253,6 +258,8 @@ export default function ExhibitorPortalPage() {
               )}
             </div>
           )}
+
+          {tab === "profile" && p.profile && <ProfileSection token={token} company={p.company} standLabel={p.standLabel} initial={p.profile} onSaved={load} />}
 
           {tab === "passes" && (
             <div className="space-y-4">
@@ -335,5 +342,114 @@ function LeadCard({ lead, onUpdate }: { lead: Lead; onUpdate: (id: string, patch
         onBlur={() => notes !== lead.notes && onUpdate(lead.id, { notes })}
       />
     </div>
+  );
+}
+
+function ProfileSection({
+  token,
+  company,
+  standLabel,
+  initial,
+  onSaved,
+}: {
+  token: string;
+  company: string;
+  standLabel: string | null;
+  initial: NonNullable<Portal["profile"]>;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState(initial);
+  const [logo, setLogo] = useState<string | null>(initial.logoUrl);
+  const [newLogo, setNewLogo] = useState<string | undefined>(undefined);
+  const [saving, setSaving] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    const res = await fetch("/api/exhibitor/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, description: form.description, category: form.category, website: form.website, listed: form.listed, logo: newLogo }),
+    });
+    const json = await res.json();
+    setSaving(false);
+    if (!res.ok) return toast.error(json.error || "Couldn't save your profile.");
+    setNewLogo(undefined);
+    toast.success(form.listed ? "Saved. Attendees see you like the preview." : "Saved. You're hidden from the event directory.");
+    onSaved();
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-4">
+      <p className="text-sm text-muted">Attendees find you in the event&apos;s exhibitor directory, in their Event Hub and on the event page.</p>
+      <label className="flex items-center gap-2.5 text-sm font-medium text-fg">
+        <input type="checkbox" className="h-4 w-4" checked={form.listed} onChange={(e) => setForm({ ...form, listed: e.target.checked })} />
+        Show {company} in the event directory
+      </label>
+      <div className="eb-ov-card flex items-center gap-4">
+        <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white">
+          {logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logo} alt={`${company} logo`} className="h-full w-full object-contain p-1.5" />
+          ) : (
+            <span className="text-2xl font-bold text-[#1a0b1f]">{company.charAt(0).toUpperCase()}</span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <label className="eb-btn eb-btn--ghost cursor-pointer">
+            <ImagePlus size={14} aria-hidden="true" /> {logo ? "Change logo" : "Upload logo"}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="sr-only"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                try {
+                  const dataUrl = await compressImageFile(f, 600, 0.9);
+                  setLogo(dataUrl);
+                  setNewLogo(dataUrl);
+                } catch {
+                  toast.error("Couldn't read that image.");
+                }
+              }}
+            />
+          </label>
+          {logo && (
+            <button
+              type="button"
+              className="eb-btn eb-btn--ghost"
+              onClick={() => {
+                setLogo(null);
+                setNewLogo("");
+              }}
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label htmlFor="pf-cat" className="eb-label">What you do</label>
+          <input id="pf-cat" className="eb-input" maxLength={80} placeholder="Food & drinks" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+        </div>
+        <div>
+          <label htmlFor="pf-web" className="eb-label">Website or social page</label>
+          <input id="pf-web" className="eb-input" inputMode="url" maxLength={300} placeholder="instagram.com/yourbrand" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} />
+        </div>
+      </div>
+      <div>
+        <label htmlFor="pf-desc" className="eb-label">About you</label>
+        <textarea id="pf-desc" rows={3} className="eb-input" maxLength={2000} placeholder="What visitors will find at your stand" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+      </div>
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-subtle">Preview</p>
+        <ExhibitorTile company={company} logoUrl={logo} category={form.category} description={form.description} website={form.website} standLabel={standLabel} />
+      </div>
+      <button type="submit" disabled={saving} className="eb-btn eb-btn--primary w-full">
+        {saving ? "Saving…" : "Save profile"}
+      </button>
+    </form>
   );
 }

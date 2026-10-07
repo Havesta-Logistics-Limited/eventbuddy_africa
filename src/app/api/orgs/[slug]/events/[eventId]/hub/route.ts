@@ -39,7 +39,7 @@ export async function GET(request: Request, ctx: RouteContext<"/api/orgs/[slug]/
     .maybeSingle();
   if (!event) return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });
 
-  const [sessionRes, speakerRes, sessionSpeakerRes, questionRes, announcementRes, pollRes, pollOptionRes, myUpvoteRes, myVoteRes, myBookmarkRes, mySurveyResponseRes] = await Promise.all([
+  const [sessionRes, speakerRes, sessionSpeakerRes, questionRes, announcementRes, pollRes, pollOptionRes, myUpvoteRes, myVoteRes, myBookmarkRes, mySurveyResponseRes, exhibitorRes] = await Promise.all([
     admin.from("event_sessions").select("*").eq("event_id", eventId).order("start_time", { ascending: true }),
     admin.from("event_speakers").select("*").eq("event_id", eventId),
     admin.from("event_session_speakers").select("*"),
@@ -51,7 +51,11 @@ export async function GET(request: Request, ctx: RouteContext<"/api/orgs/[slug]/
     admin.from("event_poll_votes").select("poll_id, option_id").eq("hub_member_id", member.memberId),
     admin.from("event_agenda_bookmarks").select("session_id").eq("hub_member_id", member.memberId),
     admin.from("event_survey_responses").select("id").eq("event_id", eventId).eq("hub_member_id", member.memberId).maybeSingle(),
+    // the exhibitor directory (0116); empty when the event has none
+    admin.rpc("public_event_exhibitors", { p_event_id: eventId }),
   ]);
+  type ExhibitorRow = { id: string; company_name: string; logo_url: string | null; category: string | null; description: string | null; website: string | null; stand_label: string | null; map_x: number | null; map_y: number | null; floor_plan_url: string | null };
+  const exhibitorRows = (exhibitorRes.error ? [] : (exhibitorRes.data ?? [])) as ExhibitorRow[];
 
   const speakersById = new Map((speakerRes.data ?? []).map((s) => [s.id, s]));
   const sessionIds = new Set((sessionRes.data ?? []).map((s) => s.id));
@@ -106,6 +110,18 @@ export async function GET(request: Request, ctx: RouteContext<"/api/orgs/[slug]/
       bookmarked: myBookmarkedSessionIds.has(s.id),
     })),
     speakers: (speakerRes.data ?? []).map((s) => ({ id: s.id, name: s.name, title: s.title, company: s.company, bio: s.bio, photoUrl: s.photo_url })),
+    exhibitors: exhibitorRows.map((x) => ({
+      id: x.id,
+      company: x.company_name,
+      logoUrl: x.logo_url,
+      category: x.category,
+      description: x.description,
+      website: x.website,
+      standLabel: x.stand_label,
+      x: x.map_x == null ? null : Number(x.map_x),
+      y: x.map_y == null ? null : Number(x.map_y),
+    })),
+    floorPlanUrl: exhibitorRows[0]?.floor_plan_url ?? null,
     questions: (questionRes.data ?? []).map((q) => ({
       id: q.id,
       sessionId: q.session_id,

@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const x = await loadPortal(admin, parsed.data.token);
   if (!x) return NextResponse.json({ error: "This portal link isn't valid." }, { status: 404 });
-  if (x.status !== "paid") return NextResponse.json({ error: "Passes open once your stand is paid for." }, { status: 403 });
+  if (x.status !== "paid") return NextResponse.json({ error: "Passes open once your stand is confirmed." }, { status: 403 });
 
   const { count } = await admin.from("registrations").select("id", { count: "exact", head: true }).eq("exhibitor_id", x.id).neq("status", "cancelled");
   if ((count ?? 0) >= x.passesIncluded) {

@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const x = await loadPortal(admin, parsed.data.token);
   if (!x) return NextResponse.json({ error: "This portal link isn't valid." }, { status: 404 });
-  if (x.status !== "paid") return NextResponse.json({ error: "Lead scanning opens once your stand is paid for." }, { status: 403 });
+  if (x.status !== "paid") return NextResponse.json({ error: "Lead scanning opens once your stand is confirmed." }, { status: 403 });
 
   const ref = parsed.data.code.toUpperCase();
   const { data: reg } = await admin

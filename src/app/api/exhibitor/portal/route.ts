@@ -28,6 +28,10 @@ export async function GET(request: Request) {
     passesIncluded: x.passesIncluded,
     passes: (passes ?? []).map((p) => ({ referenceId: p.reference_id, name: p.full_name, email: p.email, checkedIn: !!p.checked_in_at })),
     leadCount: count ?? 0,
+    profile: await (async () => {
+      const { data: pr } = await admin.from("exhibitors").select("logo_url, description, category, website, listed").eq("id", x.id).single();
+      return { logoUrl: pr?.logo_url ?? null, description: pr?.description ?? "", category: pr?.category ?? "", website: pr?.website ?? "", listed: pr?.listed ?? true };
+    })(),
     // leads are deleted 90 days after the event ends (migration 0115)
     leadsKeptUntil: (() => {
       const d = new Date(`${x.event.end_date ?? x.event.date}T00:00:00Z`);

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveRouteUser } from "@/lib/supabase/route-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { emailApproved, emailDeclined, exhibitPayUrl } from "@/lib/exhibitors";
+import { emailApproved, emailConfirmedFree, emailDeclined, exhibitPayUrl, exhibitorPortalUrl } from "@/lib/exhibitors";
 
 const Schema = z.object({
   exhibitorId: z.string().uuid(),
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const { data: x } = await admin
     .from("exhibitors")
-    .select("id, status, email, company_name, contact_name, pay_token, stand_type_id, event_id, events(name), stand_types(name, price_naira, quantity)")
+    .select("id, status, email, company_name, contact_name, pay_token, portal_token, stand_type_id, event_id, events(name), stand_types(name, price_naira, quantity)")
     .eq("id", exhibitorId)
     .single();
   const eventName = (x?.events as unknown as { name: string } | null)?.name ?? "the event";
@@ -41,14 +41,19 @@ export async function POST(request: Request) {
       const { count } = await admin.from("exhibitors").select("id", { count: "exact", head: true }).eq("stand_type_id", x.stand_type_id).in("status", ["approved", "paid"]);
       if ((count ?? 0) >= stand.quantity) return NextResponse.json({ error: `No ${stand.name} left. Add more in Stand types, or decline.` }, { status: 409 });
     }
+    const now = new Date().toISOString();
+    // a free stand (0117) is confirmed on approval: no payment step
+    const free = Number(stand.price_naira) === 0;
     const { error } = await admin
       .from("exhibitors")
-      .update({ status: "approved", amount_naira: stand.price_naira, decided_at: new Date().toISOString() })
+      .update(free ? { status: "paid", amount_naira: 0, decided_at: now, paid_at: now } : { status: "approved", amount_naira: stand.price_naira, decided_at: now })
       .eq("id", x.id)
       .eq("status", "applied");
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    const emailed = await emailApproved(x.email, { ...ctx, payUrl: exhibitPayUrl(siteUrl, x.pay_token) });
-    return NextResponse.json({ success: true, emailed });
+    const emailed = free
+      ? await emailConfirmedFree(x.email, { ...ctx, portalUrl: exhibitorPortalUrl(siteUrl, x.portal_token) })
+      : await emailApproved(x.email, { ...ctx, payUrl: exhibitPayUrl(siteUrl, x.pay_token) });
+    return NextResponse.json({ success: true, emailed, free });
   }
 
   if (action === "decline") {

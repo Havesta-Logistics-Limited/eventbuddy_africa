@@ -188,3 +188,17 @@ export function emailLeadsExpiring(to: string, c: { company: string; contact: st
      ${emailButton(c.portalUrl, "Export my leads", PINK)}`
   );
 }
+
+/** A free stand is confirmed on approval (0117): no payment, straight to the portal. */
+export function emailConfirmedFree(to: string, c: Ctx & { portalUrl: string }) {
+  return send(
+    to,
+    `You're confirmed to exhibit at ${c.eventName}`,
+    `Hi ${c.contact}, ${c.company} is confirmed for a ${c.standName} at ${c.eventName}. There's nothing to pay. Your exhibitor portal: ${c.portalUrl}`,
+    { label: "Confirmed", emoji: "🎉" },
+    `<p style="margin:0 0 14px;">Hi ${escapeHtml(c.contact)},</p>
+     <p style="margin:0 0 14px;">Good news: <strong>${escapeHtml(c.company)}</strong> is confirmed to exhibit at <strong>${escapeHtml(c.eventName)}</strong> with a <strong>${escapeHtml(c.standName)}</strong>. There's nothing to pay.</p>
+     <p style="margin:0 0 20px;">Your exhibitor portal is ready: add your staff passes (each gets a QR to get in), set up your listing in the event directory, and on the day, scan visitors' tickets at your stand to collect leads.</p>
+     ${emailButton(c.portalUrl, "Open my exhibitor portal", PINK)}`
+  );
+}

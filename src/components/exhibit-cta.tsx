@@ -31,7 +31,7 @@ export function ExhibitCta({ eventId }: { eventId: string }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block font-semibold text-white">Exhibit at this event</span>
-        <span className="block text-sm text-white/60">Book a stand for your business{info.from ? `, from ${formatNaira(info.from)}` : ""}</span>
+        <span className="block text-sm text-white/60">{info.from === 0 ? "Apply for a free stand for your business" : `Book a stand for your business${info.from ? `, from ${formatNaira(info.from)}` : ""}`}</span>
       </span>
       <ChevronRight size={18} className="shrink-0 text-white/50" aria-hidden="true" />
     </Link>

@@ -3112,3 +3112,17 @@ tbody tr.cursor-pointer:hover { background: rgba(237, 28, 220, 0.06); box-shadow
 .eb-walkup-badge--exhibitor { color: #f5c6ff; background: rgb(255 138 245 / 0.14); box-shadow: inset 0 0 0 1px rgb(255 138 245 / 0.35); }
 /* exhibitor portal: the staff portal's controls, in the brand pink */
 .eb-exhibitor-portal { --pt-a: #ff8af5; --pt-b: #c21faf; --pt-ink: #1a0b1f; }
+/* exhibitor directory tile (0116) */
+.eb-exh-tile { border-radius: 14px; padding: 12px 14px; background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06); transition: box-shadow 200ms ease, background-color 200ms ease; }
+.eb-exh-tile:hover { box-shadow: inset 0 0 0 1px rgba(255, 138, 245, 0.4), 0 0 30px -12px rgba(237, 28, 220, 0.6); }
+.eb-exh-tile[data-active] { background: rgb(255 138 245 / 0.08); box-shadow: inset 0 0 0 2px #ff8af5; }
+.eb-floorplan { position: relative; overflow: hidden; border-radius: 16px; background: #fff; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1); }
+.eb-floorplan[data-picking] img { cursor: crosshair; }
+.eb-floorplan-pin { position: absolute; min-width: 26px; height: 26px; transform: translate(-50%, -50%); border-radius: 999px; padding: 0 7px; font-size: 11px; font-weight: 700; color: #1a0b1f; background: #ff8af5; box-shadow: 0 0 0 2px #fff, 0 4px 12px rgb(0 0 0 / 0.35); transition: transform 180ms ease, box-shadow 180ms ease; }
+.eb-floorplan-pin[data-active] { z-index: 2; transform: translate(-50%, -50%) scale(1.35); background: #fff; box-shadow: 0 0 0 3px #ff8af5, 0 0 24px 4px rgba(237, 28, 220, 0.75); animation: eb-pin-pulse 1.4s ease-in-out infinite; }
+@keyframes eb-pin-pulse { 50% { box-shadow: 0 0 0 3px #ff8af5, 0 0 36px 10px rgba(237, 28, 220, 0.55); } }
+@media (prefers-reduced-motion: reduce) { .eb-floorplan-pin[data-active] { animation: none; } }
+.eb-plan-pick { display: flex; width: 100%; align-items: center; gap: 8px; border-radius: 10px; padding: 8px 10px; font-size: 13px; color: var(--color-fg-2); background: rgb(255 255 255 / 0.035); }
+.eb-plan-pick[aria-pressed="true"] { color: #fff; background: rgb(255 138 245 / 0.12); box-shadow: inset 0 0 0 1px #ff8af5; }
+.eb-cat-chip { border-radius: 999px; padding: 5px 12px; font-size: 12.5px; font-weight: 600; color: var(--color-fg-3); background: rgb(255 255 255 / 0.05); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15); transition: background-color 160ms ease, color 160ms ease; }
+.eb-cat-chip[aria-pressed="true"] { color: #1a0b1f; background: #ff8af5; box-shadow: none; }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useHoverIntent } from "@/lib/use-hover-intent";
 import {
   ArrowBigUp,
   Bookmark,
@@ -17,6 +18,7 @@ import {
   Play,
   ScanLine,
   Settings,
+  Store,
   Ticket,
   TriangleAlert,
   Users,
@@ -24,7 +26,7 @@ import {
 import { formatNaira, formatTicketFee, ticketFeeMinor, type TicketFee } from "@/lib/billing";
 
 /* ==========================================================================
- * Product showcase — the hero's window, with five tabs that each play a short,
+ * Product showcase — the hero's window, with seven tabs that each play a short,
  * looping demo of a real part of the product. Every scene is driven by one
  * clock (seconds since the tab started) so pause, tab jumps and reduced motion
  * all behave the same way. Names, prices and counts are sample data.
@@ -230,6 +232,160 @@ function ShareScene({ t }: SceneProps) {
               </div>
             ) : null,
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Promote */
+
+const PROMOTERS = [
+  { h: "kingjesse", n: "King Jesse", badge: "Seller", c: "#C21FAF", clicks: [214, 268], sold: [18, 24] },
+  { h: "tolu.vibes", n: "Tolu A.", badge: "Starter", c: "#6D28D9", clicks: [96, 131], sold: [6, 9] },
+  { h: "ifyreads", n: "Ify O.", badge: "Starter", c: "#B8460A", clicks: [41, 58], sold: [2, 4] },
+];
+
+function PromoteScene({ t }: SceneProps) {
+  const grow = prog(t, 1.2, 4.6);
+  const sale = after(t, 2.6) && t < 5.4;
+  const earned = Math.round(14150 + grow * 8490);
+
+  return (
+    <div className="grid h-full gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="flex min-w-0 flex-col">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-lg font-semibold tracking-tight text-slate-900">Promoters</p>
+            <p className="text-sm text-slate-500">They share their own link. You pay only on tickets sold.</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">10% of net · on</span>
+        </div>
+        <div className="mt-4 space-y-2">
+          {PROMOTERS.map((p, i) => {
+            const clicks = Math.round(p.clicks[0] + grow * (p.clicks[1] - p.clicks[0]));
+            const sold = Math.round(p.sold[0] + grow * (p.sold[1] - p.sold[0]));
+            const hot = i === 0 && sale;
+            return (
+              <div key={p.h} className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${hot ? "border-[#C21FAF]/40 bg-[#FFF3FD]" : "border-slate-100"}`}>
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[12px] font-semibold text-white" style={{ background: p.c }}>{p.n.charAt(0)}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-semibold text-slate-900">@{p.h}</p>
+                  <p className="text-[11px] text-slate-400">{p.badge} badge</p>
+                </div>
+                <div className="text-right text-[11px] tabular-nums text-slate-500">
+                  <p><b className="text-slate-900">{clicks}</b> clicks</p>
+                  <p><b className="text-slate-900">{sold}</b> sold</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-auto flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+          <span className="text-xs text-slate-500">Sold through promoters</span>
+          <span className="text-lg font-semibold tabular-nums text-slate-900">{Math.round(26 + grow * 11)} tickets</span>
+        </div>
+      </div>
+
+      {/* the promoter's own view: their link and what it earned */}
+      <div className="relative hidden min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-4 lg:flex">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Promoter dashboard</p>
+        <p className="mt-1 text-[15px] font-semibold text-slate-900">@kingjesse</p>
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-[#C21FAF]/30 bg-[#FFF3FD] px-2.5 py-2">
+          <Link2 size={14} className="shrink-0 text-[#C21FAF]" />
+          <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-slate-800">eventbuddy.africa/rooftop/kingjesse</span>
+        </div>
+        <div className="mt-4 rounded-xl bg-[#170821] p-4 text-white">
+          <p className="text-[11px] text-white/60">Earned on Rooftop Sessions</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">{formatNaira(earned)}</p>
+          <p className="mt-1 text-[11px] text-white/60">Paid out to their bank on request</p>
+        </div>
+        {sale && (
+          <div key="sale" className="lp-pop mt-auto flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+            <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
+            <p className="min-w-0 text-[12px] leading-snug text-slate-800"><b>Ada</b> bought a VIP ticket through your link. <b className="text-emerald-700">+₦2,350</b></p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Exhibit */
+
+const STANDS = [
+  { co: "Mama Put Kitchen", stand: "Corner · A1", price: 300000, x: 0.27, y: 0.32 },
+  { co: "Glow Skincare", stand: "Standard · B2", price: 150000, x: 0.5, y: 0.32 },
+  { co: "Book Swap Club", stand: "Community · C1", price: 0, x: 0.73, y: 0.32 },
+];
+
+function ExhibitScene({ t }: SceneProps) {
+  // the first application gets approved, then paid; the others are already in
+  const state = (i: number) => (i > 0 ? "Confirmed" : after(t, 3.2) ? "Confirmed" : after(t, 1.6) ? "Awaiting payment" : "New");
+  const confirmed = STANDS.filter((_, i) => state(i) === "Confirmed");
+  const sales = confirmed.reduce((s, x) => s + x.price, 0);
+  const lead = after(t, 4.6);
+
+  return (
+    <div className="grid h-full gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="flex min-w-0 flex-col">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-lg font-semibold tracking-tight text-slate-900">Exhibitors</p>
+            <p className="text-sm text-slate-500">They apply for a stand, you approve, they pay.</p>
+          </div>
+          <span className="shrink-0 text-right">
+            <span className="block text-[10px] text-slate-400">Stand sales</span>
+            <span className="text-lg font-semibold tabular-nums text-slate-900">{formatNaira(sales)}</span>
+          </span>
+        </div>
+        <div className="mt-4 space-y-2">
+          {STANDS.map((x, i) => {
+            const st = state(i);
+            return (
+              <div key={x.co} className={`rounded-xl border p-3 transition-colors ${i === 0 && t > 1.2 && t < 3.6 ? "border-[#C21FAF]/40 bg-[#FFF3FD]" : "border-slate-100"}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-[13px] font-semibold text-slate-900">{x.co}</p>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${st === "Confirmed" ? "bg-emerald-50 text-emerald-700" : st === "Awaiting payment" ? "bg-amber-50 text-amber-700" : "bg-[#FFF3FD] text-[#C21FAF]"}`}>{st}</span>
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="text-[11px] text-slate-400">{x.stand} · {x.price ? formatNaira(x.price) : "Free"}</p>
+                  {i === 0 && st === "New" && <span className="rounded-md bg-[#C21FAF] px-2.5 py-1 text-[10px] font-semibold text-white">Approve</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {lead && (
+          <div className="lp-pop mt-auto flex items-center gap-2.5 rounded-xl bg-[#170821] px-3.5 py-2.5 text-white">
+            <ScanLine size={16} className="shrink-0 text-[#FF8AF5]" />
+            <p className="min-w-0 text-[12px] leading-snug">Glow Skincare scanned <b>Ngozi Eze</b> at stand B2 · lead saved <span className="ml-1 rounded bg-white/15 px-1.5 py-0.5 text-[10px]">Hot</span></p>
+          </div>
+        )}
+      </div>
+
+      {/* the floor plan attendees see in their hub */}
+      <div className="hidden min-w-0 flex-col lg:flex">
+        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-slate-500"><Store size={13} /> Floor plan · in every attendee&apos;s hub</p>
+        <div className="relative flex-1 overflow-hidden rounded-xl border border-slate-200 bg-[#F4F1EA]">
+          <div className="absolute inset-[8%] rounded-md border-2 border-slate-700/70" />
+          {[0.27, 0.5, 0.73].map((cx) => (
+            <div key={cx} className="absolute h-[22%] w-[20%] -translate-x-1/2 rounded bg-[#9AD1D4]" style={{ left: `${cx * 100}%`, top: "21%" }} />
+          ))}
+          <div className="absolute left-[14%] right-[14%] top-[58%] h-[24%] rounded bg-[#CDE7B0]" />
+          {STANDS.map((x, i) => {
+            const on = state(i) === "Confirmed";
+            const lit = (i === 0 && after(t, 3.2) && t < 4.4) || (i === 1 && lead);
+            return (
+              <span
+                key={x.co}
+                className={`absolute grid h-7 min-w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full px-1.5 text-[10px] font-bold transition-all duration-500 ${on ? "bg-[#FF8AF5] text-[#1a0b1f] shadow-[0_0_0_2px_#fff,0_4px_12px_rgba(0,0,0,0.3)]" : "bg-white/70 text-slate-400 ring-1 ring-slate-300"} ${lit ? "scale-125 shadow-[0_0_0_3px_#FF8AF5,0_0_24px_6px_rgba(237,28,220,0.6)]" : ""}`}
+                style={{ left: `${x.x * 100}%`, top: `${x.y * 100}%` }}
+              >
+                {x.stand.split("· ")[1]}
+              </span>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -493,7 +649,9 @@ function PaidScene({ t, fee }: SceneProps) {
 const TABS = [
   { id: "sell", label: "Sell", path: "dashboard/events/new", dur: 8, caption: "Create an event, add ticket types and prices, and publish. It's free until a ticket sells.", Scene: SellScene },
   { id: "share", label: "Share", path: "dashboard/events/rooftop/share", dur: 7.5, caption: "One link does it all. Drop it in WhatsApp, Instagram or anywhere your people are.", Scene: ShareScene },
+  { id: "promote", label: "Promote", path: "dashboard/events/rooftop/promoters", dur: 7, caption: "Promoters sell for you on commission. Each shares their own link, you see every click and sale, and we pay them for you.", Scene: PromoteScene },
   { id: "checkin", label: "Check in", path: "checkin", dur: 7.5, caption: "Staff scan QR tickets at the door with an access code, with no account needed. Repeat scans get caught.", Scene: CheckinScene },
+  { id: "exhibit", label: "Exhibit", path: "dashboard/events/rooftop/exhibitors", dur: 7, caption: "Sell stands to exhibitors: they apply, you approve, they pay. On the day they scan visitors at their stand to collect leads.", Scene: ExhibitScene },
   { id: "engage", label: "Engage", path: "rooftop/events/hub", dur: 8, caption: "Every attendee gets a live hub: the agenda, moderated Q&A and live polls, all from the same ticket link.", Scene: EngageScene },
   { id: "paid", label: "Get paid", path: "dashboard", dur: 7.5, caption: "Every sale lands in your balance. Request a payout to your bank whenever it clears. You only pay when a ticket sells.", Scene: PaidScene },
 ] as const;
@@ -502,6 +660,9 @@ export function ProductShowcase({ fee }: { fee: TicketFee }) {
   const [tab, setTab] = useState(0);
   const [t, setT] = useState(0);
   const [paused, setPaused] = useState(false);
+  // while the pointer is over the tabs the scene keeps playing but the tour
+  // doesn't move on: a hovered tab replays its own scene instead
+  const overTabsRef = useRef(false);
   const [inView, setInView] = useState(false);
   const [reduced, setReduced] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -541,7 +702,7 @@ export function ProductShowcase({ fee }: { fee: TicketFee }) {
       last = now;
       if (tRef.current >= dur) {
         tRef.current = 0;
-        setTab((x) => (x + 1) % TABS.length);
+        if (!overTabsRef.current) setTab((x) => (x + 1) % TABS.length);
       }
       setT(tRef.current);
     }, 80);
@@ -553,6 +714,8 @@ export function ProductShowcase({ fee }: { fee: TicketFee }) {
     setTab(i);
     setT(0);
   }, []);
+
+  const hoverTab = useHoverIntent<number>(choose);
 
   // Keyboard: arrow keys move between tabs, as a tablist should.
   const onKey = (e: React.KeyboardEvent) => {
@@ -628,7 +791,18 @@ export function ProductShowcase({ fee }: { fee: TicketFee }) {
       </div>
 
       <div className="lp-tabs-wrap">
-        <div className="lp-tabs" role="tablist" aria-label="Product tour" onKeyDown={onKey}>
+        <div
+          className="lp-tabs"
+          role="tablist"
+          aria-label="Product tour"
+          onKeyDown={onKey}
+          onPointerEnter={(e) => {
+            if (e.pointerType === "mouse") overTabsRef.current = true;
+          }}
+          onPointerLeave={() => {
+            overTabsRef.current = false;
+          }}
+        >
           {indicator && <span className="lp-tab-indicator" style={{ transform: `translateX(${indicator.left}px)`, width: indicator.width }} aria-hidden="true" />}
           {TABS.map((x, i) => (
             <button
@@ -641,6 +815,8 @@ export function ProductShowcase({ fee }: { fee: TicketFee }) {
               aria-controls={`lp-panel-${x.id}`}
               tabIndex={i === tab ? 0 : -1}
               onClick={() => choose(i)}
+              onPointerEnter={i === tab ? undefined : hoverTab.enter(i)}
+              onPointerLeave={hoverTab.leave}
               className="lp-tab"
             >
               {x.label}

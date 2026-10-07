@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, Copy, ExternalLink, Globe, Mail, Pencil, Phone, Plus, Store, Trash2, X } from "lucide-react";
+import { Check, Copy, ExternalLink, Globe, ImagePlus, Mail, Map as MapIcon, Pencil, Phone, Plus, Store, Trash2, X } from "lucide-react";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { deleteEventMedia, uploadEventMedia } from "@/lib/supabase/storage";
+import { compressImageFile } from "@/lib/utils";
+import { FloorPlan } from "@/components/floor-plan";
 import { formatNaira } from "@/lib/billing";
 import type { EventRecord } from "@/lib/types";
 import type { ExhibitorStatus } from "@/lib/exhibitors";
@@ -26,14 +29,17 @@ type Exhibitor = {
   applied_at: string;
   paid_at: string | null;
   portal_token: string;
+  map_x: number | null;
+  map_y: number | null;
 };
 
-const STATUS_LABEL: Record<ExhibitorStatus, string> = { applied: "New", approved: "Awaiting payment", paid: "Paid", declined: "Declined", cancelled: "Cancelled" };
+// "paid" means confirmed: a paid stand, or a free one once approved (0117)
+const STATUS_LABEL: Record<ExhibitorStatus, string> = { applied: "New", approved: "Awaiting payment", paid: "Confirmed", declined: "Declined", cancelled: "Cancelled" };
 const FILTERS: { id: "all" | ExhibitorStatus; label: string }[] = [
   { id: "all", label: "All" },
   { id: "applied", label: "New" },
   { id: "approved", label: "Awaiting payment" },
-  { id: "paid", label: "Paid" },
+  { id: "paid", label: "Confirmed" },
   { id: "declined", label: "Declined" },
 ];
 
@@ -58,10 +64,13 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
   const [declining, setDeclining] = useState<{ id: string; reason: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<string, { passes: number; leads: number }>>({});
+  const [plan, setPlan] = useState<{ url: string | null; orgId: string }>({ url: null, orgId: "" });
+  const [placing, setPlacing] = useState<string | null>(null);
+  const [uploadingPlan, setUploadingPlan] = useState(false);
 
   const load = useCallback(async () => {
     const [ev, st, ex] = await Promise.all([
-      supabase.from("events").select("exhibitors_enabled, exhibitor_intro, exhibitor_deadline").eq("id", event.id).maybeSingle(),
+      supabase.from("events").select("organization_id, floor_plan_url, exhibitors_enabled, exhibitor_intro, exhibitor_deadline").eq("id", event.id).maybeSingle(),
       supabase.from("stand_types").select("id, name, description, price_naira, quantity, passes_included").eq("event_id", event.id).order("price_naira"),
       supabase.from("exhibitors").select("*").eq("event_id", event.id).order("applied_at", { ascending: false }),
     ]);
@@ -74,7 +83,10 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
     for (const r of (passes.data ?? []) as { exhibitor_id: string }[]) (c[r.exhibitor_id] ??= { passes: 0, leads: 0 }).passes++;
     for (const r of (leads.data ?? []) as { exhibitor_id: string }[]) (c[r.exhibitor_id] ??= { passes: 0, leads: 0 }).leads++;
     setCounts(c);
-    if (ev.data) setSettings({ enabled: ev.data.exhibitors_enabled, intro: ev.data.exhibitor_intro ?? "", deadline: ev.data.exhibitor_deadline ?? "" });
+    if (ev.data) {
+      setSettings({ enabled: ev.data.exhibitors_enabled, intro: ev.data.exhibitor_intro ?? "", deadline: ev.data.exhibitor_deadline ?? "" });
+      setPlan({ url: ev.data.floor_plan_url, orgId: ev.data.organization_id });
+    }
     setStands(((st.data ?? []) as StandType[]).map((s) => ({ ...s, price_naira: Number(s.price_naira) })));
     setRows((ex.data ?? []) as Exhibitor[]);
     setLoaded(true);
@@ -104,8 +116,10 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
   async function saveStand() {
     if (!editing) return;
     const name = (editing.name ?? "").trim();
-    const price = Number(editing.price_naira);
-    if (!name || !(price >= 100)) return toast.error("Give the stand type a name and a price of at least ₦100.");
+    // free is an explicit choice (the tickbox), never an empty price
+    const price = editing.price_naira == null ? NaN : Number(editing.price_naira);
+    if (!name) return toast.error("Give the stand type a name.");
+    if (!(price === 0 || price >= 100)) return toast.error("Enter a price of at least ₦100, or tick Free stand.");
     const row = { name, description: editing.description?.trim() || null, price_naira: price, quantity: editing.quantity || null, passes_included: Math.max(0, Math.min(50, Number(editing.passes_included ?? 2))) };
     const { error } = editing.id
       ? await supabase.from("stand_types").update(row).eq("id", editing.id)
@@ -130,7 +144,11 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
     setBusy(null);
     if (!res.ok) return toast.error(res.error || "Couldn't update this application.");
     toast.success(
-      action === "approve"
+      action === "approve" && (res as { free?: boolean }).free
+        ? res.emailed === false
+          ? "Approved and confirmed (free stand). We couldn't email them, so copy their portal link below."
+          : "Approved and confirmed (free stand). We've emailed them their exhibitor portal."
+        : action === "approve"
         ? res.emailed === false
           ? "Approved. We couldn't email them, so send them the payment link yourself."
           : "Approved. We've emailed them a link to pay for their stand."
@@ -150,6 +168,39 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
     toast.success("Portal link emailed to the exhibitor");
   }
 
+  async function uploadPlan(file: File) {
+    setUploadingPlan(true);
+    try {
+      const dataUrl = await compressImageFile(file, 2400, 0.88);
+      const url = await uploadEventMedia(`${plan.orgId}/floorplans/${event.id}`, dataUrl);
+      const { error } = await supabase.from("events").update({ floor_plan_url: url }).eq("id", event.id);
+      if (error) throw error;
+      setPlan((p) => ({ ...p, url }));
+      toast.success("Floor plan uploaded. Now place each stand on it.");
+    } catch {
+      toast.error("Couldn't upload the floor plan. Try a smaller image.");
+    } finally {
+      setUploadingPlan(false);
+    }
+  }
+
+  async function removePlan() {
+    if (!confirm("Remove the floor plan? Stand pins are kept in case you upload a new one.")) return;
+    const { error } = await supabase.from("events").update({ floor_plan_url: null }).eq("id", event.id);
+    if (error) return toast.error("Couldn't remove it.");
+    await deleteEventMedia(`${plan.orgId}/floorplans/${event.id}`);
+    setPlan((p) => ({ ...p, url: null }));
+  }
+
+  async function placePin(x: number, y: number) {
+    if (!placing) return;
+    const id = placing;
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, map_x: x, map_y: y } : r)));
+    setPlacing(null);
+    const { error } = await supabase.from("exhibitors").update({ map_x: Number(x.toFixed(4)), map_y: Number(y.toFixed(4)) }).eq("id", id);
+    if (error) toast.error("Couldn't save the pin.");
+  }
+
   async function saveLabel(id: string, label: string) {
     const { error } = await supabase.from("exhibitors").update({ stand_label: label }).eq("id", id);
     if (error) toast.error("Couldn't save the stand number.");
@@ -162,7 +213,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
       <div className="grid gap-4 sm:grid-cols-3">
         {[
           { label: "Applications", value: String(rows.filter((r) => r.status !== "cancelled").length), sub: `${rows.filter((r) => r.status === "applied").length} waiting for you` },
-          { label: "Stands paid", value: String(paid.length), sub: `${rows.filter((r) => r.status === "approved").length} awaiting payment` },
+          { label: "Stands confirmed", value: String(paid.length), sub: `${rows.filter((r) => r.status === "approved").length} awaiting payment` },
           { label: "Stand sales", value: formatNaira(revenue), sub: "paid by exhibitors" },
         ].map((c) => (
           <div key={c.label} className="eb-ov-card">
@@ -221,9 +272,59 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
       </section>
 
       <section className="eb-ov-card">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="eb-ov-title flex items-center gap-2">
+              <MapIcon size={16} className="text-[#ff8af5]" aria-hidden="true" /> Floor plan
+            </p>
+            <p className="mt-1 text-sm text-muted">Attendees see it in their Event Hub with every stand pinned, and tap a company to find it.</p>
+          </div>
+          <div className="flex gap-2">
+            <label className="eb-btn eb-btn--ghost cursor-pointer">
+              <ImagePlus size={14} aria-hidden="true" /> {uploadingPlan ? "Uploading…" : plan.url ? "Replace" : "Upload floor plan"}
+              <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" disabled={uploadingPlan} onChange={(e) => e.target.files?.[0] && uploadPlan(e.target.files[0])} />
+            </label>
+            {plan.url && (
+              <button type="button" className="eb-btn eb-btn--ghost" onClick={removePlan}>
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+        {plan.url && (
+          <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+            <FloorPlan
+              src={plan.url}
+              pins={paid.filter((r) => r.map_x != null && r.map_y != null).map((r) => ({ id: r.id, label: r.stand_label ?? "", x: Number(r.map_x), y: Number(r.map_y), title: r.company_name }))}
+              activeId={placing}
+              onPick={placing ? placePin : undefined}
+              onPinClick={(id) => setPlacing(id)}
+            />
+            <div>
+              <p className="mb-2 text-xs text-muted">{placing ? `Tap the plan where ${rows.find((r) => r.id === placing)?.company_name}'s stand is.` : "Pick an exhibitor, then tap their spot on the plan."}</p>
+              {paid.length === 0 ? (
+                <p className="text-sm text-subtle">Paid exhibitors appear here.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {paid.map((r) => (
+                    <li key={r.id}>
+                      <button type="button" onClick={() => setPlacing(placing === r.id ? null : r.id)} className="eb-plan-pick" aria-pressed={placing === r.id}>
+                        <span className="min-w-0 flex-1 truncate text-left">{r.company_name}</span>
+                        <span className="shrink-0 text-xs text-subtle">{r.stand_label ? `Stand ${r.stand_label}` : "No stand #"} · {r.map_x != null ? "placed" : "not placed"}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="eb-ov-card">
         <div className="mb-3 flex items-center justify-between gap-3">
           <p className="eb-ov-title">Stand types</p>
-          <button type="button" className="eb-btn eb-btn--ghost" onClick={() => setEditing({ name: "", price_naira: 0, quantity: null, description: "", passes_included: 2 })}>
+          <button type="button" className="eb-btn eb-btn--ghost" onClick={() => setEditing({ name: "", price_naira: undefined, quantity: null, description: "", passes_included: 2 })}>
             <Plus size={14} /> Add stand type
           </button>
         </div>
@@ -235,7 +336,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
               <li key={s.id} className="eb-ov-row">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-fg">
-                    {s.name} <span className="font-normal text-muted">· {formatNaira(s.price_naira)} · {s.passes_included} staff pass{s.passes_included === 1 ? "" : "es"}</span>
+                    {s.name} <span className="font-normal text-muted">· {s.price_naira === 0 ? "Free" : formatNaira(s.price_naira)} · {s.passes_included} staff pass{s.passes_included === 1 ? "" : "es"}</span>
                   </p>
                   {s.description && <p className="truncate text-xs text-muted">{s.description}</p>}
                 </div>
@@ -261,7 +362,22 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
             </div>
             <div>
               <label htmlFor="st-price" className="eb-label eb-req">Price (₦)</label>
-              <input id="st-price" className="eb-input" inputMode="numeric" placeholder="150000" value={editing.price_naira ? String(editing.price_naira) : ""} onChange={(e) => setEditing({ ...editing, price_naira: Number(e.target.value.replace(/\D/g, "")) || 0 })} />
+              <input
+                id="st-price"
+                className="eb-input"
+                inputMode="numeric"
+                placeholder={editing.price_naira === 0 ? "Free" : "150000"}
+                disabled={editing.price_naira === 0}
+                value={editing.price_naira ? String(editing.price_naira) : ""}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "");
+                  setEditing({ ...editing, price_naira: digits ? Number(digits) : undefined });
+                }}
+              />
+              <label className="mt-1.5 flex items-center gap-2 text-xs text-fg-3">
+                <input type="checkbox" className="h-3.5 w-3.5" checked={editing.price_naira === 0} onChange={(e) => setEditing({ ...editing, price_naira: e.target.checked ? 0 : undefined })} />
+                Free stand: approving an application confirms it, no payment
+              </label>
             </div>
             <div>
               <label htmlFor="st-qty" className="eb-label">How many</label>
@@ -309,7 +425,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
                     <p className="mt-0.5 text-sm text-fg-3">
                       {standName(r.stand_type_id)}
                       {r.category ? ` · ${r.category}` : ""} · applied {new Date(r.applied_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                      {r.paid_at && ` · paid ${formatNaira(Number(r.amount_naira ?? 0))}`}
+                      {r.paid_at && (Number(r.amount_naira ?? 0) > 0 ? ` · paid ${formatNaira(Number(r.amount_naira))}` : " · free stand")}
                     </p>
                     <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
                       <span>{r.contact_name}</span>

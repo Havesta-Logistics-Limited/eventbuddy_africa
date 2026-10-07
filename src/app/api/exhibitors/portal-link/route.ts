@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     .select("status, email, company_name, contact_name, portal_token, events(name), stand_types(name)")
     .eq("id", parsed.data.exhibitorId)
     .single();
-  if (!x || x.status !== "paid") return NextResponse.json({ error: "The portal opens once their stand is paid for." }, { status: 409 });
+  if (!x || x.status !== "paid") return NextResponse.json({ error: "The portal opens once their stand is confirmed." }, { status: 409 });
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   const sent = await emailPortalLink(x.email, {
     company: x.company_name,

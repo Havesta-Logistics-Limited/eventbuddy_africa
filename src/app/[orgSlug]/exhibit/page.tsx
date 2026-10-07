@@ -115,7 +115,8 @@ export default function ExhibitPage() {
               <CheckCircle2 size={40} className="mx-auto text-emerald-300" aria-hidden="true" />
               <h2 className="mt-3 text-xl font-semibold text-white">Application sent</h2>
               <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-                {info.organizer || "The organizer"} will review it. You&apos;ll get an email at <strong className="text-fg">{form.email}</strong> when they decide, with a link to pay for your stand if you&apos;re approved.
+                {info.organizer || "The organizer"} will review it. You&apos;ll get an email at <strong className="text-fg">{form.email}</strong> when they decide
+                {stands.find((s) => s.id === form.standTypeId)?.priceNaira === 0 ? ", with your exhibitor portal if you're approved." : ", with a link to pay for your stand if you're approved."}
               </p>
               <Link href={`/${event.slug}`} className="eb-btn eb-btn--ghost mt-6">
                 Back to the event
@@ -138,7 +139,7 @@ export default function ExhibitPage() {
                           {s.description && <span className="mt-0.5 block text-sm text-muted">{s.description}</span>}
                         </span>
                         <span className="shrink-0 text-right">
-                          <span className="block font-semibold tabular-nums text-white">{formatNaira(s.priceNaira)}</span>
+                          <span className="block font-semibold tabular-nums text-white">{s.priceNaira === 0 ? "Free" : formatNaira(s.priceNaira)}</span>
                           <span className="block text-xs text-subtle">{full ? "Fully booked" : s.left != null ? `${s.left} left` : "Available"}</span>
                         </span>
                       </label>
@@ -189,7 +190,11 @@ export default function ExhibitPage() {
               <button type="submit" disabled={sending} className="eb-btn eb-btn--primary w-full">
                 {sending ? "Sending…" : "Apply for a stand"}
               </button>
-              <p className="text-center text-xs text-subtle">Nothing to pay now. If {info.organizer || "the organizer"} approves you, we&apos;ll email you a link to pay.</p>
+              <p className="text-center text-xs text-subtle">
+                {stands.find((s) => s.id === form.standTypeId)?.priceNaira === 0
+                  ? `Free stand. If ${info.organizer || "the organizer"} approves you, you're confirmed straight away and we'll email you your exhibitor portal.`
+                  : `Nothing to pay now. If ${info.organizer || "the organizer"} approves you, we'll email you a link to pay.`}
+              </p>
             </form>
           )}
         </section>

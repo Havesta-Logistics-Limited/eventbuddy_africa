@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ExhibitCta } from "@/components/exhibit-cta";
+import { ExhibitorStrip } from "@/components/exhibitor-strip";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { brandedQrDataUrl } from "@/lib/branded-qr";
@@ -885,6 +886,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
               </div>
             )}
 
+            {event.eventFormat !== "virtual" && <ExhibitorStrip eventId={event.id} />}
             {event.eventFormat !== "virtual" && <ExhibitCta eventId={event.id} />}
 
             <div className="animate-fade-in-up" style={{ animationDelay: event.description ? "180ms" : "120ms" }}>

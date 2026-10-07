@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { BarChart3, Calendar, Check, ChevronRight, Clock, Megaphone, Mic2, Plus, Send, ShieldCheck } from "lucide-react";
 import { BadgeObject } from "./event-objects";
+import { useHoverIntent } from "@/lib/use-hover-intent";
 
 /* The Event Hub as a split row: the four hub features as an accordion on the
  * left; on the right, a phone in the hub's own visual language (pink header
@@ -120,6 +121,8 @@ const PANELS: Record<FeatureId, () => React.JSX.Element> = { schedule: HubSchedu
 
 export function LandingHub() {
   const [open, setOpen] = useState<FeatureId>("schedule");
+  // resting the pointer on a feature opens it and switches the phone to match
+  const hover = useHoverIntent<FeatureId>(setOpen);
   const Panel = PANELS[open];
   const activeTab = TAB_FOR[open];
 
@@ -151,7 +154,7 @@ export function LandingHub() {
               {FEATURES.map((f) => {
                 const isOpen = f.id === open;
                 return (
-                  <div key={f.id} className="lp-acc-item" data-open={isOpen || undefined}>
+                  <div key={f.id} className="lp-acc-item" data-open={isOpen || undefined} onPointerEnter={hover.enter(f.id)} onPointerLeave={hover.leave}>
                     <h3>
                       <button
                         type="button"

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { BarChart3, Bookmark, BookmarkCheck, Calendar, Check, ClipboardList, KeyRound, Loader2, Megaphone, Mic2, Pin, Repeat, Send, ThumbsUp } from "lucide-react";
+import { BarChart3, Bookmark, BookmarkCheck, Calendar, Check, ClipboardList, KeyRound, Loader2, Megaphone, Mic2, Pin, Repeat, Send, Store, ThumbsUp } from "lucide-react";
+import { ExhibitorDirectory, type DirectoryExhibitor } from "@/components/exhibitor-directory";
 import { formatDate, formatTime } from "@/lib/utils";
 import { RichTextDisplay } from "@/components/rich-text-display";
 import { SurveyForm, type SurveyAnswers } from "@/components/survey-form";
@@ -48,9 +49,11 @@ type HubData = {
   questions: HubQuestion[];
   announcements: HubAnnouncement[];
   polls: HubPoll[];
+  exhibitors?: DirectoryExhibitor[];
+  floorPlanUrl?: string | null;
 };
 
-type Section = "schedule" | "speakers" | "qa" | "polls" | "announcements" | "transfer" | "survey";
+type Section = "schedule" | "speakers" | "exhibitors" | "qa" | "polls" | "announcements" | "transfer" | "survey";
 
 /** Public, no-session Event Hub — reached only via the link mailed at registration
  *  (the ?token query param is the whole trust boundary, same as a reference_id).
@@ -380,6 +383,7 @@ export default function EventHubPage() {
   const SECTIONS: { id: Section; label: string; icon: typeof Calendar }[] = [
     { id: "schedule", label: "Schedule", icon: Calendar },
     { id: "speakers", label: "Speakers", icon: Mic2 },
+    ...(data.exhibitors?.length ? ([{ id: "exhibitors", label: "Exhibitors", icon: Store }] as const) : []),
     { id: "qa", label: "Q&A", icon: Send },
     { id: "polls", label: "Polls", icon: BarChart3 },
     { id: "announcements", label: "Updates", icon: Megaphone },
@@ -470,6 +474,8 @@ export default function EventHubPage() {
                 )}
               </div>
             )}
+
+            {section === "exhibitors" && <ExhibitorDirectory exhibitors={data.exhibitors ?? []} floorPlanUrl={data.floorPlanUrl ?? null} />}
 
             {section === "speakers" &&
               (speakers.length === 0 ? (
