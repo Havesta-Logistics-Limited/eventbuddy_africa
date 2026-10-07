@@ -31,9 +31,10 @@ const SECTIONS = [
   {
     heading: "Pricing and payment",
     body: [
-      "Creating and publishing an event on eventbuddy is free, whether it's virtual or physical. There is no subscription, recurring fee, or charge for creating an event.",
-      "Editing an existing event's details after creation does not incur any charge.",
-      "If you sell paid tickets through the platform, eventbuddy takes a commission on each paid ticket sold, made up of a percentage of the ticket price paid plus a fixed amount per ticket, as shown on the pricing page and deducted automatically from the payment before it reaches your connected bank account. This commission may be waived for specific organizations at eventbuddy's discretion.",
+      "Creating and publishing an event on eventbuddy is free, whether it's virtual or physical, and there is no charge for creating or editing an event.",
+      "The Launch plan has no subscription or recurring fee. Grow and Scale are optional monthly subscriptions, billed in advance through Paystack, that lower the commission on paid tickets and remove the limit on promoters. You can cancel a subscription at any time; it stays active until the end of the period already paid for and is not refunded for the remainder.",
+      "If you sell paid tickets through the platform, eventbuddy takes a commission on each paid ticket sold, made up of a percentage of the ticket price paid plus a fixed amount per ticket, at the rate for your plan as shown on the pricing page. This commission may be waived for specific organizations at eventbuddy's discretion.",
+      "eventbuddy collects ticket payments on your behalf and credits them, less this commission, to your eventbuddy balance. You may request a payout of available funds to your verified bank account. Payouts are reviewed by eventbuddy and are subject to a minimum amount and a processing fee shown in your dashboard, and funds from an event may remain unavailable until a few days after it ends. Refunds and chargebacks are deducted from your balance.",
     ],
   },
   {
@@ -89,7 +90,7 @@ export default function TermsPage() {
       <section className="eb-page-hero max-w-3xl mx-auto px-6 pt-12 pb-4">
         <p className="font-mono text-xs font-semibold uppercase tracking-widest text-brand-500 mb-3">Legal</p>
         <h1 className="font-display text-4xl text-fg mb-2">Terms &amp; Conditions</h1>
-        <p className="text-sm text-subtle">Last updated October 6, 2026</p>
+        <p className="text-sm text-subtle">Last updated October 7, 2026</p>
       </section>
 
       <section className="max-w-3xl mx-auto px-6 pb-20">

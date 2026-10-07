@@ -55,7 +55,7 @@ import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { PlatformPayoutQueue } from "@/components/platform-payout-queue";
 import { PlatformPlansEditor } from "@/components/platform-plans-editor";
 
-const SIDEBAR_BG = "#22103A";
+const PLATFORM_ACCENT = "#a78bfa";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 const NAV = [
@@ -907,7 +907,7 @@ export default function PlatformDashboard() {
 
   if (!authorized) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: SIDEBAR_BG }}>
+      <div className="min-h-screen flex items-center justify-center p-6 bg-canvas">
         <div className="text-center max-w-sm">
           <Logo tone="white" height={18} className="mx-auto mb-6 opacity-90" />
           <p className="font-display text-xl text-white mb-2">Not authorized</p>
@@ -1015,47 +1015,47 @@ export default function PlatformDashboard() {
     setOrgSearch(orgName);
   }
 
+  // Same lifted rail and sliding pill as the organizer app (shell.tsx), in a
+  // violet accent so a platform admin always knows which side they're on.
+  const activeIndex = NAV.findIndex(({ id }) => id === view);
   const sidebarNav = (
-    <nav className="flex-1 px-3 py-4 space-y-0.5">
-      {NAV.map(({ id, label, icon: Icon }) => {
-        const active = view === id;
-        return (
-          <button
-            key={id}
-            type="button"
-            onClick={() => {
-              setView(id);
-              setMobileNavOpen(false);
-            }}
-            style={active ? { background: "color-mix(in srgb, var(--color-brand-600) 20%, transparent)" } : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-              active ? "text-white font-medium" : "text-white/60 hover:text-white hover:bg-surface/8"
-            }`}
-          >
-            <Icon size={17} className={active ? "text-[#FF8AF5]" : undefined} />
-            {label}
-          </button>
-        );
-      })}
+    <nav className="relative flex-1 overflow-y-auto px-3 py-4" aria-label="Platform">
+      <ul className="relative space-y-0.5">
+        {activeIndex >= 0 && <li aria-hidden="true" className="eb-nav-pill" style={{ transform: `translateY(${activeIndex * 42}px)` }} />}
+        {NAV.map(({ id, label, icon: Icon }) => {
+          const active = view === id;
+          return (
+            <li key={id} className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setView(id);
+                  setMobileNavOpen(false);
+                }}
+                aria-current={active ? "page" : undefined}
+                data-active={active || undefined}
+                className="eb-nav-item w-full"
+              >
+                <Icon size={17} className="eb-nav-icon" />
+                {label}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </nav>
   );
 
   const sidebarFooter = (
-    <div className="px-3 pb-5 border-t border-white/10 pt-4">
-      <div className="flex items-center gap-3 px-3 mb-3">
-        <div className="w-8 h-8 rounded-full bg-[#FF8AF5]/15 flex items-center justify-center text-[#FF8AF5] font-semibold text-sm shrink-0">
-          {currentUserEmail.charAt(0).toUpperCase() || "?"}
-        </div>
+    <div className="relative px-3 pb-4 pt-3 border-t border-line-soft">
+      <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 mb-1">
+        <div className="eb-avatar">{currentUserEmail.charAt(0).toUpperCase() || "?"}</div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white truncate">{currentUserEmail || "Platform admin"}</p>
-          <p className="text-xs text-white/40">Platform admin</p>
+          <p className="text-sm font-medium text-fg truncate">{currentUserEmail || "Platform admin"}</p>
+          <p className="text-xs text-subtle">Platform admin</p>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={handleSignOut}
-        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-surface/8 transition-colors"
-      >
+      <button type="button" onClick={handleSignOut} className="eb-nav-item w-full">
         <LogOut size={16} />
         Sign out
       </button>
@@ -1065,11 +1065,11 @@ export default function PlatformDashboard() {
   return (
     <div className="min-h-screen flex bg-canvas">
       {/* Sidebar — desktop */}
-      <aside className="hidden md:flex w-64 flex-col text-white fixed inset-y-0 left-0 z-40" style={{ background: SIDEBAR_BG }}>
-        <div className="px-6 py-5 border-b border-white/10">
-          <Logo tone="white" height={18} />
-          <p className="text-[11px] text-white/50 leading-tight mt-1.5 flex items-center gap-1.5">
-            <ShieldCheck size={11} />
+      <aside className="eb-shell eb-shell--platform hidden md:flex w-64 flex-col fixed inset-y-0 left-0 z-40" style={{ ["--accent" as string]: PLATFORM_ACCENT }}>
+        <div className="px-5 py-4 border-b border-line-soft">
+          <Logo tone="white" height={20} />
+          <p className="eb-platform-tag mt-2">
+            <ShieldCheck size={11} aria-hidden="true" />
             Platform Admin
           </p>
         </div>
@@ -1078,33 +1078,37 @@ export default function PlatformDashboard() {
       </aside>
 
       {/* Mobile header */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-50 text-white h-14 flex items-center px-4 gap-4" style={{ background: SIDEBAR_BG }}>
-        <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
-          <Menu size={22} />
+      <header className="eb-shell eb-shell--platform eb-mobilebar md:hidden fixed top-0 inset-x-0 z-50 h-14 flex items-center px-4 gap-3" style={{ ["--accent" as string]: PLATFORM_ACCENT }}>
+        <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="Open menu" aria-expanded={mobileNavOpen} className="eb-iconbtn -ml-1.5">
+          <Menu size={20} />
         </button>
-        <Logo tone="white" height={12} />
+        <Logo tone="white" height={15} />
+        <span className="eb-platform-tag ml-auto">
+          <ShieldCheck size={11} aria-hidden="true" />
+          Platform
+        </span>
       </header>
 
       {/* Mobile drawer */}
       {mobileNavOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
-          <div className="w-64 text-white flex flex-col h-full animate-drawer-in" style={{ background: SIDEBAR_BG }}>
-            <div className="px-5 py-4 flex items-center justify-between border-b border-white/10">
-              <Logo tone="white" height={13} />
-              <button type="button" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
-                <X size={20} className="text-white/60" />
+        <div className="md:hidden fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="Menu">
+          <div className="eb-shell eb-shell--platform eb-drawer relative w-72 max-w-[85vw] flex flex-col h-full animate-drawer-in" style={{ ["--accent" as string]: PLATFORM_ACCENT }}>
+            <div className="px-5 h-14 flex items-center justify-between border-b border-line-soft">
+              <Logo tone="white" height={15} />
+              <button type="button" onClick={() => setMobileNavOpen(false)} aria-label="Close menu" className="eb-iconbtn -mr-1.5">
+                <X size={19} />
               </button>
             </div>
             {sidebarNav}
             {sidebarFooter}
           </div>
-          <div className="flex-1 bg-black/50 animate-modal-backdrop" onClick={() => setMobileNavOpen(false)} />
+          <div className="flex-1 bg-black/60 backdrop-blur-sm animate-modal-backdrop" onClick={() => setMobileNavOpen(false)} />
         </div>
       )}
 
       {/* Main content */}
       <main className="flex-1 min-w-0 md:ml-64 min-h-screen pt-14 md:pt-0">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <div className="eb-app-page max-w-6xl mx-auto px-4 sm:px-6 py-8">
           {view !== "security" && <MfaNagBanner onSetup={() => setView("security")} />}
           {loadError && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm mb-6">
@@ -1128,7 +1132,7 @@ export default function PlatformDashboard() {
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="font-display text-2xl text-fg">Organizations</h1>
+                  <h1 className="eb-app-title">Organizations</h1>
                   <p className="text-muted text-sm mt-0.5">Every business using eventbuddy, and how they&apos;re doing.</p>
                 </div>
                 <button
@@ -1148,16 +1152,16 @@ export default function PlatformDashboard() {
                   ? Array.from({ length: 5 }).map((_, i) => <StatTileSkeleton key={i} />)
                   : stats.map((s, i) => (
                       <Reveal key={s.label} index={i}>
-                        <div className="bg-surface rounded-xl border border-line p-4">
+                        <div className="eb-kpi" style={{ ["--k" as string]: "#ff8af5" }}>
                           <div className="flex items-start justify-between mb-2">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(255, 138, 245, 0.1)" }}>
-                              <s.icon size={16} style={{ color: "#C21FAF" }} />
+                            <div className="eb-kpi-icon">
+                              <s.icon size={16} />
                             </div>
                             {s.delta && (
                               <span className="text-[10px] font-semibold text-teal-300 bg-teal-500/10 px-1.5 py-0.5 rounded-full">{s.delta}</span>
                             )}
                           </div>
-                          <p className="text-2xl font-bold text-fg tabular-nums">{s.value}</p>
+                          <p className="eb-kpi-value">{s.value}</p>
                           <p className="text-xs text-muted mt-0.5">{s.label}</p>
                         </div>
                       </Reveal>
@@ -1493,7 +1497,7 @@ export default function PlatformDashboard() {
           {view === "events" && (
             <>
               <div className="mb-6">
-                <h1 className="font-display text-2xl text-fg">Events</h1>
+                <h1 className="eb-app-title">Events</h1>
                 <p className="text-muted text-sm mt-0.5">Every event across every organization, physical and virtual.</p>
               </div>
 
@@ -1675,7 +1679,7 @@ export default function PlatformDashboard() {
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="font-display text-2xl text-fg">Billing</h1>
+                  <h1 className="eb-app-title">Billing</h1>
                   <p className="text-muted text-sm mt-0.5">Revenue across every organization — your commission on ticket sales.</p>
                 </div>
                 <button
@@ -1692,15 +1696,15 @@ export default function PlatformDashboard() {
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 {[
-                  { label: "Total revenue", value: formatNaira(ticketCommissionRevenue), accent: "#C21FAF", bg: "#FFF3FD" },
-                  { label: "Revenue this week", value: formatNaira(ticketCommissionThisWeek), accent: "#0d9488", bg: "#e7f6f0" },
+                  { label: "Total revenue", value: formatNaira(ticketCommissionRevenue), accent: "#ff8af5" },
+                  { label: "Revenue this week", value: formatNaira(ticketCommissionThisWeek), accent: "#5eead4" },
                 ].map((tile, i) => (
                   <Reveal key={tile.label} index={i}>
-                    <div className="bg-surface rounded-xl border border-line p-4">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: tile.bg }}>
-                        <DollarSign size={16} style={{ color: tile.accent }} />
+                    <div className="eb-kpi" style={{ ["--k" as string]: tile.accent }}>
+                      <div className="eb-kpi-icon mb-2">
+                        <DollarSign size={16} />
                       </div>
-                      <p className="text-2xl font-bold text-fg tabular-nums">{tile.value}</p>
+                      <p className="eb-kpi-value">{tile.value}</p>
                       <p className="text-xs text-muted mt-0.5">{tile.label}</p>
                     </div>
                   </Reveal>
@@ -1799,15 +1803,15 @@ export default function PlatformDashboard() {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                   {[
-                    { label: "Ticket sales (gross)", value: formatNaira(ticketGrossRevenue), accent: "#6D28D9", bg: "#F1EBFE" },
-                    { label: "Platform commission", value: formatNaira(ticketCommissionRevenue), accent: "#C21FAF", bg: "#FFF3FD" },
-                    { label: "Commission this week", value: formatNaira(ticketCommissionThisWeek), accent: "#0d9488", bg: "#e7f6f0" },
+                    { label: "Ticket sales (gross)", value: formatNaira(ticketGrossRevenue), accent: "#a78bfa" },
+                    { label: "Platform commission", value: formatNaira(ticketCommissionRevenue), accent: "#ff8af5" },
+                    { label: "Commission this week", value: formatNaira(ticketCommissionThisWeek), accent: "#5eead4" },
                   ].map((tile) => (
-                    <div key={tile.label} className="bg-surface rounded-xl border border-line p-4">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: tile.bg }}>
-                        <DollarSign size={16} style={{ color: tile.accent }} />
+                    <div key={tile.label} className="eb-kpi" style={{ ["--k" as string]: tile.accent }}>
+                      <div className="eb-kpi-icon mb-2">
+                        <DollarSign size={16} />
                       </div>
-                      <p className="text-2xl font-bold text-fg tabular-nums">{tile.value}</p>
+                      <p className="eb-kpi-value">{tile.value}</p>
                       <p className="text-xs text-muted mt-0.5">{tile.label}</p>
                     </div>
                   ))}
@@ -1859,7 +1863,7 @@ export default function PlatformDashboard() {
                             <div className="h-2.5 bg-fill rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full transition-all duration-500"
-                                style={{ width: `${(m.total / max) * 100}%`, background: "#C21FAF" }}
+                                style={{ width: `${(m.total / max) * 100}%`, background: "linear-gradient(90deg, #c21faf, #ff8af5)" }}
                               />
                             </div>
                           </Reveal>
@@ -1888,7 +1892,7 @@ export default function PlatformDashboard() {
                             <div className="h-2.5 bg-fill rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full transition-all duration-500"
-                                style={{ width: `${(r.commission / max) * 100}%`, background: "#6D28D9" }}
+                                style={{ width: `${(r.commission / max) * 100}%`, background: "linear-gradient(90deg, #6d28d9, #a78bfa)" }}
                               />
                             </div>
                           </Reveal>
@@ -2025,7 +2029,7 @@ export default function PlatformDashboard() {
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="font-display text-2xl text-fg">Mobile App</h1>
+                  <h1 className="eb-app-title">Mobile App</h1>
                   <p className="text-muted text-sm mt-0.5">
                     Attendee accounts and activity from the eventbuddy mobile app. Real app-store install counts aren&apos;t
                     something this dashboard can show — that only exists once the app is published, and lives in App Store
@@ -2050,26 +2054,25 @@ export default function PlatformDashboard() {
                 const mobileSharePct = totalRegistrations > 0 ? Math.round((mobileRegistrations / totalRegistrations) * 100) : 0;
                 const totalDevices = devicePushTokenCount.ios + devicePushTokenCount.android;
                 const tiles = [
-                  { label: "Attendee accounts", value: attendeeAccounts.length.toLocaleString(), accent: "#C21FAF", bg: "#FFF3FD", icon: Users2 },
+                  { label: "Attendee accounts", value: attendeeAccounts.length.toLocaleString(), accent: "#ff8af5", icon: Users2 },
                   {
                     label: `Devices with push enabled (${devicePushTokenCount.ios} iOS · ${devicePushTokenCount.android} Android)`,
                     value: totalDevices.toLocaleString(),
-                    accent: "#6D28D9",
-                    bg: "#F1EBFE",
+                    accent: "#a78bfa",
                     icon: Smartphone,
                   },
-                  { label: "Registrations via mobile", value: mobileRegistrations.toLocaleString(), accent: "#E85D0A", bg: "#FFF1E6", icon: Ticket },
-                  { label: "Mobile share of all registrations", value: `${mobileSharePct}%`, accent: "#0d9488", bg: "#e7f6f0", icon: DollarSign },
+                  { label: "Registrations via mobile", value: mobileRegistrations.toLocaleString(), accent: "#ffa25e", icon: Ticket },
+                  { label: "Mobile share of all registrations", value: `${mobileSharePct}%`, accent: "#5eead4", icon: DollarSign },
                 ];
                 return (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     {tiles.map((tile, i) => (
                       <Reveal key={tile.label} index={i}>
-                        <div className="bg-surface rounded-xl border border-line p-4">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: tile.bg }}>
-                            <tile.icon size={16} style={{ color: tile.accent }} />
+                        <div className="eb-kpi" style={{ ["--k" as string]: tile.accent }}>
+                          <div className="eb-kpi-icon mb-2">
+                            <tile.icon size={16} />
                           </div>
-                          <p className="text-2xl font-bold text-fg tabular-nums">{tile.value}</p>
+                          <p className="eb-kpi-value">{tile.value}</p>
                           <p className="text-xs text-muted mt-0.5">{tile.label}</p>
                         </div>
                       </Reveal>
@@ -2115,7 +2118,7 @@ export default function PlatformDashboard() {
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="font-display text-2xl text-fg">Managed Events</h1>
+                  <h1 className="eb-app-title">Managed Events</h1>
                   <p className="text-muted text-sm mt-0.5">Quote requests from the &quot;let us run it for you&quot; page — reach out and update their status here.</p>
                 </div>
                 <button
@@ -2239,7 +2242,7 @@ export default function PlatformDashboard() {
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="font-display text-2xl text-fg">Payouts</h1>
+                  <h1 className="eb-app-title">Payouts</h1>
                   <p className="text-muted text-sm mt-0.5">Payout requests to approve, the held-funds rules, and every org&apos;s bank account.</p>
                 </div>
                 <button
@@ -2371,7 +2374,7 @@ export default function PlatformDashboard() {
           {view === "maintenance" && (
             <>
               <div className="mb-6">
-                <h1 className="font-display text-2xl text-fg">Maintenance</h1>
+                <h1 className="eb-app-title">Maintenance</h1>
                 <p className="text-muted text-sm mt-0.5">
                   Take the site offline for every visitor except platform admins, and customize what they see while it&apos;s down.
                 </p>
@@ -2487,7 +2490,7 @@ export default function PlatformDashboard() {
           {view === "admins" && (
             <>
               <div className="mb-6">
-                <h1 className="font-display text-2xl text-fg">Platform admins</h1>
+                <h1 className="eb-app-title">Platform admins</h1>
                 <p className="text-muted text-sm mt-0.5">People with this same super-admin access, separate from any organization account.</p>
               </div>
 
@@ -2624,7 +2627,7 @@ export default function PlatformDashboard() {
           {view === "security" && (
             <>
               <div className="mb-6">
-                <h1 className="font-display text-2xl text-fg">Security</h1>
+                <h1 className="eb-app-title">Security</h1>
                 <p className="text-muted text-sm mt-0.5">Manage two-factor authentication for your own platform admin account.</p>
               </div>
               <div className="max-w-lg">

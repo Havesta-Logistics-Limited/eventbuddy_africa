@@ -133,10 +133,10 @@ export function PlatformDocumentsTab() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <h2 className="font-semibold text-fg">Quotes & Invoices</h2>
-          <p className="text-xs text-muted mt-0.5">Branded documents for clients reaching out for pricing — not tied to any organization&apos;s own billing.</p>
+          <h1 className="eb-app-title">Quotes & Invoices</h1>
+          <p className="text-muted text-sm mt-0.5">Branded documents for clients reaching out for pricing — not tied to any organization&apos;s own billing.</p>
         </div>
         <button
           onClick={() => {
