@@ -52,7 +52,7 @@ const SECTIONS = [
     heading: "Exhibitors",
     body: [
       "Organizers may take applications from businesses that want a stand at their event. An application is not a booking: the organizer decides whether to accept it, and an accepted exhibitor confirms their stand by paying for it through eventbuddy. Stand payments are handled like ticket payments, including eventbuddy's commission, and refunds are at the organizer's discretion.",
-      "A paid exhibitor gets a private portal link for naming their staff passes and collecting leads. Anyone with the link can use it, so exhibitors must share it only with their own team.",
+      "A paid exhibitor gets a private portal link for naming their staff passes and collecting leads. Anyone with the link can use it, so exhibitors must share it only with their own team. Leads are kept for 90 days after the event ends and then deleted, with a reminder 7 days before; exhibitors should export any they want to keep.",
       "Exhibitors who scan your ticket receive your name, email and phone. By showing your ticket to an exhibitor to be scanned, you agree to them receiving these details. Exhibitors must use them only to follow up about what they showed you at the event, in line with applicable data-protection law, and must not sell or share them.",
     ],
   },

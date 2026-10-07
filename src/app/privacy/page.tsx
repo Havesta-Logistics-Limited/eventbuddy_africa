@@ -52,7 +52,12 @@ const SECTIONS = [
   {
     heading: "Data retention",
     body: [
-      "Organizers control how long their event and lead data is kept, and can request deletion of their account and associated data at any time by contacting us.",
+      "We keep personal data only as long as it's needed, and remove it automatically on the schedule below.",
+      "Event data that organizers collect (registrations, check-ins, form answers, survey responses and leads) is kept while the organizer's account exists, so they can see their event history. Organizers can delete an event, and its attendee data with it, at any time, and can ask us to delete their account and everything in it.",
+      "Leads that exhibitors collect by scanning your ticket at an event are deleted 90 days after the event ends. Exhibitors are reminded 7 days before so they can keep a copy, and their exhibitor portal closes when the leads are removed.",
+      "Exhibitor staff passes are deleted 30 days after the event ends.",
+      "Payment attempts that were never completed are deleted after 90 days.",
+      "Records of completed payments, payouts and refunds are kept for six years, because tax and accounting law requires it, and to handle refund and chargeback disputes.",
     ],
   },
   {

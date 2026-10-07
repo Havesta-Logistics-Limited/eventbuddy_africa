@@ -28,5 +28,11 @@ export async function GET(request: Request) {
     passesIncluded: x.passesIncluded,
     passes: (passes ?? []).map((p) => ({ referenceId: p.reference_id, name: p.full_name, email: p.email, checkedIn: !!p.checked_in_at })),
     leadCount: count ?? 0,
+    // leads are deleted 90 days after the event ends (migration 0115)
+    leadsKeptUntil: (() => {
+      const d = new Date(`${x.event.end_date ?? x.event.date}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() + 90);
+      return d.toISOString().slice(0, 10);
+    })(),
   });
 }

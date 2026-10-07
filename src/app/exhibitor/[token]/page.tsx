@@ -20,6 +20,7 @@ type Portal = {
   passesIncluded?: number;
   passes?: { referenceId: string; name: string; email: string; checkedIn: boolean }[];
   leadCount?: number;
+  leadsKeptUntil?: string;
 };
 type Lead = { id: string; name: string; email: string; phone: string | null; rating: "hot" | "warm" | "cold" | null; notes: string; capturedBy?: string | null; capturedAt?: string };
 type Tab = "scan" | "leads" | "passes";
@@ -244,6 +245,12 @@ export default function ExhibitorPortalPage() {
               {(leads ?? []).map((l) => (
                 <LeadCard key={l.id} lead={l} onUpdate={updateLead} />
               ))}
+              {p.leadsKeptUntil && (
+                <p className="pt-2 text-center text-xs text-subtle">
+                  To protect visitors&apos; privacy, leads are kept until{" "}
+                  {new Date(`${p.leadsKeptUntil}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}, 90 days after the event. Export them before then.
+                </p>
+              )}
             </div>
           )}
 

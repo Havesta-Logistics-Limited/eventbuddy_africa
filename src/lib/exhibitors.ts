@@ -143,6 +143,7 @@ export type PortalExhibitor = {
     slug: string | null;
     name: string;
     date: string;
+    end_date: string | null;
     start_time: string | null;
     end_time: string | null;
     event_format: string | null;
@@ -160,7 +161,7 @@ export async function loadPortal(admin: SupabaseClient, token: string | null | u
   const { data } = await admin
     .from("exhibitors")
     .select(
-      "id, organization_id, event_id, status, company_name, contact_name, email, stand_label, pay_token, stand_types(name, passes_included), events(id, slug, name, date, start_time, end_time, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location)"
+      "id, organization_id, event_id, status, company_name, contact_name, email, stand_label, pay_token, stand_types(name, passes_included), events(id, slug, name, date, end_date, start_time, end_time, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location)"
     )
     .eq("portal_token", token)
     .maybeSingle();
@@ -172,4 +173,18 @@ export async function loadPortal(admin: SupabaseClient, token: string | null | u
     standName: st?.name ?? "Stand",
     event: data.events as unknown as PortalExhibitor["event"],
   };
+}
+
+export function emailLeadsExpiring(to: string, c: { company: string; contact: string; eventName: string; leadCount: number; deleteOn: string; portalUrl: string }) {
+  const when = new Date(`${c.deleteOn}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  return send(
+    to,
+    `Download your ${c.eventName} leads before ${when}`,
+    `Hi ${c.contact}, ${c.company}'s ${c.leadCount} leads from ${c.eventName} will be deleted on ${when}. Export them from your portal before then: ${c.portalUrl}`,
+    { label: "Leads expiring", emoji: "⏳" },
+    `<p style="margin:0 0 14px;">Hi ${escapeHtml(c.contact)},</p>
+     <p style="margin:0 0 14px;">To protect visitors' privacy, the <strong>${c.leadCount} lead${c.leadCount === 1 ? "" : "s"}</strong> ${escapeHtml(c.company)} collected at <strong>${escapeHtml(c.eventName)}</strong> will be deleted on <strong>${escapeHtml(when)}</strong>, 90 days after the event.</p>
+     <p style="margin:0 0 20px;">Open your portal and use <strong>Export CSV</strong> on the Leads tab to keep a copy.</p>
+     ${emailButton(c.portalUrl, "Export my leads", PINK)}`
+  );
 }
