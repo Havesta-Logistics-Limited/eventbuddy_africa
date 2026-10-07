@@ -50,7 +50,7 @@ export async function sendRegistrationEmail(to: string, referenceId: string, eve
       from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
       to,
       subject: `You're registered for ${event.name}`,
-      text: `You're registered for ${event.name} on ${eventDate}${eventTime ? ` at ${eventTime}` : ""}.\n\nYour reference ID: ${referenceId}\n\nKeep this — you'll need it at check-in.${hubUrl ? `\n\nEvent hub (schedule, speakers, Q&A): ${hubUrl}` : ""}`,
+      text: `You're registered for ${event.name} on ${eventDate}${eventTime ? ` at ${eventTime}` : ""}.\n\nYour reference ID: ${referenceId}\n\nKeep this — you'll need it at check-in.\n\nAt events with exhibitors, exhibitors who scan your ticket receive your name, email and phone.${hubUrl ? `\n\nEvent hub (schedule, speakers, Q&A): ${hubUrl}` : ""}`,
       html: `
         <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
           <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#C21FAF; font-weight:600; margin:0 0 8px;">Registration confirmed</p>
@@ -61,7 +61,8 @@ export async function sendRegistrationEmail(to: string, referenceId: string, eve
             <img src="cid:qr-code" width="200" height="200" alt="Your registration QR code" style="border:1px solid #eee; border-radius:8px;" />
             <p style="font-family: monospace; font-size:20px; font-weight:700; letter-spacing:0.08em; margin:16px 0 0;">${referenceId}</p>
           </div>
-          <p style="color:#888; font-size:12px; margin:0 0 20px;">Keep this email — show the QR code (or your reference ID) at check-in.</p>
+          <p style="color:#888; font-size:12px; margin:0 0 8px;">Keep this email — show the QR code (or your reference ID) at check-in.</p>
+          <p style="color:#aaa; font-size:11px; margin:0 0 20px;">At events with exhibitors, exhibitors who scan your ticket receive your name, email and phone.</p>
           ${hubUrl ? `<div style="text-align:center;">${emailButton(hubUrl, "Open event hub", "#C21FAF")}</div><p style="color:#aaa; font-size:11px; text-align:center; margin-top:10px;">Schedule, speakers, and live Q&A for this event.</p>` : ""}
         </div>
       `,

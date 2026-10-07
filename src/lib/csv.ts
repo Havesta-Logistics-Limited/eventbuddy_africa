@@ -102,7 +102,7 @@ export function registrationsToCsv(registrations: RegistrationRecord[], event: E
     r.status,
     r.checkedInAt ? new Date(r.checkedInAt).toLocaleString("en-GB") : "",
     new Date(r.createdAt).toLocaleDateString("en-GB"),
-    r.source === "kiosk" ? "Kiosk (walk-up)" : r.source === "mobile" ? "Mobile app" : "Web",
+    r.source === "kiosk" ? "Kiosk (walk-up)" : r.source === "exhibitor" ? "Exhibitor staff pass" : r.source === "mobile" ? "Mobile app" : "Web",
   ]);
 
   return [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");

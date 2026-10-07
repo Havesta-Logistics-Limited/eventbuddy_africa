@@ -424,7 +424,7 @@ export interface RegistrationRecord {
   hideFromGuestList?: boolean;
   /** Where the sign-up came from: the public page, the mobile app, or the
    *  staff Kiosk at the door (a walk-up, migration 0108). */
-  source?: "web" | "mobile" | "kiosk";
+  source?: "web" | "mobile" | "kiosk" | "exhibitor";
   createdAt: string;
 }
 

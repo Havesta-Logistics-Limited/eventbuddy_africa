@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, CalendarClock, Camera, CheckCircle2, Clock3, ScanLine, Volume2, VolumeX, X } from "lucide-react";
 import { getQrDetector } from "@/lib/qr-detector";
-import { isScanMuted, setScanMuted, unlockScanAudio, type ScanOutcome } from "@/lib/scan-feedback";
+import { isScanMuted, setScanMuted, unlockScanAudio, unlockScanAudioOnInteraction, type ScanOutcome } from "@/lib/scan-feedback";
 
 /** What the scan led to, shown over the camera picture. */
 export type ScanFlash = {
@@ -41,11 +41,14 @@ export function FastScanStage({
   cooldownSeconds = 2,
   label = "Scanning tickets",
   flash = null,
+  startHint = "The camera stays on and checks in each ticket you show it.",
 }: {
   onScan: (code: string) => void | Promise<void>;
   cooldownSeconds?: number;
   label?: string;
   flash?: ScanFlash | null;
+  /** the line under "Start scanning" */
+  startHint?: string;
 }) {
   const [active, setActive] = useState(false);
   const [error, setError] = useState("");
@@ -61,6 +64,9 @@ export function FastScanStage({
   useEffect(() => {
     onScanRef.current = onScan;
   }, [onScan]);
+
+  // any tap on a page with a scanner keeps its sounds allowed (typed codes too)
+  useEffect(() => unlockScanAudioOnInteraction(), []);
 
   useEffect(() => {
     // read after mount: localStorage isn't available during the server render
@@ -269,7 +275,7 @@ export function FastScanStage({
           <span className="eb-portal-cta" style={{ width: "50%", minWidth: 220 }}>
             Start scanning
           </span>
-          <span className="text-sm text-white/60">The camera stays on and checks in each ticket you show it.</span>
+          <span className="text-sm text-white/60">{startHint}</span>
           {error && <span className="max-w-md text-sm text-rose-300">{error}</span>}
         </button>
       )}

@@ -37,10 +37,12 @@ export function EventOverview({ event, registrations }: { event: EventRecord; re
     };
   }, [event.id, paid]);
 
-  const active = registrations.filter((r) => r.status === "registered" || r.status === "checked_in");
-  const checkedIn = registrations.filter((r) => r.status === "checked_in").length;
+  // exhibitors' staff passes aren't attendees
+  const attendees = registrations.filter((r) => r.source !== "exhibitor");
+  const active = attendees.filter((r) => r.status === "registered" || r.status === "checked_in");
+  const checkedIn = attendees.filter((r) => r.status === "checked_in").length;
   const capacity = tickets.every((t) => t.quantityAvailable != null) && tickets.length > 0 ? tickets.reduce((s, t) => s + (t.quantityAvailable ?? 0), 0) : null;
-  const walkups = registrations.filter((r) => r.source === "kiosk").length;
+  const walkups = attendees.filter((r) => r.source === "kiosk").length;
 
   const toneOf = (ticketTypeId?: string | null) => {
     const i = tickets.findIndex((t) => t.id === ticketTypeId);

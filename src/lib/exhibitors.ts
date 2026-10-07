@@ -22,6 +22,12 @@ export function exhibitPayUrl(siteUrl: string, token: string) {
   return `${siteUrl.replace(/\/$/, "")}/exhibit/pay/${token}`;
 }
 
+/** The exhibitor's portal (0113): staff passes and lead capture. Anyone with
+ *  the link can use it, so it goes to the exhibitor's contact only. */
+export function exhibitorPortalUrl(siteUrl: string, token: string) {
+  return `${siteUrl.replace(/\/$/, "")}/exhibitor/${token}`;
+}
+
 const PINK = "#C21FAF";
 
 async function send(to: string | string[], subject: string, text: string, banner: { label: string; emoji: string }, body: string) {
@@ -92,7 +98,7 @@ export function emailDeclined(to: string, c: Ctx & { reason: string }) {
   );
 }
 
-export function emailPaid(to: string | string[], c: Ctx & { standLabel?: string | null }) {
+export function emailPaid(to: string | string[], c: Ctx & { standLabel?: string | null; portalUrl?: string }) {
   return send(
     to,
     `Stand confirmed: ${c.company} at ${c.eventName}`,
@@ -100,6 +106,70 @@ export function emailPaid(to: string | string[], c: Ctx & { standLabel?: string 
     { label: "Stand confirmed", emoji: "✅" },
     `<p style="margin:0 0 14px;"><strong>${escapeHtml(c.company)}</strong>'s stand at <strong>${escapeHtml(c.eventName)}</strong> is paid and confirmed.</p>
      <p style="margin:0 0 6px;">Stand: ${escapeHtml(c.standName)}${c.standLabel ? ` (${escapeHtml(c.standLabel)})` : ""}</p>
-     <p style="margin:0;">Paid: ${escapeHtml(formatNaira(c.price ?? 0))}</p>`
+     <p style="margin:0 0 20px;">Paid: ${escapeHtml(formatNaira(c.price ?? 0))}</p>
+     ${c.portalUrl ? `<p style="margin:0 0 14px;">Your exhibitor portal is ready: add your staff passes (each gets a QR to get in) and scan visitors' tickets at your stand to collect leads.</p>${emailButton(c.portalUrl, "Open my exhibitor portal", PINK)}` : ""}`
   );
+}
+
+export function emailPortalLink(to: string, c: Ctx & { portalUrl: string }) {
+  return send(
+    to,
+    `Your exhibitor portal for ${c.eventName}`,
+    `Hi ${c.contact}, here's ${c.company}'s exhibitor portal for ${c.eventName}: ${c.portalUrl}`,
+    { label: "Exhibitor portal", emoji: "🏢" },
+    `<p style="margin:0 0 14px;">Hi ${escapeHtml(c.contact)},</p>
+     <p style="margin:0 0 14px;">Here's <strong>${escapeHtml(c.company)}</strong>'s exhibitor portal for <strong>${escapeHtml(c.eventName)}</strong>. Add your staff passes there, and on the day, scan visitors' tickets at your stand to collect leads.</p>
+     <p style="margin:0 0 20px;">Anyone with this link can use it, so share it only with your team.</p>
+     ${emailButton(c.portalUrl, "Open my exhibitor portal", PINK)}`
+  );
+}
+
+// ---- portal (0113): everything below is keyed by the exhibitor's portal link ----
+
+export type PortalExhibitor = {
+  id: string;
+  organization_id: string;
+  event_id: string;
+  status: ExhibitorStatus;
+  company_name: string;
+  contact_name: string;
+  email: string;
+  stand_label: string | null;
+  pay_token: string;
+  passesIncluded: number;
+  standName: string;
+  event: {
+    id: string;
+    slug: string | null;
+    name: string;
+    date: string;
+    start_time: string | null;
+    end_time: string | null;
+    event_format: string | null;
+    virtual_join_url: string | null;
+    virtual_platform: string | null;
+    virtual_access_notes: string | null;
+    venue: string;
+    location: string;
+  };
+};
+
+/** Loads the exhibitor a portal link belongs to, or null if the link is unknown. */
+export async function loadPortal(admin: SupabaseClient, token: string | null | undefined): Promise<PortalExhibitor | null> {
+  if (!token || !/^[0-9a-f-]{36}$/i.test(token)) return null;
+  const { data } = await admin
+    .from("exhibitors")
+    .select(
+      "id, organization_id, event_id, status, company_name, contact_name, email, stand_label, pay_token, stand_types(name, passes_included), events(id, slug, name, date, start_time, end_time, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location)"
+    )
+    .eq("portal_token", token)
+    .maybeSingle();
+  if (!data) return null;
+  const st = data.stand_types as unknown as { name: string; passes_included: number } | null;
+  return {
+    ...(data as unknown as Omit<PortalExhibitor, "passesIncluded" | "standName" | "event">),
+    passesIncluded: Number(st?.passes_included ?? 0),
+    standName: st?.name ?? "Stand",
+    event: data.events as unknown as PortalExhibitor["event"],
+  };
 }

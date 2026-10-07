@@ -289,6 +289,11 @@ export function ProspectsTab({
                         Walk-up
                       </span>
                     )}
+                    {r.source === "exhibitor" && (
+                      <span className="eb-walkup-badge eb-walkup-badge--exhibitor ml-2" title={`Staff pass for ${String(r.customAnswers?.company ?? "an exhibitor")}`}>
+                        Exhibitor
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-muted max-w-[180px] truncate">{r.email}</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{r.phone || "—"}</td>

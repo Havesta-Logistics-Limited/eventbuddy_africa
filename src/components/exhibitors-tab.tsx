@@ -8,7 +8,7 @@ import { formatNaira } from "@/lib/billing";
 import type { EventRecord } from "@/lib/types";
 import type { ExhibitorStatus } from "@/lib/exhibitors";
 
-type StandType = { id: string; name: string; description: string | null; price_naira: number; quantity: number | null };
+type StandType = { id: string; name: string; description: string | null; price_naira: number; quantity: number | null; passes_included: number };
 type Exhibitor = {
   id: string;
   stand_type_id: string | null;
@@ -25,6 +25,7 @@ type Exhibitor = {
   decline_reason: string | null;
   applied_at: string;
   paid_at: string | null;
+  portal_token: string;
 };
 
 const STATUS_LABEL: Record<ExhibitorStatus, string> = { applied: "New", approved: "Awaiting payment", paid: "Paid", declined: "Declined", cancelled: "Cancelled" };
@@ -56,13 +57,23 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
   const [editing, setEditing] = useState<Partial<StandType> | null>(null);
   const [declining, setDeclining] = useState<{ id: string; reason: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [counts, setCounts] = useState<Record<string, { passes: number; leads: number }>>({});
 
   const load = useCallback(async () => {
     const [ev, st, ex] = await Promise.all([
       supabase.from("events").select("exhibitors_enabled, exhibitor_intro, exhibitor_deadline").eq("id", event.id).maybeSingle(),
-      supabase.from("stand_types").select("id, name, description, price_naira, quantity").eq("event_id", event.id).order("price_naira"),
+      supabase.from("stand_types").select("id, name, description, price_naira, quantity, passes_included").eq("event_id", event.id).order("price_naira"),
       supabase.from("exhibitors").select("*").eq("event_id", event.id).order("applied_at", { ascending: false }),
     ]);
+    // staff passes and leads per paid exhibitor (0113)
+    const [passes, leads] = await Promise.all([
+      supabase.from("registrations").select("exhibitor_id").eq("event_id", event.id).not("exhibitor_id", "is", null).neq("status", "cancelled"),
+      supabase.from("exhibitor_leads").select("exhibitor_id").eq("event_id", event.id),
+    ]);
+    const c: Record<string, { passes: number; leads: number }> = {};
+    for (const r of (passes.data ?? []) as { exhibitor_id: string }[]) (c[r.exhibitor_id] ??= { passes: 0, leads: 0 }).passes++;
+    for (const r of (leads.data ?? []) as { exhibitor_id: string }[]) (c[r.exhibitor_id] ??= { passes: 0, leads: 0 }).leads++;
+    setCounts(c);
     if (ev.data) setSettings({ enabled: ev.data.exhibitors_enabled, intro: ev.data.exhibitor_intro ?? "", deadline: ev.data.exhibitor_deadline ?? "" });
     setStands(((st.data ?? []) as StandType[]).map((s) => ({ ...s, price_naira: Number(s.price_naira) })));
     setRows((ex.data ?? []) as Exhibitor[]);
@@ -95,7 +106,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
     const name = (editing.name ?? "").trim();
     const price = Number(editing.price_naira);
     if (!name || !(price >= 100)) return toast.error("Give the stand type a name and a price of at least ₦100.");
-    const row = { name, description: editing.description?.trim() || null, price_naira: price, quantity: editing.quantity || null };
+    const row = { name, description: editing.description?.trim() || null, price_naira: price, quantity: editing.quantity || null, passes_included: Math.max(0, Math.min(50, Number(editing.passes_included ?? 2))) };
     const { error } = editing.id
       ? await supabase.from("stand_types").update(row).eq("id", editing.id)
       : await supabase.from("stand_types").insert({ ...row, organization_id: undefined, event_id: event.id });
@@ -129,6 +140,14 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
     );
     setDeclining(null);
     load();
+  }
+
+  async function resendPortal(id: string) {
+    setBusy(id);
+    const res = await post("/api/exhibitors/portal-link", { exhibitorId: id });
+    setBusy(null);
+    if (!res.ok) return toast.error(res.error || "Couldn't send it.");
+    toast.success("Portal link emailed to the exhibitor");
   }
 
   async function saveLabel(id: string, label: string) {
@@ -204,7 +223,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
       <section className="eb-ov-card">
         <div className="mb-3 flex items-center justify-between gap-3">
           <p className="eb-ov-title">Stand types</p>
-          <button type="button" className="eb-btn eb-btn--ghost" onClick={() => setEditing({ name: "", price_naira: 0, quantity: null, description: "" })}>
+          <button type="button" className="eb-btn eb-btn--ghost" onClick={() => setEditing({ name: "", price_naira: 0, quantity: null, description: "", passes_included: 2 })}>
             <Plus size={14} /> Add stand type
           </button>
         </div>
@@ -216,7 +235,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
               <li key={s.id} className="eb-ov-row">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-fg">
-                    {s.name} <span className="font-normal text-muted">· {formatNaira(s.price_naira)}</span>
+                    {s.name} <span className="font-normal text-muted">· {formatNaira(s.price_naira)} · {s.passes_included} staff pass{s.passes_included === 1 ? "" : "es"}</span>
                   </p>
                   {s.description && <p className="truncate text-xs text-muted">{s.description}</p>}
                 </div>
@@ -247,6 +266,10 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
             <div>
               <label htmlFor="st-qty" className="eb-label">How many</label>
               <input id="st-qty" className="eb-input" inputMode="numeric" placeholder="No limit" value={editing.quantity ? String(editing.quantity) : ""} onChange={(e) => setEditing({ ...editing, quantity: Number(e.target.value.replace(/\D/g, "")) || null })} />
+            </div>
+            <div>
+              <label htmlFor="st-passes" className="eb-label">Staff passes</label>
+              <input id="st-passes" className="eb-input" inputMode="numeric" value={String(editing.passes_included ?? 2)} onChange={(e) => setEditing({ ...editing, passes_included: Math.min(50, Number(e.target.value.replace(/\D/g, "")) || 0) })} />
             </div>
             <div className="sm:col-span-3">
               <label htmlFor="st-desc" className="eb-label">What&apos;s included</label>
@@ -296,6 +319,23 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
                     </p>
                     {r.description && <p className="mt-2 max-w-2xl text-sm text-fg-3">{r.description}</p>}
                     {r.status === "declined" && r.decline_reason && <p className="mt-1 text-xs text-subtle">Your note: {r.decline_reason}</p>}
+                    {r.status === "paid" && (
+                      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                        <span className="text-fg-3">
+                          {counts[r.id]?.passes ?? 0}/{stands.find((s) => s.id === r.stand_type_id)?.passes_included ?? 0} staff passes · {counts[r.id]?.leads ?? 0} lead{(counts[r.id]?.leads ?? 0) === 1 ? "" : "s"} scanned
+                        </span>
+                        <button
+                          type="button"
+                          className="eb-link"
+                          onClick={() => navigator.clipboard.writeText(`${window.location.origin}/exhibitor/${r.portal_token}`).then(() => toast.success("Portal link copied. Share it only with this exhibitor."))}
+                        >
+                          Copy portal link
+                        </button>
+                        <button type="button" className="eb-link" disabled={busy === r.id} onClick={() => resendPortal(r.id)}>
+                          Email portal link
+                        </button>
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {(r.status === "approved" || r.status === "paid") && (

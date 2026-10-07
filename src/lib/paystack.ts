@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { recordSaleRisk } from "./sales-guard";
-import { emailPaid } from "./exhibitors";
+import { emailPaid, exhibitorPortalUrl } from "./exhibitors";
 import { Resend } from "resend";
 import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail } from "@/lib/registration-email";
@@ -603,18 +603,22 @@ async function finalizeStandBooking(
       .from("exhibitors")
       .update({ status: "paid", paid_at: new Date().toISOString() })
       .eq("id", txn.exhibitor_id)
-      .select("email, company_name, contact_name, stand_label, amount_naira, events(name), stand_types(name), organizations(email)")
+      .select("email, company_name, contact_name, stand_label, amount_naira, portal_token, events(name), stand_types(name), organizations(email)")
       .maybeSingle();
     if (x) {
       const orgEmail = (x.organizations as unknown as { email: string | null } | null)?.email;
-      await emailPaid([x.email, ...(orgEmail ? [orgEmail] : [])], {
+      // the exhibitor's copy carries their portal link; the organizer's doesn't
+      const ctx = {
         company: x.company_name,
         contact: x.contact_name,
         eventName: (x.events as unknown as { name: string } | null)?.name ?? "the event",
         standName: (x.stand_types as unknown as { name: string } | null)?.name ?? "Stand",
         standLabel: x.stand_label,
         price: Number(x.amount_naira ?? txn.amount_naira),
-      });
+      };
+      const site = process.env.NEXT_PUBLIC_SITE_URL || "https://eventbuddy.africa";
+      await emailPaid(x.email, { ...ctx, portalUrl: exhibitorPortalUrl(site, x.portal_token) });
+      if (orgEmail) await emailPaid(orgEmail, ctx);
     }
   }
   return { ok: true, purpose: "stand_booking", eventId: txn.event_id, alreadyProcessed: false };

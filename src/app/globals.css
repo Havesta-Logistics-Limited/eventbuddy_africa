@@ -3109,3 +3109,6 @@ tbody tr.cursor-pointer:hover { background: rgba(237, 28, 220, 0.06); box-shadow
 .eb-stand-opt:has(input:focus-visible) { outline: 2px solid #ff8af5; outline-offset: 2px; }
 .eb-exhibit-cta { display: flex; align-items: center; gap: 14px; border-radius: 16px; padding: 16px 18px; background: rgb(255 255 255 / 0.05); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15); backdrop-filter: blur(20px); transition: box-shadow 220ms ease; }
 .eb-exhibit-cta:hover { box-shadow: inset 0 0 0 1px rgba(255, 138, 245, 0.55), 0 0 34px -10px rgba(237, 28, 220, 0.65); }
+.eb-walkup-badge--exhibitor { color: #f5c6ff; background: rgb(255 138 245 / 0.14); box-shadow: inset 0 0 0 1px rgb(255 138 245 / 0.35); }
+/* exhibitor portal: the staff portal's controls, in the brand pink */
+.eb-exhibitor-portal { --pt-a: #ff8af5; --pt-b: #c21faf; --pt-ink: #1a0b1f; }

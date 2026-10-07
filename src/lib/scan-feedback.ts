@@ -44,7 +44,32 @@ export function unlockScanAudio() {
     boost.connect(limiter).connect(ctx.destination);
     out = boost;
   }
-  if (ctx.state === "suspended") ctx.resume().catch(() => {});
+  // "suspended" (no tap yet) or "interrupted" (iOS, e.g. after the camera
+  // starts): either way, wake it
+  if (ctx.state !== "running") ctx.resume().catch(() => {});
+  // iOS only fully unlocks Web Audio once something plays inside a tap
+  try {
+    const silent = ctx.createBufferSource();
+    silent.buffer = ctx.createBuffer(1, 1, 22050);
+    silent.connect(ctx.destination);
+    silent.start(0);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Unlocks scan audio on every tap or key press on the page, so a sound can
+ *  play even when the scan was typed in rather than started from the camera
+ *  button. Returns the cleanup. */
+export function unlockScanAudioOnInteraction(): () => void {
+  if (typeof window === "undefined") return () => {};
+  const unlock = () => unlockScanAudio();
+  window.addEventListener("pointerdown", unlock, { capture: true, passive: true });
+  window.addEventListener("keydown", unlock, { capture: true });
+  return () => {
+    window.removeEventListener("pointerdown", unlock, { capture: true });
+    window.removeEventListener("keydown", unlock, { capture: true });
+  };
 }
 
 /** One note: frequency (Hz), start offset and length (s), waveform, peak gain. */
@@ -86,6 +111,15 @@ export function playScanFeedback(outcome: ScanOutcome, muted = isScanMuted()) {
   if (muted) return;
   unlockScanAudio();
   if (!ctx) return;
+  // still waking up (iOS after the camera started): play once it's running
+  if (ctx.state !== "running") {
+    ctx.resume().then(() => playTones(outcome)).catch(() => {});
+    return;
+  }
+  playTones(outcome);
+}
+
+function playTones(outcome: ScanOutcome) {
   if (outcome === "success") {
     // bright rising chime: C6, E6, G6
     tone(1046.5, 0, 0.16, "sine", 0.35);
