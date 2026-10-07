@@ -304,7 +304,7 @@ export default function RsvpPage() {
                         <a
                           href={a.hubUrl}
                           className="mt-3 flex items-center justify-center gap-2 mx-auto px-4 py-2 rounded-lg text-sm font-medium text-white hover:opacity-90 w-fit"
-                          style={{ background: "#C21FAF" }}
+                          data-cta
                         >
                           <ExternalLink size={13} />
                           Open event hub
@@ -408,7 +408,7 @@ export default function RsvpPage() {
                   onClick={() => submitResponse("accepted")}
                   disabled={submitting !== null}
                   className="w-full py-3 rounded-xl font-semibold text-white text-base disabled:opacity-60"
-                  style={{ background: "#C21FAF" }}
+                  data-cta
                 >
                   {submitting ? "Confirming…" : "Confirm — I'm attending"}
                 </button>
@@ -420,7 +420,7 @@ export default function RsvpPage() {
                   onClick={() => (guest.plusOnesAllowed > 0 || event.customFields.length > 0 ? setShowDetailsStep(true) : submitResponse("accepted"))}
                   disabled={submitting !== null}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white text-base disabled:opacity-60"
-                  style={{ background: "#C21FAF" }}
+                  data-cta
                 >
                   <ThumbsUp size={16} />
                   {submitting === "accepted" ? "Confirming…" : "Yes, I'll be there"}

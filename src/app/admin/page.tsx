@@ -653,7 +653,7 @@ function AdminPageContent() {
                     type="submit"
                     disabled={savingName}
                     className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                    style={{ background: "#C21FAF" }}
+                    data-cta
                   >
                     {savingName ? "Saving…" : "Save name"}
                   </button>
@@ -694,7 +694,7 @@ function AdminPageContent() {
                     type="submit"
                     disabled={savingOrgName || orgNameDraft.trim() === orgName}
                     className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                    style={{ background: "#C21FAF" }}
+                    data-cta
                   >
                     {savingOrgName ? "Requesting…" : "Request name change"}
                   </button>
@@ -786,7 +786,7 @@ function AdminPageContent() {
                     type="submit"
                     disabled={inviting}
                     className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                    style={{ background: "#C21FAF" }}
+                    data-cta
                   >
                     {inviting ? "Sending invite…" : "Send invite"}
                   </button>
@@ -829,7 +829,7 @@ function AdminPageContent() {
                     type="submit"
                     disabled={savingLoginEmail || !loginEmailDraft.trim()}
                     className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                    style={{ background: "#C21FAF" }}
+                    data-cta
                   >
                     {savingLoginEmail ? "Requesting…" : "Request email change"}
                   </button>
@@ -942,7 +942,7 @@ function AdminPageContent() {
                     type="submit"
                     disabled={savingBio || orgBioDraft.trim() === orgBio}
                     className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                    style={{ background: "#C21FAF" }}
+                    data-cta
                   >
                     {savingBio ? "Saving…" : "Save bio"}
                   </button>
@@ -996,7 +996,7 @@ function AdminPageContent() {
                   type="submit"
                   disabled={changingPassword}
                   className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                  style={{ background: "#C21FAF" }}
+                  data-cta
                 >
                   {changingPassword ? "Updating…" : "Update password"}
                 </button>
@@ -1115,7 +1115,7 @@ function AdminPageContent() {
                   setShowStaffForm(true);
                 }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
-                style={{ background: "#C21FAF" }}
+                data-cta
               >
                 <Plus size={14} />
                 Add Staff
@@ -1279,7 +1279,7 @@ function AdminPageContent() {
                       <button type="button" onClick={() => setShowStaffForm(false)} className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas">
                         Cancel
                       </button>
-                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" style={{ background: "#C21FAF" }}>
+                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" data-cta>
                         {saving ? "Saving…" : staffForm.id ? "Save Changes" : "Add Staff"}
                       </button>
                     </div>
@@ -1472,7 +1472,7 @@ function AdminPageContent() {
                     onClick={handleSavePayout}
                     disabled={savingPayout}
                     className="w-full py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                    style={{ background: "#C21FAF" }}
+                    data-cta
                   >
                     {savingPayout ? "Setting up…" : "Confirm and set up payouts"}
                   </button>

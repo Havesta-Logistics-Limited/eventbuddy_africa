@@ -796,7 +796,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
               <a
                 href="#register-panel"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity whitespace-nowrap"
-                style={{ background: "#C21FAF" }}
+                data-cta
               >
                 <Ticket size={16} />
                 {ctaLabel === "Register" ? "Register free" : ctaLabel === "Buy Ticket" ? `Buy Ticket · ${priceLabel}` : ctaLabel}
@@ -964,7 +964,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                     <a
                       href={confirmation.hubUrl}
                       className="mt-4 inline-flex items-center gap-2 mx-auto px-4 py-2.5 rounded-lg text-sm font-medium text-white hover:opacity-90"
-                      style={{ background: "#C21FAF" }}
+                      data-cta
                     >
                       <ExternalLink size={14} />
                       Open event hub

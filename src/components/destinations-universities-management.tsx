@@ -153,7 +153,7 @@ export function DestinationsUniversitiesManagement({
               setShowDestForm(true);
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
-            style={{ background: "#C21FAF" }}
+            data-cta
           >
             <Plus size={14} />
             Add Destination
@@ -179,7 +179,7 @@ export function DestinationsUniversitiesManagement({
               onClick={handleCopy}
               disabled={!copySourceId || copying}
               className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-50 transition-transform active:scale-[0.97] shrink-0"
-              style={{ background: "#C21FAF" }}
+              data-cta
             >
               {copying ? "Copying…" : "Copy"}
             </button>
@@ -240,7 +240,7 @@ export function DestinationsUniversitiesManagement({
             }}
             disabled={destinations.length === 0}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap disabled:opacity-50"
-            style={{ background: "#C21FAF" }}
+            data-cta
           >
             <Plus size={14} />
             Add University
@@ -340,7 +340,7 @@ export function DestinationsUniversitiesManagement({
                   type="submit"
                   disabled={saving}
                   className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                  style={{ background: "#C21FAF" }}
+                  data-cta
                 >
                   {saving ? "Saving…" : "Save"}
                 </button>
@@ -411,7 +411,7 @@ export function DestinationsUniversitiesManagement({
                   type="submit"
                   disabled={saving}
                   className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                  style={{ background: "#C21FAF" }}
+                  data-cta
                 >
                   {saving ? "Saving…" : uniForm.id ? "Save Changes" : "Add"}
                 </button>

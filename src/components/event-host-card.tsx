@@ -98,7 +98,7 @@ function ContactModal({ title, placeholder, needsName, onClose, onSubmit }: { ti
             type="submit"
             disabled={submitting}
             className="w-full py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-            style={{ background: "#C21FAF" }}
+            data-cta
           >
             {submitting ? "Sending…" : "Send"}
           </button>

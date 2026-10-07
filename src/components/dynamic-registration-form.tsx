@@ -219,7 +219,7 @@ export function DynamicRegistrationForm(props: {
         type="submit"
         disabled={submitting}
         className="w-full py-3.5 rounded-xl font-semibold text-white text-base disabled:opacity-60"
-        style={{ background: "#C21FAF" }}
+        data-cta
       >
         {submitting ? submittingLabel ?? "Registering…" : submitLabel ?? "Register"}
       </button>

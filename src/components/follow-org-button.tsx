@@ -72,7 +72,7 @@ export function FollowOrgButton({ orgSlug, theme = "light" }: { orgSlug: string;
               theme === "dark" ? "bg-surface/5 border-white/20 text-white placeholder:text-white/40 focus:ring-[#FF8AF5]" : "border-line focus:ring-brand-600"
             }`}
           />
-          <button type="submit" disabled={submitting} className="px-3 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-60 shrink-0" style={{ background: "#C21FAF" }}>
+          <button type="submit" disabled={submitting} className="px-3 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-60 shrink-0" data-cta>
             {submitting ? "…" : "Go"}
           </button>
         </form>

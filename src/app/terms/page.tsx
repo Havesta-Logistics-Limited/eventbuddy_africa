@@ -38,6 +38,17 @@ const SECTIONS = [
     ],
   },
   {
+    heading: "Promoters",
+    body: [
+      "Anyone can register as a promoter on eventbuddy, free of charge. A promoter shares links to events whose organizers have chosen to pay promoters, and earns a commission on paid tickets bought through those links.",
+      "The commission for each event is set by its organizer, as a percentage of the amount the organizer receives after eventbuddy's commission, and may be capped per ticket. It is shown on the promoter marketplace before you promote the event. Organizers can change these terms or pause a promoter at any time; a change applies only to tickets sold afterwards.",
+      "Commission is earned only on paid tickets genuinely bought by other people through your link. Tickets you buy for yourself, or for a group that includes you, do not earn commission. If a ticket is refunded or its payment is disputed, the commission on it is reversed.",
+      "Your earnings are credited to your eventbuddy balance and become available a few days after each event ends. You may request a payout to your verified bank account, subject to the same review, minimum amount and processing fee as organizer payouts. Changes to your bank details after they are first saved require eventbuddy's approval.",
+      "Badges reflect your real, attributed sales and refund rate and are recalculated automatically; they cannot be applied for. Organizers may limit an event to promoters with a particular badge.",
+      "You must promote events honestly and lawfully: no spam, no misleading claims about an event, and no buying tickets through your own link to earn commission. eventbuddy may suspend a promoter account and withhold or reverse commission earned in breach of these terms.",
+    ],
+  },
+  {
     heading: "Acceptable use",
     body: [
       "You agree not to use eventbuddy to collect data unlawfully, to spam or harass attendees, or to attempt to access another organization's data or bypass the platform's access controls.",

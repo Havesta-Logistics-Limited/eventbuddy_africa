@@ -82,7 +82,7 @@ export function OneOnOneRequestStep({
           onClick={handleRequest}
           disabled={submitting}
           className="ml-auto px-4 py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
-          style={{ background: "#C21FAF" }}
+          data-cta
         >
           {submitting ? "Sending…" : "Yes, I'm interested"}
         </button>

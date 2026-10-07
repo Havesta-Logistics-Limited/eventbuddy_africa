@@ -63,7 +63,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
             setShowRepForm(true);
           }}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-transform active:scale-[0.97] shrink-0 whitespace-nowrap"
-          style={{ background: "#C21FAF" }}
+          data-cta
         >
           <Plus size={14} />
           Add Rep
@@ -202,7 +202,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                   type="submit"
                   disabled={saving}
                   className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
-                  style={{ background: "#C21FAF" }}
+                  data-cta
                 >
                   {saving ? "Saving…" : "Save Rep"}
                 </button>

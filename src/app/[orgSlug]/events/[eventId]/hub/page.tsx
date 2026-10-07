@@ -359,7 +359,7 @@ export default function EventHubPage() {
               type="submit"
               disabled={lookingUp}
               className="w-full py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-              style={{ background: "#C21FAF" }}
+              data-cta
             >
               {lookingUp ? "Looking up…" : "Continue"}
             </button>

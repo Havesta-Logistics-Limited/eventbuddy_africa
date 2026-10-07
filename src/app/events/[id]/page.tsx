@@ -484,7 +484,7 @@ export default function EventDetailPage() {
                     onClick={handlePublish}
                     disabled={publishing}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow-sm transition-all hover:shadow-md active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
-                    style={{ background: "#C21FAF" }}
+                    data-cta
                   >
                     {publishing ? "Publishing…" : "Publish Event"}
                   </button>
