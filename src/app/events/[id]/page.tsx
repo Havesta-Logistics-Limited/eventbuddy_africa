@@ -404,7 +404,9 @@ export default function EventDetailPage() {
         </Link>
 
         <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line shadow-sm p-6 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:justify-between">
+          {/* stacked until very wide screens: the action row is long, and side by
+              side it squeezed the event name into a narrow column */}
+          <div className="flex flex-col 2xl:flex-row 2xl:items-start gap-4 2xl:justify-between">
             <div className="flex-1 min-w-0">
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${
@@ -478,8 +480,8 @@ export default function EventDetailPage() {
                 </p>
               )}
             </div>
-            <div className="flex flex-col items-end gap-3 shrink-0 w-full sm:w-auto">
-              <div className="flex flex-wrap items-center gap-2 justify-end w-full sm:w-auto">
+            <div className="flex flex-col items-start 2xl:items-end gap-3 shrink-0 w-full 2xl:w-auto">
+              <div className="flex flex-wrap items-center gap-2 justify-start 2xl:justify-end w-full 2xl:w-auto">
                 {event.published === false && (
                   <button
                     onClick={handlePublish}

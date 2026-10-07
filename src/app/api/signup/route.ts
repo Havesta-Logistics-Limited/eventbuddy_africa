@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 import { RESERVED_SLUGS } from "@/lib/reserved-slugs";
+import { GuestDraftSchema, slugifyEventName, type GuestDraft } from "@/lib/guest-draft";
 
 /** Best-effort welcome email — the account and org already exist by the time this
  *  runs (unconfirmed), so a failure here (missing Resend key, provider error) is
@@ -72,7 +73,68 @@ const SignupSchema = z.object({
       }
       return normalized;
     }),
+  // an event built on /create before signing up; saved as a draft
+  draft: GuestDraftSchema.optional(),
 });
+
+/** Saves a visitor's /create draft as a draft event (never published) of
+ *  their new organization, with its ticket types. Best effort: the account
+ *  is what matters, so a failure here never fails the sign-up. */
+async function saveDraftEvent(supabase: ReturnType<typeof createAdminClient>, orgId: string, draft: GuestDraft): Promise<string | null> {
+  const e = draft.event;
+  const base = slugifyEventName(e.name);
+  let eventId: string | null = null;
+  for (let attempt = 1; attempt <= 6 && !eventId; attempt++) {
+    const { data, error } = await supabase
+      .from("events")
+      .insert({
+        organization_id: orgId,
+        name: e.name,
+        slug: attempt === 1 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`,
+        date: e.date,
+        end_date: e.endDate || null,
+        start_time: e.startTime || null,
+        end_time: e.endTime || null,
+        location: e.location,
+        venue: e.venue,
+        description: e.description,
+        cover_image: e.coverImage || null,
+        template_id: "custom",
+        custom_fields: e.customFields,
+        timezone: e.timezone || "Africa/Lagos",
+        event_format: e.eventFormat,
+        virtual_join_url: e.virtualJoinUrl || null,
+        virtual_platform: e.virtualPlatform || null,
+        virtual_access_notes: e.virtualAccessNotes || null,
+        category: e.category || null,
+        self_registration_enabled: e.selfRegistrationEnabled,
+        is_invite_only: e.isInviteOnly,
+        published: false,
+      })
+      .select("id")
+      .single();
+    if (data) eventId = data.id;
+    else if (error?.code !== "23505") {
+      console.error("[signup] couldn't save the draft event:", error?.message);
+      return null;
+    }
+  }
+  if (!eventId) return null;
+  if (draft.tickets.length) {
+    const { error } = await supabase.from("ticket_types").insert(
+      draft.tickets.map((t) => ({
+        organization_id: orgId,
+        event_id: eventId,
+        name: t.name,
+        price_naira: t.priceNaira,
+        quantity_available: t.quantityAvailable,
+        group_size: t.groupSize,
+      }))
+    );
+    if (error) console.error("[signup] couldn't save the draft's tickets:", error.message);
+  }
+  return eventId;
+}
 
 function slugify(name: string) {
   return (
@@ -105,7 +167,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid input." }, { status: 400 });
   }
-  const { fullName, organizationName, email, password, phone } = parsed.data;
+  const { fullName, organizationName, email, password, phone, draft } = parsed.data;
   const orgName = organizationName;
 
   // IP-only — a duplicate email already fails at the DB layer, so this exists to
@@ -146,15 +208,17 @@ export async function POST(request: Request) {
   const created = linkData.user;
 
   const slug = await uniqueSlug(supabase, orgName);
-  const { error: orgError } = await supabase.from("organizations").insert({ name: orgName, owner_user_id: created.id, slug, phone, email });
+  const { data: org, error: orgError } = await supabase.from("organizations").insert({ name: orgName, owner_user_id: created.id, slug, phone, email }).select("id").single();
   if (orgError) {
     // Roll back the auth user so a failed org insert doesn't leave an orphaned account.
     await supabase.auth.admin.deleteUser(created.id);
     return NextResponse.json({ error: orgError.message || "Couldn't create your organization." }, { status: 500 });
   }
 
+  const eventId = draft && org ? await saveDraftEvent(supabase, org.id, draft) : null;
+
   const firstName = fullName.trim().split(/\s+/)[0];
   const emailSent = linkData.properties?.action_link ? await sendWelcomeEmail(email, firstName, linkData.properties.action_link) : false;
 
-  return NextResponse.json({ success: true, slug, emailSent });
+  return NextResponse.json({ success: true, slug, emailSent, eventId });
 }

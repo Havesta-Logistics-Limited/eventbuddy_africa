@@ -78,7 +78,7 @@ export function LandingClose({ feeLabel }: { feeLabel: string }) {
           Stop juggling spreadsheets, WhatsApp groups, and walk-up chaos. Set up registration, ticketing, and check-in
           yourself, or bring eventbuddy&apos;s own team on-site to run it for you.
         </p>
-        <Link href="/signup" className="lp-cta mx-auto mt-9">
+        <Link href="/create" className="lp-cta mx-auto mt-9">
           Create Event
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
@@ -93,7 +93,7 @@ export function LandingClose({ feeLabel }: { feeLabel: string }) {
 const FOOTER_COLUMNS = [
   { h: "Product", links: [{ l: "Discover events", href: "/discover" }, { l: "Pricing", href: "/pricing" }, { l: "Full-Service quote", href: "/managed-events" }] },
   { h: "For Promoters", links: [{ l: "Promoter marketplace", href: "/marketplace" }, { l: "Become a promoter", href: "/promote" }] },
-  { h: "Account", links: [{ l: "Create Event", href: "/signup" }, { l: "Sign in", href: "/login" }] },
+  { h: "Account", links: [{ l: "Create Event", href: "/create" }, { l: "Sign in", href: "/login" }] },
   { h: "Company", links: [{ l: "Contact", href: "/contact" }, { l: "Privacy Policy", href: "/privacy" }, { l: "Terms & Conditions", href: "/terms" }] },
 ];
 

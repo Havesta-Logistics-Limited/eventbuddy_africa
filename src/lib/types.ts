@@ -667,6 +667,10 @@ export interface PayoutSettings {
   payoutMinNaira: number;
   payoutFeeNaira: number;
   unverifiedLockDays: number;
+  /** Paid tickets an unverified organizer can sell across all events (migration 0111); null = no limit. */
+  unverifiedTicketCap: number | null;
+  /** Alert platform admins when an unverified organizer sells this many paid tickets in 24 hours. */
+  riskSpikeTickets: number;
 }
 
 export type PlanId = "launch" | "grow" | "scale";

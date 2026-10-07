@@ -143,7 +143,7 @@ export function LandingHub() {
               speakers, live Q&amp;A, and updates, all in one place. You stay in control of what goes live; they stay
               engaged from the first session to the last.
             </p>
-            <Link href="/signup" className="lp-link">
+            <Link href="/create" className="lp-link">
               Start for free <ChevronRight size={15} aria-hidden="true" />
             </Link>
 

@@ -2494,7 +2494,7 @@ export async function getPayoutSettings(): Promise<PayoutSettings> {
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase
     .from("platform_settings")
-    .select("held_funds_enabled, held_funds_since, payout_min_naira, payout_fee_naira, unverified_lock_days")
+    .select("held_funds_enabled, held_funds_since, payout_min_naira, payout_fee_naira, unverified_lock_days, unverified_ticket_cap, risk_spike_tickets")
     .eq("id", true)
     .maybeSingle();
   if (error) throw new PersistError(error);
@@ -2504,6 +2504,8 @@ export async function getPayoutSettings(): Promise<PayoutSettings> {
     payoutMinNaira: Number(data?.payout_min_naira ?? 5000),
     payoutFeeNaira: Number(data?.payout_fee_naira ?? 100),
     unverifiedLockDays: Number(data?.unverified_lock_days ?? 3),
+    unverifiedTicketCap: data?.unverified_ticket_cap == null ? null : Number(data.unverified_ticket_cap),
+    riskSpikeTickets: Number(data?.risk_spike_tickets ?? 30),
   };
 }
 
@@ -2974,4 +2976,12 @@ export async function applyTourDetails(tourId: string, sourceEventId: string, op
   }
   emitChange();
   return targets.length;
+}
+
+/** What an unverified organizer may still sell (migration 0111). */
+export async function getMySalesLimit(): Promise<{ verified: boolean; cap: number | null; sold: number } | null> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("my_sales_limit").maybeSingle<{ verified: boolean; cap: number | null; sold: number }>();
+  if (error || !data) return null;
+  return { verified: Boolean(data.verified), cap: data.cap == null ? null : Number(data.cap), sold: Number(data.sold ?? 0) };
 }

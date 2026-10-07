@@ -152,7 +152,7 @@ export function LandingHero({ fee }: { fee: TicketFee }) {
           meetups. Run it yourself, or bring eventbuddy&apos;s own team on-site.
         </p>
 
-        <Link href="/signup" className="lp-cta mx-auto mt-9">
+        <Link href="/create" className="lp-cta mx-auto mt-9">
           Create Event
           <ArrowRight size={17} aria-hidden="true" />
         </Link>

@@ -8,6 +8,8 @@ const Schema = z.object({
   payoutMinNaira: z.number().min(0).max(100_000_000),
   payoutFeeNaira: z.number().min(0).max(1_000_000),
   unverifiedLockDays: z.number().int().min(0).max(60),
+  unverifiedTicketCap: z.number().int().min(1).max(1_000_000).nullable(),
+  riskSpikeTickets: z.number().int().min(1).max(1_000_000),
 });
 
 /** Held-funds switch and payout rules (migration 0102). Turning holding on
@@ -17,7 +19,7 @@ export async function POST(request: Request) {
   if ("response" in auth) return auth.response;
   const parsed = Schema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Check the payout settings and try again." }, { status: 400 });
-  const { heldFundsEnabled, payoutMinNaira, payoutFeeNaira, unverifiedLockDays } = parsed.data;
+  const { heldFundsEnabled, payoutMinNaira, payoutFeeNaira, unverifiedLockDays, unverifiedTicketCap, riskSpikeTickets } = parsed.data;
 
   const admin = createAdminClient();
   const { data: current } = await admin.from("platform_settings").select("held_funds_enabled, held_funds_since").eq("id", true).maybeSingle();
@@ -29,6 +31,8 @@ export async function POST(request: Request) {
       payout_min_naira: payoutMinNaira,
       payout_fee_naira: payoutFeeNaira,
       unverified_lock_days: unverifiedLockDays,
+      unverified_ticket_cap: unverifiedTicketCap,
+      risk_spike_tickets: riskSpikeTickets,
       updated_at: new Date().toISOString(),
     })
     .eq("id", true);

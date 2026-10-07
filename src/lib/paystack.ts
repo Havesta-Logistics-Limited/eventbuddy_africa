@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { recordSaleRisk } from "./sales-guard";
 import { Resend } from "resend";
 import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail } from "@/lib/registration-email";
@@ -545,6 +546,7 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
   }
 
   if (isHeld) await postHeldSale(supabase, txn, platformFeeNaira);
+  if (Number(txn.amount_naira) > 0) await recordSaleRisk(supabase, txn.organization_id, txn.event_id);
 
   const { referenceId, hubUrl } = await createTicketPurchaseRegistration(supabase, txn);
   return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId, hubUrl, alreadyProcessed: false };

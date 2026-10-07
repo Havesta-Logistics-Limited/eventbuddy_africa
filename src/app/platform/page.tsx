@@ -179,6 +179,12 @@ export default function PlatformDashboard() {
   const [currentUserEmail, setCurrentUserEmail] = useState("");
 
   const [view, setView] = useState<ViewId>("organizations");
+  // deep link from alert emails: /platform?tab=payouts
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read once on mount; the URL isn't available during the server render
+    if (tab === "payouts") setView("payouts");
+  }, []);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [orgSearch, setOrgSearch] = useState("");
   const [orgStatusFilter, setOrgStatusFilter] = useState<"all" | "active" | "suspended">("all");

@@ -66,7 +66,7 @@ export function LandingWays({ feeLabel }: { feeLabel: string }) {
               <strong>Run it yourself.</strong> Set up registration and ticketing, virtual or in person, and manage it all
               from your dashboard. Free to start, and you only pay {feeLabel} when a ticket sells.
             </p>
-            <Link href="/signup" className="lp-link">
+            <Link href="/create" className="lp-link">
               Start for free <ChevronRight size={15} aria-hidden="true" />
             </Link>
 

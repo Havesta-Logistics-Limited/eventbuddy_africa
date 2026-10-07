@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { EventRecord } from "@/lib/types";
 import { getTemplate } from "@/lib/event-templates";
@@ -63,17 +63,24 @@ function toWizardData(event: EventRecord): EventWizardData {
   };
 }
 
-type StepId = "template" | "basics" | "audience" | "fields" | "access" | "review";
+type StepId = "template" | "basics" | "audience" | "fields" | "access" | "review" | "extra";
 
 export function EventWizard(props: {
-  mode: "create" | "edit";
+  /** "guest": /create, before the visitor has an account. Details, an extra
+   *  step (tickets), questions and review; the last button leads to sign-up. */
+  mode: "create" | "edit" | "guest";
   initialEvent?: EventRecord;
+  /** guest mode: a draft restored from the browser */
+  initialData?: EventWizardData;
+  onDataChange?: (data: EventWizardData) => void;
+  /** guest mode: a step after the details (the ticket builder) */
+  extraStep?: { title: string; content: React.ReactNode; valid: boolean };
   onSubmit: (data: EventWizardData, intent: "draft" | "publish", recurrence?: RecurrenceConfig) => Promise<void>;
   onCancel: () => void;
 }) {
-  const { mode, initialEvent, onSubmit, onCancel } = props;
+  const { mode, initialEvent, initialData, onDataChange, extraStep, onSubmit, onCancel } = props;
   const [data, setData] = useState<EventWizardData>(() =>
-    initialEvent ? toWizardData(initialEvent) : { ...EMPTY_DATA, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }
+    initialEvent ? toWizardData(initialEvent) : initialData ?? { ...EMPTY_DATA, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }
   );
   const [submitting, setSubmitting] = useState<"draft" | "publish" | null>(null);
   const [submitError, setSubmitError] = useState("");
@@ -90,14 +97,21 @@ export function EventWizard(props: {
   // independent list — see DestinationsUniversitiesManagement), not here.
   const audienceSteps: StepId[] = template.usesDestinations ? ["audience"] : [];
   const steps: StepId[] =
-    mode === "create"
-      ? ["template", ...audienceSteps, "basics", "fields", "access", "review"]
-      : ["basics", ...audienceSteps, "fields", "access", "review"];
+    mode === "guest"
+      ? ["basics", ...(extraStep ? (["extra"] as StepId[]) : []), "fields", "review"]
+      : mode === "create"
+        ? ["template", ...audienceSteps, "basics", "fields", "access", "review"]
+        : ["basics", ...audienceSteps, "fields", "access", "review"];
   const step = steps[stepIndex];
 
   function patch(p: Partial<EventWizardData>) {
     setData((d) => ({ ...d, ...p }));
   }
+
+  // guest mode keeps the parent's browser copy of the draft current
+  useEffect(() => {
+    onDataChange?.(data);
+  }, [data, onDataChange]);
 
   function selectTemplate(templateId: string) {
     const t = getTemplate(templateId);
@@ -109,7 +123,7 @@ export function EventWizard(props: {
     data.date &&
     (data.eventFormat === "virtual" ? data.virtualJoinUrl?.trim() : data.venue.trim() && data.location.trim())
   );
-  const isStepValid = step === "basics" ? isBasicsValid : true;
+  const isStepValid = step === "basics" ? isBasicsValid : step === "extra" ? (extraStep?.valid ?? true) : true;
 
   async function handleSubmit(intent: "draft" | "publish") {
     setSubmitError("");
@@ -149,7 +163,8 @@ export function EventWizard(props: {
     audience: "Who is this event for?",
     fields: "Additional questions",
     access: "Access codes",
-    review: "Review & create",
+    review: mode === "guest" ? "Review" : "Review & create",
+    extra: extraStep?.title ?? "",
   };
 
   return (
@@ -161,6 +176,7 @@ export function EventWizard(props: {
               Step {stepIndex + 1} of {steps.length}
             </p>
             <h2 className="font-display text-2xl text-fg">{titles[step]}</h2>
+            {mode === "guest" && <p className="mt-1 text-xs text-muted">Free to build. You&apos;ll create a free account to save and publish it.</p>}
           </div>
           <button onClick={onCancel} className="eb-iconbtn -mr-2" aria-label="Close">
             <X size={20} />
@@ -226,6 +242,7 @@ export function EventWizard(props: {
             />
           )}
           {step === "access" && <AccessStep data={data} onChange={patch} showRepCode={template.usesDestinations && data.allowRepAccess !== false} />}
+          {step === "extra" && extraStep?.content}
           {step === "review" && <ReviewStep data={data} template={template} />}
 
           {submitError && step === "review" && <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">{submitError}</div>}
@@ -241,7 +258,11 @@ export function EventWizard(props: {
           >
             {stepIndex === 0 ? "Cancel" : "Back"}
           </button>
-          {step === "review" ? (
+          {step === "review" && mode === "guest" ? (
+            <button type="button" onClick={() => handleSubmit("draft")} disabled={submitting !== null} className="eb-btn eb-btn--primary flex-1">
+              Create free account to save
+            </button>
+          ) : step === "review" ? (
             mode === "create" ? (
               <>
                 <button

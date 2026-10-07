@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { GUEST_CLAIM_KEY, OPEN_EVENT_KEY, readStoredDraft } from "@/lib/guest-draft";
+import { claimGuestDraft } from "@/lib/guest-draft-claim";
 import { toast } from "sonner";
 import { Plus, Calendar, MapPin, Users, QrCode, Clock, CheckCircle2, AlertCircle, Search, SlidersHorizontal, Presentation } from "lucide-react";
 import { Shell } from "@/components/shell";
@@ -18,6 +21,7 @@ import { EventCardSkeleton, StatTileSkeleton } from "@/components/skeleton";
 import { AuthLoading } from "@/components/auth-loading";
 import { AmbientBackground } from "@/components/ambient-background";
 import { FreeStartBanner } from "@/components/free-start-banner";
+import { SalesLimitNotice } from "@/components/sales-limit-notice";
 
 const ADMIN_ONLY: Role[] = ["admin"];
 
@@ -133,6 +137,45 @@ export default function DashboardPage() {
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const router = useRouter();
+
+  // Arriving from /create (an event built before signing up):
+  // - sign-up saved it as a draft: open it on the first visit
+  // - they logged in instead: save the browser's draft to this account now
+  // - /dashboard?create=1: open the wizard straight away
+  useEffect(() => {
+    if (!session || !dataReady) return;
+    let openId: string | null = null;
+    let claim = false;
+    try {
+      openId = localStorage.getItem(OPEN_EVENT_KEY);
+      if (openId) localStorage.removeItem(OPEN_EVENT_KEY);
+      claim = localStorage.getItem(GUEST_CLAIM_KEY) === "1";
+    } catch {
+      /* storage unavailable */
+    }
+    if (openId && events.some((e) => e.id === openId)) {
+      router.replace(`/events/${openId}`);
+      return;
+    }
+    if (claim && readStoredDraft()) {
+      claimGuestDraft()
+        .then((id) => {
+          if (!id) return;
+          toast.success("Your event is saved as a draft. Review it, then publish.");
+          router.replace(`/events/${id}`);
+        })
+        .catch(() => toast.error("Couldn't save the event you built. Please try again from Create Event."));
+      return;
+    }
+    if (new URLSearchParams(window.location.search).get("create") === "1") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off deep link, read after mount
+      setShowWizard(true);
+      router.replace("/dashboard");
+    }
+    // events is read once data is ready; re-running on every events change would re-open things
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, dataReady, router]);
 
   // Each card's Active/Upcoming/Completed badge is computed fresh on every render from
   // the current time, but nothing else re-renders this page as time passes — a tab left
@@ -250,6 +293,7 @@ export default function DashboardPage() {
     <Shell>
       <AmbientBackground />
       <div className="eb-app-page p-6 sm:p-8 max-w-6xl mx-auto">
+        <SalesLimitNotice />
         <div className="flex flex-wrap items-center justify-between gap-3 mb-7">
           <div className="min-w-0">
             <h1 className="eb-app-title">Events</h1>

@@ -93,7 +93,6 @@ export function EventAnalytics({
   const eventDests = destinations.filter((d) => event.destinationIds.includes(d.id));
   const eventUnis = universities.filter((u) => event.destinationIds.includes(u.destinationId));
 
-  if (leads.length === 0 && registrations.length === 0) return null;
 
 
 

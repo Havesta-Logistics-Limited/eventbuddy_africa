@@ -7,6 +7,7 @@ import { nairaToChargeAmount, paystackInitialize } from "@/lib/paystack";
 import { newId } from "@/lib/utils";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 import { resolveReferralId } from "@/lib/referrals";
+import { checkSalesCap } from "@/lib/sales-guard";
 import { validateGroupGuests } from "@/lib/group-tickets";
 
 type InitializeBody = {
@@ -133,6 +134,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   if (!(listedPriceNaira > 0)) {
     return NextResponse.json({ error: "This is a free ticket — use registration directly." }, { status: 400 });
   }
+
+  // unverified organizers can only sell so many paid tickets (migration 0111)
+  const cap = await checkSalesCap(admin, org.id, event.id);
+  if (!cap.allowed) return NextResponse.json({ error: cap.message }, { status: 409 });
 
   // Discount codes are re-validated fresh here via the exact same function the
   // checkout preview calls (public_validate_discount_code) — never trust a
