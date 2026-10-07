@@ -107,7 +107,7 @@ export default function LeadCollectPage() {
             </p>
             {/* check-in is never locked before the start: early attendees can still be let in */}
             <Link href="/checkin" className="eb-portal-cta mt-6 w-auto px-7">
-              <ScanLine size={18} aria-hidden="true" /> Go to Check-In
+              <ScanLine size={18} aria-hidden="true" /> Go to the Kiosk
             </Link>
           </div>
         </div>

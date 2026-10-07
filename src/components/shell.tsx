@@ -18,8 +18,8 @@ const adminNav = [
 ];
 
 const staffNav = [
+  { to: "/checkin", label: "Kiosk", icon: ScanLine },
   { to: "/collect", label: "Collect Leads", icon: BookOpen },
-  { to: "/checkin", label: "Check-In", icon: ScanLine },
   { to: "/my-leads", label: "My Leads", icon: Users },
 ];
 

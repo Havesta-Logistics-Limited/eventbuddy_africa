@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, Clock3, Lock, ScanLine, Users, CalendarClock } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3, Lock, ScanLine, Users, CalendarClock, X, UserPlus } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import { useEvents } from "@/lib/store";
@@ -9,6 +9,7 @@ import { Role } from "@/lib/types";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 import { formatDate, formatTime } from "@/lib/utils";
 import { FastScanStage, type ScanFlash } from "@/components/fast-scan-stage";
+import { KioskRegister } from "@/components/kiosk-register";
 import { playScanFeedback, unlockScanAudio } from "@/lib/scan-feedback";
 import { AuthLoading } from "@/components/auth-loading";
 
@@ -29,6 +30,8 @@ export default function CheckinPage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [sessionCount, setSessionCount] = useState(0);
+  // Kiosk: scan tickets at the door, or register free walk-ups (checked in at once)
+  const [mode, setMode] = useState<"scan" | "register">("scan");
   const [flash, setFlash] = useState<ScanFlash | null>(null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -61,6 +64,23 @@ export default function CheckinPage() {
   const [earlyPrompt, setEarlyPrompt] = useState<{ code: string; name: string; opensAt: string } | null>(null);
   const [skipEarlyAsk, setSkipEarlyAsk] = useState(false);
   const skipEarlyAskRef = useRef(false);
+  const [earlyNoteClosed, setEarlyNoteClosed] = useState(false);
+  // Per event, per device: closing the notice keeps it closed across refreshes
+  // (localStorage); "check everyone in early" lasts for this tab (sessionStorage).
+  const noteKey = `eventbuddy:early-note-closed:${event?.id ?? ""}`;
+  const skipKey = `eventbuddy:early-skip-ask:${event?.id ?? ""}`;
+  useEffect(() => {
+    if (!event?.id) return;
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- browser storage is only readable after mount
+      setEarlyNoteClosed(window.localStorage.getItem(noteKey) === "1");
+      const skip = window.sessionStorage.getItem(skipKey) === "1";
+      setSkipEarlyAsk(skip);
+      skipEarlyAskRef.current = skip;
+    } catch {
+      /* storage blocked: defaults apply */
+    }
+  }, [event?.id, noteKey, skipKey]);
   const earlyDoneRef = useRef<(() => void) | null>(null);
 
   function finishEarly() {
@@ -179,9 +199,9 @@ export default function CheckinPage() {
           <div>
             <h1 className="eb-app-title flex items-center gap-2.5">
               <ScanLine size={26} className="text-[var(--pt-a)]" aria-hidden="true" />
-              Check-In
+              Kiosk
             </h1>
-            <p className="eb-app-sub">Scan an attendee&apos;s QR code, or type their reference ID.</p>
+            <p className="eb-app-sub">Scan tickets at the door, or register walk-ups and let them straight in.</p>
           </div>
           <div className="eb-staff-count" aria-live="polite">
             <Users size={15} aria-hidden="true" />
@@ -191,16 +211,16 @@ export default function CheckinPage() {
           </div>
         </div>
 
-        {event && gate && !gate.open && gate.reason === "not_started" && (
+        {event && gate && !gate.open && gate.reason === "not_started" && !earlyNoteClosed && (
           <div className="eb-early-note" role="note">
             <CalendarClock size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
-            <div>
-              <p className="font-semibold text-white">
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-amber-100">
                 {event.name} hasn&apos;t started yet. It starts {formatDate(captureWindow!.date)}
                 {captureWindow!.startTime ? ` at ${formatTime(captureWindow!.startTime)}` : ""}.
               </p>
               <p className="mt-0.5">Check-in is open for early arrivals: each scan asks you to confirm.</p>
-              <label className="mt-2 flex cursor-pointer items-center gap-2 text-white">
+              <label className="mt-2 flex cursor-pointer items-center gap-2 text-amber-100">
                 <input
                   type="checkbox"
                   className="h-4 w-4"
@@ -208,17 +228,67 @@ export default function CheckinPage() {
                   onChange={(e) => {
                     setSkipEarlyAsk(e.target.checked);
                     skipEarlyAskRef.current = e.target.checked;
+                    try {
+                      window.sessionStorage.setItem(skipKey, e.target.checked ? "1" : "0");
+                    } catch {
+                      /* storage blocked: still applies until refresh */
+                    }
                   }}
                 />
                 Check everyone in early without asking (this session only)
               </label>
             </div>
+            <button
+              type="button"
+              className="eb-early-note-close"
+              aria-label="Close this notice"
+              onClick={() => {
+                setEarlyNoteClosed(true);
+                try {
+                  window.localStorage.setItem(noteKey, "1");
+                } catch {
+                  /* storage blocked: stays closed until refresh */
+                }
+              }}
+            >
+              <X size={16} />
+            </button>
           </div>
         )}
 
-        <div className="mb-4">
-          <FastScanStage onScan={checkIn} flash={flash} />
+        <div className="eb-seg mb-4" role="tablist" aria-label="Kiosk mode">
+          <button type="button" role="tab" aria-selected={mode === "scan"} aria-pressed={mode === "scan"} onClick={() => setMode("scan")}>
+            <ScanLine size={15} aria-hidden="true" /> Scan tickets
+          </button>
+          <button type="button" role="tab" aria-selected={mode === "register"} aria-pressed={mode === "register"} onClick={() => setMode("register")}>
+            <UserPlus size={15} aria-hidden="true" /> Register walk-up
+          </button>
         </div>
+
+        {mode === "scan" ? (
+          <div className="mb-4">
+            <FastScanStage onScan={checkIn} flash={flash} />
+          </div>
+        ) : (
+          <div className="mb-4">
+            <KioskRegister
+              staffId={session.id}
+              onResult={(r) => {
+                if (r.outcome === "already") {
+                  announce({ kind: "already", name: r.fullName, message: `Already checked in${r.checkedInAt ? ` at ${new Date(r.checkedInAt).toLocaleTimeString()}` : ""}` });
+                  return;
+                }
+                announce({
+                  kind: "success",
+                  name: r.fullName,
+                  message: r.outcome === "existing" ? "Already registered, checked in now" : `Registered and checked in${r.emailSent ? " · ticket emailed" : ""}`,
+                });
+                setSessionCount((c) => c + 1);
+              }}
+              onError={(message) => announce({ kind: "error", message })}
+            />
+          </div>
+        )}
 
         {earlyPrompt && (
           <div className="eb-scan-result" data-kind="early" role="alertdialog" aria-label="Event hasn't started">
@@ -253,6 +323,7 @@ export default function CheckinPage() {
           </div>
         )}
 
+        {mode === "scan" && (
         <form onSubmit={handleManualSubmit} className="eb-card p-5 max-w-2xl">
           <label htmlFor="ck-ref" className="eb-label">Or enter the reference ID</label>
           <div className="flex flex-col gap-2.5 sm:flex-row">
@@ -271,6 +342,7 @@ export default function CheckinPage() {
             </button>
           </div>
         </form>
+        )}
       </div>
     </Shell>
   );
