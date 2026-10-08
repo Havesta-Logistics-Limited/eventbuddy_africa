@@ -117,18 +117,18 @@ export function VerificationCard() {
   }
 
   return (
-    <section id="verify" className="eb-card mb-6 p-5">
+    <section id="verify" className="eb-verify-card mb-6 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="flex items-center gap-2 font-semibold text-fg">
-            <ShieldCheck size={17} className="text-[#ff8af5]" aria-hidden="true" /> Get verified
+            <ShieldCheck size={17} className="text-emerald-300" aria-hidden="true" /> Get verified
           </p>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             New accounts can sell {state.cap ?? 100} paid tickets{state.cap != null ? ` (you've sold ${state.sold})` : ""} and withdraw a few days after each event ends. Verify your identity to lift the limit and get paid sooner.
           </p>
         </div>
         {!open && (
-          <button type="button" className="eb-btn eb-btn--primary" onClick={() => setOpen(true)}>
+          <button type="button" className="eb-btn eb-btn--verify" onClick={() => setOpen(true)}>
             {state.latest?.status === "declined" ? "Send new documents" : "Get verified"}
           </button>
         )}
@@ -187,7 +187,7 @@ export function VerificationCard() {
           </p>
           <div className="flex justify-end gap-2 sm:col-span-2">
             <button type="button" className="eb-btn eb-btn--ghost" onClick={() => setOpen(false)}>Cancel</button>
-            <button type="submit" disabled={sending} className="eb-btn eb-btn--primary">{sending ? "Sending…" : "Send for review"}</button>
+            <button type="submit" disabled={sending} className="eb-btn eb-btn--verify">{sending ? "Sending…" : "Send for review"}</button>
           </div>
         </form>
       )}

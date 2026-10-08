@@ -45,7 +45,8 @@ export function LandingNav() {
           <span className="mx-2 hidden h-5 w-px bg-white/15 sm:block" aria-hidden="true" />
           {/* on the promoter pages, sign-in opens with promoter wording */}
           <Link href={pathname.startsWith("/marketplace") || pathname.startsWith("/promote") ? "/login?as=promoter" : "/login"} className="lp-navlink lp-navlink--signin">Sign in</Link>
-          <Link href="/signup" className="lp-navcta">Sign up</Link>
+          {/* phones: Sign up lives in the menu, so Sign in has room to breathe */}
+          <Link href="/signup" className="lp-navcta hidden sm:inline-flex">Sign up</Link>
           <button
             type="button"
             className="lp-navmenu sm:hidden"
@@ -69,6 +70,9 @@ export function LandingNav() {
           <Link href="/promote" onClick={() => setMenuOpen(false)} className="lp-mobile-menu-sub">
             Become a promoter
             <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+          <Link href="/signup" onClick={() => setMenuOpen(false)} className="lp-mobile-menu-cta">
+            Sign up free
           </Link>
         </nav>
       )}

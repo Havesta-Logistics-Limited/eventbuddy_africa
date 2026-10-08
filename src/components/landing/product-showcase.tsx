@@ -511,8 +511,8 @@ function EngageScene({ t }: SceneProps) {
   const voters = Math.round(180 + pp * 132);
 
   return (
-    <div className="grid h-full content-start gap-3 sm:gap-4 lg:grid-cols-[1fr_1.1fr_1fr] lg:content-stretch">
-      <div className="hidden min-w-0 rounded-xl border border-slate-200 p-3.5 lg:block">
+    <div className="grid h-full content-start gap-3 sm:gap-4 @xl:grid-cols-[1.15fr_1fr] @xl:content-stretch @3xl:grid-cols-[1fr_1.1fr_1fr]">
+      <div className="hidden min-w-0 rounded-xl border border-slate-200 p-3.5 @3xl:block">
         <p className="text-xs font-semibold text-slate-700">Agenda</p>
         <ul className="mt-2 space-y-1.5">
           {agenda.map((a) => (
@@ -773,7 +773,7 @@ export function ProductShowcase({ fee }: { fee: TicketFee }) {
               id={`lp-panel-${TABS[tab].id}`}
               role="tabpanel"
               aria-labelledby={`lp-tab-${TABS[tab].id}`}
-              className="lp-scene h-[500px] p-4 sm:h-[490px] sm:p-6"
+              className="lp-scene @container h-[500px] p-4 sm:h-[490px] sm:p-6"
               key={TABS[tab].id}
             >
               <Active t={sceneT} fee={fee} />
@@ -832,6 +832,54 @@ export function ProductShowcase({ fee }: { fee: TicketFee }) {
           ))}
         </div>
         <p key={TABS[tab].id} className="lp-caption">{TABS[tab].caption}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- reuse */
+
+const SCENES = { sell: SellScene, share: ShareScene, promote: PromoteScene, checkin: CheckinScene, exhibit: ExhibitScene, engage: EngageScene, paid: PaidScene } as const;
+export type SceneId = keyof typeof SCENES;
+
+/** One tour scene on its own (the company profile's feature visuals): a
+ *  browser-window frame with the scene looping on its own clock. It only runs
+ *  while on screen, and shows the finished frame with reduced motion. */
+export function ScenePlayer({ id, fee, active }: { id: SceneId; fee: TicketFee; active: boolean }) {
+  const tabDef = TABS.find((x) => x.id === id)!;
+  const Scene = SCENES[id];
+  const [t, setT] = useState(0);
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read once on mount, then follow changes
+    setReduced(mq.matches);
+    const sync = () => setReduced(mq.matches);
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  useEffect(() => {
+    if (!active || reduced) return;
+    let last = performance.now();
+    let acc = 0;
+    const id = window.setInterval(() => {
+      const now = performance.now();
+      acc += (now - last) / 1000;
+      last = now;
+      // loop, with a short hold on the finished frame before starting over
+      if (acc >= tabDef.dur + 1.2) acc = 0;
+      setT(acc);
+    }, 80);
+    return () => window.clearInterval(id);
+  }, [active, reduced, tabDef.dur]);
+  return (
+    <div className="lp-window cp-window">
+      <div className="lp-window-chrome">
+        <span /><span /><span />
+        <p>eventbuddy.africa/{tabDef.path}</p>
+      </div>
+      <div className="lp-scene @container h-[500px] p-4 sm:h-[470px] sm:p-5">
+        <Scene t={reduced ? 99 : t} fee={fee} />
       </div>
     </div>
   );

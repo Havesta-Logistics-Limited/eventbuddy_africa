@@ -94,7 +94,7 @@ const FOOTER_COLUMNS = [
   { h: "Product", links: [{ l: "Discover events", href: "/discover" }, { l: "Pricing", href: "/pricing" }, { l: "Full-Service quote", href: "/managed-events" }] },
   { h: "For Promoters", links: [{ l: "Promoter marketplace", href: "/marketplace" }, { l: "Become a promoter", href: "/promote" }] },
   { h: "Account", links: [{ l: "Create Event", href: "/create" }, { l: "Sign in", href: "/login" }] },
-  { h: "Company", links: [{ l: "Contact", href: "/contact" }, { l: "Privacy Policy", href: "/privacy" }, { l: "Terms & Conditions", href: "/terms" }] },
+  { h: "Company", links: [{ l: "Company profile", href: "/company" }, { l: "Contact", href: "/contact" }, { l: "Privacy Policy", href: "/privacy" }, { l: "Terms & Conditions", href: "/terms" }] },
 ];
 
 export function LandingFooter() {
