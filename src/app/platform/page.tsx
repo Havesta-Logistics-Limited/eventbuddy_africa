@@ -38,7 +38,7 @@ import {
   Clock,
   CheckCircle2,
   FileText,
-  Smartphone, Wallet, LayoutDashboard } from "lucide-react";
+  Smartphone, Wallet, LayoutDashboard, Megaphone, Store, Map as MapIcon, ShieldAlert, Activity } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 import { Reveal } from "@/components/reveal";
@@ -59,6 +59,7 @@ import { PlatformPlansEditor } from "@/components/platform-plans-editor";
 import { PlatformOverview, overviewBadges, usePlatformOverview, type OverviewTarget } from "@/components/platform-overview";
 import { PlatformSearch } from "@/components/platform-search";
 import { PlatformOrgProfile } from "@/components/platform-org-profile";
+import { ExhibitorsTab, JobsTab, PromotersTab, RiskTab, ToursTab, useJobHealth } from "@/components/platform-partners";
 
 const PLATFORM_ACCENT = "#a78bfa";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -71,8 +72,13 @@ const NAV = [
   { id: "documents", label: "Quotes & Invoices", icon: FileText, group: "Money" },
   { id: "organizations", label: "Organizations", icon: Building2, group: "Customers" },
   { id: "events", label: "Events", icon: Calendar, group: "Customers" },
+  { id: "promoters", label: "Promoters", icon: Megaphone, group: "Customers" },
+  { id: "exhibitors", label: "Exhibitors", icon: Store, group: "Customers" },
+  { id: "tours", label: "Tours", icon: MapIcon, group: "Customers" },
   { id: "managed-requests", label: "Managed Events", icon: ClipboardList, group: "Operations" },
+  { id: "risk", label: "Risk", icon: ShieldAlert, group: "Operations" },
   { id: "mobile", label: "Mobile App", icon: Smartphone, group: "Operations" },
+  { id: "jobs", label: "Job health", icon: Activity, group: "System" },
   { id: "maintenance", label: "Maintenance", icon: Wrench, group: "System" },
   { id: "admins", label: "Team", icon: ShieldCheck, group: "System" },
   { id: "security", label: "Security", icon: KeyRound, group: "System" },
@@ -187,6 +193,7 @@ export default function PlatformDashboard() {
   const [authorized, setAuthorized] = useState(false);
   // Overview numbers; also feeds the sidebar's "waiting" badges on every tab
   const overview = usePlatformOverview(authorized);
+  const jobHealth = useJobHealth(authorized);
   // search everything (⌘K) and the organizer profile panel it opens
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileOrgId, setProfileOrgId] = useState<string | null>(null);
@@ -1075,7 +1082,7 @@ export default function PlatformDashboard() {
 
   // Same lifted rail and sliding pill as the organizer app (shell.tsx), in a
   // violet accent so a platform admin always knows which side they're on.
-  const badges = overviewBadges(overview.data);
+  const badges: Partial<Record<string, number>> = { ...overviewBadges(overview.data), jobs: jobHealth.problems };
   const sidebarNav = (
     <nav className="relative flex-1 overflow-y-auto px-3 py-4" aria-label="Platform">
       <button
@@ -1226,7 +1233,12 @@ export default function PlatformDashboard() {
               </button>
             </div>
           )}
-          {view === "overview" && <PlatformOverview overview={overview} onNavigate={openFromOverview} onOpenOrg={setProfileOrgId} />}
+          {view === "overview" && <PlatformOverview overview={overview} jobProblems={jobHealth.problems} onNavigate={openFromOverview} onOpenOrg={setProfileOrgId} />}
+          {view === "promoters" && <PromotersTab includeTest={overview.includeTest} />}
+          {view === "exhibitors" && <ExhibitorsTab onOpenOrg={setProfileOrgId} />}
+          {view === "tours" && <ToursTab includeTest={overview.includeTest} onOpenOrg={setProfileOrgId} />}
+          {view === "risk" && <RiskTab onOpenOrg={setProfileOrgId} onChanged={overview.reload} />}
+          {view === "jobs" && <JobsTab health={jobHealth} />}
           {view === "organizations" && (
             <>
               <div className="mb-6 flex items-start justify-between gap-3">

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendGuestReminderEmail } from "@/lib/guest-invite-email";
 import { guestRsvpUrl } from "@/lib/event-guest";
+import { withCronLog } from "@/lib/cron-log";
 
 const REMINDER_WINDOW_DAYS = 3;
 
@@ -13,7 +14,7 @@ const REMINDER_WINDOW_DAYS = 3;
  * this one only fires daily, so it needs its own explicit dedupe). Guarded by
  * CRON_SECRET so it can't be triggered by anyone who finds the URL.
  */
-export async function GET(request: Request) {
+async function run(request: Request) {
   const secret = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
   if (!secret || authHeader !== `Bearer ${secret}`) {
@@ -69,3 +70,6 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ success: true, reminded, candidates: guests.length });
 }
+
+// every run is recorded for the platform admin's Job health tab
+export const GET = withCronLog("rsvp-reminders", run);

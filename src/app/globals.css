@@ -3511,3 +3511,43 @@ tbody tr.cursor-pointer:hover { background: rgba(237, 28, 220, 0.06); box-shadow
 .po-row--btn:hover { background: rgba(167, 139, 250, 0.08); }
 @media (prefers-reduced-motion: reduce) { .ps-panel, .op-panel, .ps-backdrop, .op-backdrop { animation: none; } }
 .po-rows li + li .po-row--btn { box-shadow: 0 -1px 0 var(--color-line-soft, var(--color-line)); }
+
+/* ============================================================ platform admin: promoters, exhibitors, tours, risk, job health */
+.pp-tiles { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 900px) { .pp-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1200px) { .pp-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.pp-tiles .eb-kpi-value { font-size: 1.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-search { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-height: 40px; padding: 0 12px; border-radius: 11px; color: var(--color-muted); background: var(--color-fill); box-shadow: inset 0 0 0 1px var(--color-line); }
+.pp-search:focus-within { box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.6); }
+.pp-search input { flex: 1; min-width: 0; height: 38px; border: 0; outline: none; background: transparent; font-size: 16px; color: #fff; }
+@media (min-width: 640px) { .pp-search input { font-size: 14px; } }
+.pp-list { display: grid; }
+.pp-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 14px 4px; }
+.pp-row + .pp-row { border-top: 1px solid var(--color-line-soft, var(--color-line)); }
+.pp-row--quiet { padding: 10px 4px; flex-wrap: nowrap; }
+.pp-main { flex: 1 1 280px; min-width: 0; display: grid; gap: 3px; }
+.pp-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; flex: 1 1 360px; }
+.pp-nums p { font-size: 14px; font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-nums span { display: block; font-size: 11.5px; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 900px) { .pp-nums { flex: 0 0 420px; text-align: right; } }
+.pp-act { min-height: 34px; padding: 0 12px; border-radius: 10px; font-size: 12.5px; font-weight: 600; color: #e9def2; background: var(--color-fill); box-shadow: inset 0 0 0 1px var(--color-line); }
+.pp-act:hover { color: #fff; box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.5); }
+.pp-act--danger:hover { color: #fda4af; box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.5); }
+.pp-act:disabled { opacity: 0.5; }
+.pp-orglink { color: #c4b5fd; font-weight: 500; text-underline-offset: 3px; }
+.pp-orglink:hover { color: #fff; text-decoration: underline; }
+.pp-stops { position: relative; display: grid; gap: 8px; margin-top: 14px; padding-left: 2px; }
+.pp-stops::before { content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 1px; background: var(--color-line); }
+.pp-stops li { position: relative; display: flex; align-items: center; gap: 10px; }
+.pp-stop-dot { width: 11px; height: 11px; flex: none; border-radius: 9999px; background: #ff8af5; box-shadow: 0 0 0 3px #0f0817, 0 0 10px rgba(255, 138, 245, 0.7); }
+.pp-stops li[data-past] .pp-stop-dot { background: #4b3d5c; box-shadow: 0 0 0 3px #0f0817; }
+.pp-stops li[data-past] span { opacity: 0.6; }
+.pp-jobs { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .pp-jobs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pp-job { padding: 16px 18px; border-radius: 16px; background: var(--color-surface); box-shadow: inset 0 0 0 1px var(--color-line); min-width: 0; }
+.pp-job-state { display: inline-flex; flex: none; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 9999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; color: var(--color-muted); background: var(--color-fill); }
+.pp-job--ok .pp-job-state { color: #6ee7b7; background: rgba(16, 185, 129, 0.13); }
+.pp-job--failing { box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.45); background: rgba(244, 63, 94, 0.05); }
+.pp-job--failing .pp-job-state { color: #fda4af; background: rgba(244, 63, 94, 0.15); }
+.pp-job--overdue { box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.4); }
+.pp-job--overdue .pp-job-state { color: #fcd34d; background: rgba(251, 191, 36, 0.13); }

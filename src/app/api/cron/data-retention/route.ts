@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailLeadsExpiring, exhibitorPortalUrl } from "@/lib/exhibitors";
+import { withCronLog } from "@/lib/cron-log";
 
 /**
  * netlify/functions/data-retention-cron.mts hits this nightly (migration
@@ -10,7 +11,7 @@ import { emailLeadsExpiring, exhibitorPortalUrl } from "@/lib/exhibitors";
  * and payment attempts that never went through after 90. Payments, payouts,
  * refunds and the ledger are never touched. Guarded by CRON_SECRET.
  */
-export async function GET(request: Request) {
+async function run(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -39,3 +40,6 @@ export async function GET(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true, reminded, removed });
 }
+
+// every run is recorded for the platform admin's Job health tab
+export const GET = withCronLog("data-retention", run);

@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { formatDate } from "@/lib/utils";
+import { withCronLog } from "@/lib/cron-log";
 
 /** One reminder per still-unpublished event, sent to its org's admin — deliberately
  *  unconditional (no "already reminded this cycle" tracking) since the cron itself
@@ -42,7 +43,7 @@ async function sendDraftReminderEmail(to: string, firstName: string, eventName: 
  * admins about events they've saved as a draft but never published. Guarded by
  * CRON_SECRET so it can't be triggered by anyone who finds the URL.
  */
-export async function GET(request: Request) {
+async function run(request: Request) {
   const secret = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
   if (!secret || authHeader !== `Bearer ${secret}`) {
@@ -77,3 +78,6 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ success: true, reminded, drafts: drafts.length });
 }
+
+// every run is recorded for the platform admin's Job health tab
+export const GET = withCronLog("draft-reminders", run);

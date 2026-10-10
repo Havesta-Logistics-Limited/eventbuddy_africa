@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { zonedTimeToUtc } from "@/lib/capture-window";
 import { sendEventReminderEmail, type ReminderKind } from "@/lib/registration-email";
 import { hubUrl as buildHubUrl } from "@/lib/event-hub";
+import { withCronLog } from "@/lib/cron-log";
 
 // Half the hourly cron cadence plus a buffer — wide enough that a single tick
 // always lands inside the window for whichever stage is due, without ever
@@ -33,7 +34,7 @@ type Attendee = {
  * volume (hundreds per event) a 3rd stage meaningfully adds to email cost
  * for the least useful of the three.
  */
-export async function GET(request: Request) {
+async function run(request: Request) {
   const secret = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
   if (!secret || authHeader !== `Bearer ${secret}`) {
@@ -128,3 +129,6 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ success: true, reminded });
 }
+
+// every run is recorded for the platform admin's Job health tab
+export const GET = withCronLog("event-reminders", run);

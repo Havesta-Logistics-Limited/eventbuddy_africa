@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withCronLog } from "@/lib/cron-log";
 
 // Comfortably longer than any single window this app actually rate-limits
 // against (the longest is forgot-password's 15 minutes) — a row this old has
@@ -13,7 +14,7 @@ const MAX_AGE_HOURS = 24;
  * traffic, but unbounded growth with no cleanup at all. Guarded by
  * CRON_SECRET, same pattern as every other scheduled route.
  */
-export async function GET(request: Request) {
+async function run(request: Request) {
   const secret = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
   if (!secret || authHeader !== `Bearer ${secret}`) {
@@ -27,3 +28,6 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ success: true, deleted: count ?? 0 });
 }
+
+// every run is recorded for the platform admin's Job health tab
+export const GET = withCronLog("rate-limits-cleanup", run);

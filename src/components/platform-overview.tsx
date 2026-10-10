@@ -74,7 +74,7 @@ export type PlatformOverviewData = {
 };
 
 /** Where an Overview link sends the admin; the page maps it to a tab. */
-export type OverviewTarget = "payouts" | "billing" | "billing-disputes" | "managed-requests" | "organizations" | "events";
+export type OverviewTarget = "payouts" | "billing" | "billing-disputes" | "managed-requests" | "organizations" | "events" | "risk" | "jobs";
 
 /** Loads the Overview (migration 0121's platform_overview) and keeps it fresh:
  *  on mount, whenever the period or test toggle changes, every 2 minutes while
@@ -117,7 +117,8 @@ export function overviewBadges(d: PlatformOverviewData | null): Partial<Record<s
   if (!d) return {};
   const i = d.inbox;
   return {
-    payouts: i.payouts_requested + i.payouts_stuck + i.payouts_failed + i.verifications_pending + i.risk_open,
+    payouts: i.payouts_requested + i.payouts_stuck + i.payouts_failed + i.verifications_pending,
+    risk: i.risk_open,
     billing: i.disputes_open,
     "managed-requests": i.managed_new,
     organizations: i.bank_changes + i.name_changes + i.email_changes + i.deletions,
@@ -227,10 +228,12 @@ function TrendChart({ series, metric }: { series: PlatformOverviewData["series"]
 
 export function PlatformOverview({
   overview,
+  jobProblems = 0,
   onNavigate,
   onOpenOrg,
 }: {
   overview: ReturnType<typeof usePlatformOverview>;
+  jobProblems?: number;
   onNavigate: (target: OverviewTarget) => void;
   onOpenOrg: (orgId: string) => void;
 }) {
@@ -245,7 +248,7 @@ export function PlatformOverview({
       { n: i.payouts_stuck, icon: Clock, title: "Payouts processing for over 48 hours", sub: "Check the transfer in Paystack", tone: "amber", to: "payouts" },
       { n: i.payouts_failed, icon: XCircle, title: "Failed payouts in the last 30 days", sub: "The money went back to their balance", tone: "red", to: "payouts" },
       { n: i.verifications_pending, icon: BadgeCheck, title: `${i.verifications_pending === 1 ? "Organizer" : "Organizers"} waiting for verification`, sub: "Review their ID and documents", tone: "violet", to: "payouts" },
-      { n: i.risk_open, icon: ShieldAlert, title: `Open risk ${i.risk_open === 1 ? "alert" : "alerts"}`, sub: "Sales caps reached or sudden spikes", tone: "red", to: "payouts" },
+      { n: i.risk_open, icon: ShieldAlert, title: `Open risk ${i.risk_open === 1 ? "alert" : "alerts"}`, sub: "Sales caps reached or sudden spikes", tone: "red", to: "risk" },
       { n: i.disputes_open, icon: AlertTriangle, title: `Disputed ${i.disputes_open === 1 ? "payment" : "payments"}`, sub: "Chargebacks raised by buyers", tone: "amber", to: "billing-disputes" },
       { n: i.managed_new, icon: ClipboardList, title: `New managed-event ${i.managed_new === 1 ? "request" : "requests"}`, sub: "Organizers asking for our team", tone: "pink", to: "managed-requests" },
       { n: i.bank_changes, icon: Landmark, title: `Bank account ${i.bank_changes === 1 ? "change" : "changes"} to approve`, sub: "Check before money moves", tone: "amber", to: "organizations" },
@@ -253,8 +256,9 @@ export function PlatformOverview({
       { n: i.email_changes, icon: Mail, title: `Login email ${i.email_changes === 1 ? "change" : "changes"}`, sub: "Waiting for approval", tone: "violet", to: "organizations" },
       { n: i.deletions, icon: Trash2, title: `Account deletion ${i.deletions === 1 ? "request" : "requests"}`, sub: "Waiting for approval", tone: "red", to: "organizations" },
     ];
+    items.push({ n: jobProblems, icon: Clock, title: `Scheduled ${jobProblems === 1 ? "job" : "jobs"} failed or overdue`, sub: "Reminders or cleanup didn't run as planned", tone: "red", to: "jobs" });
     return items.filter((x) => x.n > 0);
-  }, [data]);
+  }, [data, jobProblems]);
 
   const updated = data ? new Date(data.generated_at).toLocaleTimeString("en-NG", { hour: "numeric", minute: "2-digit" }) : null;
 
