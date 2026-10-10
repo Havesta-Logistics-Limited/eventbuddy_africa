@@ -16,7 +16,7 @@ type Results = {
   exhibitors: { id: string; company_name: string; contact_name: string | null; email: string | null; status: string; stand_label: string | null; event: string; organization_id: string }[];
 };
 
-type Item = { key: string; icon: typeof Search; title: string; sub: string; meta?: string; orgId: string | null; group: string };
+type Item = { key: string; icon: typeof Search; title: string; sub: string; meta?: string; orgId: string | null; group: string; paymentRef?: string };
 
 const PURPOSE: Record<string, string> = { ticket_purchase: "Ticket", stand_booking: "Stand", event_publish: "Publishing", subscription: "Plan" };
 const dateShort = (d: string) => new Date(d.length === 10 ? d + "T12:00:00" : d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
@@ -36,7 +36,7 @@ function toItems(r: Results): Item[] {
       title: a.full_name || a.email || "Attendee", sub: [a.event, a.email, a.phone].filter(Boolean).join(" · "), meta: a.reference_id ?? undefined,
     })),
     ...r.payments.map((t) => ({
-      key: "t" + t.id, icon: CreditCard, group: "Payments", orgId: t.organization_id,
+      key: "t" + t.id, icon: CreditCard, group: "Payments", orgId: t.organization_id, paymentRef: t.reference,
       title: `${formatNaira(Number(t.amount_naira))} · ${PURPOSE[t.purpose] ?? t.purpose} · ${t.status}${t.test ? " · test" : ""}`,
       // long references would crowd out the amount and status, so show the start of it
       sub: [t.buyer, t.buyer_email, t.organization].filter(Boolean).join(" · "), meta: t.reference.length > 14 ? t.reference.slice(0, 13) + "…" : t.reference,
@@ -61,7 +61,18 @@ function toItems(r: Results): Item[] {
  * payouts, promoters and exhibitors, through migration 0122's platform_search.
  * Picking a result opens that organizer's profile.
  */
-export function PlatformSearch({ open, onClose, onOpenOrg }: { open: boolean; onClose: () => void; onOpenOrg: (orgId: string) => void }) {
+export function PlatformSearch({
+  open,
+  onClose,
+  onOpenOrg,
+  onOpenPayment,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onOpenOrg: (orgId: string) => void;
+  /** a payment opens the refund dialog (which also shows non-refundable states) */
+  onOpenPayment: (reference: string) => void;
+}) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Results | null>(null);
   const [loading, setLoading] = useState(false);
@@ -112,6 +123,11 @@ export function PlatformSearch({ open, onClose, onOpenOrg }: { open: boolean; on
   if (!open) return null;
 
   function pick(it: Item | undefined) {
+    if (it?.paymentRef) {
+      onOpenPayment(it.paymentRef);
+      onClose();
+      return;
+    }
     if (!it?.orgId) return;
     onOpenOrg(it.orgId);
     onClose();
@@ -175,7 +191,7 @@ export function PlatformSearch({ open, onClose, onOpenOrg }: { open: boolean; on
                   data-idx={i}
                   role="option"
                   aria-selected={i === active}
-                  aria-disabled={!it.orgId || undefined}
+                  aria-disabled={(!it.orgId && !it.paymentRef) || undefined}
                   className="ps-item"
                   onMouseMove={() => setActive(i)}
                   onClick={() => pick(it)}
@@ -191,7 +207,7 @@ export function PlatformSearch({ open, onClose, onOpenOrg }: { open: boolean; on
                       {it.meta}
                     </span>
                   )}
-                  {i === active && it.orgId && <CornerDownLeft size={14} className="ps-enter" aria-hidden="true" />}
+                  {i === active && (it.orgId || it.paymentRef) && <CornerDownLeft size={14} className="ps-enter" aria-hidden="true" />}
                 </button>
               </div>
             );
@@ -200,7 +216,7 @@ export function PlatformSearch({ open, onClose, onOpenOrg }: { open: boolean; on
 
         <div className="ps-foot" aria-hidden="true">
           <span><kbd>↑</kbd><kbd>↓</kbd> move</span>
-          <span><kbd>Enter</kbd> open organizer</span>
+          <span><kbd>Enter</kbd> open (payments open the refund screen)</span>
           <span><kbd>Esc</kbd> close</span>
         </div>
       </div>

@@ -59,6 +59,7 @@ import { PlatformPlansEditor } from "@/components/platform-plans-editor";
 import { PlatformOverview, overviewBadges, usePlatformOverview, type OverviewTarget } from "@/components/platform-overview";
 import { PlatformSearch } from "@/components/platform-search";
 import { PlatformOrgProfile } from "@/components/platform-org-profile";
+import { PlatformRefundDialog } from "@/components/platform-refund-dialog";
 import { ExhibitorsTab, JobsTab, PromotersTab, RiskTab, ToursTab, useJobHealth } from "@/components/platform-partners";
 
 const PLATFORM_ACCENT = "#a78bfa";
@@ -198,6 +199,9 @@ export default function PlatformDashboard() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileOrgId, setProfileOrgId] = useState<string | null>(null);
   const closeProfile = useCallback(() => setProfileOrgId(null), []);
+  // a real refund (reverses the charge on Paystack), from Billing or search
+  const [refundRef, setRefundRef] = useState<string | null>(null);
+  const closeRefund = useCallback(() => setRefundRef(null), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -1201,7 +1205,15 @@ export default function PlatformDashboard() {
         </div>
       )}
 
-      <PlatformSearch open={searchOpen} onClose={() => setSearchOpen(false)} onOpenOrg={setProfileOrgId} />
+      <PlatformSearch open={searchOpen} onClose={() => setSearchOpen(false)} onOpenOrg={setProfileOrgId} onOpenPayment={setRefundRef} />
+      <PlatformRefundDialog
+        reference={refundRef}
+        onClose={closeRefund}
+        onDone={() => {
+          handleRefresh();
+          overview.reload();
+        }}
+      />
       <PlatformOrgProfile
         orgId={profileOrgId}
         includeTest={overview.includeTest}
@@ -2138,6 +2150,16 @@ export default function PlatformDashboard() {
                               <td className="px-4 py-3 whitespace-nowrap">
                                 <div className="flex items-center gap-2">
                                   <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize ${statusPill}`}>{t.status}</span>
+                                  {t.status === "success" && t.purpose === "ticket_purchase" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setRefundRef(t.reference)}
+                                      title="Refund the buyer: reverses the charge on Paystack"
+                                      className="text-[11px] font-semibold text-rose-300 hover:text-rose-200"
+                                    >
+                                      Refund
+                                    </button>
+                                  )}
                                   {t.status === "success" && (
                                     <button
                                       type="button"

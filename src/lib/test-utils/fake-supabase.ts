@@ -25,6 +25,7 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
     const filters: [string, unknown][] = [];
     let pendingInsert: Row[] | null = null;
     let pendingUpdate: Row | null = null;
+    let pendingUpsert: { rows: Row[]; conflict: string[]; ignore: boolean } | null = null;
 
     function matches(row: Row) {
       return filters.every(([col, val]) => row[col] === val);
@@ -35,6 +36,22 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
         const inserted = pendingInsert.map((r) => ({ id: fakeId(), created_at: new Date(0).toISOString(), ...r }));
         db[table].push(...inserted);
         return inserted;
+      }
+      if (pendingUpsert) {
+        // like Postgres ON CONFLICT (cols) DO NOTHING / DO UPDATE
+        const out: Row[] = [];
+        for (const r of pendingUpsert.rows) {
+          const hit = pendingUpsert.conflict.length ? db[table].find((x) => pendingUpsert!.conflict.every((c) => x[c] === r[c])) : undefined;
+          if (hit) {
+            if (!pendingUpsert.ignore) Object.assign(hit, r);
+            continue;
+          }
+          const row = { id: fakeId(), created_at: new Date(0).toISOString(), ...r };
+          db[table].push(row);
+          out.push(row);
+        }
+        pendingUpsert = null;
+        return out;
       }
       if (pendingUpdate) {
         const matched = db[table].filter(matches);
@@ -60,6 +77,10 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
         pendingUpdate = patch;
         return builder;
       },
+      upsert(row: Row | Row[], opts: { onConflict?: string; ignoreDuplicates?: boolean } = {}) {
+        pendingUpsert = { rows: Array.isArray(row) ? row : [row], conflict: (opts.onConflict ?? "").split(",").map((c) => c.trim()).filter(Boolean), ignore: !!opts.ignoreDuplicates };
+        return builder;
+      },
       order() {
         return builder;
       },
@@ -78,6 +99,7 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
       // chain without a terminal .select()/.single()/.maybeSingle() (a
       // fire-and-forget update) relies on this.
       then(resolve: (result: { data: Row[] | null; error: null }) => void) {
+        // (an upsert's rows are applied here too)
         const rows = applyAndGetRows();
         resolve({ data: rows, error: null });
       },

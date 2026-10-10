@@ -954,7 +954,9 @@ async function sendRefundNoticeEmail(to: string, eventName: string, kind: "refun
  *  Paystack's own dashboard), where a "your registration was refunded" email to an
  *  attendee who didn't request anything would be confusing without more context than
  *  this app has at that point. */
-export async function sendAttendeeRefundEmail(to: string, eventName: string, amountNaira: number) {
+/** `by` names who issued it: the organizer (their own refund button) or eventbuddy (platform admin). */
+export async function sendAttendeeRefundEmail(to: string, eventName: string, amountNaira: number, by: "organizer" | "eventbuddy" = "organizer") {
+  const who = by === "eventbuddy" ? "eventbuddy has" : "The organizer has";
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
 
@@ -962,7 +964,7 @@ export async function sendAttendeeRefundEmail(to: string, eventName: string, amo
   const bodyHtml = `
     <h1 style="font-size:19px; margin:0 0 12px;">Your payment for ${safeEvent} has been refunded</h1>
     <p style="margin:0 0 20px; color:#666;">
-      The organizer has refunded your ${escapeHtml(formatNaira(amountNaira))} ticket purchase for <strong>${safeEvent}</strong>.
+      ${who} refunded your ${escapeHtml(formatNaira(amountNaira))} purchase for <strong>${safeEvent}</strong>.
       Your registration has been cancelled. The refund will reflect on your original payment method according to your bank's processing time.
     </p>
   `;
@@ -973,7 +975,7 @@ export async function sendAttendeeRefundEmail(to: string, eventName: string, amo
       from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
       to,
       subject: `You've been refunded — ${eventName}`,
-      text: `The organizer has refunded your ${formatNaira(amountNaira)} ticket purchase for ${eventName}. Your registration has been cancelled.`,
+      text: `${who} refunded your ${formatNaira(amountNaira)} purchase for ${eventName}. Your registration has been cancelled.`,
       html: renderEmailShell({ color: "#9a3412", label: "Refund", emoji: "💸" }, bodyHtml),
     });
     return !error;
