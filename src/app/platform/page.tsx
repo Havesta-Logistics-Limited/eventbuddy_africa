@@ -38,7 +38,7 @@ import {
   Clock,
   CheckCircle2,
   FileText,
-  Smartphone, Wallet } from "lucide-react";
+  Smartphone, Wallet, LayoutDashboard } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 import { Reveal } from "@/components/reveal";
@@ -56,21 +56,24 @@ import { PlatformDocumentsTab } from "@/components/platform-documents-tab";
 import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { PlatformPayoutQueue } from "@/components/platform-payout-queue";
 import { PlatformPlansEditor } from "@/components/platform-plans-editor";
+import { PlatformOverview, overviewBadges, usePlatformOverview, type OverviewTarget } from "@/components/platform-overview";
 
 const PLATFORM_ACCENT = "#a78bfa";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Grouped so the sidebar reads as the business: money, customers, operations, system.
 const NAV = [
-  { id: "organizations", label: "Organizations", icon: Building2 },
-  { id: "mobile", label: "Mobile App", icon: Smartphone },
-  { id: "events", label: "Events", icon: Calendar },
-  { id: "billing", label: "Billing", icon: DollarSign },
-  { id: "documents", label: "Quotes & Invoices", icon: FileText },
-  { id: "managed-requests", label: "Managed Events", icon: ClipboardList },
-  { id: "payouts", label: "Payouts", icon: Landmark },
-  { id: "maintenance", label: "Maintenance", icon: Wrench },
-  { id: "admins", label: "Team", icon: ShieldCheck },
-  { id: "security", label: "Security", icon: KeyRound },
+  { id: "overview", label: "Overview", icon: LayoutDashboard, group: null },
+  { id: "payouts", label: "Payouts", icon: Landmark, group: "Money" },
+  { id: "billing", label: "Billing", icon: DollarSign, group: "Money" },
+  { id: "documents", label: "Quotes & Invoices", icon: FileText, group: "Money" },
+  { id: "organizations", label: "Organizations", icon: Building2, group: "Customers" },
+  { id: "events", label: "Events", icon: Calendar, group: "Customers" },
+  { id: "managed-requests", label: "Managed Events", icon: ClipboardList, group: "Operations" },
+  { id: "mobile", label: "Mobile App", icon: Smartphone, group: "Operations" },
+  { id: "maintenance", label: "Maintenance", icon: Wrench, group: "System" },
+  { id: "admins", label: "Team", icon: ShieldCheck, group: "System" },
+  { id: "security", label: "Security", icon: KeyRound, group: "System" },
 ] as const;
 type ViewId = (typeof NAV)[number]["id"];
 
@@ -180,9 +183,11 @@ export default function PlatformDashboard() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+  // Overview numbers; also feeds the sidebar's "waiting" badges on every tab
+  const overview = usePlatformOverview(authorized);
   const [currentUserEmail, setCurrentUserEmail] = useState("");
 
-  const [view, setView] = useState<ViewId>("organizations");
+  const [view, setView] = useState<ViewId>("overview");
   // deep link from alert emails: /platform?tab=payouts
   useEffect(() => {
     const tab = new URLSearchParams(window.location.search).get("tab");
@@ -1035,6 +1040,18 @@ export default function PlatformDashboard() {
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  /** An Overview link: open the tab that handles it (disputes open Billing
+   *  with the payment list filtered to disputed). */
+  function openFromOverview(target: OverviewTarget) {
+    if (target === "billing-disputes") {
+      setTxnStatusFilter("disputed");
+      setView("billing");
+    } else {
+      setView(target);
+    }
+    window.scrollTo({ top: 0 });
+  }
+
   function goToOrg(orgName: string) {
     setView("organizations");
     setOrgSearch(orgName);
@@ -1042,29 +1059,43 @@ export default function PlatformDashboard() {
 
   // Same lifted rail and sliding pill as the organizer app (shell.tsx), in a
   // violet accent so a platform admin always knows which side they're on.
-  const activeIndex = NAV.findIndex(({ id }) => id === view);
+  const badges = overviewBadges(overview.data);
   const sidebarNav = (
     <nav className="relative flex-1 overflow-y-auto px-3 py-4" aria-label="Platform">
       <ul className="relative space-y-0.5">
-        {activeIndex >= 0 && <li aria-hidden="true" className="eb-nav-pill" style={{ transform: `translateY(${activeIndex * 42}px)` }} />}
-        {NAV.map(({ id, label, icon: Icon }) => {
+        {NAV.map(({ id, label, icon: Icon, group }, i) => {
           const active = view === id;
+          const badge = badges[id] ?? 0;
+          const heading = group && group !== NAV[i - 1]?.group;
           return (
-            <li key={id} className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setView(id);
-                  setMobileNavOpen(false);
-                }}
-                aria-current={active ? "page" : undefined}
-                data-active={active || undefined}
-                className="eb-nav-item w-full"
-              >
-                <Icon size={17} className="eb-nav-icon" />
-                {label}
-              </button>
-            </li>
+            <Fragment key={id}>
+              {heading && (
+                <li aria-hidden="true" className="eb-nav-group">
+                  {group}
+                </li>
+              )}
+              <li className="relative">
+                {active && <span aria-hidden="true" className="eb-nav-pill" />}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setView(id);
+                    setMobileNavOpen(false);
+                  }}
+                  aria-current={active ? "page" : undefined}
+                  data-active={active || undefined}
+                  className="eb-nav-item w-full"
+                >
+                  <Icon size={17} className="eb-nav-icon" />
+                  <span className="flex-1 text-left">{label}</span>
+                  {badge > 0 && (
+                    <span className="eb-nav-badge" aria-label={`${badge} waiting`}>
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
+                </button>
+              </li>
+            </Fragment>
           );
         })}
       </ul>
@@ -1153,6 +1184,7 @@ export default function PlatformDashboard() {
               </button>
             </div>
           )}
+          {view === "overview" && <PlatformOverview overview={overview} onNavigate={openFromOverview} />}
           {view === "organizations" && (
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
