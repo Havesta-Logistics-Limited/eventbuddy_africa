@@ -512,6 +512,42 @@ const summaryText = (s: Record<string, unknown> | null) =>
         .join(" · ")
     : "";
 
+/** The morning briefing's on/off switch (platform_settings, migration 0124). */
+function BriefingSwitch() {
+  const [on, setOn] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    createClient()
+      .from("platform_settings")
+      .select("morning_briefing_enabled")
+      .eq("id", true)
+      .maybeSingle()
+      .then(({ data }) => setOn(data ? data.morning_briefing_enabled !== false : null));
+  }, []);
+  async function toggle() {
+    if (on === null) return;
+    setSaving(true);
+    const { error: err } = await createClient().from("platform_settings").update({ morning_briefing_enabled: !on }).eq("id", true);
+    setSaving(false);
+    if (err) return toast.error(/morning_briefing_enabled/.test(err.message) ? "This needs migration 0124 to be run on this database." : "Couldn't save.");
+    setOn(!on);
+    toast.success(!on ? "Morning briefing on: every admin gets it at 7am" : "Morning briefing off");
+  }
+  return (
+    <section className="po-card mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-fg">Morning briefing email</p>
+        <p className="text-xs text-muted">At 7am, every platform admin gets yesterday&apos;s numbers, what&apos;s waiting on them, today&apos;s events and any failed job.</p>
+      </div>
+      <label className="po-switch">
+        <input type="checkbox" checked={!!on} disabled={on === null || saving} onChange={toggle} />
+        <span aria-hidden="true" />
+        {on === null ? "…" : on ? "On" : "Off"}
+      </label>
+    </section>
+  );
+}
+
 export function JobsTab({ health }: { health: ReturnType<typeof useJobHealth> }) {
   const { data, error, loading, reload } = health;
   const label = Object.fromEntries(CRON_JOBS.map((j) => [j.job, j.label]));
@@ -519,6 +555,7 @@ export function JobsTab({ health }: { health: ReturnType<typeof useJobHealth> })
     <>
       <Header title="Job health" sub="The jobs that run on their own: reminders, cleanup and data retention. Each run is recorded here." loading={loading} onRefresh={reload} />
       <ErrorNote error={error} />
+      <BriefingSwitch />
       <div className="pp-jobs mb-6">
         {CRON_JOBS.map((j) => {
           const state = jobState(data, j);

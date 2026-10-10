@@ -10,6 +10,7 @@ export const CRON_JOBS = [
   { job: "draft-reminders", label: "Draft reminders", what: "Reminds organizers about events saved as drafts but never published", schedule: "Every 2 hours", everyHours: 2 },
   { job: "rsvp-reminders", label: "RSVP reminders", what: "Nudges invited guests who haven't replied as their event approaches", schedule: "Daily, 10:00 am", everyHours: 24 },
   { job: "data-retention", label: "Data retention", what: "Removes personal data past its retention period, and warns exhibitors first", schedule: "Daily, 3:15 am", everyHours: 24 },
+  { job: "morning-briefing", label: "Morning briefing", what: "Emails platform admins yesterday's numbers and what needs them", schedule: "Daily, 7:00 am", everyHours: 24 },
   { job: "rate-limits-cleanup", label: "Rate-limit cleanup", what: "Clears old sign-in and form rate-limit records", schedule: "Daily, 4:30 am", everyHours: 24 },
 ] as const;
 

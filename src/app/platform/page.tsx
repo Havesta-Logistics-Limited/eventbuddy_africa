@@ -211,11 +211,12 @@ export default function PlatformDashboard() {
   const [currentUserEmail, setCurrentUserEmail] = useState("");
 
   const [view, setView] = useState<ViewId>("overview");
-  // deep link from alert emails: /platform?tab=payouts
+  // deep links from alert and briefing emails: /platform?tab=payouts, ?tab=risk, ...
   useEffect(() => {
     const tab = new URLSearchParams(window.location.search).get("tab");
+    const match = NAV.find((n) => n.id === tab);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read once on mount; the URL isn't available during the server render
-    if (tab === "payouts") setView("payouts");
+    if (match) setView(match.id);
   }, []);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [orgSearch, setOrgSearch] = useState("");

@@ -5,7 +5,8 @@ import type { CronJobName } from "@/lib/cron-jobs";
  * Wraps a scheduled route (/api/cron/*) so every authorized run is recorded in
  * cron_runs (migration 0123) for the platform admin's Job health tab: when it
  * started, whether it worked, its summary or error. Unauthorized calls (401)
- * aren't recorded. Logging never changes the job's response, and a failure to
+ * aren't recorded, nor are previews and test sends (?preview or ?to), which
+ * aren't real runs. Logging never changes the job's response, and a failure to
  * log is only printed. Runs older than 60 days are cleared as we go.
  */
 export function withCronLog(job: CronJobName, handler: (request: Request) => Promise<Response>) {
@@ -18,7 +19,8 @@ export function withCronLog(job: CronJobName, handler: (request: Request) => Pro
       await record(job, startedAt, false, 500, null, err instanceof Error ? err.message : String(err));
       throw err;
     }
-    if (response.status === 401) return response;
+    const params = new URL(request.url).searchParams;
+    if (response.status === 401 || params.has("preview") || params.has("to")) return response;
     let body: Record<string, unknown> | null = null;
     try {
       body = (await response.clone().json()) as Record<string, unknown>;
