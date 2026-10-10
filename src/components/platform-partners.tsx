@@ -531,13 +531,13 @@ function BriefingSwitch() {
     setSaving(false);
     if (err) return toast.error(/morning_briefing_enabled/.test(err.message) ? "This needs migration 0124 to be run on this database." : "Couldn't save.");
     setOn(!on);
-    toast.success(!on ? "Morning briefing on: every admin gets it at 7am" : "Morning briefing off");
+    toast.success(!on ? "Morning briefing on: sent to info@eventbuddy.africa at 7am" : "Morning briefing off");
   }
   return (
     <section className="po-card mb-6 flex flex-wrap items-center justify-between gap-3">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-fg">Morning briefing email</p>
-        <p className="text-xs text-muted">At 7am, every platform admin gets yesterday&apos;s numbers, what&apos;s waiting on them, today&apos;s events and any failed job.</p>
+        <p className="text-xs text-muted">Every day at 7am, info@eventbuddy.africa gets yesterday&apos;s numbers, what&apos;s waiting, today&apos;s events and any failed job.</p>
       </div>
       <label className="po-switch">
         <input type="checkbox" checked={!!on} disabled={on === null || saving} onChange={toggle} />

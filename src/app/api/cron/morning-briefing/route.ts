@@ -5,7 +5,7 @@ import { withCronLog } from "@/lib/cron-log";
 
 /**
  * netlify/functions/morning-briefing-cron.mts hits this at 7am Lagos time
- * (migration 0124): emails every platform admin yesterday's numbers, what's
+ * (migration 0124): emails info@eventbuddy.africa (BRIEFING_TO) yesterday's numbers, what's
  * waiting on them, today's events and any scheduled job that failed. Skipped
  * when switched off (platform_settings.morning_briefing_enabled). Guarded by
  * CRON_SECRET.
@@ -40,7 +40,7 @@ async function run(request: Request) {
   const email = renderBriefing(data as BriefingData, siteUrl);
   if (preview) return new NextResponse(`<!doctype html><title>${email.subject}</title>${email.html}`, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 
-  const result = await sendBriefing(admin, email, to ? [to] : undefined);
+  const result = await sendBriefing(email, to ? [to] : undefined);
   if (result.error && result.sent === 0) return NextResponse.json({ error: result.error }, { status: 500 });
   return NextResponse.json({ success: true, sent: result.sent, ...(result.error ? { warning: result.error } : {}) });
 }

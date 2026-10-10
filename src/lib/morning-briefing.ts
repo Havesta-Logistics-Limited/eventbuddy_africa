@@ -1,5 +1,4 @@
 import { Resend } from "resend";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { formatNaira } from "@/lib/billing";
 import { CRON_JOBS } from "@/lib/cron-jobs";
@@ -20,6 +19,9 @@ export type BriefingData = {
   };
   jobs: Record<string, { started_at: string; ok: boolean; error: string | null }>;
 };
+
+/** Where the daily briefing goes (one inbox, not every platform admin). */
+export const BRIEFING_TO = "info@eventbuddy.africa";
 
 const PINK = "#C21FAF";
 const VIOLET = "#7c3aed";
@@ -129,7 +131,7 @@ export function renderBriefing(b: BriefingData, siteUrl: string) {
     }
 
     <div style="margin-top:28px;">${emailButton(portal, "Open the platform portal", VIOLET)}</div>
-    <p style="margin:18px 0 0; font-size:12px; color:#94a3b8;">Sent to every platform admin at 7am. Turn it off on the portal's Job health tab.</p>`;
+    <p style="margin:18px 0 0; font-size:12px; color:#94a3b8;">Sent to ${BRIEFING_TO} every day at 7am. Turn it off on the portal's Job health tab.</p>`;
 
   const text = [
     `eventbuddy briefing for ${dayLabel(b.day)}`,
@@ -151,19 +153,13 @@ export function renderBriefing(b: BriefingData, siteUrl: string) {
   return { subject, text, html: renderEmailShell({ color: VIOLET, label: "Morning briefing", emoji: "☀️" }, html) };
 }
 
-/** Sends the briefing to every platform admin (or `to`, for a test). */
-export async function sendBriefing(admin: SupabaseClient, email: { subject: string; text: string; html: string }, to?: string[]) {
+/** Sends the briefing to BRIEFING_TO (or `to`, for a test). */
+export async function sendBriefing(email: { subject: string; text: string; html: string }, to?: string[]) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey || apiKey === "paste_your_resend_api_key_here") return { sent: 0, error: "Email isn't configured (RESEND_API_KEY)." };
-  let recipients = to;
-  if (!recipients) {
-    const { data } = await admin.from("platform_admins").select("email");
-    recipients = (data ?? []).map((r: { email: string | null }) => r.email).filter((e): e is string => !!e);
-  }
-  if (!recipients.length) return { sent: 0, error: null };
+  const recipients = to ?? [BRIEFING_TO];
   const resend = new Resend(apiKey);
   let sent = 0;
-  // one email per admin, so no admin sees the others' addresses
   for (const addr of recipients) {
     const { error } = await resend.emails.send({ from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>", to: addr, subject: email.subject, text: email.text, html: email.html });
     if (!error) sent++;
