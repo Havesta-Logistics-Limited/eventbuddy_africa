@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { copyText } from "@/lib/copy-text";
 import { MoveImagesCard } from "@/components/move-images-card";
 import { useRouter } from "next/navigation";
@@ -57,6 +57,8 @@ import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { PlatformPayoutQueue } from "@/components/platform-payout-queue";
 import { PlatformPlansEditor } from "@/components/platform-plans-editor";
 import { PlatformOverview, overviewBadges, usePlatformOverview, type OverviewTarget } from "@/components/platform-overview";
+import { PlatformSearch } from "@/components/platform-search";
+import { PlatformOrgProfile } from "@/components/platform-org-profile";
 
 const PLATFORM_ACCENT = "#a78bfa";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -185,6 +187,20 @@ export default function PlatformDashboard() {
   const [authorized, setAuthorized] = useState(false);
   // Overview numbers; also feeds the sidebar's "waiting" badges on every tab
   const overview = usePlatformOverview(authorized);
+  // search everything (⌘K) and the organizer profile panel it opens
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [profileOrgId, setProfileOrgId] = useState<string | null>(null);
+  const closeProfile = useCallback(() => setProfileOrgId(null), []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const [currentUserEmail, setCurrentUserEmail] = useState("");
 
   const [view, setView] = useState<ViewId>("overview");
@@ -1062,6 +1078,18 @@ export default function PlatformDashboard() {
   const badges = overviewBadges(overview.data);
   const sidebarNav = (
     <nav className="relative flex-1 overflow-y-auto px-3 py-4" aria-label="Platform">
+      <button
+        type="button"
+        className="eb-nav-search"
+        onClick={() => {
+          setSearchOpen(true);
+          setMobileNavOpen(false);
+        }}
+      >
+        <Search size={15} aria-hidden="true" />
+        <span className="flex-1 text-left">Search everything</span>
+        <kbd aria-hidden="true">⌘K</kbd>
+      </button>
       <ul className="relative space-y-0.5">
         {NAV.map(({ id, label, icon: Icon, group }, i) => {
           const active = view === id;
@@ -1139,7 +1167,10 @@ export default function PlatformDashboard() {
           <Menu size={20} />
         </button>
         <Logo tone="white" height={15} />
-        <span className="eb-platform-tag ml-auto">
+        <button type="button" onClick={() => setSearchOpen(true)} aria-label="Search everything" className="eb-iconbtn ml-auto">
+          <Search size={19} />
+        </button>
+        <span className="eb-platform-tag">
           <ShieldCheck size={11} aria-hidden="true" />
           Platform
         </span>
@@ -1161,6 +1192,17 @@ export default function PlatformDashboard() {
           <div className="flex-1 bg-black/60 backdrop-blur-sm animate-modal-backdrop" onClick={() => setMobileNavOpen(false)} />
         </div>
       )}
+
+      <PlatformSearch open={searchOpen} onClose={() => setSearchOpen(false)} onOpenOrg={setProfileOrgId} />
+      <PlatformOrgProfile
+        orgId={profileOrgId}
+        includeTest={overview.includeTest}
+        onClose={closeProfile}
+        onManage={(name) => {
+          setProfileOrgId(null);
+          goToOrg(name);
+        }}
+      />
 
       {/* Main content */}
       <main className="flex-1 min-w-0 md:ml-64 min-h-screen pt-14 md:pt-0">
@@ -1184,7 +1226,7 @@ export default function PlatformDashboard() {
               </button>
             </div>
           )}
-          {view === "overview" && <PlatformOverview overview={overview} onNavigate={openFromOverview} />}
+          {view === "overview" && <PlatformOverview overview={overview} onNavigate={openFromOverview} onOpenOrg={setProfileOrgId} />}
           {view === "organizations" && (
             <>
               <div className="mb-6 flex items-start justify-between gap-3">
@@ -1412,7 +1454,14 @@ export default function PlatformDashboard() {
                           return (
                             <tr key={org.id} className="hover:bg-canvas">
                               <td className="px-4 py-3 max-w-[200px]">
-                                <p className="font-medium text-fg truncate">{org.name}</p>
+                                <button
+                                  type="button"
+                                  onClick={() => setProfileOrgId(org.id)}
+                                  className="block max-w-full truncate text-left font-medium text-fg hover:text-[#c4b5fd] hover:underline underline-offset-4"
+                                  title="Open profile"
+                                >
+                                  {org.name}
+                                </button>
                                 <span
                                   role="button"
                                   tabIndex={0}
@@ -2408,7 +2457,14 @@ export default function PlatformDashboard() {
                           return (
                             <tr key={org.id} className="hover:bg-canvas">
                               <td className="px-4 py-3 max-w-[200px]">
-                                <p className="font-medium text-fg truncate">{org.name}</p>
+                                <button
+                                  type="button"
+                                  onClick={() => setProfileOrgId(org.id)}
+                                  className="block max-w-full truncate text-left font-medium text-fg hover:text-[#c4b5fd] hover:underline underline-offset-4"
+                                  title="Open profile"
+                                >
+                                  {org.name}
+                                </button>
                               </td>
                               <td className="px-4 py-3 text-fg-3">{org.payout_bank_name || <span className="text-faint">—</span>}</td>
                               <td className="px-4 py-3 text-fg-3 font-mono text-xs">

@@ -228,9 +228,11 @@ function TrendChart({ series, metric }: { series: PlatformOverviewData["series"]
 export function PlatformOverview({
   overview,
   onNavigate,
+  onOpenOrg,
 }: {
   overview: ReturnType<typeof usePlatformOverview>;
   onNavigate: (target: OverviewTarget) => void;
+  onOpenOrg: (orgId: string) => void;
 }) {
   const { data, error, loading, reload, days, setDays, includeTest, setIncludeTest } = overview;
   const [metric, setMetric] = useState<Metric>("sales_naira");
@@ -425,7 +427,8 @@ export function PlatformOverview({
                   {data.top_organizers.map((o, i) => {
                     const share = data.top_organizers[0].sales_naira > 0 ? (o.sales_naira / data.top_organizers[0].sales_naira) * 100 : 0;
                     return (
-                      <li key={o.id} className="po-row">
+                      <li key={o.id}>
+                        <button type="button" className="po-row po-row--btn" onClick={() => onOpenOrg(o.id)} title="Open profile">
                         <span className="po-rank">{i + 1}</span>
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-1.5 truncate text-sm font-medium text-fg">
@@ -438,6 +441,7 @@ export function PlatformOverview({
                           <span className="block text-sm font-semibold tabular-nums text-fg">{formatNaira(o.sales_naira)}</span>
                           <span className="block text-xs text-muted">{num(o.orders)} {o.orders === 1 ? "order" : "orders"}</span>
                         </span>
+                        </button>
                       </li>
                     );
                   })}
