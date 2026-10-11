@@ -311,7 +311,7 @@ export interface DiscountRedemption {
   purchasedAt: string;
 }
 
-export type PlatformDocumentType = "quote" | "invoice";
+export type PlatformDocumentType = "quote" | "invoice" | "proposal";
 export type PlatformDocumentStatus = "draft" | "sent" | "accepted" | "declined" | "paid";
 
 export interface PlatformDocumentLineItem {
@@ -335,6 +335,8 @@ export interface PlatformDocument {
   lineItems: PlatformDocumentLineItem[];
   notes?: string | null;
   validUntil?: string | null;
+  /** a proposal's sections (migration 0125); null for quotes and invoices */
+  content?: import("./proposal").ProposalContent | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,6 +1,7 @@
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { PersistError } from "./store";
 import { PlatformDocument, PlatformDocumentLineItem, PlatformDocumentStatus, PlatformDocumentType } from "./types";
+import { proposalLineItems, withProposalDefaults, type ProposalContent } from "./proposal";
 
 function mapRow(row: {
   id: string;
@@ -14,6 +15,7 @@ function mapRow(row: {
   line_items: unknown;
   notes: string | null;
   valid_until: string | null;
+  content?: unknown;
   created_at: string;
   updated_at: string;
 }): PlatformDocument {
@@ -29,6 +31,7 @@ function mapRow(row: {
     lineItems: (row.line_items as PlatformDocumentLineItem[] | null) ?? [],
     notes: row.notes,
     validUntil: row.valid_until,
+    content: row.doc_type === "proposal" ? withProposalDefaults(row.content as Partial<ProposalContent> | null) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -49,7 +52,7 @@ async function nextDocNumber(docType: PlatformDocumentType): Promise<string> {
   const supabase = createSupabaseBrowserClient();
   const { count, error } = await supabase.from("platform_documents").select("id", { count: "exact", head: true }).eq("doc_type", docType);
   if (error) throw new PersistError(error);
-  const prefix = docType === "quote" ? "Q" : "INV";
+  const prefix = docType === "quote" ? "Q" : docType === "proposal" ? "P" : "INV";
   return `${prefix}-${String((count ?? 0) + 1).padStart(4, "0")}`;
 }
 
@@ -102,4 +105,32 @@ export function lineItemTotal(item: PlatformDocumentLineItem): number {
 
 export function documentTotal(doc: Pick<PlatformDocument, "lineItems">): number {
   return doc.lineItems.reduce((sum, item) => sum + lineItemTotal(item), 0);
+}
+
+/** Creates a proposal (id omitted) or saves changes to one. The client fields
+ *  and fixed fees are mirrored onto the document's own columns, so the list,
+ *  totals and status work as for quotes. */
+export async function savePlatformProposal(input: {
+  id?: string;
+  clientName: string;
+  clientEmail?: string;
+  validUntil?: string;
+  content: ProposalContent;
+}): Promise<PlatformDocument> {
+  const supabase = createSupabaseBrowserClient();
+  const fields = {
+    client_name: input.clientName,
+    client_company: input.content.eventName || null,
+    client_email: input.clientEmail || null,
+    line_items: proposalLineItems(input.content),
+    valid_until: input.validUntil || null,
+    content: input.content,
+    updated_at: new Date().toISOString(),
+  };
+  const q = input.id
+    ? supabase.from("platform_documents").update(fields).eq("id", input.id)
+    : supabase.from("platform_documents").insert({ ...fields, doc_type: "proposal", doc_number: await nextDocNumber("proposal") });
+  const { data, error } = await q.select().single();
+  if (error) throw new PersistError(error);
+  return mapRow(data);
 }

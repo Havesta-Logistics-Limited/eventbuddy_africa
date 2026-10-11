@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import { Download, FileText, Plus, Trash2, X } from "lucide-react";
+import { Download, FileSignature, FileText, Pencil, Plus, Trash2, X } from "lucide-react";
 import { PlatformDocument, PlatformDocumentLineItem, PlatformDocumentStatus, PlatformDocumentType } from "@/lib/types";
 import {
   createPlatformDocument,
@@ -13,6 +13,9 @@ import {
   updatePlatformDocumentStatus,
 } from "@/lib/platform-documents";
 import { PlatformDocumentPdf } from "./platform-document-pdf";
+import { PlatformProposalPdf } from "./platform-proposal-pdf";
+import { PlatformProposalEditor } from "./platform-proposal-editor";
+import { DEFAULT_TICKET_FEE, fetchCurrentTicketFee, formatTicketFee } from "@/lib/billing";
 import { isValidEmail } from "@/lib/validation";
 
 function formatNaira(n: number): string {
@@ -51,6 +54,13 @@ export function PlatformDocumentsTab() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+  // proposals open in their own full-screen editor: undefined = closed, null = a new one
+  const [proposal, setProposal] = useState<PlatformDocument | null | undefined>(undefined);
+  const [fee, setFee] = useState(DEFAULT_TICKET_FEE);
+
+  useEffect(() => {
+    fetchCurrentTicketFee().then(setFee).catch(() => {});
+  }, []);
 
   useEffect(() => {
     listPlatformDocuments()
@@ -136,8 +146,17 @@ export function PlatformDocumentsTab() {
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
           <h1 className="eb-app-title">Quotes & Invoices</h1>
-          <p className="text-muted text-sm mt-0.5">Branded documents for clients reaching out for pricing — not tied to any organization&apos;s own billing.</p>
+          <p className="text-muted text-sm mt-0.5">Branded quotes, invoices and proposals for clients and prospects — not tied to any organization&apos;s own billing.</p>
         </div>
+        <div className="flex flex-wrap gap-2 shrink-0">
+        <button
+          type="button"
+          onClick={() => setProposal(null)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-fg border border-line hover:bg-fill transition-transform active:scale-[0.97]"
+        >
+          <FileSignature size={14} />
+          New proposal
+        </button>
         <button
           onClick={() => {
             setForm(EMPTY_FORM);
@@ -149,6 +168,7 @@ export function PlatformDocumentsTab() {
           <Plus size={14} />
           New Quote / Invoice
         </button>
+        </div>
       </div>
 
       {loading ? (
@@ -156,8 +176,8 @@ export function PlatformDocumentsTab() {
       ) : documents.length === 0 ? (
         <div className="bg-canvas border border-line rounded-xl p-10 text-center">
           <FileText size={28} className="mx-auto mb-3 text-faint" />
-          <p className="font-medium text-muted">No quotes or invoices yet</p>
-          <p className="text-xs text-subtle mt-1.5">Create one for the next client who asks what a Full-Service event costs.</p>
+          <p className="font-medium text-muted">No quotes, invoices or proposals yet</p>
+          <p className="text-xs text-subtle mt-1.5">Create a proposal for a prospective client, or a quote for the next one who asks what a Full-Service event costs.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -168,11 +188,11 @@ export function PlatformDocumentsTab() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-mono font-medium text-fg">
-                  {doc.docNumber} <span className="font-sans font-normal text-subtle">· {doc.docType === "quote" ? "Quote" : "Invoice"}</span>
+                  {doc.docNumber} <span className="font-sans font-normal text-subtle">· {doc.docType === "quote" ? "Quote" : doc.docType === "proposal" ? "Proposal" : "Invoice"}</span>
                 </p>
                 <p className="text-sm text-muted truncate">
-                  {doc.clientName}
-                  {doc.clientCompany && ` · ${doc.clientCompany}`} · {formatNaira(documentTotal(doc))}
+                  {doc.docType === "proposal" && doc.clientCompany ? doc.clientCompany : doc.clientName}
+                  {doc.docType === "proposal" ? doc.clientCompany && ` · ${doc.clientName}` : doc.clientCompany && ` · ${doc.clientCompany}`} · {formatNaira(documentTotal(doc))}
                 </p>
               </div>
               <select
@@ -184,11 +204,22 @@ export function PlatformDocumentsTab() {
                 <option value="sent">Sent</option>
                 <option value="accepted">Accepted</option>
                 <option value="declined">Declined</option>
-                <option value="paid">Paid</option>
+                {doc.docType !== "proposal" && <option value="paid">Paid</option>}
               </select>
               <div className="flex items-center gap-1 shrink-0">
+                {doc.docType === "proposal" && (
+                  <button type="button" onClick={() => setProposal(doc)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-fg-3 hover:bg-fill">
+                    <Pencil size={14} /> Edit
+                  </button>
+                )}
                 <PDFDownloadLink
-                  document={<PlatformDocumentPdf doc={doc} logoUrl="/logo-full.png" />}
+                  document={
+                    doc.docType === "proposal" ? (
+                      <PlatformProposalPdf doc={doc} feeLabel={formatTicketFee(fee)} logoUrl="/logo-full.png" />
+                    ) : (
+                      <PlatformDocumentPdf doc={doc} logoUrl="/logo-full.png" />
+                    )
+                  }
                   fileName={`${doc.docNumber}-${doc.clientName.replace(/\s+/g, "-")}.pdf`}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-fg-3 hover:bg-fill"
                 >
@@ -361,6 +392,13 @@ export function PlatformDocumentsTab() {
             </form>
           </div>
         </div>
+      )}
+      {proposal !== undefined && (
+        <PlatformProposalEditor
+          doc={proposal}
+          onClose={() => setProposal(undefined)}
+          onSaved={(d) => setDocuments((docs) => (docs.some((x) => x.id === d.id) ? docs.map((x) => (x.id === d.id ? d : x)) : [d, ...docs]))}
+        />
       )}
     </div>
   );
