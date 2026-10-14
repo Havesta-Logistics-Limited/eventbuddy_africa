@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     try {
       planCode = await upsertPaystackPlan({ code: planCode, name: current.name, amountMinor: Math.round(p.priceMonthlyNaira * 100) });
     } catch (err) {
-      return NextResponse.json({ error: err instanceof Error ? err.message : "Paystack couldn't save this plan." }, { status: 502 });
+      return NextResponse.json({ error: err instanceof Error ? err.message : "Paystack couldn't save this plan." }, { status: 424 });
     }
   }
   const { error } = await admin

@@ -1126,8 +1126,9 @@ export async function refundRegistration(orgSlug: string, eventId: string, regis
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ registrationId }),
   });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || "Couldn't process this refund.");
+  // a host error page isn't JSON; never show a parse error instead of the reason
+  const json = (await res.json().catch(() => null)) as { error?: string } | null;
+  if (!res.ok) throw new Error(json?.error || `Couldn't process this refund (error ${res.status}). Nothing has been cancelled; try again shortly.`);
   registrationsCache = registrationsCache.map((r) => (r.id === registrationId ? { ...r, status: "cancelled" } : r));
   emitChange();
 }

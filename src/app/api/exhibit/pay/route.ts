@@ -90,6 +90,6 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ authorizationUrl });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't start payment." }, { status: 502 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't start payment." }, { status: 424 });
   }
 }

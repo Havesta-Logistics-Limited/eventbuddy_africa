@@ -66,7 +66,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     text: `From ${name} <${email}>\n\n${message}`,
     html: renderEmailShell({ color: "#C21FAF", label: "New message", emoji: "✉️" }, bodyHtml),
   });
-  if (error) return NextResponse.json({ error: "Couldn't send your message. Please try again." }, { status: 502 });
+  if (error) return NextResponse.json({ error: "Couldn't send your message. Please try again." }, { status: 424 });
 
   return NextResponse.json({ success: true });
 }

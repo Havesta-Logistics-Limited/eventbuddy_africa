@@ -19,6 +19,6 @@ export async function GET(request: Request) {
     const banks = await listPaystackBanks();
     return NextResponse.json({ banks });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't load banks." }, { status: 502 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't load banks." }, { status: 424 });
   }
 }

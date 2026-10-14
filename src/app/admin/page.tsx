@@ -538,7 +538,7 @@ function AdminPageContent() {
       setPayoutBankCode("");
       setPayoutAccountNumber("");
       setResolvedAccountName("");
-      toast.success("Payouts are set up — ticket sales will now split straight to this account.");
+      toast.success("Bank account saved. Request a payout from the Payouts page whenever money is available.");
     } catch (err) {
       setPayoutError(err instanceof Error ? err.message : "Couldn't set up payouts.");
     } finally {
@@ -1367,22 +1367,23 @@ function AdminPageContent() {
         {tab === "payouts" && (
           <div key="payouts" className="animate-tab-fade">
             <div className="mb-4">
-              <h2 className="font-semibold text-fg">Ticket payouts</h2>
+              <h2 className="font-semibold text-fg">Payout bank account</h2>
               <p className="text-sm text-muted mt-0.5">
-                The bank account your payouts are sent to. Ticket sales collect in your eventbuddy balance, and you request a payout to this
-                account from the <Link href="/payouts" className="eb-link">Payouts</Link> page.
+                Ticket money is held safely in your eventbuddy balance. When you request a payout from the{" "}
+                <Link href="/payouts" className="eb-link">Payouts</Link> page, eventbuddy reviews it and sends it to this account. It&apos;s
+                verified with your bank first, so the money always goes to the right place.
               </p>
             </div>
 
             {loadingPayout ? (
               <div className="bg-surface rounded-xl border border-line p-6 text-sm text-subtle">Loading…</div>
-            ) : orgPayout?.paystackSubaccountCode && orgPayout.payoutChangeStatus !== "approved" ? (
+            ) : (orgPayout?.payoutAccountNumber || orgPayout?.paystackSubaccountCode) && orgPayout.payoutChangeStatus !== "approved" ? (
               <div className="bg-surface rounded-xl border border-line p-5 flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center shrink-0">
                   <ShieldCheck size={18} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-fg">Payouts are set up</p>
+                  <p className="font-medium text-fg">Payout account on record</p>
                   <p className="text-sm text-muted mt-0.5">
                     {orgPayout.payoutAccountName} · {orgPayout.payoutBankName} · {orgPayout.payoutAccountNumber}
                   </p>
@@ -1476,7 +1477,7 @@ function AdminPageContent() {
                     className="w-full py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]"
                     data-cta
                   >
-                    {savingPayout ? "Setting up…" : "Confirm and set up payouts"}
+                    {savingPayout ? "Saving…" : "Confirm and save this account"}
                   </button>
                 )}
               </div>

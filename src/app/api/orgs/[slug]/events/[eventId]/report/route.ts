@@ -57,7 +57,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     text: `${event.name}\nOrganizer: ${org.name} (${org.slug})\n${email ? `Reported by: ${email}\n` : ""}\n${reason}`,
     html: renderEmailShell({ color: "#DC2626", label: "Event reported", emoji: "🚩" }, bodyHtml),
   });
-  if (error) return NextResponse.json({ error: "Couldn't send your report. Please try again." }, { status: 502 });
+  if (error) return NextResponse.json({ error: "Couldn't send your report. Please try again." }, { status: 424 });
 
   return NextResponse.json({ success: true });
 }

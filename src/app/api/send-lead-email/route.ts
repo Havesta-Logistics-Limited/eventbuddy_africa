@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message || "Failed to send email." }, { status: 502 });
+      return NextResponse.json({ error: error.message || "Failed to send email." }, { status: 424 });
     }
 
     return NextResponse.json({ success: true });

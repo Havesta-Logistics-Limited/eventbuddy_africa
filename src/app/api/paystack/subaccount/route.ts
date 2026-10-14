@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { resolveRouteUser } from "@/lib/supabase/route-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolvePaystackAccount, createPaystackSubaccount } from "@/lib/paystack";
+import { resolvePaystackAccount, createPaystackSubaccount, createTransferRecipient } from "@/lib/paystack";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 
 type Body = { action: "resolve" | "create" | "request-change"; bankCode: string; bankName: string; accountNumber: string };
@@ -45,8 +45,14 @@ async function sendPayoutsConfiguredEmail(to: string, firstName: string, bankNam
  * session (owned via organizations.owner_user_id, same trust boundary as every other
  * org-admin write): 'resolve' verifies the account number against the bank and shows
  * the real account holder name for the admin to confirm before anything is saved;
- * 'create' re-verifies (never trusts a client-supplied name) and then creates the
- * Paystack Subaccount that all of this org's future ticket sales split into.
+ * 'create' re-verifies (never trusts a client-supplied name) and saves it.
+ *
+ * Held funds (the model since 2026-10-07): the account is kept on record as
+ * where eventbuddy sends the payouts an organizer requests and a platform
+ * admin approves. No Paystack subaccount is created, so nothing is paid out
+ * automatically; the account is registered as a Paystack transfer recipient
+ * so the admin's Send button works first time. With held funds off (legacy),
+ * a subaccount is created and sales split into it at checkout.
  */
 export async function POST(request: Request) {
   const { user, supabase } = await resolveRouteUser(request);
@@ -55,7 +61,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as Partial<Body>;
   const { action, bankCode, bankName, accountNumber } = body;
 
-  const orgColumns = "id, name, paystack_subaccount_code, payout_change_status, is_fee_exempt";
+  const orgColumns = "id, name, paystack_subaccount_code, payout_account_number, payout_change_status, is_fee_exempt";
   let { data: org } = await supabase.from("organizations").select(orgColumns).eq("owner_user_id", user.id).maybeSingle();
   if (!org) {
     // Not the owner — an invited admin member manages payouts identically
@@ -76,8 +82,8 @@ export async function POST(request: Request) {
   if (!org) return NextResponse.json({ error: "No organization found for this account." }, { status: 404 });
 
   if (action === "request-change") {
-    if (!org.paystack_subaccount_code) {
-      return NextResponse.json({ error: "You don't have payouts set up yet — there's nothing to change." }, { status: 400 });
+    if (!org.paystack_subaccount_code && !org.payout_account_number) {
+      return NextResponse.json({ error: "You don't have a payout bank account yet, so there's nothing to change." }, { status: 400 });
     }
     const admin = createAdminClient();
     const { error: requestError } = await admin
@@ -95,7 +101,7 @@ export async function POST(request: Request) {
   // A first-time setup is always allowed; a re-submission over an existing
   // subaccount is only allowed once a platform admin has approved a change request —
   // otherwise this route would be a way to silently redirect an org's revenue.
-  if (org.paystack_subaccount_code && org.payout_change_status !== "approved") {
+  if ((org.paystack_subaccount_code || org.payout_account_number) && org.payout_change_status !== "approved") {
     return NextResponse.json({ error: "Request a payout change and wait for approval before updating your bank details." }, { status: 403 });
   }
 
@@ -103,7 +109,7 @@ export async function POST(request: Request) {
   try {
     ({ accountName } = await resolvePaystackAccount(accountNumber.trim(), bankCode));
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't verify that account number." }, { status: 502 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't verify that account number." }, { status: 424 });
   }
 
   if (action !== "create") {
@@ -111,30 +117,39 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  // A fee-exempt org pays 0% commission on ticket sales too, not just the flat
-  // per-event publish fee — otherwise "exempt" would be misleading for any org
-  // that also sells paid tickets.
-  let percentageCharge = 0;
-  if (!org.is_fee_exempt) {
-    const { data: settings } = await admin.from("platform_settings").select("ticket_fee_percentage").eq("id", true).maybeSingle();
-    percentageCharge = Number(settings?.ticket_fee_percentage ?? 5);
-  }
+  const { data: settings } = await admin.from("platform_settings").select("ticket_fee_percentage, held_funds_enabled").eq("id", true).maybeSingle();
+  const held = Boolean(settings?.held_funds_enabled);
 
-  let subaccountCode: string;
-  try {
-    ({ subaccountCode } = await createPaystackSubaccount({
-      businessName: org.name,
-      bankCode,
-      accountNumber: accountNumber.trim(),
-      percentageCharge,
-    }));
-  } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't set up payouts." }, { status: 502 });
+  let subaccountCode: string | null = null;
+  let recipientCode: string | null = null;
+  if (held) {
+    // On record for payouts. Registering it with Paystack now also proves it
+    // can receive transfers; if Paystack is unavailable it's done at payout time.
+    try {
+      ({ recipientCode } = await createTransferRecipient({ name: accountName, accountNumber: accountNumber.trim(), bankCode }));
+    } catch (err) {
+      console.error(`[payout-account] couldn't register a transfer recipient for org ${org.id}; it'll be created at payout time:`, err instanceof Error ? err.message : err);
+    }
+  } else {
+    // Legacy (held funds off): sales split into the organizer's own subaccount
+    // at checkout. A fee-exempt org pays 0% commission on ticket sales too.
+    const percentageCharge = org.is_fee_exempt ? 0 : Number(settings?.ticket_fee_percentage ?? 5);
+    try {
+      ({ subaccountCode } = await createPaystackSubaccount({
+        businessName: org.name,
+        bankCode,
+        accountNumber: accountNumber.trim(),
+        percentageCharge,
+      }));
+    } catch (err) {
+      return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't set up payouts." }, { status: 424 });
+    }
   }
 
   const { error: updateError } = await admin
     .from("organizations")
     .update({
+      // held: no subaccount, so no sale is ever split to this (or an older) account
       paystack_subaccount_code: subaccountCode,
       payout_bank_code: bankCode,
       payout_bank_name: bankName,
@@ -142,8 +157,8 @@ export async function POST(request: Request) {
       payout_account_name: accountName,
       payout_change_status: "none",
       payout_change_approved_at: null,
-      // payouts to the new account need a fresh Paystack transfer recipient
-      payout_recipient_code: null,
+      // the new account's Paystack transfer recipient (or a fresh one at payout time)
+      payout_recipient_code: recipientCode,
     })
     .eq("id", org.id);
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });

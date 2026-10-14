@@ -217,9 +217,29 @@ export async function paystackRefund(reference: string): Promise<void> {
     headers: { Authorization: `Bearer ${paystackKey()}`, "Content-Type": "application/json" },
     body: JSON.stringify({ transaction: reference }),
   });
-  const json = (await res.json()) as { status: boolean; message: string };
+  const text = await res.text();
+  let json: { status?: boolean; message?: string } = {};
+  try {
+    json = JSON.parse(text);
+  } catch {
+    // Paystack answered with something that isn't JSON (an outage page): treat as a refusal
+  }
   if (!res.ok || !json.status) {
-    throw new Error(json.message || "Paystack couldn't process this refund.");
+    const message = json.message || `Paystack couldn't process this refund (HTTP ${res.status}).`;
+    console.error(`[paystack-refund] ${reference} refused: ${message}`);
+    throw new PaystackRefundError(message);
+  }
+}
+
+/** A refund Paystack refused. `lowBalance`: eventbuddy's Paystack balance can't
+ *  cover it (refunds are paid from that balance, and Paystack may sweep it to
+ *  the bank on its settlement schedule). */
+export class PaystackRefundError extends Error {
+  readonly lowBalance: boolean;
+  constructor(message: string) {
+    super(message);
+    this.name = "PaystackRefundError";
+    this.lowBalance = /insufficient|balance/i.test(message);
   }
 }
 

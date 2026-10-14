@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { paystackRefund, sendAttendeeRefundEmail, handleRefundOrDispute } from "@/lib/paystack";
+import { paystackRefund, PaystackRefundError, sendAttendeeRefundEmail, handleRefundOrDispute } from "@/lib/paystack";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 import { resolveOrgAccess } from "@/lib/org-access";
 
@@ -88,7 +88,17 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   try {
     await paystackRefund(txn.reference);
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Paystack couldn't process this refund." }, { status: 502 });
+    // 424 rather than 502: the host replaces 5xx replies with its own error
+    // page, which the dashboard can't read
+    const lowBalance = err instanceof PaystackRefundError && err.lowBalance;
+    return NextResponse.json(
+      {
+        error: lowBalance
+          ? "This refund can't go through right now. Contact eventbuddy support and we'll process it for you. Nothing has been charged or cancelled."
+          : `Paystack couldn't process this refund: ${err instanceof Error ? err.message : "unknown error"}. Nothing has been cancelled; try again shortly.`,
+      },
+      { status: 424 }
+    );
   }
 
   await handleRefundOrDispute(admin, txn.reference, "refunded");

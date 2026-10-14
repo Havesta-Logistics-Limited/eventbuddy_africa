@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     html: renderEmailShell({ color: "#C21FAF", label: "New enquiry", emoji: "✉️" }, notifyHtml),
   });
   if (notifyError) {
-    return NextResponse.json({ error: "Couldn't send your message. Please try again." }, { status: 502 });
+    return NextResponse.json({ error: "Couldn't send your message. Please try again." }, { status: 424 });
   }
 
   const confirmHtml = `

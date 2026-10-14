@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     });
     if (sendError) throw new Error(sendError.message);
   } catch {
-    return NextResponse.json({ error: "We couldn't send the email just now. Check your connection and try again in a minute." }, { status: 502 });
+    return NextResponse.json({ error: "We couldn't send the email just now. Check your connection and try again in a minute." }, { status: 424 });
   }
   return generic;
 }

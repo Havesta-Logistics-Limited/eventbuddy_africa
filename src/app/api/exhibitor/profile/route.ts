@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     else {
       if (!/^data:image\/(png|jpe?g|webp);base64,/.test(d.logo)) return NextResponse.json({ error: "Upload a PNG, JPG or WebP image." }, { status: 400 });
       const url = await uploadEventMediaAdmin(admin, `${x.organization_id}/exhibitors/${x.id}`, d.logo);
-      if (!url) return NextResponse.json({ error: "Couldn't upload the logo. Try a smaller image." }, { status: 502 });
+      if (!url) return NextResponse.json({ error: "Couldn't upload the logo. Try a smaller image." }, { status: 424 });
       patch.logo_url = url;
     }
   }

@@ -209,10 +209,11 @@ export default function EventDetailPage() {
       if (!orgId) return;
       supabase
         .from("organizations")
-        .select("paystack_subaccount_code")
+        .select("paystack_subaccount_code, payout_account_number")
         .eq("id", orgId)
         .maybeSingle()
-        .then(({ data }) => setHasPayoutsConfigured(!!data?.paystack_subaccount_code));
+        // a verified payout bank account on record (held funds), or a legacy subaccount
+        .then(({ data }) => setHasPayoutsConfigured(!!(data?.payout_account_number || data?.paystack_subaccount_code)));
     });
   }, []);
 

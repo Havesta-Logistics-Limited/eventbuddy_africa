@@ -72,11 +72,15 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const admin = createAdminClient();
 
-  const { data: org } = await admin.from("organizations").select("id, is_suspended, is_fee_exempt, paystack_subaccount_code").ilike("slug", slug).maybeSingle();
+  const { data: org } = await admin.from("organizations").select("id, is_suspended, is_fee_exempt, paystack_subaccount_code, payout_account_number").ilike("slug", slug).maybeSingle();
   if (!org) return NextResponse.json({ error: "No organization found for that link." }, { status: 404 });
   if (org.is_suspended) return NextResponse.json({ error: "Ticket sales are unavailable for this event right now." }, { status: 403 });
-  if (!org.paystack_subaccount_code) {
-    return NextResponse.json({ error: "This organizer hasn't set up ticket payouts yet — please check back later." }, { status: 400 });
+  // Held funds: sales need a verified payout bank account on record (where
+  // eventbuddy sends approved payouts). Legacy split mode needs the subaccount.
+  const { data: payoutMode } = await admin.from("platform_settings").select("held_funds_enabled").eq("id", true).maybeSingle();
+  const payoutReady = payoutMode?.held_funds_enabled ? Boolean(org.payout_account_number) : Boolean(org.paystack_subaccount_code);
+  if (!payoutReady) {
+    return NextResponse.json({ error: "This organizer hasn't added their payout bank account yet — please check back later." }, { status: 400 });
   }
 
   const { data: event } = await admin
@@ -236,6 +240,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     });
     return NextResponse.json({ authorizationUrl });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't start payment." }, { status: 502 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't start payment." }, { status: 424 });
   }
 }

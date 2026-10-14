@@ -28,6 +28,6 @@ export async function POST(request: Request) {
     standName: (x.stand_types as unknown as { name: string } | null)?.name ?? "Stand",
     portalUrl: exhibitorPortalUrl(siteUrl, x.portal_token),
   });
-  if (!sent) return NextResponse.json({ error: "Couldn't send the email. Copy the link and send it yourself." }, { status: 502 });
+  if (!sent) return NextResponse.json({ error: "Couldn't send the email. Copy the link and send it yourself." }, { status: 424 });
   return NextResponse.json({ success: true });
 }

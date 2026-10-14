@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     try {
       await disablePaystackSubscription(org.paystack_subscription_code, org.paystack_subscription_token);
     } catch (err) {
-      return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't cancel the subscription." }, { status: 502 });
+      return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't cancel the subscription." }, { status: 424 });
     }
   }
   const { error } = await createAdminClient().from("organizations").update({ plan_status: "cancelling" }).eq("id", org.id);

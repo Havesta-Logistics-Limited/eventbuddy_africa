@@ -380,7 +380,7 @@ export function TicketsTab({
       return;
     }
     if (priceNaira > 0 && !hasPayoutsConfigured) {
-      setFormError("Set up payouts (Settings → Payouts) before creating a paid ticket.");
+      setFormError("Add your payout bank account (Settings → Payouts) before creating a paid ticket.");
       return;
     }
     setFormError("");
@@ -414,10 +414,10 @@ export function TicketsTab({
         <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-amber-500/10 text-amber-200 text-sm">
           <AlertCircle size={15} className="mt-0.5 shrink-0" />
           <span className="flex-1">
-            Payouts aren&apos;t set up for this organization yet — free tickets still work, but a paid ticket type can&apos;t be created until you add
-            a payout bank account.{" "}
+            Add your payout bank account to sell paid tickets. Free tickets work already. Ticket money is held in your eventbuddy balance, and
+            you request a payout to this account whenever you like.{" "}
             <Link href="/admin?tab=payouts" className="font-medium underline hover:no-underline">
-              Set up payouts now
+              Add bank account
             </Link>
           </span>
         </div>

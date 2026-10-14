@@ -100,7 +100,7 @@ export async function POST(request: Request) {
   }
 
   const sent = await sendVerificationReminderEmail(email, firstName, linkData.properties.action_link);
-  if (!sent) return NextResponse.json({ error: "Couldn't send the email. Check the Resend configuration." }, { status: 502 });
+  if (!sent) return NextResponse.json({ error: "Couldn't send the email. Check the Resend configuration." }, { status: 424 });
 
   return NextResponse.json({ success: true, email });
 }

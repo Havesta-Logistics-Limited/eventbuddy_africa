@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   try {
     ({ accountName } = await resolvePaystackAccount(accountNumber.trim(), bankCode));
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't verify that account number." }, { status: 502 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't verify that account number." }, { status: 424 });
   }
   if (action === "resolve") return NextResponse.json({ accountName });
 

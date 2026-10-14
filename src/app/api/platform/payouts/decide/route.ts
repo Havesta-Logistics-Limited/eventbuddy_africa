@@ -106,6 +106,6 @@ export async function POST(request: Request) {
     // the request stays "processing": check it in the Paystack dashboard, then
     // mark it paid, or reject it to return the money.
     await admin.from("payout_requests").update({ failure_reason: `Transfer call failed, check Paystack before retrying: ${err instanceof Error ? err.message : "unknown error"}` }).eq("id", payoutId).eq("status", "processing");
-    return NextResponse.json({ error: "Paystack didn't confirm this transfer. It's left as processing: check the Paystack dashboard, then mark it paid or reject it." }, { status: 502 });
+    return NextResponse.json({ error: "Paystack didn't confirm this transfer. It's left as processing: check the Paystack dashboard, then mark it paid or reject it." }, { status: 424 });
   }
 }

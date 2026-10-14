@@ -1547,11 +1547,11 @@ export default function PlatformDashboard() {
                                   </span>
                                   <span
                                     className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap ${
-                                      org.paystack_subaccount_code ? "text-sky-300 bg-sky-500/15" : "text-muted bg-fill"
+                                      org.payout_account_number_masked ? "text-sky-300 bg-sky-500/15" : "text-muted bg-fill"
                                     }`}
-                                    title={org.paystack_subaccount_code ? `Payouts linked — ${org.payout_bank_name || "bank on file"}` : "No bank account linked yet — can't sell paid tickets"}
+                                    title={org.payout_account_number_masked ? `Payout account on record: ${org.payout_bank_name || "bank on file"}` : "No payout bank account yet: can't sell paid tickets"}
                                   >
-                                    {org.paystack_subaccount_code ? "Payouts linked" : "No payouts"}
+                                    {org.payout_account_number_masked ? "Bank on record" : "No bank account"}
                                   </span>
                                 </div>
                               </td>
@@ -2482,13 +2482,13 @@ export default function PlatformDashboard() {
                       </thead>
                       <tbody className="divide-y divide-line-soft">
                         {orgs.map((org) => {
-                          const statusPill = !org.paystack_subaccount_code
+                          const statusPill = !org.payout_account_number_masked
                             ? { label: "Not set up", className: "bg-fill text-muted" }
                             : org.payout_change_status === "requested"
                               ? { label: "Change requested", className: "bg-amber-500/15 text-amber-300" }
                               : org.payout_change_status === "approved"
                                 ? { label: "Change approved", className: "bg-brand-500/15 text-brand-500" }
-                                : { label: "Connected", className: "bg-teal-500/15 text-teal-300" };
+                                : { label: "On record", className: "bg-teal-500/15 text-teal-300" };
                           return (
                             <tr key={org.id} className="hover:bg-canvas">
                               <td className="px-4 py-3 max-w-[200px]">
