@@ -138,6 +138,8 @@ export async function createPaystackSubaccount(params: {
   bankCode: string;
   accountNumber: string;
   percentageCharge: number;
+  /** "manual": Paystack holds the subaccount's share until it's released (held funds) */
+  settlementSchedule?: "auto" | "manual";
 }): Promise<{ subaccountCode: string }> {
   const res = await fetch(`${PAYSTACK_BASE}/subaccount`, {
     method: "POST",
@@ -147,6 +149,7 @@ export async function createPaystackSubaccount(params: {
       settlement_bank: params.bankCode,
       account_number: params.accountNumber,
       percentage_charge: params.percentageCharge,
+      ...(params.settlementSchedule ? { settlement_schedule: params.settlementSchedule } : {}),
     }),
   });
   const json = (await res.json()) as { status: boolean; message: string; data?: { subaccount_code: string } };

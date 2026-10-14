@@ -49,10 +49,11 @@ async function sendPayoutsConfiguredEmail(to: string, firstName: string, bankNam
  *
  * Held funds (the model since 2026-10-07): the account is kept on record as
  * where eventbuddy sends the payouts an organizer requests and a platform
- * admin approves. No Paystack subaccount is created, so nothing is paid out
- * automatically; the account is registered as a Paystack transfer recipient
- * so the admin's Send button works first time. With held funds off (legacy),
- * a subaccount is created and sales split into it at checkout.
+ * admin approves, and registered as a Paystack transfer recipient so the
+ * admin's Send button works first time. A Paystack subaccount (with
+ * eventbuddy's percentage) is still created as a record, on Paystack's manual
+ * payout schedule, but checkout never splits to it, so nothing is paid out
+ * automatically. With held funds off (legacy), sales split into it at checkout.
  */
 export async function POST(request: Request) {
   const { user, supabase } = await resolveRouteUser(request);
@@ -120,36 +121,43 @@ export async function POST(request: Request) {
   const { data: settings } = await admin.from("platform_settings").select("ticket_fee_percentage, held_funds_enabled").eq("id", true).maybeSingle();
   const held = Boolean(settings?.held_funds_enabled);
 
+  // The subaccount (with eventbuddy's percentage) is created in both modes, so
+  // each organizer is on record at Paystack and switching back to automatic
+  // splits is instant. With held funds on, checkout never splits to it (the
+  // whole payment lands with eventbuddy and the ledger holds the organizer's
+  // share), and it's set to Paystack's manual payout schedule, so even a stray
+  // split would be held by Paystack rather than paid out.
+  const percentageCharge = org.is_fee_exempt ? 0 : Number(settings?.ticket_fee_percentage ?? 5);
   let subaccountCode: string | null = null;
+  try {
+    ({ subaccountCode } = await createPaystackSubaccount({
+      businessName: org.name,
+      bankCode,
+      accountNumber: accountNumber.trim(),
+      percentageCharge,
+      settlementSchedule: held ? "manual" : "auto",
+    }));
+  } catch (err) {
+    // legacy split mode can't sell without it; held funds can (it's only a record)
+    if (!held) return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't set up payouts." }, { status: 424 });
+    console.error(`[payout-account] couldn't create a Paystack subaccount for org ${org.id}; the bank account is saved anyway:`, err instanceof Error ? err.message : err);
+  }
+
+  // Held funds pays organizers by Paystack transfer: register the account now
+  // so the admin's Send button works first time (or it's done at payout time).
   let recipientCode: string | null = null;
   if (held) {
-    // On record for payouts. Registering it with Paystack now also proves it
-    // can receive transfers; if Paystack is unavailable it's done at payout time.
     try {
       ({ recipientCode } = await createTransferRecipient({ name: accountName, accountNumber: accountNumber.trim(), bankCode }));
     } catch (err) {
       console.error(`[payout-account] couldn't register a transfer recipient for org ${org.id}; it'll be created at payout time:`, err instanceof Error ? err.message : err);
-    }
-  } else {
-    // Legacy (held funds off): sales split into the organizer's own subaccount
-    // at checkout. A fee-exempt org pays 0% commission on ticket sales too.
-    const percentageCharge = org.is_fee_exempt ? 0 : Number(settings?.ticket_fee_percentage ?? 5);
-    try {
-      ({ subaccountCode } = await createPaystackSubaccount({
-        businessName: org.name,
-        bankCode,
-        accountNumber: accountNumber.trim(),
-        percentageCharge,
-      }));
-    } catch (err) {
-      return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't set up payouts." }, { status: 424 });
     }
   }
 
   const { error: updateError } = await admin
     .from("organizations")
     .update({
-      // held: no subaccount, so no sale is ever split to this (or an older) account
+      // held: kept as a record only; checkout never splits to it
       paystack_subaccount_code: subaccountCode,
       payout_bank_code: bankCode,
       payout_bank_name: bankName,
