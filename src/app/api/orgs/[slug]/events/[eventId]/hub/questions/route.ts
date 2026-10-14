@@ -13,7 +13,7 @@ type SubmitBody = { token: string; questionText: string; sessionId?: string; spe
  * throttle everyone at once, but one attendee flooding the queue should.
  */
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/events/[eventId]/hub/questions">) {
-  const { slug, eventId } = await ctx.params;
+  const { slug, eventId: eventParam } = await ctx.params;
   const body = (await request.json()) as Partial<SubmitBody>;
   const { token, questionText, sessionId, speakerId } = body;
 
@@ -29,8 +29,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   const admin = createAdminClient();
-  const member = await verifyHubMember(admin, { slug, eventId, token });
+  const member = await verifyHubMember(admin, { slug, eventId: eventParam, token });
   if (!member) return NextResponse.json({ error: "This link isn't valid — check your confirmation email for the right one." }, { status: 403 });
+  // the resolved event id (hub links may use the event's slug instead)
+  const eventId = member.eventId;
 
   if (sessionId) {
     const { data: session } = await admin.from("event_sessions").select("qa_open").eq("id", sessionId).eq("event_id", eventId).maybeSingle();

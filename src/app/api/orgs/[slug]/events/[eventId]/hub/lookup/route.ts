@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
+import { hasActiveTicket, resolveHubEvent } from "@/lib/event-hub";
 
 type LookupBody = { email?: string; referenceId?: string };
 
@@ -27,12 +28,13 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   const admin = createAdminClient();
-  const { data: org } = await admin.from("organizations").select("id").ilike("slug", slug).maybeSingle();
-  if (!org) return NextResponse.json({ error: "No organization found for that link." }, { status: 404 });
+  // hub links use the event's id or its slug
+  const event = await resolveHubEvent(admin, slug, eventId);
+  if (!event) return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });
 
   let resolvedEmail = email;
   if (!resolvedEmail && referenceId) {
-    const { data: registration } = await admin.from("registrations").select("email").eq("event_id", eventId).eq("reference_id", referenceId).maybeSingle();
+    const { data: registration } = await admin.from("registrations").select("email").eq("event_id", event.eventId).eq("reference_id", referenceId).maybeSingle();
     if (!registration) {
       return NextResponse.json({ error: "We couldn't find a registration matching that reference ID for this event." }, { status: 404 });
     }
@@ -42,12 +44,15 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const { data: member } = await admin
     .from("event_hub_members")
     .select("hub_token")
-    .eq("event_id", eventId)
-    .eq("organization_id", org.id)
+    .eq("event_id", event.eventId)
+    .eq("organization_id", event.organizationId)
     .ilike("email", resolvedEmail!)
     .maybeSingle();
   if (!member) {
     return NextResponse.json({ error: "We couldn't find a registration matching that for this event." }, { status: 404 });
+  }
+  if (!(await hasActiveTicket(admin, event.eventId, event.eventFormat, resolvedEmail!))) {
+    return NextResponse.json({ error: "This ticket was cancelled or refunded, so its event hub is closed." }, { status: 403 });
   }
 
   return NextResponse.json({ token: member.hub_token });

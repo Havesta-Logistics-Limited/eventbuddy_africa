@@ -78,10 +78,11 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-/** The link a partner shares. Points at the public registration page, which is
- *  the event's real public entry point (canonicalEventPath's vanity `/{slug}`
- *  form has no route serving it today). */
-export function referralLink(siteUrl: string, orgSlug: string, eventId: string, code: string): string {
+/** The link a partner shares: eventbuddy.africa/{event-slug}/register?ref=CODE
+ *  when the event has a slug (unique across eventbuddy), else the full register
+ *  page address. */
+export function referralLink(siteUrl: string, orgSlug: string, eventId: string, code: string, eventSlug?: string | null): string {
   const base = siteUrl.replace(/\/$/, "");
-  return `${base}/${orgSlug}/events/${eventId}/register?ref=${encodeURIComponent(code)}`;
+  const ref = `?ref=${encodeURIComponent(code)}`;
+  return eventSlug ? `${base}/${encodeURIComponent(eventSlug)}/register${ref}` : `${base}/${orgSlug}/events/${eventId}/register${ref}`;
 }

@@ -45,6 +45,35 @@ export function hubUrl(siteUrl: string, orgSlug: string, event: { id: string; sl
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** An org slug plus an event's id or slug (hub links use either) → the event. */
+export async function resolveHubEvent(
+  admin: SupabaseClient,
+  slug: string,
+  eventIdOrSlug: string
+): Promise<{ organizationId: string; eventId: string; eventFormat: string } | null> {
+  const { data: org } = await admin.from("organizations").select("id").ilike("slug", slug).maybeSingle();
+  if (!org) return null;
+  const { data: event } = UUID_RE.test(eventIdOrSlug)
+    ? await admin.from("events").select("id, event_format").eq("organization_id", org.id).eq("id", eventIdOrSlug).maybeSingle()
+    : await admin.from("events").select("id, event_format").eq("organization_id", org.id).eq("slug", eventIdOrSlug).maybeSingle();
+  if (!event) return null;
+  return { organizationId: org.id, eventId: event.id, eventFormat: event.event_format };
+}
+
+/** False when an in-person ticket holder's registration was cancelled or
+ *  refunded: the hub closes for them. Online events have no ticket rows to
+ *  check, so they stay open. */
+export async function hasActiveTicket(admin: SupabaseClient, eventId: string, eventFormat: string, email: string): Promise<boolean> {
+  if (eventFormat === "virtual") return true;
+  const { count } = await admin
+    .from("registrations")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .ilike("email", email)
+    .in("status", ["registered", "checked_in"]);
+  return (count ?? 0) > 0;
+}
+
 /**
  * Resolves an org slug + hub_token into the member row it belongs to — the shared
  * trust-boundary check for every attendee-facing Hub action (submitting a
@@ -62,22 +91,19 @@ export async function verifyHubMember(
   admin: SupabaseClient,
   params: { slug: string; eventId: string; token: string }
 ): Promise<{ organizationId: string; eventId: string; memberId: string; fullName: string; email: string } | null> {
-  const { data: org } = await admin.from("organizations").select("id").ilike("slug", params.slug).maybeSingle();
-  if (!org) return null;
-
-  const { data: event } = UUID_RE.test(params.eventId)
-    ? await admin.from("events").select("id").eq("organization_id", org.id).eq("id", params.eventId).maybeSingle()
-    : await admin.from("events").select("id").eq("organization_id", org.id).eq("slug", params.eventId).maybeSingle();
+  const event = await resolveHubEvent(admin, params.slug, params.eventId);
   if (!event) return null;
 
   const { data: member } = await admin
     .from("event_hub_members")
     .select("id, full_name, email")
-    .eq("event_id", event.id)
-    .eq("organization_id", org.id)
+    .eq("event_id", event.eventId)
+    .eq("organization_id", event.organizationId)
     .eq("hub_token", params.token)
     .maybeSingle();
   if (!member) return null;
+  // a cancelled or refunded ticket closes the hub for its holder
+  if (!(await hasActiveTicket(admin, event.eventId, event.eventFormat, member.email))) return null;
 
-  return { organizationId: org.id, eventId: event.id, memberId: member.id, fullName: member.full_name, email: member.email };
+  return { organizationId: event.organizationId, eventId: event.eventId, memberId: member.id, fullName: member.full_name, email: member.email };
 }

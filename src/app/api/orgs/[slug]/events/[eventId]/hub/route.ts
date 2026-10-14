@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { verifyHubMember } from "@/lib/event-hub";
+import { resolveHubEvent, verifyHubMember } from "@/lib/event-hub";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 import { getEventStatus } from "@/lib/capture-window";
 
@@ -12,7 +12,7 @@ import { getEventStatus } from "@/lib/capture-window";
  * whole room, plus this specific member's own upvote/vote/bookmark state.
  */
 export async function GET(request: Request, ctx: RouteContext<"/api/orgs/[slug]/events/[eventId]/hub">) {
-  const { slug, eventId } = await ctx.params;
+  const { slug, eventId: eventParam } = await ctx.params;
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
   if (!token) return NextResponse.json({ error: "Missing access token." }, { status: 400 });
@@ -28,8 +28,18 @@ export async function GET(request: Request, ctx: RouteContext<"/api/orgs/[slug]/
   }
 
   const admin = createAdminClient();
-  const member = await verifyHubMember(admin, { slug, eventId, token });
-  if (!member) return NextResponse.json({ error: "This link isn't valid — check your confirmation email for the right one." }, { status: 403 });
+  const member = await verifyHubMember(admin, { slug, eventId: eventParam, token });
+  if (!member) {
+    // a real link whose ticket was cancelled or refunded gets told so
+    const ev = await resolveHubEvent(admin, slug, eventParam);
+    const { data: known } = ev ? await admin.from("event_hub_members").select("id").eq("event_id", ev.eventId).eq("hub_token", token).maybeSingle() : { data: null };
+    return NextResponse.json(
+      { error: known ? "This ticket was cancelled or refunded, so its event hub is closed." : "This link isn't valid — check your confirmation email for the right one." },
+      { status: 403 }
+    );
+  }
+  // the resolved event id (hub links may use the event's slug instead)
+  const eventId = member.eventId;
 
   const { data: event } = await admin
     .from("events")

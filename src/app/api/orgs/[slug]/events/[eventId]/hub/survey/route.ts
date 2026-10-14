@@ -15,7 +15,7 @@ type Body = { token?: string; answers?: Record<string, string | string[]> };
  * gate exists to keep this a genuinely POST-event survey, not a stray write path.
  */
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/events/[eventId]/hub/survey">) {
-  const { slug, eventId } = await ctx.params;
+  const { slug, eventId: eventParam } = await ctx.params;
   const body = (await request.json().catch(() => null)) as Body | null;
   const token = body?.token;
   const answers = body?.answers;
@@ -28,8 +28,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   const admin = createAdminClient();
-  const member = await verifyHubMember(admin, { slug, eventId, token });
+  const member = await verifyHubMember(admin, { slug, eventId: eventParam, token });
   if (!member) return NextResponse.json({ error: "This link isn't valid — check your confirmation email for the right one." }, { status: 403 });
+  // the resolved event id (hub links may use the event's slug instead)
+  const eventId = member.eventId;
 
   const { data: event } = await admin
     .from("events")

@@ -296,7 +296,7 @@ export function ReferralsTab({
               <tbody className="divide-y divide-line-soft">
                 {mine.map((r) => {
                   const t = tallies[r.id] ?? EMPTY;
-                  const link = referralLink(siteUrl, orgSlug, event.id, r.code);
+                  const link = referralLink(siteUrl, orgSlug, event.id, r.code, event.slug);
                   return (
                     <tr key={r.id} className={r.isActive ? "" : "opacity-55"}>
                       <td className="px-4 py-3">

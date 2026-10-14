@@ -8,7 +8,7 @@ type Body = { token: string };
 /** Toggles this attendee's personal-agenda bookmark on a session — purely their
  *  own data, never visible to the organizer or any other attendee. */
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/events/[eventId]/hub/sessions/[sessionId]/bookmark">) {
-  const { slug, eventId, sessionId } = await ctx.params;
+  const { slug, eventId: eventParam, sessionId } = await ctx.params;
   const body = (await request.json()) as Partial<Body>;
   if (!body.token) return NextResponse.json({ error: "Missing access token." }, { status: 400 });
 
@@ -17,8 +17,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   const admin = createAdminClient();
-  const member = await verifyHubMember(admin, { slug, eventId, token: body.token });
+  const member = await verifyHubMember(admin, { slug, eventId: eventParam, token: body.token });
   if (!member) return NextResponse.json({ error: "This link isn't valid — check your confirmation email for the right one." }, { status: 403 });
+  // the resolved event id (hub links may use the event's slug instead)
+  const eventId = member.eventId;
 
   const { data: session } = await admin.from("event_sessions").select("id").eq("id", sessionId).eq("event_id", eventId).maybeSingle();
   if (!session) return NextResponse.json({ error: "This session couldn't be found." }, { status: 404 });

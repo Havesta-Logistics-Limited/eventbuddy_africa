@@ -13,7 +13,7 @@ type Body = { token: string; optionId: string };
  * here.
  */
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/events/[eventId]/hub/polls/[pollId]/vote">) {
-  const { slug, eventId, pollId } = await ctx.params;
+  const { slug, eventId: eventParam, pollId } = await ctx.params;
   const body = (await request.json()) as Partial<Body>;
   if (!body.token || !body.optionId) return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
 
@@ -22,8 +22,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   const admin = createAdminClient();
-  const member = await verifyHubMember(admin, { slug, eventId, token: body.token });
+  const member = await verifyHubMember(admin, { slug, eventId: eventParam, token: body.token });
   if (!member) return NextResponse.json({ error: "This link isn't valid — check your confirmation email for the right one." }, { status: 403 });
+  // the resolved event id (hub links may use the event's slug instead)
+  const eventId = member.eventId;
 
   const { data: poll } = await admin.from("event_polls").select("status").eq("id", pollId).eq("event_id", eventId).maybeSingle();
   if (!poll) return NextResponse.json({ error: "This poll couldn't be found." }, { status: 404 });
