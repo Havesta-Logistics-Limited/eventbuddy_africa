@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { RegisterPageContent } from "@/components/register-page-content";
 import { buildEventJsonLd, canonicalEventPath, canonicalEventUrl, resolveEventForOg, safeJsonLdString } from "@/lib/event-og-image";
 import { formatDate, formatTime } from "@/lib/utils";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type Params = { orgSlug: string; eventId: string };
 
@@ -21,6 +22,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   ]
     .filter(Boolean)
     .join(" — ");
+
+  // a private event (migration 0128) stays out of search engines
+  const { data: vis } = await createAdminClient().from("events").select("visibility").eq("id", event.id).maybeSingle();
+  if (vis?.visibility === "private") {
+    return { title: event.name, description: whenWhere, robots: { index: false, follow: false }, openGraph: { title: event.name, description: whenWhere } };
+  }
 
   return {
     title: event.name,

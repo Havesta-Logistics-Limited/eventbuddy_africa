@@ -155,7 +155,7 @@ export async function GET(request: Request) {
   const supabase = createAdminClient();
   const { data: staffRow } = await supabase.from("staff").select("event_id").eq("id", staffId).maybeSingle();
   if (!staffRow?.event_id) return NextResponse.json({ error: "Your session has expired — please sign in again." }, { status: 401 });
-  const { data: event } = await supabase.from("events").select("id, slug, event_format, organizations(slug)").eq("id", staffRow.event_id).maybeSingle();
+  const { data: event } = await supabase.from("events").select("id, slug, event_format, visibility, private_code, organizations(slug)").eq("id", staffRow.event_id).maybeSingle();
   if (!event) return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });
   const { data: tickets } = await supabase
     .from("ticket_types")
@@ -168,7 +168,13 @@ export async function GET(request: Request) {
     .map((t) => ({ id: t.id, name: t.name, left: t.quantity_available == null ? null : Math.max(0, t.quantity_available - t.quantity_sold) }));
   const orgSlug = (event.organizations as unknown as { slug: string } | null)?.slug ?? "";
   const site = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
-  const buyUrl = event.slug ? `${site}/${event.slug}` : `${site}/${orgSlug}/events/${event.id}/register`;
+  // a private event's only working public link is its private one (migration 0128)
+  const buyUrl =
+    event.visibility === "private" && event.private_code
+      ? `${site}/p/${event.private_code}`
+      : event.slug
+        ? `${site}/${event.slug}`
+        : `${site}/${orgSlug}/events/${event.id}/register`;
   return NextResponse.json({
     virtual: event.event_format === "virtual",
     // an event with no ticket types at all is free registration

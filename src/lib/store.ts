@@ -171,6 +171,10 @@ function mapEventRow(e: {
   tour_id?: string | null;
   survey_enabled: boolean | null;
   survey_fields: FieldDef[] | null;
+  archived_at?: string | null;
+  visibility?: string | null;
+  private_code?: string | null;
+  registration_open?: boolean | null;
   created_at: string;
 }): EventRecord {
   return {
@@ -194,6 +198,10 @@ function mapEventRow(e: {
     selfRegistrationEnabled: e.self_registration_enabled ?? true,
     isInviteOnly: e.is_invite_only ?? false,
     published: e.published ?? true,
+    archivedAt: e.archived_at ?? null,
+    visibility: e.visibility === "private" ? "private" : "public",
+    privateCode: e.private_code ?? null,
+    registrationOpen: e.registration_open ?? true,
     priceNaira: e.price_naira !== null && e.price_naira !== undefined ? Number(e.price_naira) : undefined,
     templateId: e.template_id ?? "custom",
     category: e.category ?? undefined,
@@ -238,6 +246,10 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.selfRegistrationEnabled !== undefined) row.self_registration_enabled = input.selfRegistrationEnabled;
   if (input.isInviteOnly !== undefined) row.is_invite_only = input.isInviteOnly;
   if (input.published !== undefined) row.published = input.published;
+  if (input.archivedAt !== undefined) row.archived_at = input.archivedAt;
+  if (input.visibility !== undefined) row.visibility = input.visibility;
+  if (input.privateCode !== undefined) row.private_code = input.privateCode;
+  if (input.registrationOpen !== undefined) row.registration_open = input.registrationOpen;
   if (input.templateId !== undefined) row.template_id = input.templateId;
   if (input.category !== undefined) row.category = input.category || null;
   if (input.customFields !== undefined) row.custom_fields = input.customFields;

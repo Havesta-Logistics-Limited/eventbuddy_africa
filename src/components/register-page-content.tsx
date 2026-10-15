@@ -29,6 +29,7 @@ import {
 import { EventRecord, TicketType } from "@/lib/types";
 import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/components/dynamic-registration-form";
 import { GroupGuestFields } from "@/components/group-guest-fields";
+import { RegistrationOpensSoon } from "@/components/registration-opens-soon";
 import { validateGroupGuests, type GroupGuest } from "@/lib/group-tickets";
 import { ticketCtaLabel } from "@/lib/ticket-cta";
 import { OneOnOneRequestStep } from "@/components/one-on-one-request-step";
@@ -1010,6 +1011,11 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                     <p className="font-display text-3xl text-white">{priceLabel}</p>
                   </div>
 
+                  {event.registrationOpen === false ? (
+                    <div className="p-6">
+                      <RegistrationOpensSoon orgSlug={orgSlug} eventId={event.id} eventName={event.name} />
+                    </div>
+                  ) : (
                   <div className="p-6">
                     {ticketTypes.length === 1 && ticketTypes[0].priceNaira > 0 && (
                       <div className="flex items-center justify-between gap-3 p-3.5 mb-5 rounded-xl bg-surface/5 border border-white/15">
@@ -1171,6 +1177,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                       />
                     )}
                   </div>
+                  )}
 
                   <div className="px-6 py-4 border-t border-white/10 space-y-2.5">
                     <p className="flex items-center gap-2.5 text-xs text-white/50">

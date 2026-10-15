@@ -94,6 +94,14 @@ export interface EventRecord {
    *  payment gate; publishing is always free, physical or virtual — the flat
    *  event-publish fee was scrapped, see migration 0045). */
   published?: boolean;
+  /** when it was archived (migration 0127): hidden from the event list and unpublished */
+  archivedAt?: string | null;
+  /** 'private' (migration 0128): off Discover, profiles and search; opens only by its private link */
+  visibility?: "public" | "private";
+  /** the private link's code (eventbuddy.africa/p/{code}); made by the database when private */
+  privateCode?: string | null;
+  /** false: the page is live but registration and ticket sales haven't opened yet */
+  registrationOpen?: boolean;
   /** Legacy — always 0 now that the event-publish fee is gone (migration 0045).
    *  Kept only so historical events that were actually charged before the fee was
    *  scrapped still show what they paid. */

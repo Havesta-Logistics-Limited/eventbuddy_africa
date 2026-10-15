@@ -60,8 +60,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // can't list, so they're read with the service role, safe columns only.
   const admin = createAdminClient();
   const [{ data: tours }, { data: exhibitEvents }] = await Promise.all([
-    admin.from("tours").select("slug, organizations(slug), events!inner(published)").eq("events.published", true),
-    admin.from("events").select("slug").eq("published", true).eq("exhibitors_enabled", true).not("slug", "is", null),
+    admin.from("tours").select("slug, organizations(slug), events!inner(published)").eq("events.published", true).eq("events.visibility", "public"),
+    admin.from("events").select("slug").eq("published", true).eq("visibility", "public").eq("exhibitors_enabled", true).not("slug", "is", null),
   ]);
   const tourEntries: MetadataRoute.Sitemap = ((tours ?? []) as unknown as { slug: string; organizations: { slug: string } | null }[])
     .filter((t) => t.organizations?.slug)

@@ -130,7 +130,7 @@ export default function DashboardPage() {
   const events = useEvents();
   const destinations = useDestinations();
   const leads = useLeads();
-  const [filter, setFilter] = useState<"all" | EventStatus | "draft">("all");
+  const [filter, setFilter] = useState<"all" | EventStatus | "draft" | "archived">("all");
   const [search, setSearch] = useState("");
   const [destFilter, setDestFilter] = useState<string[]>([]);
   const [monthFilter, setMonthFilter] = useState<string[]>([]);
@@ -190,8 +190,12 @@ export default function DashboardPage() {
   if (!session) return <AuthLoading />;
 
   const query = search.trim().toLowerCase();
+  // archived events (migration 0127) only show under "Archived"
+  const archivedCount = events.filter((e) => e.archivedAt).length;
   const filtered = events
     .filter((e) => {
+      if (filter === "archived") return Boolean(e.archivedAt);
+      if (e.archivedAt) return false;
       if (filter === "all") return true;
       if (filter === "draft") return e.published === false;
       return e.published !== false && getEventStatus(e) === filter;
@@ -217,10 +221,11 @@ export default function DashboardPage() {
   // A draft event is never "active" or "upcoming", no matter what its date says —
   // published status overrides the purely time-based getEventStatus for stats/
   // filtering purposes, since a draft isn't actually live for anyone to attend.
-  const publishedEvents = events.filter((e) => e.published !== false);
-  const draftEvents = events.filter((e) => e.published === false);
+  const liveEvents = events.filter((e) => !e.archivedAt);
+  const publishedEvents = liveEvents.filter((e) => e.published !== false);
+  const draftEvents = liveEvents.filter((e) => e.published === false);
   const stats = [
-    { label: "Total Events", value: events.length },
+    { label: "Total Events", value: liveEvents.length },
     { label: "Active", value: publishedEvents.filter((e) => getEventStatus(e) === "active").length },
     { label: "Upcoming", value: publishedEvents.filter((e) => getEventStatus(e) === "upcoming").length },
     { label: "Draft", value: draftEvents.length },
@@ -325,13 +330,13 @@ export default function DashboardPage() {
 
         <div className="flex flex-wrap items-center gap-3 mb-5">
           <div className="eb-seg" role="group" aria-label="Filter events">
-            {(["all", "draft", "active", "upcoming", "completed"] as const).map((f) => (
+            {(["all", "draft", "active", "upcoming", "completed", ...(archivedCount > 0 || filter === "archived" ? (["archived"] as const) : [])] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 aria-pressed={filter === f}
               >
-                {f}
+                {f === "archived" ? `archived (${archivedCount})` : f}
               </button>
             ))}
           </div>

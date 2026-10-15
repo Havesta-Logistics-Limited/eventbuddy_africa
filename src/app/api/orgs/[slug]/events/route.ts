@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAnonClient } from "@/lib/supabase/anon";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { FieldDef } from "@/lib/types";
 
 type OrgRow = { id: string; name: string; slug: string; logo_url: string | null };
@@ -81,6 +82,12 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const destinationRows = (destinationsRes.data ?? []) as DestinationRow[];
   const universityRows = (universitiesRes.data ?? []) as UniversityRow[];
   const staffRows = (staffRes.data ?? []) as StaffNameRow[];
+  // whether registration has opened yet (migration 0128), read alongside the list
+  const openById = new Map<string, boolean>();
+  if (events.length) {
+    const { data: flags } = await createAdminClient().from("events").select("id, registration_open").in("id", events.map((e) => e.id));
+    for (const f of flags ?? []) openById.set(f.id, f.registration_open !== false);
+  }
 
   return NextResponse.json({
     organization: { id: org.id, name: org.name, slug: org.slug, logoUrl: org.logo_url ?? undefined },
@@ -110,6 +117,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       captureOverride: e.capture_override ?? null,
       allowRepAccess: e.allow_rep_access ?? true,
       selfRegistrationEnabled: e.self_registration_enabled ?? true,
+      registrationOpen: openById.get(e.id) ?? true,
       hasStaffCode: e.has_staff_code,
       hasRepCode: e.has_rep_code,
     })),

@@ -88,13 +88,16 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, slug, name, date, end_date, start_time, end_time, timezone, capture_override, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location, self_registration_enabled, published, requires_approval, waitlist_enabled"
+      "id, slug, name, date, end_date, start_time, end_time, timezone, capture_override, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location, self_registration_enabled, published, requires_approval, waitlist_enabled, registration_open"
     )
     .eq("id", eventId)
     .eq("organization_id", org.id)
     .maybeSingle();
   if (!event) return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });
   if (!event.published) return NextResponse.json({ error: "This event isn't live yet." }, { status: 403 });
+  if (event.registration_open === false) {
+    return NextResponse.json({ error: "Registration hasn't opened yet. Leave your email on the event page and we'll tell you when it opens." }, { status: 403 });
+  }
   if (event.event_format !== "virtual" && event.self_registration_enabled === false) {
     return NextResponse.json({ error: "Registration isn't available for this event." }, { status: 403 });
   }

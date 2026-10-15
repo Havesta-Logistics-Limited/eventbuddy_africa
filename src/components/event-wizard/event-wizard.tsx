@@ -243,7 +243,7 @@ export function EventWizard(props: {
           )}
           {step === "access" && <AccessStep data={data} onChange={patch} showRepCode={template.usesDestinations && data.allowRepAccess !== false} />}
           {step === "extra" && extraStep?.content}
-          {step === "review" && <ReviewStep data={data} template={template} />}
+          {step === "review" && <ReviewStep data={data} template={template} onChange={mode === "create" || mode === "guest" ? patch : undefined} />}
 
           {submitError && step === "review" && <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">{submitError}</div>}
         </div>

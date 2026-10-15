@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { copyText } from "@/lib/copy-text";
+import { EventAccessControls, privateEventLink } from "@/components/event-access-controls";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { AlertCircle, ArrowLeft, Calendar, Copy, Eye, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, RefreshCw, Repeat, Trash2, Undo2, Video, X, Search } from "lucide-react";
+import { AlertCircle, Archive, ArrowLeft, Calendar, Copy, Eye, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, RefreshCw, Repeat, Trash2, Undo2, Video, X, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useRequireRole } from "@/lib/auth";
 import {
@@ -148,6 +149,7 @@ export default function EventDetailPage() {
   const [showRegQr, setShowRegQr] = useState(false);
   const [showCheckinQr, setShowCheckinQr] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
@@ -247,6 +249,28 @@ export default function EventDetailPage() {
     }
   }
 
+  /** Archive (migration 0127): off the event list and the public site, nothing
+   *  deleted. The database refuses an upcoming event with paid tickets. */
+  async function handleArchive(archive: boolean) {
+    if (!event) return;
+    if (
+      archive &&
+      !window.confirm(
+        "Archive this event? It's taken off your event list and the public site. Its sales, attendees and records are all kept, and you can unarchive it anytime."
+      )
+    )
+      return;
+    setArchiving(true);
+    try {
+      await updateEvent(event.id, { archivedAt: archive ? new Date().toISOString() : null });
+      toast.success(archive ? "Event archived. Find it under Archived on your dashboard." : "Event restored. Publish it again when you're ready.");
+    } catch (err) {
+      toast.error(err instanceof PersistError ? err.message : "Couldn't update this event. Please try again.");
+    } finally {
+      setArchiving(false);
+    }
+  }
+
   async function handlePublish() {
     if (!event) return;
     setPublishing(true);
@@ -278,6 +302,8 @@ export default function EventDetailPage() {
   // older org-scoped form for an event with no slug.
   function registrationLink() {
     if (!event || typeof window === "undefined") return "";
+    // a private event's only shareable link is its private one (migration 0128)
+    if (event.visibility === "private") return privateEventLink(event.privateCode);
     return event.slug
       ? `${window.location.origin}/${event.slug}`
       : `${window.location.origin}/${session?.orgSlug ?? ""}/events/${event.id}/register`;
@@ -479,12 +505,21 @@ export default function EventDetailPage() {
               {event.eventFormat === "virtual" && event.virtualAccessNotes && (
                 <p className="text-xs text-subtle mt-1">{event.virtualAccessNotes}</p>
               )}
-              {event.published === false && (
+              {event.archivedAt ? (
+                <p className="flex flex-wrap items-center gap-1.5 text-xs text-fg-3 bg-fill rounded-lg px-3 py-2 mt-3 w-fit">
+                  <Archive size={13} className="shrink-0" />
+                  Archived {new Date(event.archivedAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}: hidden from your event list and the public site. Everything is kept.
+                  <button type="button" onClick={() => handleArchive(false)} disabled={archiving} className="ml-1 font-semibold text-[#c4b5fd] underline-offset-2 hover:underline disabled:opacity-60">
+                    {archiving ? "Restoring…" : "Unarchive"}
+                  </button>
+                </p>
+              ) : event.published === false ? (
                 <p className="flex items-center gap-1.5 text-xs text-amber-300 bg-amber-500/10 rounded-lg px-3 py-2 mt-3 w-fit">
                   <AlertCircle size={13} className="shrink-0" />
                   This event is saved as a draft — it isn&apos;t visible to attendees or open for registration until you publish it.
                 </p>
-              )}
+              ) : null}
+              {!event.archivedAt && session?.orgSlug && <EventAccessControls event={event} orgSlug={session.orgSlug} />}
             </div>
             <div className="flex flex-col items-start 2xl:items-end gap-3 shrink-0 w-full 2xl:w-auto">
               <div className="flex flex-wrap items-center gap-2 justify-start 2xl:justify-end w-full 2xl:w-auto">
@@ -526,6 +561,17 @@ export default function EventDetailPage() {
                   <Edit2 size={14} />
                   Edit Event
                 </button>
+                {!event.archivedAt && (
+                  <button
+                    onClick={() => handleArchive(true)}
+                    disabled={archiving}
+                    title="Takes it off your event list and the public site. Nothing is deleted; unarchive it anytime."
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-surface/60 backdrop-blur-md text-sm font-medium text-fg-3 transition-all hover:bg-canvas hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
+                  >
+                    <Archive size={14} />
+                    {archiving ? "Archiving…" : "Archive"}
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setDeleteError("");

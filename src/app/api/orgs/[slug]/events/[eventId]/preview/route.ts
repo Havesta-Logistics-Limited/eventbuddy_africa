@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAnonClient } from "@/lib/supabase/anon";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { FieldDef } from "@/lib/types";
 
 type OrgRow = { id: string; name: string; slug: string; logo_url: string | null };
@@ -54,6 +55,8 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { data: org } = await supabase.rpc("public_org_by_slug", { org_slug: slug }).maybeSingle<OrgRow>();
   if (!org) return NextResponse.json({ error: "No organization found for that link." }, { status: 404 });
+  // whether registration has opened yet (migration 0128)
+  const { data: flag } = await createAdminClient().from("events").select("registration_open").eq("id", event.id).maybeSingle();
 
   return NextResponse.json({
     organization: { id: org.id, name: org.name, slug: org.slug, logoUrl: org.logo_url ?? undefined },
@@ -84,6 +87,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[slug]
       allowRepAccess: event.allow_rep_access ?? true,
       selfRegistrationEnabled: event.self_registration_enabled ?? true,
       published: event.published ?? true,
+      registrationOpen: flag?.registration_open !== false,
       hasStaffCode: event.has_staff_code ?? false,
       hasRepCode: event.has_rep_code ?? false,
     },
