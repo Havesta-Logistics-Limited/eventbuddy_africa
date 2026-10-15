@@ -440,6 +440,68 @@ export default function EventDetailPage() {
               very wide screens) it squeezed the event name, venue and the
               visibility/registration controls into a narrow column */}
           <div className="flex flex-col gap-4">
+            {/* actions first, above the event name */}
+            <div className="flex flex-wrap items-center gap-2 justify-start w-full">
+              {event.published === false && (
+                <button
+                  onClick={handlePublish}
+                  disabled={publishing}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow-sm transition-all hover:shadow-md active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
+                  data-cta
+                >
+                  {publishing ? "Publishing…" : "Publish Event"}
+                </button>
+              )}
+              {event.published !== false && (
+                <button
+                  onClick={handleUnpublish}
+                  disabled={publishing}
+                  title="Hides it from attendees and closes registration again — you can publish it again anytime."
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-surface/60 backdrop-blur-md text-sm font-medium text-amber-300 transition-all hover:bg-amber-500/10 hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
+                >
+                  <Undo2 size={14} />
+                  {publishing ? "Reverting…" : "Revert to draft"}
+                </button>
+              )}
+              <QrCodesMenu onRegistrationQr={() => setShowRegQr(true)} onHubQr={() => setShowHubQr(true)} onCheckinQr={() => setShowCheckinQr(true)} />
+              <TourButton event={event} />
+              <button
+                onClick={handleDuplicate}
+                disabled={duplicating}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-surface/60 backdrop-blur-md text-sm font-medium text-fg-3 transition-all hover:bg-canvas hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
+              >
+                <Copy size={14} />
+                {duplicating ? "Duplicating…" : "Duplicate"}
+              </button>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-surface/60 backdrop-blur-md text-sm font-medium text-fg-3 transition-all hover:bg-canvas hover:shadow-sm active:scale-[0.96]"
+              >
+                <Edit2 size={14} />
+                Edit Event
+              </button>
+              {!event.archivedAt && (
+                <button
+                  onClick={() => handleArchive(true)}
+                  disabled={archiving}
+                  title="Takes it off your event list and the public site. Nothing is deleted; unarchive it anytime."
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-surface/60 backdrop-blur-md text-sm font-medium text-fg-3 transition-all hover:bg-canvas hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
+                >
+                  <Archive size={14} />
+                  {archiving ? "Archiving…" : "Archive"}
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setDeleteError("");
+                  setShowDeleteConfirm(true);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-rose-500/30 bg-surface/60 backdrop-blur-md text-sm font-medium text-rose-300 transition-all hover:bg-rose-500/10 hover:shadow-sm active:scale-[0.96]"
+              >
+                <Trash2 size={14} />
+                Delete
+              </button>
+            </div>
             <div className="flex-1 min-w-0">
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${
@@ -523,67 +585,6 @@ export default function EventDetailPage() {
               {!event.archivedAt && session?.orgSlug && <EventAccessControls event={event} orgSlug={session.orgSlug} />}
             </div>
             <div className="flex flex-col items-start gap-3 w-full">
-              <div className="flex flex-wrap items-center gap-2 justify-start w-full">
-                {event.published === false && (
-                  <button
-                    onClick={handlePublish}
-                    disabled={publishing}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow-sm transition-all hover:shadow-md active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
-                    data-cta
-                  >
-                    {publishing ? "Publishing…" : "Publish Event"}
-                  </button>
-                )}
-                {event.published !== false && (
-                  <button
-                    onClick={handleUnpublish}
-                    disabled={publishing}
-                    title="Hides it from attendees and closes registration again — you can publish it again anytime."
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-surface/60 backdrop-blur-md text-sm font-medium text-amber-300 transition-all hover:bg-amber-500/10 hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
-                  >
-                    <Undo2 size={14} />
-                    {publishing ? "Reverting…" : "Revert to draft"}
-                  </button>
-                )}
-                <QrCodesMenu onRegistrationQr={() => setShowRegQr(true)} onHubQr={() => setShowHubQr(true)} onCheckinQr={() => setShowCheckinQr(true)} />
-                <TourButton event={event} />
-                <button
-                  onClick={handleDuplicate}
-                  disabled={duplicating}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-surface/60 backdrop-blur-md text-sm font-medium text-fg-3 transition-all hover:bg-canvas hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
-                >
-                  <Copy size={14} />
-                  {duplicating ? "Duplicating…" : "Duplicate"}
-                </button>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-surface/60 backdrop-blur-md text-sm font-medium text-fg-3 transition-all hover:bg-canvas hover:shadow-sm active:scale-[0.96]"
-                >
-                  <Edit2 size={14} />
-                  Edit Event
-                </button>
-                {!event.archivedAt && (
-                  <button
-                    onClick={() => handleArchive(true)}
-                    disabled={archiving}
-                    title="Takes it off your event list and the public site. Nothing is deleted; unarchive it anytime."
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-surface/60 backdrop-blur-md text-sm font-medium text-fg-3 transition-all hover:bg-canvas hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
-                  >
-                    <Archive size={14} />
-                    {archiving ? "Archiving…" : "Archive"}
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setDeleteError("");
-                    setShowDeleteConfirm(true);
-                  }}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-rose-500/30 bg-surface/60 backdrop-blur-md text-sm font-medium text-rose-300 transition-all hover:bg-rose-500/10 hover:shadow-sm active:scale-[0.96]"
-                >
-                  <Trash2 size={14} />
-                  Delete
-                </button>
-              </div>
               <div className="flex items-start gap-6">
                 {event.selfRegistrationEnabled !== false && (
                   <div className="text-right">

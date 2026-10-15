@@ -164,7 +164,7 @@ export default function StaffSetupPage() {
       <EventPicker
         eyebrow="Staff sign-in"
         title="Which event are you at?"
-        subtitle={`Pick the fair you're collecting leads for to get started — ${orgName}.`}
+        subtitle={`Pick the event you're working at to get started — ${orgName}.`}
         events={events}
         destinations={destinations}
         onSelect={setSelectedEventId}
@@ -189,7 +189,11 @@ export default function StaffSetupPage() {
       <EventSignInHero
         eyebrow="Staff sign-in"
         event={selectedEvent}
-        instruction="Pick your name, then the destination and school you're collecting for. It stays locked for every lead you add until you end the session."
+        instruction={
+          usesDestinations
+            ? "Pick your name, then the destination and school you're collecting for. It stays locked for every lead you add until you end the session."
+            : "Pick your name to start. You'll check guests in at the door and add walk-ups, all recorded under your name until you end the session."
+        }
         secondaryAction={pinnedEvent ? undefined : { label: "Back to events", onClick: () => setSelectedEventId(null) }}
         variant="staff"
       />
@@ -319,10 +323,12 @@ export default function StaffSetupPage() {
             disabled={!isFormValid || submitting}
             className="eb-portal-cta"
           >
-            {submitting ? "Checking in…" : "Start collecting leads"}
+            {submitting ? "Signing in…" : usesDestinations ? "Start collecting leads" : "Start check-in"}
           </button>
           <p className="text-center text-xs text-white/60 mt-4 px-4 leading-relaxed">
-            This locks the form so every lead you add is tagged correctly — no password needed on this device.
+            {usesDestinations
+              ? "This locks the form so every lead you add is tagged correctly — no password needed on this device."
+              : "Everything you do is recorded under your name. No password needed on this device."}
           </p>
         </div>
         </div>
