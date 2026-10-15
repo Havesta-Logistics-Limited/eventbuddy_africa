@@ -256,7 +256,7 @@ export default function EventDetailPage() {
     if (
       archive &&
       !window.confirm(
-        "Archive this event? It's taken off your event list and the public site. Its sales, attendees and records are all kept, and you can unarchive it anytime."
+        "Archive this event? It's taken off your event list and the public site, and its link is freed so another event can use the name. Its sales, attendees and records are all kept, and you can unarchive it anytime."
       )
     )
       return;
@@ -436,9 +436,10 @@ export default function EventDetailPage() {
         </Link>
 
         <div className="bg-surface/70 backdrop-blur-xl rounded-2xl border border-line shadow-sm p-6 mb-6">
-          {/* stacked until very wide screens: the action row is long, and side by
-              side it squeezed the event name into a narrow column */}
-          <div className="flex flex-col 2xl:flex-row 2xl:items-start gap-4 2xl:justify-between">
+          {/* always stacked: the action row is long, and side by side (even on
+              very wide screens) it squeezed the event name, venue and the
+              visibility/registration controls into a narrow column */}
+          <div className="flex flex-col gap-4">
             <div className="flex-1 min-w-0">
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${
@@ -508,7 +509,7 @@ export default function EventDetailPage() {
               {event.archivedAt ? (
                 <p className="flex flex-wrap items-center gap-1.5 text-xs text-fg-3 bg-fill rounded-lg px-3 py-2 mt-3 w-fit">
                   <Archive size={13} className="shrink-0" />
-                  Archived {new Date(event.archivedAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}: hidden from your event list and the public site. Everything is kept.
+                  Archived {new Date(event.archivedAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}: hidden from your event list and the public site, and its link is free for another event. Everything is kept.
                   <button type="button" onClick={() => handleArchive(false)} disabled={archiving} className="ml-1 font-semibold text-[#c4b5fd] underline-offset-2 hover:underline disabled:opacity-60">
                     {archiving ? "Restoring…" : "Unarchive"}
                   </button>
@@ -521,8 +522,8 @@ export default function EventDetailPage() {
               ) : null}
               {!event.archivedAt && session?.orgSlug && <EventAccessControls event={event} orgSlug={session.orgSlug} />}
             </div>
-            <div className="flex flex-col items-start 2xl:items-end gap-3 shrink-0 w-full 2xl:w-auto">
-              <div className="flex flex-wrap items-center gap-2 justify-start 2xl:justify-end w-full 2xl:w-auto">
+            <div className="flex flex-col items-start gap-3 w-full">
+              <div className="flex flex-wrap items-center gap-2 justify-start w-full">
                 {event.published === false && (
                   <button
                     onClick={handlePublish}
