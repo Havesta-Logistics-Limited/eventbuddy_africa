@@ -65,7 +65,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { data: txn } = await admin
     .from("paystack_transactions")
-    .select("reference, amount_naira, settlement")
+    .select("reference, amount_naira, settlement, processing_fee_naira")
     .eq("registration_id", purchaseRegistrationId)
     .eq("status", "success")
     .maybeSingle();
@@ -86,7 +86,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   try {
-    await paystackRefund(txn.reference);
+    // the buyer's processing fee isn't refunded (Paystack keeps its charge): refund the ticket price
+    await paystackRefund(txn.reference, Number(txn.processing_fee_naira) > 0 ? Math.round(Number(txn.amount_naira) * 100) : undefined);
   } catch (err) {
     // 424 rather than 502: the host replaces 5xx replies with its own error
     // page, which the dashboard can't read

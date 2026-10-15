@@ -37,6 +37,7 @@ type Txn = {
   id: string; reference: string; organization_id: string; event_id: string; amount_naira: number | string; status: string; purpose: string;
   settlement: string | null; created_at: string; registration_id: string | null; exhibitor_id: string | null;
   registrant_data: { email?: string; full_name?: string } | null; paystack_event: { domain?: string } | null; platform_fee_naira: number | string | null;
+  processing_fee_naira: number | string | null;
 };
 
 async function loadDetails(reference: string) {
@@ -119,7 +120,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    await paystackRefund(reference);
+    // the buyer's processing fee isn't refunded (Paystack keeps its charge): refund the ticket price
+    await paystackRefund(reference, Number(d.txn.processing_fee_naira) > 0 ? Math.round(Number(d.txn.amount_naira) * 100) : undefined);
   } catch (err) {
     // 424 rather than 502: the host replaces 5xx replies with its own error page
     const lowBalance = err instanceof PaystackRefundError && err.lowBalance;

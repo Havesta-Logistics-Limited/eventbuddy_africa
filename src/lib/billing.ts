@@ -57,6 +57,52 @@ export function ticketFeeMinor(amountNaira: number, fee: TicketFee, people = 1):
   return Math.min(Math.max(0, feeMinor), amountMinor);
 }
 
+/** Card processing charged to the buyer on top of a paid ticket (migration
+ *  0130): Paystack's rate, which eventbuddy otherwise absorbs under held funds. */
+export type ProcessingFee = { enabled: boolean; percentage: number; flatNaira: number; flatWaivedBelowNaira: number; capNaira: number };
+export const DEFAULT_PROCESSING_FEE: ProcessingFee = { enabled: true, percentage: 1.5, flatNaira: 100, flatWaivedBelowNaira: 2500, capNaira: 2000 };
+
+export function processingFeeFromSettings(row: Record<string, unknown> | null | undefined): ProcessingFee {
+  if (!row) return { ...DEFAULT_PROCESSING_FEE, enabled: false };
+  const num = (v: unknown, d: number) => (v == null || !Number.isFinite(Number(v)) ? d : Number(v));
+  return {
+    enabled: row.buyer_pays_processing === true,
+    percentage: num(row.processing_fee_percentage, DEFAULT_PROCESSING_FEE.percentage),
+    flatNaira: num(row.processing_fee_flat_naira, DEFAULT_PROCESSING_FEE.flatNaira),
+    flatWaivedBelowNaira: num(row.processing_fee_flat_waived_below_naira, DEFAULT_PROCESSING_FEE.flatWaivedBelowNaira),
+    capNaira: num(row.processing_fee_cap_naira, DEFAULT_PROCESSING_FEE.capNaira),
+  };
+}
+
+/** The processing fee for a ticket of `amountNaira`, in whole naira: the
+ *  smallest top-up such that, after Paystack charges its rate on the total,
+ *  at least the ticket price is left. 0 when switched off or for a free ticket. */
+export function processingFeeNaira(amountNaira: number, pf: ProcessingFee): number {
+  const x = Math.round(amountNaira * 100);
+  if (!pf.enabled || x <= 0) return 0;
+  const p = Math.min(Math.max(pf.percentage, 0), 99) / 100;
+  const flat = Math.round(pf.flatNaira * 100);
+  const waive = Math.round(pf.flatWaivedBelowNaira * 100);
+  const cap = Math.round(pf.capNaira * 100);
+  const paystackFee = (charge: number) => Math.min(p * charge + (charge >= waive ? flat : 0), cap);
+  let charge = Math.ceil(x / (1 - p));
+  if (charge >= waive) charge = Math.ceil((x + flat) / (1 - p));
+  // past the cap Paystack takes the cap, so the cap on top is enough
+  if (cap > 0 && p * charge + (charge >= waive ? flat : 0) > cap) charge = x + cap;
+  while (charge - paystackFee(charge) < x) charge++;
+  return Math.ceil((charge - x) / 100);
+}
+
+export async function fetchProcessingFee(): Promise<ProcessingFee> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("platform_settings")
+    .select("buyer_pays_processing, processing_fee_percentage, processing_fee_flat_naira, processing_fee_flat_waived_below_naira, processing_fee_cap_naira")
+    .eq("id", true)
+    .maybeSingle();
+  return processingFeeFromSettings(data);
+}
+
 /** Publicly readable — the landing and pricing pages call this unauthenticated. */
 export async function fetchCurrentTicketFee(): Promise<TicketFee> {
   const supabase = createClient();

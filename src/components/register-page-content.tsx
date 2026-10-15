@@ -37,7 +37,7 @@ import { EventHostCard } from "@/components/event-host-card";
 import { RichTextDisplay } from "@/components/rich-text-display";
 import { stripHtml } from "@/lib/rich-text";
 import { formatDate, formatTime, safeHttpUrl } from "@/lib/utils";
-import { applyDiscount, formatNaira } from "@/lib/billing";
+import { applyDiscount, fetchProcessingFee, formatNaira, processingFeeNaira, type ProcessingFee } from "@/lib/billing";
 import { getEventStatus, zonedTimeToUtc } from "@/lib/capture-window";
 import { captureRef, storedRef } from "@/lib/referral-capture";
 import { LandingNav } from "@/components/landing/landing-hero";
@@ -349,6 +349,13 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const [verifyingPayment, setVerifyingPayment] = useState(false);
 
   const [discountCodeInput, setDiscountCodeInput] = useState("");
+  // card processing the buyer pays on top of a paid ticket (migration 0130)
+  const [processingFee, setProcessingFee] = useState<ProcessingFee | null>(null);
+  useEffect(() => {
+    fetchProcessingFee()
+      .then(setProcessingFee)
+      .catch(() => setProcessingFee(null));
+  }, []);
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; discountType: "percentage" | "fixed"; discountValue: number; maxDiscountNaira: number | null } | null>(
     null
   );
@@ -713,6 +720,9 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const visibleTicketTypes = hasBothKinds ? ticketTypes.filter((t) => (ticketMode === "group" ? t.groupSize > 1 : t.groupSize <= 1)) : ticketTypes;
   const discountedPrice =
     selectedTicket && appliedDiscount ? applyDiscount(selectedTicket.priceNaira, appliedDiscount.discountType, appliedDiscount.discountValue, appliedDiscount.maxDiscountNaira) : null;
+
+  const payNaira = selectedTicket && selectedTicket.priceNaira > 0 ? (discountedPrice ?? selectedTicket.priceNaira) : 0;
+  const processingNaira = payNaira > 0 && processingFee ? processingFeeNaira(payNaira, processingFee) : 0;
 
   const minPriceNaira = ticketTypes.length > 0 ? Math.min(...ticketTypes.map((t) => t.priceNaira)) : 0;
   const isFreeEvent = ticketTypes.length === 0 || minPriceNaira === 0;
@@ -1173,6 +1183,24 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                       </div>
                     )}
 
+                    {processingNaira > 0 && (
+                      <dl className="mb-5 space-y-1.5 rounded-xl border border-white/15 bg-surface/5 p-3.5 text-sm">
+                        <div className="flex justify-between gap-3 text-white/70">
+                          <dt>Ticket</dt>
+                          <dd className="tabular-nums">{formatNaira(payNaira)}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3 text-white/70">
+                          <dt>Processing fee</dt>
+                          <dd className="tabular-nums">{formatNaira(processingNaira)}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3 border-t border-white/10 pt-1.5 font-semibold text-white">
+                          <dt>Total</dt>
+                          <dd className="tabular-nums">{formatNaira(payNaira + processingNaira)}</dd>
+                        </div>
+                        <p className="pt-0.5 text-xs text-white/45">The processing fee covers card and bank charges and isn&apos;t refundable.</p>
+                      </dl>
+                    )}
+
                     {submitError && (
                       <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-rose-400/10 text-rose-200 text-sm">
                         <AlertCircle size={15} className="mt-0.5 shrink-0" />
@@ -1193,9 +1221,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                         onProgress={handleFormProgress}
                         submitLabel={
                           selectedTicket && selectedTicket.priceNaira > 0
-                            ? selectedTicket.groupSize > 1
-                              ? `Buy Ticket for ${selectedTicket.groupSize} people`
-                              : "Buy Ticket"
+                            ? `${selectedTicket.groupSize > 1 ? `Buy Ticket for ${selectedTicket.groupSize} people` : "Buy Ticket"} · ${formatNaira(payNaira + processingNaira)}`
                             : undefined
                         }
                         submittingLabel={selectedTicket && selectedTicket.priceNaira > 0 ? "Opening payment…" : undefined}

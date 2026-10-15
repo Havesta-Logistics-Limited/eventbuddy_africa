@@ -8,6 +8,7 @@ import { PersistError, getPayoutSettings, mapPayoutRow } from "@/lib/store";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { PlatformVerificationQueue } from "@/components/platform-verification-queue";
 import type { PayoutRequest, PayoutSettings } from "@/lib/types";
+import { PlatformProcessingFee } from "@/components/platform-processing-fee";
 
 type QueueRow = PayoutRequest & { orgName: string; orgVerified: boolean; availableNaira: number | null; promoterId: string | null };
 type BankChange = { id: string; handle: string; full_name: string; payout_bank_name: string | null; payout_account_number: string | null; payout_change_requested_at: string | null };
@@ -244,6 +245,8 @@ export function PlatformPayoutQueue() {
           </div>
         </div>
       </section>
+
+      <PlatformProcessingFee />
 
       <section>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">

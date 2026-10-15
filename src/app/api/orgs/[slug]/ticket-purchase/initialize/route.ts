@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { optionalPhone } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
-import { applyDiscount, ticketFeeMinor } from "@/lib/billing";
+import { applyDiscount, processingFeeFromSettings, processingFeeNaira, ticketFeeMinor } from "@/lib/billing";
 import { organizerTicketFee } from "@/lib/org-fee";
 import { nairaToChargeAmount, paystackInitialize } from "@/lib/paystack";
 import { newId } from "@/lib/utils";
@@ -179,20 +179,24 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   const callbackUrl = `${siteUrl}/${slug}/events/${eventId}/register?payment=callback&reference=${encodeURIComponent(reference)}`;
 
-  const { currency, amountMinor } = nairaToChargeAmount(amountNaira);
-
   // eventbuddy's fee for this one ticket (percentage of the price paid + flat
   // amount, migration 0098), read live so a rate change applies to the very next
   // sale. Fee-exempt organizations pay nothing. Paystack splits the payment by this
   // exact amount; finalize later records what it actually took (fees_split).
   const { data: feeSettings } = await admin
     .from("platform_settings")
-    .select("ticket_fee_percentage, ticket_fee_flat_naira, held_funds_enabled")
+    .select(
+      "ticket_fee_percentage, ticket_fee_flat_naira, held_funds_enabled, buyer_pays_processing, processing_fee_percentage, processing_fee_flat_naira, processing_fee_flat_waived_below_naira, processing_fee_cap_naira"
+    )
     .eq("id", true)
     .maybeSingle();
   // The organizer's rate: fee-exempt, a custom agreed rate (migration 0126),
   // their plan's rate (0104), or the platform default; see organizerTicketFee.
   const { fee: organizerFee } = await organizerTicketFee(admin, org.id);
+  // The buyer pays the card processing on top (migration 0130), so the ticket
+  // price lands whole after Paystack's cut; amount_naira stays the ticket price.
+  const processingNaira = processingFeeNaira(amountNaira, processingFeeFromSettings(feeSettings));
+  const { currency, amountMinor } = nairaToChargeAmount(amountNaira + processingNaira);
   const platformFeeMinor = org.is_fee_exempt ? 0 : ticketFeeMinor(amountNaira, organizerFee, groupSize);
   // Held funds (migration 0102): no subaccount split; the whole payment lands in
   // eventbuddy's balance and finalize credits the organizer's ledger with the
@@ -209,6 +213,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     amount_naira: amountNaira,
     charge_currency: currency,
     charge_amount_minor: amountMinor,
+    processing_fee_naira: processingNaira || null,
     purpose: "ticket_purchase",
     ticket_type_id: ticket.id,
     discount_code_id: discountCodeId,
@@ -238,7 +243,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       callbackUrl,
       currency,
       subaccount: held ? undefined : org.paystack_subaccount_code,
-      transactionChargeMinor: held ? undefined : platformFeeMinor,
+      // legacy split: eventbuddy's account pays Paystack's charge, so it keeps the processing fee too
+      transactionChargeMinor: held ? undefined : platformFeeMinor + processingNaira * 100,
       metadata: { eventId: event.id, organizationId: org.id, ticketTypeId: ticket.id, discountCodeId },
     });
     return NextResponse.json({ authorizationUrl });

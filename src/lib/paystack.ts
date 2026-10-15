@@ -226,11 +226,13 @@ export async function paystackVerify(reference: string): Promise<PaystackVerific
  *  refund of the original amount, no partial-refund support in this pass. Paystack
  *  queues refunds for async processing rather than confirming settlement inline, so a
  *  `true` return here means "accepted", not "money has already moved". */
-export async function paystackRefund(reference: string): Promise<void> {
+export async function paystackRefund(reference: string, amountMinor?: number): Promise<void> {
+  // amountMinor: refund less than was charged, e.g. the ticket price without
+  // the non-refundable processing fee (migration 0130); omitted = the full charge
   const res = await fetch(`${PAYSTACK_BASE}/refund`, {
     method: "POST",
     headers: { Authorization: `Bearer ${paystackKey()}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ transaction: reference }),
+    body: JSON.stringify(amountMinor ? { transaction: reference, amount: amountMinor } : { transaction: reference }),
   });
   const text = await res.text();
   let json: { status?: boolean; message?: string } = {};
