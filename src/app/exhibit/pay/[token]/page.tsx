@@ -11,6 +11,8 @@ type Booking = {
   company: string;
   contact: string;
   amountNaira: number;
+  /** card processing on top of the stand (migration 0130) */
+  processingNaira?: number;
   standName: string;
   standLabel: string | null;
   organizer: string;
@@ -112,13 +114,28 @@ export default function ExhibitPayPage() {
             </dd>
           </div>
         )}
+        {b.amountNaira > 0 && (b.processingNaira ?? 0) > 0 && (
+          <>
+            <div className="flex justify-between gap-4 border-t border-line-soft pt-2">
+              <dt className="text-muted">Stand price</dt>
+              <dd className="tabular-nums text-fg">{formatNaira(b.amountNaira)}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted">Processing fee</dt>
+              <dd className="tabular-nums text-fg">{formatNaira(b.processingNaira ?? 0)}</dd>
+            </div>
+          </>
+        )}
         {b.amountNaira > 0 && (
           <div className="flex justify-between gap-4 border-t border-line-soft pt-2">
             <dt className="text-muted">{b.status === "paid" ? "Paid" : "To pay"}</dt>
-            <dd className="font-semibold tabular-nums text-fg">{formatNaira(b.amountNaira)}</dd>
+            <dd className="font-semibold tabular-nums text-fg">{formatNaira(b.amountNaira + (b.processingNaira ?? 0))}</dd>
           </div>
         )}
       </dl>
+      {b.status === "approved" && (b.processingNaira ?? 0) > 0 && (
+        <p className="mt-2 text-xs text-subtle">The processing fee covers card and bank charges and isn&apos;t refundable.</p>
+      )}
 
       {error && (
         <p className="eb-alert mt-4" role="alert">
@@ -128,7 +145,7 @@ export default function ExhibitPayPage() {
 
       {b.status === "approved" && (
         <button type="button" onClick={pay} disabled={paying} className="eb-btn eb-btn--primary mt-5 w-full">
-          {paying ? "Opening checkout…" : `Pay ${formatNaira(b.amountNaira)}`}
+          {paying ? "Opening checkout…" : `Pay ${formatNaira(b.amountNaira + (b.processingNaira ?? 0))}`}
         </button>
       )}
       <p className="mt-4 text-center text-xs text-subtle">
