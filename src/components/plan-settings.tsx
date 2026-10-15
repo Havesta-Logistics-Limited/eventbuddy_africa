@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { AlertCircle, Check, Loader2, Sparkles } from "lucide-react";
+import { AlertCircle, Check, Loader2, Sparkles, BadgeCheck } from "lucide-react";
 import { formatNaira, formatTicketFee, fetchCurrentTicketFee, planTicketFee, type TicketFee } from "@/lib/billing";
 import { PersistError, getMyPlan, getOrganizerPlans } from "@/lib/store";
 import type { MyPlan, OrganizerPlan } from "@/lib/types";
@@ -110,6 +110,16 @@ export function PlanSettings() {
         <p className="mt-0.5 text-sm text-muted">Your plan sets the fee on every paid ticket and how many promoters you can have on each event.</p>
       </div>
 
+      {(mine.feeExempt || mine.customFee) && (
+        <div className="mb-4 flex items-start gap-2 rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-200" role="note">
+          <BadgeCheck size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+          <span>
+            {mine.feeExempt
+              ? "You don't pay eventbuddy a fee on ticket or stand sales, by agreement with eventbuddy."
+              : `You have a special rate agreed with eventbuddy: ${formatTicketFee(mine.customFee!)} per paid ticket or stand sale. It replaces the ticket fee shown on the plans below.`}
+          </span>
+        </div>
+      )}
       {mine.status === "past_due" && (
         <div className="eb-alert mb-4 flex items-start gap-2" role="alert">
           <AlertCircle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />

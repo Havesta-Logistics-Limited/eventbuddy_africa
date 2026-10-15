@@ -97,6 +97,9 @@ type OrgRow = {
   is_verified: boolean;
   /** organizer verification (0111/0118): lifts the sales limit, early payouts */
   payout_verified: boolean;
+  /** a custom agreed commission (migration 0126) */
+  custom_fee_percentage: number | null;
+  custom_fee_flat_naira: number | null;
   phone: string | null;
   email: string | null;
   paystack_subaccount_code: string | null;
@@ -305,7 +308,7 @@ export default function PlatformDashboard() {
       supabase
         .from("organizations_payout_masked")
         .select(
-          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, payout_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number_masked, payout_account_name, payout_change_status, payout_change_requested_at, pending_name, name_change_status, name_change_requested_at, pending_login_email, login_email_change_status, login_email_change_requested_at, account_deletion_status, account_deletion_requested_at"
+          "id, name, slug, created_at, is_suspended, is_fee_exempt, is_verified, payout_verified, phone, email, paystack_subaccount_code, payout_bank_name, payout_account_number_masked, payout_account_name, payout_change_status, payout_change_requested_at, pending_name, name_change_status, name_change_requested_at, pending_login_email, login_email_change_status, login_email_change_requested_at, account_deletion_status, account_deletion_requested_at, custom_fee_percentage, custom_fee_flat_naira"
         )
         .order("created_at", { ascending: false }),
       supabase
@@ -1532,6 +1535,14 @@ export default function PlatformDashboard() {
                               <td className="px-4 py-3 text-fg-2 tabular-nums whitespace-nowrap">
                                 {formatNaira(orgBilling)}
                                 {org.is_fee_exempt && <span className="block text-[10px] text-teal-300 font-medium">exempt</span>}
+                                {!org.is_fee_exempt && org.custom_fee_percentage != null && (
+                                  <span
+                                    className="block text-[10px] text-violet-300 font-medium"
+                                    title="A custom agreed commission: open their profile → Money to see or change it"
+                                  >
+                                    {`custom ${formatTicketFee({ percentage: Number(org.custom_fee_percentage), flatNaira: Number(org.custom_fee_flat_naira ?? 0) })}`}
+                                  </span>
+                                )}
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex flex-wrap gap-1.5">

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { optionalPhone } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
-import { applyDiscount, ticketFeeFromSettings, planTicketFee, ticketFeeMinor } from "@/lib/billing";
+import { applyDiscount, ticketFeeMinor } from "@/lib/billing";
+import { organizerTicketFee } from "@/lib/org-fee";
 import { nairaToChargeAmount, paystackInitialize } from "@/lib/paystack";
 import { newId } from "@/lib/utils";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
@@ -186,11 +187,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     .select("ticket_fee_percentage, ticket_fee_flat_naira, held_funds_enabled")
     .eq("id", true)
     .maybeSingle();
-  // The organizer's plan sets their rate (migration 0104); Launch, or a lapsed
-  // paid plan, uses the platform default.
-  const { data: effectivePlanId } = await admin.rpc("effective_plan_id", { p_org: org.id });
-  const { data: plan } = await admin.from("organizer_plans").select("fee_percentage, fee_flat_naira").eq("id", effectivePlanId ?? "launch").maybeSingle();
-  const platformFeeMinor = org.is_fee_exempt ? 0 : ticketFeeMinor(amountNaira, planTicketFee(plan, ticketFeeFromSettings(feeSettings)), groupSize);
+  // The organizer's rate: fee-exempt, a custom agreed rate (migration 0126),
+  // their plan's rate (0104), or the platform default; see organizerTicketFee.
+  const { fee: organizerFee } = await organizerTicketFee(admin, org.id);
+  const platformFeeMinor = org.is_fee_exempt ? 0 : ticketFeeMinor(amountNaira, organizerFee, groupSize);
   // Held funds (migration 0102): no subaccount split; the whole payment lands in
   // eventbuddy's balance and finalize credits the organizer's ledger with the
   // sale minus this fee, recorded here because Paystack won't report a split.

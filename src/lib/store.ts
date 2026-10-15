@@ -2627,7 +2627,7 @@ export async function getMyPlan(): Promise<MyPlan | null> {
   const orgId = await resolveMyOrgId(supabase);
   if (!orgId) return null;
   const [{ data: org, error }, { data: effective }] = await Promise.all([
-    supabase.from("organizations").select("plan_id, plan_status, plan_period_end, plan_comped").eq("id", orgId).maybeSingle(),
+    supabase.from("organizations").select("plan_id, plan_status, plan_period_end, plan_comped, is_fee_exempt, custom_fee_percentage, custom_fee_flat_naira").eq("id", orgId).maybeSingle(),
     supabase.rpc("effective_plan_id", { p_org: orgId }),
   ]);
   if (error) throw new PersistError(error);
@@ -2638,6 +2638,11 @@ export async function getMyPlan(): Promise<MyPlan | null> {
     status: org.plan_status as MyPlan["status"],
     periodEnd: org.plan_period_end,
     comped: org.plan_comped,
+    customFee:
+      org.custom_fee_percentage != null && org.custom_fee_flat_naira != null
+        ? { percentage: Number(org.custom_fee_percentage), flatNaira: Number(org.custom_fee_flat_naira) }
+        : null,
+    feeExempt: Boolean(org.is_fee_exempt),
   };
 }
 

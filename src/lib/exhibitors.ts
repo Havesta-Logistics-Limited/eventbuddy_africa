@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
-import { formatNaira, planTicketFee, ticketFeeFromSettings, ticketFeeMinor } from "@/lib/billing";
+import { formatNaira, ticketFeeMinor } from "@/lib/billing";
+import { organizerTicketFee } from "@/lib/org-fee";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 
 /** Exhibitors, phase 1 (migration 0112): companies apply for a stand, the
@@ -8,14 +9,12 @@ import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template"
 
 export type ExhibitorStatus = "applied" | "approved" | "declined" | "paid" | "cancelled";
 
-/** eventbuddy's fee on a stand booking: the organizer's plan rate, the same
- *  as a ticket, read live. Fee-exempt organizations pay nothing. */
+/** eventbuddy's fee on a stand booking: the organizer's rate (exempt, custom,
+ *  plan or default; see organizerTicketFee), the same as a ticket, read live. */
 export async function standFeeMinor(admin: SupabaseClient, org: { id: string; is_fee_exempt?: boolean | null }, amountNaira: number): Promise<number> {
   if (org.is_fee_exempt) return 0;
-  const { data: settings } = await admin.from("platform_settings").select("ticket_fee_percentage, ticket_fee_flat_naira").eq("id", true).maybeSingle();
-  const { data: planId } = await admin.rpc("effective_plan_id", { p_org: org.id });
-  const { data: plan } = await admin.from("organizer_plans").select("fee_percentage, fee_flat_naira").eq("id", planId ?? "launch").maybeSingle();
-  return ticketFeeMinor(amountNaira, planTicketFee(plan, ticketFeeFromSettings(settings)), 1);
+  const { fee } = await organizerTicketFee(admin, org.id);
+  return ticketFeeMinor(amountNaira, fee, 1);
 }
 
 export function exhibitPayUrl(siteUrl: string, token: string) {

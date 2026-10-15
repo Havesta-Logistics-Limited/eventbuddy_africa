@@ -696,6 +696,9 @@ export interface MyPlan {
   status: "active" | "past_due" | "cancelling";
   periodEnd: string | null;
   comped: boolean;
+  /** a custom agreed rate from eventbuddy (migration 0126); replaces the plan's ticket fee */
+  customFee?: { percentage: number; flatNaira: number } | null;
+  feeExempt?: boolean;
 }
 
 /** A tour: one event running in several cities (migration 0109). The cities

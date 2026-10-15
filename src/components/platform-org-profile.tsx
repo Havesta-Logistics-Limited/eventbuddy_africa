@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatNaira } from "@/lib/billing";
+import { PlatformCommissionCard } from "./platform-commission-card";
 
 type Profile = {
   org: {
@@ -305,6 +306,7 @@ export function PlatformOrgProfile({
 
               {tab === "money" && (
                 <div className="space-y-4">
+                  <PlatformCommissionCard orgId={o.id} />
                   {data.balance && (
                     <div className="op-stats op-stats--4">
                       <div><p className="op-stat-v">{formatNaira(data.balance.available)}</p><p className="op-stat-l">Available to withdraw</p></div>
