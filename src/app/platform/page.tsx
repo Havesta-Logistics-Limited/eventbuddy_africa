@@ -60,6 +60,7 @@ import { PlatformOverview, overviewBadges, usePlatformOverview, type OverviewTar
 import { PlatformSearch } from "@/components/platform-search";
 import { PlatformOrgProfile } from "@/components/platform-org-profile";
 import { PlatformRefundDialog } from "@/components/platform-refund-dialog";
+import { PlatformUnlinkBank, type UnlinkTarget } from "@/components/platform-unlink-bank";
 import { ExhibitorsTab, JobsTab, PromotersTab, RiskTab, ToursTab, useJobHealth } from "@/components/platform-partners";
 
 const PLATFORM_ACCENT = "#a78bfa";
@@ -202,6 +203,9 @@ export default function PlatformDashboard() {
   // a real refund (reverses the charge on Paystack), from Billing or search
   const [refundRef, setRefundRef] = useState<string | null>(null);
   const closeRefund = useCallback(() => setRefundRef(null), []);
+  // removing an organizer's payout bank account
+  const [unlinkTarget, setUnlinkTarget] = useState<UnlinkTarget | null>(null);
+  const closeUnlink = useCallback(() => setUnlinkTarget(null), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -1206,6 +1210,14 @@ export default function PlatformDashboard() {
       )}
 
       <PlatformSearch open={searchOpen} onClose={() => setSearchOpen(false)} onOpenOrg={setProfileOrgId} onOpenPayment={setRefundRef} />
+      <PlatformUnlinkBank
+        target={unlinkTarget}
+        onClose={closeUnlink}
+        onDone={() => {
+          handleRefresh();
+          setProfileOrgId(null);
+        }}
+      />
       <PlatformRefundDialog
         reference={refundRef}
         onClose={closeRefund}
@@ -1222,6 +1234,7 @@ export default function PlatformDashboard() {
           setProfileOrgId(null);
           goToOrg(name);
         }}
+        onUnlinkBank={(t) => setUnlinkTarget(t)}
       />
 
       {/* Main content */}
@@ -2478,6 +2491,7 @@ export default function PlatformDashboard() {
                           <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Account number</th>
                           <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Account name</th>
                           <th className="text-left px-4 py-2.5 text-xs font-medium text-muted whitespace-nowrap">Status</th>
+                          <th className="px-4 py-2.5" />
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-line-soft">
@@ -2526,6 +2540,19 @@ export default function PlatformDashboard() {
                               </td>
                               <td className="px-4 py-3">
                                 <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusPill.className}`}>{statusPill.label}</span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {(org.payout_account_number_masked || org.paystack_subaccount_code) && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setUnlinkTarget({ orgId: org.id, orgName: org.name, bank: org.payout_bank_name, last4: org.payout_account_number_masked?.slice(-4) ?? null })
+                                    }
+                                    className="text-xs font-semibold text-rose-300 hover:text-rose-200"
+                                  >
+                                    Unlink
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           );

@@ -93,11 +93,13 @@ export function PlatformOrgProfile({
   includeTest,
   onClose,
   onManage,
+  onUnlinkBank,
 }: {
   orgId: string | null;
   includeTest: boolean;
   onClose: () => void;
   onManage: (orgName: string) => void;
+  onUnlinkBank?: (t: { orgId: string; orgName: string; bank: string | null; last4: string | null }) => void;
 }) {
   const [data, setData] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -205,6 +207,15 @@ export function PlatformOrgProfile({
                 <button type="button" className="op-btn" onClick={() => onManage(o.name)}>
                   Manage in Organizations <ArrowUpRight size={13} aria-hidden="true" />
                 </button>
+                {onUnlinkBank && o.bank_name && (
+                  <button
+                    type="button"
+                    className="op-btn !text-rose-300"
+                    onClick={() => onUnlinkBank({ orgId: o.id, orgName: o.name, bank: o.bank_name, last4: o.account_last4 || null })}
+                  >
+                    <Landmark size={13} aria-hidden="true" /> Unlink bank account
+                  </button>
+                )}
               </div>
 
               {/* numbers */}

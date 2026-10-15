@@ -190,6 +190,18 @@ export async function updatePaystackSubaccountPercentage(params: {
   }
 }
 
+/** Switches a subaccount off at Paystack, so it can't receive split payments
+ *  (used when a platform admin unlinks an organizer's bank account). */
+export async function deactivatePaystackSubaccount(subaccountCode: string): Promise<void> {
+  const res = await fetch(`${PAYSTACK_BASE}/subaccount/${encodeURIComponent(subaccountCode)}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${paystackKey()}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ active: false }),
+  });
+  const json = (await res.json().catch(() => ({}))) as { status?: boolean; message?: string };
+  if (!res.ok || !json.status) throw new Error(json.message || `Paystack couldn't switch off subaccount ${subaccountCode}.`);
+}
+
 type PaystackVerifyResponse = {
   status: boolean;
   message: string;
