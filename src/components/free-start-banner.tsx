@@ -1,18 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Rocket, X } from "lucide-react";
+import { hasPayoutAccount } from "@/lib/store";
 
 /** Reassures a brand-new organizer, right where they'd otherwise wonder if
  *  they need to set up payouts before doing anything: they don't, for free
  *  registrations/tickets. Shown only on a truly empty dashboard (no events
  *  yet at all) — once they've created one, they already know their way
- *  around and this would just be clutter. Dismissible for the session only
+ *  around and this would just be clutter. Not shown once a payout bank
+ *  account is on record: it'd tell them to do something already done. Dismissible for the session only
  *  (plain component state, nothing persisted), same as MfaNagBanner. */
 export function FreeStartBanner() {
   const [dismissed, setDismissed] = useState(false);
-  if (dismissed) return null;
+  // only for organizers without a payout account yet; hidden until we know
+  const [needsPayout, setNeedsPayout] = useState<boolean | null>(null);
+  useEffect(() => {
+    let live = true;
+    hasPayoutAccount()
+      .then((has) => live && setNeedsPayout(!has))
+      .catch(() => live && setNeedsPayout(false));
+    return () => {
+      live = false;
+    };
+  }, []);
+  if (dismissed || !needsPayout) return null;
 
   return (
     <div className="flex items-start gap-3 p-4 rounded-xl bg-sky-500/10 border border-sky-500/30 mb-5">

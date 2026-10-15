@@ -2528,6 +2528,15 @@ export function mapPayoutRow(p: PayoutRow): PayoutRequest {
   };
 }
 
+/** Whether the signed-in organizer already has a payout bank account on record. */
+export async function hasPayoutAccount(): Promise<boolean> {
+  const supabase = createSupabaseBrowserClient();
+  const orgId = await resolveMyOrgId(supabase);
+  if (!orgId) return false;
+  const { data } = await supabase.from("organizations_payout_masked").select("payout_account_number_masked").eq("id", orgId).maybeSingle();
+  return Boolean(data?.payout_account_number_masked);
+}
+
 export async function getPayoutSettings(): Promise<PayoutSettings> {
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase
