@@ -25,7 +25,7 @@ import {
   Tag,
   Ticket,
   Video,
-  X, Users } from "lucide-react";
+  X, Users, Lock } from "lucide-react";
 import { EventRecord, TicketType } from "@/lib/types";
 import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/components/dynamic-registration-form";
 import { GroupGuestFields } from "@/components/group-guest-fields";
@@ -802,8 +802,18 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity whitespace-nowrap"
                 data-cta
               >
-                <Ticket size={16} />
-                {ctaLabel === "Register" ? "Register free" : ctaLabel === "Buy Ticket" ? `Buy Ticket · ${priceLabel}` : ctaLabel}
+                {event.registrationOpen === false ? (
+                  // locked: point to the ticket list and the notify-me box instead of buying
+                  <>
+                    <Clock size={16} />
+                    {`Opens soon · ${ticketTypes.length ? "See tickets" : "Get notified"}`}
+                  </>
+                ) : (
+                  <>
+                    <Ticket size={16} />
+                    {ctaLabel === "Register" ? "Register free" : ctaLabel === "Buy Ticket" ? `Buy Ticket · ${priceLabel}` : ctaLabel}
+                  </>
+                )}
               </a>
               <AddToCalendarMenu event={event} orgSlug={orgSlug} />
             </div>
@@ -1013,6 +1023,26 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
 
                   {event.registrationOpen === false ? (
                     <div className="p-6">
+                      {/* registration is locked: the ticket categories are shown to
+                          browse, but none can be picked or bought yet */}
+                      {ticketTypes.length > 0 && (
+                        <div className="mb-6">
+                          <h2 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                            <Lock size={13} className="text-white/50" aria-hidden="true" /> Tickets, on sale soon
+                          </h2>
+                          <div className="space-y-3">
+                            {ticketTypes.map((t, i) => (
+                              <TicketStub
+                                key={t.id}
+                                t={t}
+                                tone={TICKET_TONES[i % TICKET_TONES.length]}
+                                // only a real sell-out is flagged; a sale date still to come isn't "unavailable" here
+                                available={t.quantityAvailable == null || t.quantitySold < t.quantityAvailable}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <RegistrationOpensSoon orgSlug={orgSlug} eventId={event.id} eventName={event.name} />
                     </div>
                   ) : (
