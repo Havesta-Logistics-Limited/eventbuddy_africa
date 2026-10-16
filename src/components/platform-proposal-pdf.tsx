@@ -6,7 +6,7 @@ import { proposalTotal, withProposalDefaults } from "@/lib/proposal";
    Helvetica it has the naira sign, so amounts print as ₦250,000 rather than
    a missing-glyph box. Registered once, from this site's own origin. */
 let fontsReady = false;
-function registerFonts() {
+export function registerFonts() {
   if (fontsReady || typeof window === "undefined") return;
   const base = window.location.origin;
   Font.register({

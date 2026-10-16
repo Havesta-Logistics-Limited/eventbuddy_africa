@@ -40,6 +40,9 @@ const EMPTY_FORM = {
   notes: "",
   validUntil: "",
   lineItems: [{ ...EMPTY_LINE_ITEM }] as PlatformDocumentLineItem[],
+  /** VAT (migration 0131): off by default; 7.5% is Nigeria's standard rate */
+  vatOn: false,
+  vatRate: "7.5",
 };
 
 /** Platform-admin-only tool for generating branded quotes/invoices to send to
@@ -110,6 +113,7 @@ export function PlatformDocumentsTab() {
         lineItems: cleanedItems,
         notes: form.notes.trim() || undefined,
         validUntil: form.validUntil || undefined,
+        vatRate: form.vatOn && Number(form.vatRate) > 0 ? Number(form.vatRate) : null,
       });
       setDocuments((docs) => [created, ...docs]);
       toast.success(`${created.docType === "quote" ? "Quote" : "Invoice"} ${created.docNumber} created`);
@@ -364,9 +368,45 @@ export function PlatformDocumentsTab() {
                   <Plus size={12} />
                   Add line item
                 </button>
-                <p className="text-right text-sm font-semibold text-fg mt-3">
-                  Total: {formatNaira(form.lineItems.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPriceNaira || 0), 0))}
-                </p>
+                {(() => {
+                  const sub = form.lineItems.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPriceNaira || 0), 0);
+                  const rate = form.vatOn ? Math.max(0, Number(form.vatRate) || 0) : 0;
+                  const vat = Math.round(sub * rate) / 100;
+                  return (
+                    <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-fg-2">
+                        <label className="flex items-center gap-2">
+                          <input type="checkbox" checked={form.vatOn} onChange={(e) => setForm((f) => ({ ...f, vatOn: e.target.checked }))} className="h-4 w-4" />
+                          Add VAT
+                        </label>
+                        {form.vatOn && (
+                          <span className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min="0"
+                              max="50"
+                              step="0.1"
+                              aria-label="VAT rate (%)"
+                              value={form.vatRate}
+                              onChange={(e) => setForm((f) => ({ ...f, vatRate: e.target.value }))}
+                              className="eb-input w-20! py-1!"
+                            />
+                            %
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-right text-sm">
+                        {rate > 0 && (
+                          <>
+                            <p className="text-muted">Subtotal: {formatNaira(sub)}</p>
+                            <p className="text-muted">{`VAT (${rate}%): ${formatNaira(vat)}`}</p>
+                          </>
+                        )}
+                        <p className="font-semibold text-fg">Total: {formatNaira(sub + vat)}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div>

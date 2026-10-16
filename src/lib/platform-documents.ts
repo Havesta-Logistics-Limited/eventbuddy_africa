@@ -15,6 +15,7 @@ function mapRow(row: {
   line_items: unknown;
   notes: string | null;
   valid_until: string | null;
+  vat_rate?: number | string | null;
   content?: unknown;
   created_at: string;
   updated_at: string;
@@ -31,6 +32,7 @@ function mapRow(row: {
     lineItems: (row.line_items as PlatformDocumentLineItem[] | null) ?? [],
     notes: row.notes,
     validUntil: row.valid_until,
+    vatRate: row.vat_rate == null ? null : Number(row.vat_rate),
     content: row.doc_type === "proposal" ? withProposalDefaults(row.content as Partial<ProposalContent> | null) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -65,6 +67,7 @@ export async function createPlatformDocument(input: {
   lineItems: PlatformDocumentLineItem[];
   notes?: string;
   validUntil?: string;
+  vatRate?: number | null;
 }): Promise<PlatformDocument> {
   const supabase = createSupabaseBrowserClient();
   const docNumber = await nextDocNumber(input.docType);
@@ -80,6 +83,7 @@ export async function createPlatformDocument(input: {
       line_items: input.lineItems,
       notes: input.notes || null,
       valid_until: input.validUntil || null,
+      vat_rate: input.vatRate ?? null,
     })
     .select()
     .single();
@@ -103,8 +107,18 @@ export function lineItemTotal(item: PlatformDocumentLineItem): number {
   return item.quantity * item.unitPriceNaira;
 }
 
-export function documentTotal(doc: Pick<PlatformDocument, "lineItems">): number {
+export function documentSubtotal(doc: Pick<PlatformDocument, "lineItems">): number {
   return doc.lineItems.reduce((sum, item) => sum + lineItemTotal(item), 0);
+}
+
+/** VAT on the subtotal, to the kobo (migration 0131); 0 when no rate is set. */
+export function documentVat(doc: Pick<PlatformDocument, "lineItems" | "vatRate">): number {
+  return doc.vatRate ? Math.round(documentSubtotal(doc) * doc.vatRate) / 100 : 0;
+}
+
+/** What the client pays: subtotal plus any VAT. */
+export function documentTotal(doc: Pick<PlatformDocument, "lineItems"> & { vatRate?: number | null }): number {
+  return documentSubtotal(doc) + documentVat({ lineItems: doc.lineItems, vatRate: doc.vatRate ?? null });
 }
 
 /** Creates a proposal (id omitted) or saves changes to one. The client fields

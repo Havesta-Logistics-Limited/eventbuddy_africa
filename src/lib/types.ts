@@ -343,6 +343,8 @@ export interface PlatformDocument {
   lineItems: PlatformDocumentLineItem[];
   notes?: string | null;
   validUntil?: string | null;
+  /** VAT percentage on the subtotal (migration 0131), e.g. 7.5; null = no VAT */
+  vatRate?: number | null;
   /** a proposal's sections (migration 0125); null for quotes and invoices */
   content?: import("./proposal").ProposalContent | null;
   createdAt: string;
