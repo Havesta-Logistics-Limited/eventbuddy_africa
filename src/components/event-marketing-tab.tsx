@@ -34,7 +34,16 @@ const TAG_CHOICES = ["instagram", "facebook", "whatsapp", "x", "tiktok", "linked
 
 const pct = (n: number, d: number) => (d > 0 ? `${Math.round((n / d) * 1000) / 10}%` : "—");
 
-export function EventMarketingTab({ event, referrals, shareUrl }: { event: EventRecord; referrals: ReferralPartner[]; shareUrl: string }) {
+export function EventMarketingTab({
+  event,
+  referrals,
+  shareUrl,
+}: {
+  event: Pick<EventRecord, "id" | "slug">;
+  referrals: Pick<ReferralPartner, "eventId" | "code" | "partnerName">[];
+  /** the event's link for the optional link builder; omitted = no builder (platform view) */
+  shareUrl?: string;
+}) {
   const [range, setRange] = useState<(typeof RANGES)[number]["id"]>("all");
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState("");
@@ -76,8 +85,8 @@ export function EventMarketingTab({ event, referrals, shareUrl }: { event: Event
   }
 
   const tagCode = custom.trim() ? normalizeSource(custom) ?? "" : tag;
-  const sep = shareUrl.includes("?") ? "&" : "?";
-  const taggedUrl = tagCode ? `${shareUrl}${sep}src=${encodeURIComponent(tagCode)}` : "";
+  const sep = shareUrl?.includes("?") ? "&" : "?";
+  const taggedUrl = tagCode && shareUrl ? `${shareUrl}${sep}src=${encodeURIComponent(tagCode)}` : "";
 
   async function copy(text: string, id: string) {
     await copyText(text);
@@ -230,6 +239,7 @@ export function EventMarketingTab({ event, referrals, shareUrl }: { event: Event
         </>
       )}
 
+      {shareUrl && (
       <details className="eb-card p-5">
         <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-fg">
           <Megaphone size={15} className="text-[#e879f9]" aria-hidden="true" /> Optional: a link for a specific place
@@ -263,6 +273,7 @@ export function EventMarketingTab({ event, referrals, shareUrl }: { event: Event
           </div>
         )}
       </details>
+      )}
     </div>
   );
 }
