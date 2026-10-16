@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
+import { cleanAttribution } from "@/lib/marketing-attribution";
 
 /**
  * Fire-and-forget hit counter for the public registration page — called once
@@ -25,5 +26,24 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   if (!event) return NextResponse.json({ error: "Event not found." }, { status: 404 });
 
   await admin.rpc("increment_registration_page_views", { p_event_id: eventId });
+
+  // the visit's link and source, for the marketing report (migration 0132);
+  // sent once per tab per event, and never allowed to fail the request
+  const body = (await request.json().catch(() => null)) as { visit?: { visitor?: unknown } & Record<string, unknown> } | null;
+  const visit = cleanAttribution(body?.visit);
+  const visitor = typeof body?.visit?.visitor === "string" ? body.visit.visitor.replace(/[^a-zA-Z0-9]/g, "").slice(0, 64) : "";
+  if (visit && visitor.length >= 8) {
+    const { error } = await admin.from("event_visits").insert({
+      event_id: event.id,
+      organization_id: org.id,
+      visitor_id: visitor,
+      link_kind: visit.kind,
+      link_code: visit.code,
+      source: visit.source,
+      source_detail: visit.detail,
+      campaign: visit.campaign,
+    });
+    if (error) console.error(`[event-visit] ${event.id}: ${error.message}`);
+  }
   return NextResponse.json({ success: true });
 }

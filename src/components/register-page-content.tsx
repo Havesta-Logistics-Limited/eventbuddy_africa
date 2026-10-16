@@ -30,6 +30,7 @@ import { EventRecord, TicketType } from "@/lib/types";
 import { DynamicRegistrationForm, type DynamicRegistrationFormValues } from "@/components/dynamic-registration-form";
 import { GroupGuestFields } from "@/components/group-guest-fields";
 import { RegistrationOpensSoon } from "@/components/registration-opens-soon";
+import { captureVisit, storedAttribution } from "@/lib/marketing-attribution";
 import { validateGroupGuests, type GroupGuest } from "@/lib/group-tickets";
 import { ticketCtaLabel } from "@/lib/ticket-cta";
 import { OneOnOneRequestStep } from "@/components/one-on-one-request-step";
@@ -319,6 +320,17 @@ const PENDING_IDENTITY_KEY = "eventbuddy:pendingAttendeeIdentity";
  * Both pass the exact param the visitor's URL contains; the fetch below matches it
  * against the org's events by either id or slug, same as it always has.
  */
+/** Counts the page view and logs where this visit came from (marketing
+ *  report, migration 0132): once per tab per event. Never blocks anything. */
+function logVisit(orgSlug: string, eventId: string) {
+  const visit = captureVisit(eventId);
+  fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${eventId}/register/view`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(visit ? { visit } : {}),
+  }).catch(() => {});
+}
+
 export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: string; eventIdOrSlug: string }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -404,7 +416,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
           // Remember which partner's link brought this visitor, now that the
           // event id is known. Survives navigating away and coming back.
           captureRef(found.id);
-          fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/register/view`, { method: "POST" }).catch(() => {});
+          logVisit(orgSlug, found.id);
           fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/events/${found.id}/attendee-summary`)
             .then((res) => res.json())
             .then((json) => setAttendeeSummary({ totalCount: json.totalCount ?? 0, sampleNames: json.sampleNames ?? [] }))
@@ -419,6 +431,8 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         }
         const previewEvent = previewData.event as PublicEvent;
         setEvent(previewEvent);
+        // a private link's event is only reached this way; drafts aren't counted
+        if (previewEvent.published !== false) logVisit(orgSlug, previewEvent.id);
         setIsDraftPreview(previewEvent.published === false);
         setOrgName(previewData.organization?.name ?? "");
         setOrgLogoUrl(previewData.organization?.logoUrl ?? "");
@@ -588,7 +602,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/ticket-purchase/initialize`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket.id, discountCode: appliedDiscount?.code, ref: storedRef(event.id), ...values, guests: guestCheck.guests }),
+          body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket.id, discountCode: appliedDiscount?.code, ref: storedRef(event.id), attribution: storedAttribution(event.id), ...values, guests: guestCheck.guests }),
         });
         const json = await res.json();
         if (!res.ok || !json.authorizationUrl) {
@@ -603,7 +617,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
       const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket?.id, ref: storedRef(event.id), ...values }),
+        body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket?.id, ref: storedRef(event.id), attribution: storedAttribution(event.id), ...values }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -627,8 +641,36 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
     setTimeout(() => setCopied(false), 2000);
   }
 
+  /** This page's link, tagged with where it's being shared (marketing report,
+   *  migration 0132), so visits from it are credited even from WhatsApp. A
+   *  promoter's ?ref= on the page is kept, so their credit travels too. */
+  function sharedLink(src: string) {
+    if (typeof window === "undefined") return "";
+    const u = new URL(window.location.href);
+    for (const k of ["src", "utm_source", "utm_medium", "utm_campaign", "payment", "reference"]) u.searchParams.delete(k);
+    u.searchParams.set("src", src);
+    return u.toString();
+  }
+
+  function shareTo(app: "whatsapp" | "x" | "facebook") {
+    const url = sharedLink(app);
+    const text = event ? `${event.name}: ${url}` : url;
+    const target =
+      app === "whatsapp"
+        ? `https://wa.me/?text=${encodeURIComponent(text)}`
+        : app === "x"
+          ? `https://x.com/intent/post?text=${encodeURIComponent(event?.name ?? "")}&url=${encodeURIComponent(url)}`
+          : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    window.open(target, "_blank", "noopener,noreferrer");
+  }
+
+  async function copyShareLink() {
+    await copyText(sharedLink("link"));
+    toast.success("Link copied");
+  }
+
   async function handleShare() {
-    const url = typeof window !== "undefined" ? window.location.href : "";
+    const url = sharedLink("share");
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title: event?.name, url });
@@ -1256,14 +1298,31 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleShare}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white/70 border-t border-white/10 hover:bg-surface/5 transition-colors"
-                  >
-                    <Share2 size={14} />
-                    Share this event
-                  </button>
+                  <div className="border-t border-white/10 px-4 py-3">
+                    <p className="mb-2 flex items-center justify-center gap-2 text-xs font-medium text-white/60">
+                      <Share2 size={13} aria-hidden="true" /> Share this event
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-1.5">
+                      {(
+                        [
+                          ["WhatsApp", () => shareTo("whatsapp")],
+                          ["Facebook", () => shareTo("facebook")],
+                          ["X", () => shareTo("x")],
+                          ["Copy link", copyShareLink],
+                          ["More", handleShare],
+                        ] as const
+                      ).map(([label, onClick]) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={onClick}
+                          className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-white/75 transition-colors hover:bg-surface/10 hover:text-white"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </>
               )}
             </div>

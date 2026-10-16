@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cleanAttribution } from "@/lib/marketing-attribution";
 import { optionalPhone } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
@@ -35,6 +36,8 @@ type RegisterBody = {
    *  unknown, inactive, or belongs to another event simply attributes to nobody,
    *  and never blocks the registration. See migration 0097. */
   ref?: string;
+  /** the link and source that brought them (marketing report, migration 0132) */
+  attribution?: unknown;
 };
 
 /**
@@ -51,6 +54,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const { slug } = await ctx.params;
   const body = (await request.json()) as Partial<RegisterBody>;
   const { eventId, firstName, lastName, email, phone, customAnswers, ticketTypeId, source, hideFromGuestList, ref } = body;
+  const attribution = cleanAttribution(body.attribution);
   const resolvedSource = source === "mobile" ? "mobile" : "web";
 
   if (!eventId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
@@ -200,6 +204,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
         highest_education: "",
         taken_ielts: "",
         referral_id: referralId,
+        attribution,
         comments: "",
         custom_answers: customAnswers || {},
         source: resolvedSource,
@@ -248,6 +253,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
         status: resolvedStatus,
         hide_from_guest_list: Boolean(hideFromGuestList),
         referral_id: referralId,
+        attribution,
       })
       .select()
       .single();

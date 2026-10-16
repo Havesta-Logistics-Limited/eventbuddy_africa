@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { copyText } from "@/lib/copy-text";
 import { EventAccessControls, privateEventLink } from "@/components/event-access-controls";
+import { EventMarketingTab } from "@/components/event-marketing-tab";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -85,6 +86,7 @@ type TabId =
   | "leads"
   | "checkin-staff"
   | "referrals"
+  | "marketing"
   | "representatives"
   | "schedule"
   | "speakers"
@@ -405,7 +407,10 @@ export default function EventDetailPage() {
     { id: "leads", label: "Leads" },
     { id: "checkin-staff", label: "Check-in Staff" },
     ...(event.selfRegistrationEnabled !== false || event.eventFormat === "virtual"
-      ? ([{ id: "referrals", label: "Promoters" }] as const)
+      ? ([
+          { id: "referrals", label: "Promoters" },
+          { id: "marketing", label: "Marketing" },
+        ] as const)
       : []),
     // Reps are an org-wide resource managed from here now (see RepsManagement) — the
     // tab itself only needs usesDestinations (is this an Education Fair event at
@@ -763,6 +768,11 @@ export default function EventDetailPage() {
         {activeTab === "referrals" && (
           <div key="referrals" className="animate-tab-fade">
             <ReferralsTab event={event} orgSlug={session.orgSlug!} referrals={referrals} />
+          </div>
+        )}
+        {activeTab === "marketing" && (
+          <div key="marketing" className="animate-tab-fade">
+            <EventMarketingTab event={event} referrals={referrals} shareUrl={registrationLink()} />
           </div>
         )}
 

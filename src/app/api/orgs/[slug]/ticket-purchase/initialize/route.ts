@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cleanAttribution } from "@/lib/marketing-attribution";
 import { optionalPhone } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
@@ -29,6 +30,8 @@ type InitializeBody = {
    *  transaction now and copied onto the registration when the payment
    *  finalizes, so an abandoned checkout stays attributable too. */
   ref?: string;
+  /** the link and source that brought them (marketing report, migration 0132) */
+  attribution?: unknown;
   /** Group (bundle) tickets only: the other people this purchase admits, named
    *  by the buyer. Each becomes their own registration with its own QR. */
   guests?: unknown;
@@ -204,9 +207,11 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const held = Boolean(feeSettings?.held_funds_enabled);
 
   const referralId = await resolveReferralId(admin, event.id, ref);
+  const attribution = cleanAttribution(body.attribution);
 
   const { error: insertError } = await admin.from("paystack_transactions").insert({
     referral_id: referralId,
+    attribution,
     organization_id: org.id,
     event_id: event.id,
     reference,
