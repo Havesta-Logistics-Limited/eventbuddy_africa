@@ -10,6 +10,7 @@ import {
   deletePlatformDocument,
   documentTotal,
   listPlatformDocuments,
+  updatePlatformDocument,
   updatePlatformDocumentStatus,
 } from "@/lib/platform-documents";
 import { PlatformDocumentPdf } from "./platform-document-pdf";
@@ -54,6 +55,8 @@ export function PlatformDocumentsTab() {
   const [documents, setDocuments] = useState<PlatformDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  /** the quote/invoice being edited in the form; null = creating a new one */
+  const [editing, setEditing] = useState<PlatformDocument | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -103,27 +106,52 @@ export function PlatformDocumentsTab() {
     }
     setFormError("");
     setSaving(true);
+    const fields = {
+      clientName: form.clientName.trim(),
+      clientCompany: form.clientCompany.trim() || undefined,
+      clientEmail: form.clientEmail.trim() || undefined,
+      clientAddress: form.clientAddress.trim() || undefined,
+      lineItems: cleanedItems,
+      notes: form.notes.trim() || undefined,
+      validUntil: form.validUntil || undefined,
+      vatRate: form.vatOn && Number(form.vatRate) > 0 ? Number(form.vatRate) : null,
+    };
     try {
-      const created = await createPlatformDocument({
-        docType: form.docType,
-        clientName: form.clientName.trim(),
-        clientCompany: form.clientCompany.trim() || undefined,
-        clientEmail: form.clientEmail.trim() || undefined,
-        clientAddress: form.clientAddress.trim() || undefined,
-        lineItems: cleanedItems,
-        notes: form.notes.trim() || undefined,
-        validUntil: form.validUntil || undefined,
-        vatRate: form.vatOn && Number(form.vatRate) > 0 ? Number(form.vatRate) : null,
-      });
-      setDocuments((docs) => [created, ...docs]);
-      toast.success(`${created.docType === "quote" ? "Quote" : "Invoice"} ${created.docNumber} created`);
+      if (editing) {
+        const updated = await updatePlatformDocument(editing.id, fields);
+        setDocuments((docs) => docs.map((d) => (d.id === updated.id ? updated : d)));
+        toast.success(`${updated.docNumber} updated`);
+      } else {
+        const created = await createPlatformDocument({ docType: form.docType, ...fields });
+        setDocuments((docs) => [created, ...docs]);
+        toast.success(`${created.docType === "quote" ? "Quote" : "Invoice"} ${created.docNumber} created`);
+      }
       setShowForm(false);
+      setEditing(null);
       setForm(EMPTY_FORM);
     } catch {
       setFormError("Couldn't save this document. Please try again.");
     } finally {
       setSaving(false);
     }
+  }
+
+  function openEdit(doc: PlatformDocument) {
+    setEditing(doc);
+    setForm({
+      docType: doc.docType,
+      clientName: doc.clientName,
+      clientCompany: doc.clientCompany ?? "",
+      clientEmail: doc.clientEmail ?? "",
+      clientAddress: doc.clientAddress ?? "",
+      notes: doc.notes ?? "",
+      validUntil: doc.validUntil ?? "",
+      lineItems: doc.lineItems.length ? doc.lineItems.map((i) => ({ ...i })) : [{ ...EMPTY_LINE_ITEM }],
+      vatOn: Boolean(doc.vatRate),
+      vatRate: doc.vatRate ? String(doc.vatRate) : "7.5",
+    });
+    setFormError("");
+    setShowForm(true);
   }
 
   async function handleStatusChange(doc: PlatformDocument, status: PlatformDocumentStatus) {
@@ -164,6 +192,7 @@ export function PlatformDocumentsTab() {
         <button
           onClick={() => {
             setForm(EMPTY_FORM);
+            setEditing(null);
             setFormError("");
             setShowForm(true);
           }}
@@ -211,11 +240,13 @@ export function PlatformDocumentsTab() {
                 {doc.docType !== "proposal" && <option value="paid">Paid</option>}
               </select>
               <div className="flex items-center gap-1 shrink-0">
-                {doc.docType === "proposal" && (
-                  <button type="button" onClick={() => setProposal(doc)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-fg-3 hover:bg-fill">
-                    <Pencil size={14} /> Edit
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => (doc.docType === "proposal" ? setProposal(doc) : openEdit(doc))}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-fg-3 hover:bg-fill"
+                >
+                  <Pencil size={14} /> Edit
+                </button>
                 <PDFDownloadLink
                   document={
                     doc.docType === "proposal" ? (
@@ -250,12 +281,19 @@ export function PlatformDocumentsTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-modal-backdrop">
           <div className="bg-surface rounded-2xl animate-modal-panel w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between p-6 border-b border-line-soft">
-              <h2 className="font-semibold text-fg">New Quote / Invoice</h2>
-              <button onClick={() => setShowForm(false)}>
+              <h2 className="font-semibold text-fg">{editing ? `Edit ${editing.docNumber}` : "New Quote / Invoice"}</h2>
+              <button
+                onClick={() => {
+                  setShowForm(false);
+                  setEditing(null);
+                }}
+              >
                 <X size={20} className="text-subtle" />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* the type (and so its number) is fixed once created */}
+              {!editing && (
               <div className="flex gap-2">
                 {(["quote", "invoice"] as const).map((t) => (
                   <button
@@ -270,6 +308,7 @@ export function PlatformDocumentsTab() {
                   </button>
                 ))}
               </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -427,7 +466,7 @@ export function PlatformDocumentsTab() {
                 disabled={saving}
                 className="w-full py-3 rounded-xl font-semibold text-white text-sm bg-brand-600 hover:bg-brand-700 disabled:opacity-60"
               >
-                {saving ? "Saving…" : `Create ${form.docType === "quote" ? "Quote" : "Invoice"}`}
+                {saving ? "Saving…" : editing ? "Save changes" : `Create ${form.docType === "quote" ? "Quote" : "Invoice"}`}
               </button>
             </form>
           </div>

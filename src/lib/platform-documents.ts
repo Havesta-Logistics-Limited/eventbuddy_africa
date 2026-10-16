@@ -91,6 +91,41 @@ export async function createPlatformDocument(input: {
   return mapRow(data);
 }
 
+/** Saves edits to a quote or invoice; its type and number stay the same. */
+export async function updatePlatformDocument(
+  id: string,
+  input: {
+    clientName: string;
+    clientCompany?: string;
+    clientEmail?: string;
+    clientAddress?: string;
+    lineItems: PlatformDocumentLineItem[];
+    notes?: string;
+    validUntil?: string;
+    vatRate?: number | null;
+  }
+): Promise<PlatformDocument> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from("platform_documents")
+    .update({
+      client_name: input.clientName,
+      client_company: input.clientCompany || null,
+      client_email: input.clientEmail || null,
+      client_address: input.clientAddress || null,
+      line_items: input.lineItems,
+      notes: input.notes || null,
+      valid_until: input.validUntil || null,
+      vat_rate: input.vatRate ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error || !data) throw new PersistError(error);
+  return mapRow(data);
+}
+
 export async function updatePlatformDocumentStatus(id: string, status: PlatformDocumentStatus): Promise<void> {
   const supabase = createSupabaseBrowserClient();
   const { error } = await supabase.from("platform_documents").update({ status, updated_at: new Date().toISOString() }).eq("id", id);
