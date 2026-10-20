@@ -11,6 +11,8 @@ export type ScanFlash = {
   outcome: ScanOutcome;
   title: string;
   name?: string;
+  /** the ticket category they hold (Regular, VIP, …), for tagging at the door */
+  ticket?: string | null;
   message: string;
   /** A decision for staff (early check-in): the scanner stays paused until one is chosen. */
   actions?: { primary: { label: string; onClick: () => void }; secondary: { label: string; onClick: () => void } };
@@ -240,6 +242,7 @@ export function FastScanStage({
                 <span className="eb-scanflash-icon" aria-hidden="true">{FLASH_ICON[flash.outcome]}</span>
                 <p className="eb-scanflash-title">{flash.title}</p>
                 {flash.name && <p className="eb-scanflash-name">{flash.name}</p>}
+                {flash.ticket && <TicketTag name={flash.ticket} />}
                 <p className="eb-scanflash-msg">{flash.message}</p>
                 {flash.actions && (
                   <div className="eb-scanflash-actions">
@@ -280,5 +283,16 @@ export function FastScanStage({
         </button>
       )}
     </div>
+  );
+}
+
+/** A ticket category as a big tag door staff can read at a glance; premium
+ *  categories (VIP, tables, gold, …) stand out in gold. */
+export function TicketTag({ name }: { name: string }) {
+  const premium = /\b(vip|vvip|table|premium|gold|platinum|diamond|executive|backstage)\b/i.test(name);
+  return (
+    <p className="eb-ticket-tag" data-tier={premium ? "premium" : "standard"}>
+      {name}
+    </p>
   );
 }

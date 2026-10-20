@@ -48,6 +48,14 @@ export async function POST(request: Request) {
   }
 
   // A refunded, declined, pending or waitlisted ticket must never get in.
+  // the ticket category they hold (Regular, VIP, …), shown to door staff on every
+  // outcome so they can tag the attendee; group guests carry their bundle's type
+  let ticketType: string | null = null;
+  if (registration.ticket_type_id) {
+    const { data: tt } = await supabase.from("ticket_types").select("name").eq("id", registration.ticket_type_id).maybeSingle();
+    ticketType = tt?.name ?? null;
+  }
+
   if (registration.status === "cancelled" || registration.status === "declined") {
     return NextResponse.json({ error: `This ticket for ${registration.full_name} was cancelled or refunded.`, fullName: registration.full_name }, { status: 409 });
   }
@@ -62,7 +70,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       alreadyCheckedIn: true,
-      registration: { referenceId: registration.reference_id, fullName: registration.full_name, checkedInAt: registration.checked_in_at },
+      registration: { referenceId: registration.reference_id, fullName: registration.full_name, checkedInAt: registration.checked_in_at, ticketType },
     });
   }
 
@@ -86,7 +94,7 @@ export async function POST(request: Request) {
           success: false,
           early: true,
           opensAt: gate.opensAt.toISOString(),
-          registration: { referenceId: registration.reference_id, fullName: registration.full_name },
+          registration: { referenceId: registration.reference_id, fullName: registration.full_name, ticketType },
         });
       }
     }
@@ -105,6 +113,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     success: true,
     alreadyCheckedIn: false,
-    registration: { referenceId: updated.reference_id, fullName: updated.full_name, checkedInAt: updated.checked_in_at },
+    registration: { referenceId: updated.reference_id, fullName: updated.full_name, checkedInAt: updated.checked_in_at, ticketType },
   });
 }

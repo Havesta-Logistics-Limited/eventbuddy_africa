@@ -8,14 +8,14 @@ import { useEvents } from "@/lib/store";
 import { Role } from "@/lib/types";
 import { getCaptureGate, windowFromEvent } from "@/lib/capture-window";
 import { formatDate, formatTime } from "@/lib/utils";
-import { FastScanStage, type ScanFlash } from "@/components/fast-scan-stage";
+import { FastScanStage, type ScanFlash, TicketTag } from "@/components/fast-scan-stage";
 import { KioskRegister } from "@/components/kiosk-register";
 import { playScanFeedback, unlockScanAudio } from "@/lib/scan-feedback";
 import { AuthLoading } from "@/components/auth-loading";
 
 const STAFF_ONLY: Role[] = ["staff"];
 
-type Result = { kind: "success" | "already" | "error"; name?: string; message: string };
+type Result = { kind: "success" | "already" | "error"; name?: string; ticket?: string | null; message: string };
 
 // Big, solid result states: read at arm's length at a bright venue door.
 const RESULT: Record<Result["kind"], { icon: React.ReactNode; title: string }> = {
@@ -41,7 +41,7 @@ export default function CheckinPage() {
     setResult(r);
     playScanFeedback(r.kind);
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    setFlash({ key: Date.now(), outcome: r.kind, title: RESULT[r.kind].title, name: r.name, message: r.message });
+    setFlash({ key: Date.now(), outcome: r.kind, title: RESULT[r.kind].title, name: r.name, ticket: r.ticket, message: r.message });
     flashTimerRef.current = setTimeout(() => setFlash(null), 2600);
   }
   const submittingRef = useRef(false);
@@ -95,7 +95,7 @@ export default function CheckinPage() {
     await checkIn(code, true);
   }
 
-  function askEarly(code: string, name: string, opensAt: string): Promise<void> {
+  function askEarly(code: string, name: string, opensAt: string, ticket?: string | null): Promise<void> {
     playScanFeedback("early");
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     const opens = new Date(opensAt).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
@@ -105,6 +105,7 @@ export default function CheckinPage() {
       outcome: "early",
       title: "Event hasn't started",
       name,
+      ticket,
       message: `The event starts ${opens}.`,
       actions: {
         primary: { label: "Check in anyway", onClick: () => void confirmEarly(code) },
@@ -122,7 +123,7 @@ export default function CheckinPage() {
     submittingRef.current = true;
     setSubmitting(true);
     setResult(null);
-    let early: { name: string; opensAt: string } | null = null;
+    let early: { name: string; opensAt: string; ticket?: string | null } | null = null;
     try {
       const res = await fetch("/api/checkin", {
         method: "POST",
@@ -132,17 +133,18 @@ export default function CheckinPage() {
       const json = await res.json();
       if (json.early) {
         // handled after the request settles (below), so the prompt can wait for staff
-        early = { name: json.registration.fullName, opensAt: json.opensAt };
+        early = { name: json.registration.fullName, opensAt: json.opensAt, ticket: json.registration.ticketType };
       } else if (!res.ok) {
         announce({ kind: "error", message: json.error || "Couldn't check this attendee in." });
       } else if (json.alreadyCheckedIn) {
         announce({
           kind: "already",
           name: json.registration.fullName,
+          ticket: json.registration.ticketType,
           message: `Already checked in at ${new Date(json.registration.checkedInAt).toLocaleTimeString()}`,
         });
       } else {
-        announce({ kind: "success", name: json.registration.fullName, message: allowEarly || skipEarlyAskRef.current ? "Checked in early" : "Checked in successfully" });
+        announce({ kind: "success", name: json.registration.fullName, ticket: json.registration.ticketType, message: allowEarly || skipEarlyAskRef.current ? "Checked in early" : "Checked in successfully" });
         setSessionCount((c) => c + 1);
       }
       // keep a mistyped code in the box so it can be corrected
@@ -155,7 +157,7 @@ export default function CheckinPage() {
     }
     if (early) {
       setReferenceId("");
-      await askEarly(code.trim(), early.name, early.opensAt);
+      await askEarly(code.trim(), early.name, early.opensAt, early.ticket);
     }
   }
 
@@ -318,6 +320,7 @@ export default function CheckinPage() {
             <div className="min-w-0">
               <p className="eb-scan-result-title">{RESULT[result.kind].title}</p>
               {result.name && <p className="eb-scan-result-name">{result.name}</p>}
+              {result.ticket && <TicketTag name={result.ticket} />}
               <p className="eb-scan-result-msg">{result.message}</p>
             </div>
           </div>
