@@ -25,8 +25,9 @@ type Body = {
  * Same trust model as /api/checkin: the event comes from the staff member's
  * own row, never from the client. Staff registering someone at the door is
  * the approval, so approval and the waitlist are skipped, but a free ticket's
- * capacity is still enforced. Paid tickets are refused: walk-ups buy those on
- * their own phone from the kiosk's "buy at the door" QR.
+ * capacity is still enforced. Paid tickets don't come here: the kiosk takes the
+ * payment through Paystack first (ticket-purchase/initialize with the staff id),
+ * and the paid registration is created already checked in.
  */
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as Partial<Body>;
@@ -163,9 +164,15 @@ export async function GET(request: Request) {
     .eq("event_id", event.id)
     .order("price_naira");
   const all = tickets ?? [];
+  const left = (t: { quantity_available: number | null; quantity_sold: number }) => (t.quantity_available == null ? null : Math.max(0, t.quantity_available - t.quantity_sold));
   const free = all
     .filter((t) => Number(t.price_naira) <= 0 && Number(t.group_size ?? 1) <= 1)
-    .map((t) => ({ id: t.id, name: t.name, left: t.quantity_available == null ? null : Math.max(0, t.quantity_available - t.quantity_sold) }));
+    .map((t) => ({ id: t.id, name: t.name, left: left(t) }));
+  // single paid tickets can be sold right at the kiosk (payment through Paystack
+  // first); group tickets need every guest's details, so those go through the buy QR
+  const paid = all
+    .filter((t) => Number(t.price_naira) > 0 && Number(t.group_size ?? 1) <= 1)
+    .map((t) => ({ id: t.id, name: t.name, priceNaira: Number(t.price_naira), left: left(t) }));
   const orgSlug = (event.organizations as unknown as { slug: string } | null)?.slug ?? "";
   const site = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   // a private event's only working public link is its private one (migration 0128)
@@ -180,7 +187,11 @@ export async function GET(request: Request) {
     // an event with no ticket types at all is free registration
     freeRegistration: all.length === 0 || free.length > 0,
     freeTickets: free,
+    paidTickets: paid,
     sellsPaid: all.some((t) => Number(t.price_naira) > 0),
+    sellsGroups: all.some((t) => Number(t.price_naira) > 0 && Number(t.group_size ?? 1) > 1),
+    orgSlug,
+    eventId: event.id,
     buyUrl,
   });
 }

@@ -283,7 +283,12 @@ export default function CheckinPage() {
                 announce({
                   kind: "success",
                   name: r.fullName,
-                  message: r.outcome === "existing" ? "Already registered, checked in now" : `Registered and checked in${r.emailSent ? " · ticket emailed" : ""}`,
+                  ticket: r.ticket,
+                  message: r.paid
+                    ? "Paid, registered and checked in · ticket emailed"
+                    : r.outcome === "existing"
+                      ? "Already registered, checked in now"
+                      : `Registered and checked in${r.emailSent ? " · ticket emailed" : ""}`,
                 });
                 setSessionCount((c) => c + 1);
               }}

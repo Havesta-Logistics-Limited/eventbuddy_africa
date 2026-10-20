@@ -32,6 +32,10 @@ type InitializeBody = {
   ref?: string;
   /** the link and source that brought them (marketing report, migration 0132) */
   attribution?: unknown;
+  /** Kiosk walk-up sale: the door staff member taking the payment. The sale is
+   *  checked in the moment it's paid. Same trust model as /api/checkin: the
+   *  staff id is the door's session, checked against this event below. */
+  kioskStaffId?: string;
   /** Group (bundle) tickets only: the other people this purchase admits, named
    *  by the buyer. Each becomes their own registration with its own QR. */
   guests?: unknown;
@@ -48,7 +52,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const { slug } = await ctx.params;
   const body = (await request.json()) as Partial<InitializeBody>;
   const { eventId, ticketTypeId, firstName, lastName, email, phone, customAnswers, discountCode, source, hideFromGuestList, ref, guests } = body;
-  const resolvedSource = source === "mobile" ? "mobile" : "web";
+  const resolvedSource: "web" | "mobile" | "kiosk" = source === "mobile" ? "mobile" : "web";
 
   if (!eventId || !ticketTypeId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -95,10 +99,21 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     .maybeSingle();
   if (!event) return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });
   if (!event.published) return NextResponse.json({ error: "This event isn't live yet." }, { status: 403 });
-  if (event.registration_open === false) {
+  // a kiosk sale: the staff member must be door staff for this very event
+  let kioskStaffId: string | null = null;
+  if (body.kioskStaffId) {
+    const { data: staffRow } = await admin.from("staff").select("id, event_id, role").eq("id", body.kioskStaffId).maybeSingle();
+    if (!staffRow || staffRow.event_id !== event.id || staffRow.role !== "staff") {
+      return NextResponse.json({ error: "Your door session has expired — please sign in again." }, { status: 401 });
+    }
+    kioskStaffId = staffRow.id;
+  }
+
+  // door staff can sell before online registration opens, or on a door-only event
+  if (!kioskStaffId && event.registration_open === false) {
     return NextResponse.json({ error: "Registration hasn't opened yet. Leave your email on the event page and we'll tell you when it opens." }, { status: 403 });
   }
-  if (event.event_format !== "virtual" && event.self_registration_enabled === false) {
+  if (!kioskStaffId && event.event_format !== "virtual" && event.self_registration_enabled === false) {
     return NextResponse.json({ error: "Registration isn't available for this event." }, { status: 403 });
   }
 
@@ -231,7 +246,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       email: email.trim(),
       phone: phoneCheck.value,
       customAnswers: customAnswers || {},
-      source: resolvedSource,
+      source: kioskStaffId ? "kiosk" : resolvedSource,
+      ...(kioskStaffId ? { kioskStaffId } : {}),
       hideFromGuestList: Boolean(hideFromGuestList),
       guests: guestCheck.guests,
     },
@@ -241,7 +257,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   try {
-    const { authorizationUrl } = await paystackInitialize({
+    const { authorizationUrl, accessCode } = await paystackInitialize({
       email: email.trim(),
       amountMinor,
       reference,
@@ -252,7 +268,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       transactionChargeMinor: held ? undefined : platformFeeMinor + processingNaira * 100,
       metadata: { eventId: event.id, organizationId: org.id, ticketTypeId: ticket.id, discountCodeId },
     });
-    return NextResponse.json({ authorizationUrl });
+    // the kiosk opens Paystack's payment window on the door device with the access code
+    return NextResponse.json({ authorizationUrl, ...(kioskStaffId ? { accessCode, reference } : {}) });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't start payment." }, { status: 424 });
   }

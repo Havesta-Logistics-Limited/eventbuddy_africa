@@ -755,10 +755,12 @@ type PendingTicketTxn = {
     email: string;
     phone: string | null;
     customAnswers?: Record<string, string | string[]>;
-    source?: "web" | "mobile";
+    source?: "web" | "mobile" | "kiosk";
     hideFromGuestList?: boolean;
     /** Group (bundle) tickets: the other people this purchase admits. */
     guests?: { firstName: string; lastName: string; email: string }[];
+    /** Sold at the door by this staff member: checked in as soon as it's paid. */
+    kioskStaffId?: string;
   } | null;
 };
 
@@ -856,6 +858,13 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
     return { referenceId: null, hubUrl: virtualHub };
   }
 
+  // a kiosk sale is checked in the moment it's paid, by the staff member who sold it
+  let kioskCheckin: { status: "checked_in"; checked_in_at: string; checked_in_by: string } | null = null;
+  if (info.kioskStaffId) {
+    const { data: staffRow } = await supabase.from("staff").select("id, event_id").eq("id", info.kioskStaffId).maybeSingle();
+    if (staffRow?.event_id === txn.event_id) kioskCheckin = { status: "checked_in", checked_in_at: new Date().toISOString(), checked_in_by: staffRow.id };
+  }
+
   let referenceId: string | null = null;
   let registrationId: string | null = null;
   let lastError: { message: string; code?: string } | null = null;
@@ -872,8 +881,9 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
         email: info.email,
         phone: info.phone || null,
         custom_answers: info.customAnswers || {},
-        source: info.source === "mobile" ? "mobile" : "web",
+        source: info.source === "mobile" ? "mobile" : kioskCheckin ? "kiosk" : "web",
         hide_from_guest_list: Boolean(info.hideFromGuestList),
+        ...(kioskCheckin ?? {}),
         // Carried over from the transaction: the referral was known at
         // checkout, but this registration only exists now that the payment
         // settled.
