@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { preconnect } from "react-dom";
 import { copyText } from "@/lib/copy-text";
 import { ExhibitCta } from "@/components/exhibit-cta";
 import { ExhibitorStrip } from "@/components/exhibitor-strip";
@@ -363,6 +364,12 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const [discountCodeInput, setDiscountCodeInput] = useState("");
   // card processing the buyer pays on top of a paid ticket (migration 0130)
   const [processingFee, setProcessingFee] = useState<ProcessingFee | null>(null);
+  // warm up the connection to Paystack's checkout while the buyer fills the
+  // form, so the payment page opens faster after Buy Ticket
+  useEffect(() => {
+    preconnect("https://checkout.paystack.com");
+    preconnect("https://api.paystack.co");
+  }, []);
   useEffect(() => {
     fetchProcessingFee()
       .then(setProcessingFee)

@@ -60,49 +60,68 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const phoneCheck = optionalPhone(phone);
   if (!phoneCheck.ok) return NextResponse.json({ error: phoneCheck.error }, { status: 400 });
 
+  const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!apiKey || apiKey === "paste_your_supabase_service_role_key_here") {
+    return NextResponse.json({ error: "Not configured yet." }, { status: 500 });
+  }
+  const admin = createAdminClient();
+
+  // Everything this checkout needs is looked up at once rather than one after
+  // another: each lookup is a round trip to the database, and in sequence
+  // they kept the buyer waiting seconds before Paystack opened. The checks
+  // below still run in the same order with the same messages.
+  //
   // Each call creates a paystack_transactions row and a real Paystack checkout
   // session even before the buyer pays — unlimited requests would spam both.
   // Same venue-NAT problem as /register, and worse here: 10/10min meant the
   // 11th person buying at the door was refused. Per-person control is the
   // email — which is also the right key against card testing, since that
   // burns many attempts per identity — with IP left as a flood ceiling.
-  if (!(await checkRateLimit(`ticket-purchase:email:${email.trim().toLowerCase()}`, 10, 10 * 60))) {
-    return rateLimitedResponse();
-  }
-  if (!(await checkRateLimit(`ticket-purchase:ip:${clientIp(request)}`, 300, 10 * 60))) {
-    return rateLimitedResponse();
-  }
+  const [emailOk, ipOk, { data: org }, { data: settings }, { data: eventRow }, { data: ticket }, { data: staffRow }] = await Promise.all([
+    checkRateLimit(`ticket-purchase:email:${email.trim().toLowerCase()}`, 10, 10 * 60),
+    checkRateLimit(`ticket-purchase:ip:${clientIp(request)}`, 300, 10 * 60),
+    admin.from("organizations").select("id, is_suspended, is_fee_exempt, paystack_subaccount_code, payout_account_number").ilike("slug", slug).maybeSingle(),
+    // eventbuddy's fee for this one ticket (percentage of the price paid + flat
+    // amount, migration 0098), read live so a rate change applies to the very
+    // next sale; held funds (0102); the buyer's processing fee (0130)
+    admin
+      .from("platform_settings")
+      .select(
+        "ticket_fee_percentage, ticket_fee_flat_naira, held_funds_enabled, buyer_pays_processing, processing_fee_percentage, processing_fee_flat_naira, processing_fee_flat_waived_below_naira, processing_fee_cap_naira"
+      )
+      .eq("id", true)
+      .maybeSingle(),
+    admin
+      .from("events")
+      .select("id, organization_id, date, end_date, start_time, end_time, timezone, capture_override, event_format, self_registration_enabled, published, registration_open")
+      .eq("id", eventId)
+      .maybeSingle(),
+    admin
+      .from("ticket_types")
+      .select("id, price_naira, quantity_available, quantity_sold, sales_start, sales_end, group_size")
+      .eq("id", ticketTypeId)
+      .eq("event_id", eventId)
+      .maybeSingle(),
+    body.kioskStaffId ? admin.from("staff").select("id, event_id, role").eq("id", body.kioskStaffId).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
+  if (!emailOk || !ipOk) return rateLimitedResponse();
 
-  const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!apiKey || apiKey === "paste_your_supabase_service_role_key_here") {
-    return NextResponse.json({ error: "Not configured yet." }, { status: 500 });
-  }
-
-  const admin = createAdminClient();
-
-  const { data: org } = await admin.from("organizations").select("id, is_suspended, is_fee_exempt, paystack_subaccount_code, payout_account_number").ilike("slug", slug).maybeSingle();
   if (!org) return NextResponse.json({ error: "No organization found for that link." }, { status: 404 });
   if (org.is_suspended) return NextResponse.json({ error: "Ticket sales are unavailable for this event right now." }, { status: 403 });
   // Held funds: sales need a verified payout bank account on record (where
   // eventbuddy sends approved payouts). Legacy split mode needs the subaccount.
-  const { data: payoutMode } = await admin.from("platform_settings").select("held_funds_enabled").eq("id", true).maybeSingle();
-  const payoutReady = payoutMode?.held_funds_enabled ? Boolean(org.payout_account_number) : Boolean(org.paystack_subaccount_code);
+  const held = Boolean(settings?.held_funds_enabled);
+  const payoutReady = held ? Boolean(org.payout_account_number) : Boolean(org.paystack_subaccount_code);
   if (!payoutReady) {
     return NextResponse.json({ error: "This organizer hasn't added their payout bank account yet — please check back later." }, { status: 400 });
   }
 
-  const { data: event } = await admin
-    .from("events")
-    .select("id, date, end_date, start_time, end_time, timezone, capture_override, event_format, self_registration_enabled, published, registration_open")
-    .eq("id", eventId)
-    .eq("organization_id", org.id)
-    .maybeSingle();
+  const event = eventRow && eventRow.organization_id === org.id ? eventRow : null;
   if (!event) return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });
   if (!event.published) return NextResponse.json({ error: "This event isn't live yet." }, { status: 403 });
   // a kiosk sale: the staff member must be door staff for this very event
   let kioskStaffId: string | null = null;
   if (body.kioskStaffId) {
-    const { data: staffRow } = await admin.from("staff").select("id, event_id, role").eq("id", body.kioskStaffId).maybeSingle();
     if (!staffRow || staffRow.event_id !== event.id || staffRow.role !== "staff") {
       return NextResponse.json({ error: "Your door session has expired — please sign in again." }, { status: 401 });
     }
@@ -128,12 +147,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     return NextResponse.json({ error: message }, { status: 403 });
   }
 
-  const { data: ticket } = await admin
-    .from("ticket_types")
-    .select("id, price_naira, quantity_available, quantity_sold, sales_start, sales_end, group_size")
-    .eq("id", ticketTypeId)
-    .eq("event_id", event.id)
-    .maybeSingle();
   if (!ticket) return NextResponse.json({ error: "This ticket type couldn't be found." }, { status: 404 });
 
   const now = new Date();
@@ -161,27 +174,38 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     return NextResponse.json({ error: "This is a free ticket — use registration directly." }, { status: 400 });
   }
 
-  // unverified organizers can only sell so many paid tickets (migration 0111)
-  const cap = await checkSalesCap(admin, org.id, event.id);
-  if (!cap.allowed) return NextResponse.json({ error: cap.message }, { status: 409 });
-
+  // Second round, also at once: the unverified organizer's sales cap (0111),
+  // the discount code, the organizer's fee rate and the promoter link.
+  //
   // Discount codes are re-validated fresh here via the exact same function the
   // checkout preview calls (public_validate_discount_code) — never trust a
   // discounted amount the client computed, and never re-derive the validation
   // rules in TypeScript where they could drift from what the preview showed.
+  // The organizer's rate: fee-exempt, a custom agreed rate (migration 0126),
+  // their plan's rate (0104), or the platform default; see organizerTicketFee.
+  const [cap, discountRes, { fee: organizerFee }, referralId] = await Promise.all([
+    checkSalesCap(admin, org.id, event.id),
+    discountCode?.trim()
+      ? admin
+          .rpc("public_validate_discount_code", { p_event_id: event.id, p_code: discountCode.trim(), p_ticket_type_id: ticket.id, p_email: email.trim() })
+          .maybeSingle<{
+            valid: boolean;
+            error_message: string | null;
+            discount_code_id: string | null;
+            discount_type: "percentage" | "fixed" | null;
+            discount_value: number | null;
+            max_discount_naira: number | null;
+          }>()
+      : Promise.resolve(null),
+    organizerTicketFee(admin, org.id),
+    resolveReferralId(admin, event.id, ref),
+  ]);
+  if (!cap.allowed) return NextResponse.json({ error: cap.message }, { status: 409 });
+
   let discountCodeId: string | null = null;
   let amountNaira = listedPriceNaira;
-  if (discountCode?.trim()) {
-    const { data: validation, error: validationErr } = await admin
-      .rpc("public_validate_discount_code", { p_event_id: event.id, p_code: discountCode.trim(), p_ticket_type_id: ticket.id, p_email: email.trim() })
-      .maybeSingle<{
-        valid: boolean;
-        error_message: string | null;
-        discount_code_id: string | null;
-        discount_type: "percentage" | "fixed" | null;
-        discount_value: number | null;
-        max_discount_naira: number | null;
-      }>();
+  if (discountRes) {
+    const { data: validation, error: validationErr } = discountRes;
     if (validationErr) return NextResponse.json({ error: validationErr.message }, { status: 500 });
     if (!validation?.valid || !validation.discount_type || validation.discount_value == null) {
       return NextResponse.json({ error: validation?.error_message || "This discount code isn't valid for this event." }, { status: 404 });
@@ -197,31 +221,15 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   const callbackUrl = `${siteUrl}/${slug}/events/${eventId}/register?payment=callback&reference=${encodeURIComponent(reference)}`;
 
-  // eventbuddy's fee for this one ticket (percentage of the price paid + flat
-  // amount, migration 0098), read live so a rate change applies to the very next
-  // sale. Fee-exempt organizations pay nothing. Paystack splits the payment by this
-  // exact amount; finalize later records what it actually took (fees_split).
-  const { data: feeSettings } = await admin
-    .from("platform_settings")
-    .select(
-      "ticket_fee_percentage, ticket_fee_flat_naira, held_funds_enabled, buyer_pays_processing, processing_fee_percentage, processing_fee_flat_naira, processing_fee_flat_waived_below_naira, processing_fee_cap_naira"
-    )
-    .eq("id", true)
-    .maybeSingle();
-  // The organizer's rate: fee-exempt, a custom agreed rate (migration 0126),
-  // their plan's rate (0104), or the platform default; see organizerTicketFee.
-  const { fee: organizerFee } = await organizerTicketFee(admin, org.id);
   // The buyer pays the card processing on top (migration 0130), so the ticket
   // price lands whole after Paystack's cut; amount_naira stays the ticket price.
-  const processingNaira = processingFeeNaira(amountNaira, processingFeeFromSettings(feeSettings));
+  const processingNaira = processingFeeNaira(amountNaira, processingFeeFromSettings(settings));
   const { currency, amountMinor } = nairaToChargeAmount(amountNaira + processingNaira);
   const platformFeeMinor = org.is_fee_exempt ? 0 : ticketFeeMinor(amountNaira, organizerFee, groupSize);
   // Held funds (migration 0102): no subaccount split; the whole payment lands in
   // eventbuddy's balance and finalize credits the organizer's ledger with the
   // sale minus this fee, recorded here because Paystack won't report a split.
-  const held = Boolean(feeSettings?.held_funds_enabled);
 
-  const referralId = await resolveReferralId(admin, event.id, ref);
   const attribution = cleanAttribution(body.attribution);
 
   const { error: insertError } = await admin.from("paystack_transactions").insert({
