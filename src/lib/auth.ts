@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { logout, useSession } from "./store";
 import { createClient } from "./supabase/client";
 import { Role, Session } from "./types";
+import { canView, TEAM_SECTIONS, type TeamSection } from "./team-permissions";
 
 function fallbackRouteFor(role: Role, eventId?: string) {
   if (role === "admin") return "/dashboard";
@@ -84,4 +85,21 @@ export function useRequireRole(allowedRoles: Role[]): Session | null {
   }, [ready, session, router]);
 
   return ready && allowed ? session : null;
+}
+
+const SECTION_HOME: Record<TeamSection, string> = { events: "/dashboard", leads: "/leads", audience: "/audience", payouts: "/payouts", settings: "/admin" };
+
+/**
+ * Team permissions (migration 0137): sends a team member away from a page
+ * they have no access to, to the first page they do have. Owners pass.
+ */
+export function useRequireSection(session: Session | null, section: TeamSection): boolean {
+  const router = useRouter();
+  const allowed = !session || session.role !== "admin" || canView(session.permissions, section);
+  useEffect(() => {
+    if (allowed || !session) return;
+    const next = TEAM_SECTIONS.find((s) => canView(session.permissions, s));
+    router.replace(next ? SECTION_HOME[next] : "/login");
+  }, [allowed, session, router]);
+  return allowed;
 }

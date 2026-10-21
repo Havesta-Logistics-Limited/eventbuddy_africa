@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
-import { resolveOrgAccess } from "@/lib/org-access";
+import { orgCan, resolveOrgAccess } from "@/lib/org-access";
 import { sendRegistrationEmail } from "@/lib/registration-email";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
@@ -37,6 +37,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   if (org.role === "event_support" && org.eventId !== eventId) {
     return NextResponse.json({ error: "Not authorized for this event." }, { status: 403 });
   }
+  // team permissions (migration 0137): changing an event needs Events edit access
+  if (!orgCan(org, "events", true)) return NextResponse.json({ error: "You have view-only access to events." }, { status: 403 });
 
   const { data: event } = await supabase
     .from("events")

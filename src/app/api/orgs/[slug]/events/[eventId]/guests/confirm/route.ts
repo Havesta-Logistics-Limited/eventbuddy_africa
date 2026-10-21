@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
-import { resolveOrgAccess } from "@/lib/org-access";
+import { orgCan, resolveOrgAccess } from "@/lib/org-access";
 import { generateReferenceId } from "@/lib/utils";
 
 const BodySchema = z.object({ guestIds: z.array(z.string().uuid()).min(1).max(500) });
@@ -31,6 +31,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const org = await resolveOrgAccess(supabase, user.id, slug);
   if (!org) return NextResponse.json({ error: "Not authorized for this organization." }, { status: 403 });
   if (org.role === "event_support" && org.eventId !== eventId) return NextResponse.json({ error: "Not authorized for this event." }, { status: 403 });
+  // team permissions (migration 0137): changing an event needs Events edit access
+  if (!orgCan(org, "events", true)) return NextResponse.json({ error: "You have view-only access to events." }, { status: 403 });
 
   const admin = createAdminClient();
   const { data: event } = await admin.from("events").select("id, organization_id, is_invite_only, event_format").eq("id", eventId).eq("organization_id", org.id).maybeSingle();

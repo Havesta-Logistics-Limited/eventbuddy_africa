@@ -4,7 +4,7 @@ import { Resend } from "resend";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { resolveOrgAccess } from "@/lib/org-access";
+import { orgCan, resolveOrgAccess } from "@/lib/org-access";
 import { renderEmailShell, emailButton, escapeHtml } from "@/lib/email-template";
 import { unsubscribeUrl } from "@/lib/unsubscribe";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
@@ -181,7 +181,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   const access = await resolveOrgAccess(supabase, user.id, slug);
-  if (!access || access.role !== "admin") {
+  if (!access || access.role !== "admin" || !orgCan(access, "audience", true)) {
     return NextResponse.json({ error: "Not authorized to send a blast for this organization." }, { status: 403 });
   }
 

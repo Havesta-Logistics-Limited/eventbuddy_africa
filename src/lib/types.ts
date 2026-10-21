@@ -213,6 +213,10 @@ export interface StaffRecord {
   orgSlug?: string;
   /** Promoters only (migration 0105): their public handle. */
   promoterHandle?: string;
+  /** Dashboard: true for the organization's owner (everything, plus team, bank and payouts). */
+  isOwner?: boolean;
+  /** Team members (migration 0137): their access per page; unset for the owner. */
+  permissions?: import("./team-permissions").TeamPermissions;
 }
 
 export type LevelOfInterest = "BSc" | "MSc" | "PhD";

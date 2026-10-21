@@ -3,18 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Calendar, Users, Settings, LogOut, Menu, X, BookOpen, ScanLine, ShieldCheck, Megaphone, Wallet, Store } from "lucide-react";
+import { Calendar, Users, Settings, LogOut, Menu, X, BookOpen, ScanLine, ShieldCheck, Megaphone, Wallet, Store, Eye } from "lucide-react";
 import { getDestinationById, getEventById, getUniversityById, logout, useSession } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/logo";
 import { BadgeObject, OrbsObject, TicketObject, WristbandObject } from "@/components/landing/event-objects";
 
-const adminNav = [
-  { to: "/dashboard", label: "Events", icon: Calendar },
-  { to: "/leads", label: "Leads", icon: Users },
-  { to: "/audience", label: "Audience", icon: Megaphone },
-  { to: "/payouts", label: "Payouts", icon: Wallet },
-  { to: "/admin", label: "Settings", icon: Settings },
+import { canEdit, canView, SECTION_LABELS, type TeamSection } from "@/lib/team-permissions";
+const adminNav: { to: string; label: string; icon: typeof Calendar; section: TeamSection }[] = [
+  { to: "/dashboard", label: "Events", icon: Calendar, section: "events" },
+  { to: "/leads", label: "Leads", icon: Users, section: "leads" },
+  { to: "/audience", label: "Audience", icon: Megaphone, section: "audience" },
+  { to: "/payouts", label: "Payouts", icon: Wallet, section: "payouts" },
+  { to: "/admin", label: "Settings", icon: Settings, section: "settings" },
 ];
 
 const staffNav = [
@@ -56,10 +57,28 @@ export function Shell({ children }: { children: React.ReactNode }) {
       .then(({ data }) => setIsPlatformAdmin(!!data));
   }, [isAdmin, session]);
 
+  // a team member with view-only access to the page they're on sees a notice
+  const pageSection: TeamSection | null =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/events") || pathname.startsWith("/tours")
+      ? "events"
+      : pathname.startsWith("/leads")
+        ? "leads"
+        : pathname.startsWith("/audience")
+          ? "audience"
+          : pathname.startsWith("/payouts")
+            ? "payouts"
+            : pathname.startsWith("/admin")
+              ? "settings"
+              : null;
+  const viewOnlySection =
+    (isAdmin || isEventSupport) && pageSection && session?.permissions && canView(session.permissions, pageSection) && !canEdit(session.permissions, pageSection) ? pageSection : null;
+
+  // team members only see the pages they have access to (migration 0137)
+  const myAdminNav = adminNav.filter((n) => canView(session?.permissions, n.section));
   const nav = isAdmin
     ? isPlatformAdmin
-      ? [...adminNav, { to: "/platform", label: "Platform", icon: ShieldCheck }]
-      : adminNav
+      ? [...myAdminNav, { to: "/platform", label: "Platform", icon: ShieldCheck }]
+      : myAdminNav
     : isEventSupport
       ? [] // locked to their one event page — nothing else to navigate to
       : isPromoter
@@ -153,7 +172,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {/* min-w-0 keeps this a shrinkable flex item — without it, wide content
           (e.g. the leads table's nowrap columns) forces the whole page past
           the viewport instead of scrolling inside its own overflow-x-auto. */}
-      <main className="flex-1 min-w-0 md:ml-64 min-h-screen pt-14 md:pt-0 bg-canvas">{children}</main>
+      <main className="flex-1 min-w-0 md:ml-64 min-h-screen pt-14 md:pt-0 bg-canvas">
+        {viewOnlySection && (
+          <div className="eb-viewonly" role="status">
+            <Eye size={15} aria-hidden="true" />
+            <span>
+              <strong>View only.</strong> {`You can look around ${SECTION_LABELS[viewOnlySection]}, but not change anything here. Ask the owner if you need edit access.`}
+            </span>
+          </div>
+        )}
+        {children}
+      </main>
     </div>
   );
 }

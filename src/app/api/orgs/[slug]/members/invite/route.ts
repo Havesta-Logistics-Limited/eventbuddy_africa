@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveOrgAccess } from "@/lib/org-access";
+import { EVENT_HELPER, FULL_ACCESS, sanitizePermissions } from "@/lib/team-permissions";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 import { Resend } from "resend";
@@ -11,6 +12,8 @@ const BodySchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
   role: z.enum(["admin", "event_support"]),
   eventId: z.string().uuid().optional(),
+  /** access per page (migration 0137); defaults to the role's usual access */
+  permissions: z.record(z.string(), z.string()).optional(),
 });
 
 async function sendInviteEmail(to: string, orgName: string, role: "admin" | "event_support", inviteUrl: string) {
@@ -67,7 +70,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   const access = await resolveOrgAccess(supabase, user.id, slug);
-  if (!access || access.role !== "admin") {
+  // managing the team is the owner's alone (migration 0137)
+  if (!access || !access.isOwner) {
     return NextResponse.json({ error: "Not authorized to invite teammates for this organization." }, { status: 403 });
   }
 
@@ -111,6 +115,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     role,
     event_id: role === "event_support" ? eventId : null,
     status: "pending",
+    permissions: (parsed.data.permissions && sanitizePermissions(parsed.data.permissions)) || (role === "event_support" ? EVENT_HELPER : FULL_ACCESS),
   });
   if (insertError) {
     await admin.auth.admin.deleteUser(linkData.user.id);

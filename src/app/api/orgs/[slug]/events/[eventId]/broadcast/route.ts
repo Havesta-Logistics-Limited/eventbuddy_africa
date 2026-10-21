@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBroadcastEmail, BROADCAST_RECIPIENT_CAP } from "@/lib/broadcast-email";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 import { stripHtml } from "@/lib/rich-text";
-import { resolveOrgAccess } from "@/lib/org-access";
+import { orgCan, resolveOrgAccess } from "@/lib/org-access";
 import { fetchAllRows } from "@/lib/fetch-all-rows";
 
 type Body = { subject?: string; body?: string };
@@ -40,6 +40,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   if (org.role === "event_support" && org.eventId !== eventId) {
     return NextResponse.json({ error: "Not authorized for this event." }, { status: 403 });
   }
+  // team permissions (migration 0137): changing an event needs Events edit access
+  if (!orgCan(org, "events", true)) return NextResponse.json({ error: "You have view-only access to events." }, { status: 403 });
 
   const { data: event } = await supabase.from("events").select("id, name").eq("id", eventId).eq("organization_id", org.id).maybeSingle();
   if (!event) return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });

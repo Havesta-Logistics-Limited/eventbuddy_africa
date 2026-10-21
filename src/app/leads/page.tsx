@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Download, Loader2, Mail, Paperclip, Search, Users, X } from "lucide-react";
 import { Shell } from "@/components/shell";
-import { useRequireRole } from "@/lib/auth";
+import { useRequireRole, useRequireSection } from "@/lib/auth";
 import { getDestinationById, getUniversityById, useDataReady, useDestinations, useEvents, useLeads, useUniversities } from "@/lib/store";
 import { EventRecord, Role } from "@/lib/types";
 import { downloadCsv, leadsToCsv } from "@/lib/csv";
@@ -19,6 +19,8 @@ const ADMIN_OR_REP: Role[] = ["admin", "rep"];
 
 export default function LeadsPage() {
   const session = useRequireRole(ADMIN_OR_REP);
+  // team permissions (migration 0137): no access to this page sends them elsewhere
+  useRequireSection(session, "leads");
   const dataReady = useDataReady();
   const leads = useLeads();
   const events = useEvents();

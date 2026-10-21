@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { canView, parsePermissions } from "@/lib/team-permissions";
 import { resolveRouteUser } from "@/lib/supabase/route-auth";
 
 /**
@@ -17,12 +18,13 @@ export async function GET(request: Request) {
   if (!org) {
     const { data: membership } = await supabase
       .from("organization_members")
-      .select("organization_id")
+      .select("organization_id, permissions")
       .eq("user_id", user.id)
       .eq("role", "admin")
       .eq("status", "active")
       .maybeSingle();
-    if (membership) {
+    // team permissions (migration 0137): sales need Payouts access
+    if (membership && canView(parsePermissions(membership.permissions, "admin"), "payouts")) {
       const { data: memberOrg } = await supabase.from("organizations").select("id").eq("id", membership.organization_id).maybeSingle();
       org = memberOrg;
     }

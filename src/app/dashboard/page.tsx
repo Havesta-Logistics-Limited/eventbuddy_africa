@@ -1,5 +1,6 @@
 "use client";
 
+import { canEdit } from "@/lib/team-permissions";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,7 +9,7 @@ import { claimGuestDraft } from "@/lib/guest-draft-claim";
 import { toast } from "sonner";
 import { Plus, Calendar, MapPin, Users, QrCode, Clock, CheckCircle2, AlertCircle, Search, SlidersHorizontal, Presentation } from "lucide-react";
 import { Shell } from "@/components/shell";
-import { useRequireRole } from "@/lib/auth";
+import { useRequireRole, useRequireSection } from "@/lib/auth";
 import { PersistError, addEvent, addEventSeries, useDataReady, useDestinations, useEvents, useLeads, useRegistrations, useTours } from "@/lib/store";
 import { EventRecord, EventStatus, Role } from "@/lib/types";
 import { getEventStatus } from "@/lib/capture-window";
@@ -126,6 +127,8 @@ function EventCard({ event }: { event: EventRecord }) {
 
 export default function DashboardPage() {
   const session = useRequireRole(ADMIN_ONLY);
+  // team permissions (migration 0137): no access to this page sends them elsewhere
+  useRequireSection(session, "events");
   const dataReady = useDataReady();
   const events = useEvents();
   const destinations = useDestinations();
@@ -304,13 +307,15 @@ export default function DashboardPage() {
             <h1 className="eb-app-title">Events</h1>
             <p className="eb-app-sub">Manage your event schedule</p>
           </div>
-          <button
-            onClick={() => setShowWizard(true)}
-            className="eb-btn eb-btn--primary h-11 shrink-0 whitespace-nowrap px-5"
-          >
-            <Plus size={16} />
-            New Event
-          </button>
+          {canEdit(session?.permissions, "events") && (
+            <button
+              onClick={() => setShowWizard(true)}
+              className="eb-btn eb-btn--primary h-11 shrink-0 whitespace-nowrap px-5"
+            >
+              <Plus size={16} />
+              New Event
+            </button>
+          )}
         </div>
 
         {dataReady && events.length === 0 && <FreeStartBanner />}

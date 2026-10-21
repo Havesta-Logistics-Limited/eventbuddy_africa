@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { canEdit, canView, parsePermissions, type TeamPermissions, type TeamSection } from "@/lib/team-permissions";
 
 export type OrgAccess = {
   id: string;
@@ -6,7 +7,16 @@ export type OrgAccess = {
   role: "admin" | "event_support";
   /** Set only for an event_support member — the one event they may act on. */
   eventId?: string;
+  /** the organization's owner: everything, plus team, bank account and payouts */
+  isOwner: boolean;
+  /** team members' access per page (migration 0137); unset for the owner */
+  permissions?: TeamPermissions;
 };
+
+/** May this signed-in user read (edit = false) or change (edit = true) this page's data? */
+export function orgCan(access: OrgAccess, section: TeamSection, edit: boolean): boolean {
+  return edit ? canEdit(access.permissions, section) : canView(access.permissions, section);
+}
 
 /**
  * Resolves which organization (if any) a signed-in dashboard user may act on for
@@ -18,19 +28,20 @@ export type OrgAccess = {
  */
 export async function resolveOrgAccess(supabase: SupabaseClient, userId: string, orgSlug: string): Promise<OrgAccess | null> {
   const { data: ownedOrg } = await supabase.from("organizations").select("id, slug").eq("owner_user_id", userId).ilike("slug", orgSlug).maybeSingle();
-  if (ownedOrg) return { id: ownedOrg.id, slug: ownedOrg.slug, role: "admin" };
+  if (ownedOrg) return { id: ownedOrg.id, slug: ownedOrg.slug, role: "admin", isOwner: true };
 
   const { data: org } = await supabase.from("organizations").select("id, slug").ilike("slug", orgSlug).maybeSingle();
   if (!org) return null;
 
   const { data: membership } = await supabase
     .from("organization_members")
-    .select("role, event_id")
+    .select("role, event_id, permissions")
     .eq("organization_id", org.id)
     .eq("user_id", userId)
     .eq("status", "active")
     .maybeSingle();
   if (!membership) return null;
 
-  return { id: org.id, slug: org.slug, role: membership.role as "admin" | "event_support", eventId: membership.event_id ?? undefined };
+  const role = membership.role as "admin" | "event_support";
+  return { id: org.id, slug: org.slug, role, eventId: membership.event_id ?? undefined, isOwner: false, permissions: parsePermissions(membership.permissions, role) };
 }

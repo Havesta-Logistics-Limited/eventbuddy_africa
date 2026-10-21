@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AlertCircle, ChevronDown, ChevronLeft, ChevronRight, Download, Megaphone, Search, Send, UserCheck, UserMinus, Users, X } from "lucide-react";
 import { Shell } from "@/components/shell";
-import { useRequireRole } from "@/lib/auth";
+import { useRequireRole, useRequireSection } from "@/lib/auth";
 import { resolveMyOrgId, useEvents, useLeads, useRegistrations } from "@/lib/store";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Role } from "@/lib/types";
@@ -375,6 +375,8 @@ function UnsubscribedSection({ orgId }: { orgId: string }) {
  *  organization_audience/organization_audience_count (migration 0065). */
 export default function AudiencePage() {
   const session = useRequireRole(ADMIN_ONLY);
+  // team permissions (migration 0137): no access to this page sends them elsewhere
+  useRequireSection(session, "audience");
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState<AudienceMember[]>([]);
   const [search, setSearch] = useState("");

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Check, Copy, ExternalLink, Plus, Trash2, X } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { AuthLoading } from "@/components/auth-loading";
-import { useRequireRole } from "@/lib/auth";
+import { useRequireRole, useRequireSection } from "@/lib/auth";
 import {
   addTourCity,
   applyTourDetails,
@@ -47,6 +47,8 @@ function dateParts(date: string) {
  */
 export default function TourPage() {
   const session = useRequireRole(ADMIN_ONLY);
+  // team permissions (migration 0137): no access to this page sends them elsewhere
+  useRequireSection(session, "events");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const tours = useTours();

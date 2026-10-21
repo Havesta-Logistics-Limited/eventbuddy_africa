@@ -1,6 +1,7 @@
 "use client";
 
 import { parseInviteDesign } from "./invite-design";
+import { parsePermissions, type TeamPermissions } from "./team-permissions";
 import { useEffect, useSyncExternalStore } from "react";
 import {
   Destination,
@@ -96,7 +97,11 @@ export class PersistError extends Error {
       cause && typeof cause === "object" && "message" in cause && typeof (cause as { message: unknown }).message === "string"
         ? (cause as { message: string }).message
         : undefined;
-    super(detail || "Couldn't save your changes. Please try again.");
+    // a team member whose access doesn't allow this (migration 0137): the
+    // database refuses it (or matches no row); say so plainly
+    const code = cause && typeof cause === "object" && "code" in cause ? String((cause as { code: unknown }).code) : "";
+    const blocked = Boolean(sessionCache?.permissions) && (code === "42501" || code === "PGRST116" || /row-level security/i.test(detail ?? ""));
+    super(blocked ? "You have view-only access here, so this can't be changed. Ask the owner for edit access." : detail || "Couldn't save your changes. Please try again.");
     this.cause = cause;
   }
 }
@@ -809,6 +814,23 @@ async function fetchAdminData() {
     if (orgRes.data && sessionCache && (sessionCache.orgSlug !== (orgRes.data.slug ?? undefined) || sessionCache.name !== orgRes.data.name)) {
       sessionCache = { ...sessionCache, name: orgRes.data.name || sessionCache.name, orgSlug: orgRes.data.slug ?? undefined };
       persistSession();
+    }
+    // a team member's access can be changed by the owner at any time: keep it current
+    if (sessionCache && !sessionCache.isOwner) {
+      const {
+        data: { user: me },
+      } = await supabase.auth.getUser();
+      if (me) {
+        const { data: own } = await supabase.from("organization_members").select("role, event_id, permissions, status").eq("user_id", me.id).eq("organization_id", orgId).maybeSingle();
+        if (own && own.status === "active") {
+          const next = parsePermissions(own.permissions, own.role as "admin" | "event_support");
+          if (JSON.stringify(next) !== JSON.stringify(sessionCache.permissions)) {
+            sessionCache = { ...sessionCache, permissions: next };
+            persistSession();
+            emitChange();
+          }
+        }
+      }
     }
     destinationsCache = (destRes.data ?? []).map(mapDestinationRow);
     universitiesCache = (uniRes.data ?? []).map(mapUniversityRow);
@@ -2293,13 +2315,14 @@ async function finishAdminLogin(
   let org = ownedOrg;
   let role: "admin" | "event_support" = "admin";
   let eventId: string | undefined;
+  let permissions: TeamPermissions | undefined;
 
   if (!org) {
     // Not an owner — check for an invited membership instead (admin: same
     // access as the owner; event_support: locked to one assigned event).
     const { data: membership } = await supabase
       .from("organization_members")
-      .select("organization_id, role, event_id")
+      .select("organization_id, role, event_id, permissions")
       .eq("user_id", user.id)
       .eq("status", "active")
       .maybeSingle();
@@ -2312,6 +2335,7 @@ async function finishAdminLogin(
       org = memberOrg;
       role = membership.role as "admin" | "event_support";
       eventId = membership.event_id ?? undefined;
+      permissions = parsePermissions(membership.permissions, role);
     }
   }
 
@@ -2344,6 +2368,8 @@ async function finishAdminLogin(
     role,
     eventId,
     orgSlug: org.slug ?? undefined,
+    isOwner: Boolean(ownedOrg),
+    permissions,
   };
   persistSession();
   return { success: true };

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolveOrgAccess } from "@/lib/org-access";
+import { orgCan, resolveOrgAccess } from "@/lib/org-access";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 
@@ -24,6 +24,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   if (!access || (access.role === "event_support" && access.eventId !== eventId)) {
     return NextResponse.json({ error: "Not authorized for this event." }, { status: 403 });
   }
+  // team permissions (migration 0137): changing an event needs Events edit access
+  if (!orgCan(access, "events", true)) return NextResponse.json({ error: "You have view-only access to events." }, { status: 403 });
   if (!(await checkRateLimit(`open-registration:user:${user.id}`, 30, 10 * 60))) return rateLimitedResponse();
 
   const admin = createAdminClient();

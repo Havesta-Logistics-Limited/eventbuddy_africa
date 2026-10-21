@@ -1,5 +1,6 @@
 "use client";
 
+import { canEdit } from "@/lib/team-permissions";
 import { useEffect, useState } from "react";
 import { copyText } from "@/lib/copy-text";
 import { EventAccessControls, privateEventLink } from "@/components/event-access-controls";
@@ -9,7 +10,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { AlertCircle, Archive, ArrowLeft, Calendar, Copy, Eye, Link2, MapPin, Users, Download, Edit2, Lock, LockOpen, RefreshCw, Repeat, Trash2, Undo2, Video, X, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
-import { useRequireRole } from "@/lib/auth";
+import { useRequireRole, useRequireSection } from "@/lib/auth";
 import {
   PersistError,
   deleteEvent,
@@ -100,6 +101,8 @@ type TabId =
 
 export default function EventDetailPage() {
   const session = useRequireRole(ADMIN_ONLY);
+  // team permissions (migration 0137): no access to this page sends them elsewhere
+  useRequireSection(session, "events");
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -446,6 +449,7 @@ export default function EventDetailPage() {
               visibility/registration controls into a narrow column */}
           <div className="flex flex-col gap-4">
             {/* actions first, above the event name */}
+            {canEdit(session?.permissions, "events") && (
             <div className="flex flex-wrap items-center gap-2 justify-start w-full">
               {event.published === false && (
                 <button
@@ -507,6 +511,7 @@ export default function EventDetailPage() {
                 Delete
               </button>
             </div>
+            )}
             <div className="flex-1 min-w-0">
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${
@@ -587,7 +592,7 @@ export default function EventDetailPage() {
                   This event is saved as a draft — it isn&apos;t visible to attendees or open for registration until you publish it.
                 </p>
               ) : null}
-              {!event.archivedAt && session?.orgSlug && <EventAccessControls event={event} orgSlug={session.orgSlug} />}
+              {!event.archivedAt && session?.orgSlug && canEdit(session.permissions, "events") && <EventAccessControls event={event} orgSlug={session.orgSlug} />}
             </div>
             <div className="flex flex-col items-start gap-3 w-full">
               <div className="flex items-start gap-6">
