@@ -1,6 +1,6 @@
 import { createClient as createSupabaseBrowserClient } from "./supabase/client";
 import { PersistError } from "./store";
-import { PlatformDocument, PlatformDocumentLineItem, PlatformDocumentStatus, PlatformDocumentType } from "./types";
+import { PaymentMethod, PlatformDocument, PlatformDocumentLineItem, PlatformDocumentStatus, PlatformDocumentType } from "./types";
 import { proposalLineItems, withProposalDefaults, type ProposalContent } from "./proposal";
 
 function mapRow(row: {
@@ -16,6 +16,12 @@ function mapRow(row: {
   notes: string | null;
   valid_until: string | null;
   vat_rate?: number | string | null;
+  source_document_id?: string | null;
+  paid_amount_naira?: number | string | null;
+  payment_method?: string | null;
+  payment_reference?: string | null;
+  paid_on?: string | null;
+  balance_due_naira?: number | string | null;
   content?: unknown;
   created_at: string;
   updated_at: string;
@@ -33,6 +39,12 @@ function mapRow(row: {
     notes: row.notes,
     validUntil: row.valid_until,
     vatRate: row.vat_rate == null ? null : Number(row.vat_rate),
+    sourceDocumentId: row.source_document_id ?? null,
+    paidAmountNaira: row.paid_amount_naira == null ? null : Number(row.paid_amount_naira),
+    paymentMethod: (row.payment_method as PaymentMethod | null) ?? null,
+    paymentReference: row.payment_reference ?? null,
+    paidOn: row.paid_on ?? null,
+    balanceDueNaira: row.balance_due_naira == null ? null : Number(row.balance_due_naira),
     content: row.doc_type === "proposal" ? withProposalDefaults(row.content as Partial<ProposalContent> | null) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -54,7 +66,7 @@ async function nextDocNumber(docType: PlatformDocumentType): Promise<string> {
   const supabase = createSupabaseBrowserClient();
   const { count, error } = await supabase.from("platform_documents").select("id", { count: "exact", head: true }).eq("doc_type", docType);
   if (error) throw new PersistError(error);
-  const prefix = docType === "quote" ? "Q" : docType === "proposal" ? "P" : "INV";
+  const prefix = docType === "quote" ? "Q" : docType === "proposal" ? "P" : docType === "receipt" ? "RCT" : "INV";
   return `${prefix}-${String((count ?? 0) + 1).padStart(4, "0")}`;
 }
 
@@ -182,4 +194,57 @@ export async function savePlatformProposal(input: {
   const { data, error } = await q.select().single();
   if (error) throw new PersistError(error);
   return mapRow(data);
+}
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  bank_transfer: "Bank transfer",
+  cash: "Cash",
+  pos: "POS",
+  paystack: "Paystack",
+  other: "Other",
+};
+
+/** Money already received against a document, from its receipts. */
+export function amountReceived(sourceId: string, docs: PlatformDocument[]): number {
+  return docs.filter((d) => d.docType === "receipt" && d.sourceDocumentId === sourceId).reduce((n, d) => n + (d.paidAmountNaira ?? 0), 0);
+}
+
+/**
+ * Issues a receipt (RCT-0001, …) for money received against a quote, invoice
+ * or proposal (migration 0134): it copies the client and items, records the
+ * payment and the balance still due, and marks the source paid or part paid.
+ */
+export async function createReceipt(
+  source: PlatformDocument,
+  alreadyReceived: number,
+  payment: { amountNaira: number; paidOn: string; method: PaymentMethod; reference?: string }
+): Promise<{ receipt: PlatformDocument; sourceStatus: PlatformDocumentStatus }> {
+  const supabase = createSupabaseBrowserClient();
+  const total = documentTotal(source);
+  const balance = Math.max(0, Math.round((total - alreadyReceived - payment.amountNaira) * 100) / 100);
+  const { data, error } = await supabase
+    .from("platform_documents")
+    .insert({
+      doc_number: await nextDocNumber("receipt"),
+      doc_type: "receipt",
+      status: "paid",
+      client_name: source.clientName,
+      client_company: source.clientCompany || null,
+      client_email: source.clientEmail || null,
+      client_address: source.clientAddress || null,
+      line_items: source.lineItems,
+      vat_rate: source.vatRate ?? null,
+      source_document_id: source.id,
+      paid_amount_naira: payment.amountNaira,
+      payment_method: payment.method,
+      payment_reference: payment.reference?.trim() || null,
+      paid_on: payment.paidOn,
+      balance_due_naira: balance,
+    })
+    .select()
+    .single();
+  if (error || !data) throw new PersistError(error);
+  const sourceStatus: PlatformDocumentStatus = balance <= 0 ? "paid" : "part_paid";
+  await updatePlatformDocumentStatus(source.id, sourceStatus);
+  return { receipt: mapRow(data), sourceStatus };
 }

@@ -1,6 +1,6 @@
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { PlatformDocument } from "@/lib/types";
-import { documentSubtotal, documentTotal, documentVat, lineItemTotal } from "@/lib/platform-documents";
+import { PAYMENT_METHOD_LABELS, documentSubtotal, documentTotal, documentVat, lineItemTotal } from "@/lib/platform-documents";
 import { registerFonts } from "./platform-proposal-pdf";
 
 /* Quotes and invoices in the same clean, light, editorial style as proposals:
@@ -68,11 +68,12 @@ const naira = (n: number) =>
   `₦${Number.isInteger(Math.round(n * 100) / 100) ? Math.round(n).toLocaleString("en-NG") : n.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
-export function PlatformDocumentPdf({ doc, logoUrl }: { doc: PlatformDocument; logoUrl: string }) {
+export function PlatformDocumentPdf({ doc, logoUrl, source = null }: { doc: PlatformDocument; logoUrl: string; source?: PlatformDocument | null }) {
   registerFonts();
   const subtotal = documentSubtotal(doc);
   const vat = documentVat({ lineItems: doc.lineItems, vatRate: doc.vatRate ?? null });
   const total = documentTotal(doc);
+  if (doc.docType === "receipt") return <ReceiptPdf doc={doc} logoUrl={logoUrl} source={source} subtotal={subtotal} vat={vat} total={total} />;
   const isQuote = doc.docType === "quote";
   const label = isQuote ? "QUOTE" : "INVOICE";
   const client = doc.clientCompany?.trim() || doc.clientName;
@@ -168,6 +169,129 @@ export function PlatformDocumentPdf({ doc, logoUrl }: { doc: PlatformDocument; l
         <View style={s.footer} fixed>
           <Text>{"eventbuddy · eventbuddy.africa · info@eventbuddy.africa"}</Text>
           <Text>{`${label} ${doc.docNumber}`}</Text>
+        </View>
+      </Page>
+    </Document>
+  );
+}
+
+const r = StyleSheet.create({
+  payCard: { marginTop: 16, marginLeft: "auto", width: 260, borderRadius: 12, backgroundColor: "#ecfdf5", paddingVertical: 14, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  payK: { fontSize: 8, fontWeight: 700, color: "#047857", letterSpacing: 1.6 },
+  payV: { fontSize: 20, fontWeight: 700, color: "#047857", letterSpacing: -0.4 },
+  balRow: { marginTop: 8, marginLeft: "auto", width: 260, flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16 },
+  balK: { fontSize: 9.6, fontWeight: 700, color: INK },
+  balV: { fontSize: 9.6, fontWeight: 700, color: "#b45309" },
+  fullTag: { marginTop: 10, marginLeft: "auto", borderRadius: 9, paddingVertical: 3, paddingHorizontal: 9, backgroundColor: "#dcfce7" },
+  fullText: { fontSize: 8, fontWeight: 700, color: "#166534", letterSpacing: 1 },
+});
+
+/** A receipt: money received against a quote, invoice or proposal (migration 0134). */
+function ReceiptPdf({ doc, logoUrl, source, subtotal, vat, total }: { doc: PlatformDocument; logoUrl: string; source: PlatformDocument | null; subtotal: number; vat: number; total: number }) {
+  const paid = doc.paidAmountNaira ?? 0;
+  const balance = doc.balanceDueNaira ?? 0;
+  const client = doc.clientCompany?.trim() || doc.clientName;
+  const forLabel = source ? `${source.docType === "quote" ? "Quote" : source.docType === "proposal" ? "Proposal" : "Invoice"} ${source.docNumber}` : null;
+  return (
+    <Document title={`RECEIPT ${doc.docNumber} — ${doc.clientName}`}>
+      <Page size="A4" style={s.page}>
+        <View style={s.top}>
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+          <Image src={logoUrl} style={s.logo} />
+          <View style={s.accent}>
+            <View style={{ flex: 3, backgroundColor: PINK }} />
+            <View style={{ flex: 1, backgroundColor: VIOLET }} />
+          </View>
+          <Text style={s.docNo}>{doc.docNumber}</Text>
+        </View>
+
+        <Text style={s.kicker}>RECEIPT</Text>
+        <Text style={s.title}>{client}</Text>
+        <Text style={s.subtitle}>{`Payment received · ${naira(paid)}${forLabel ? ` · for ${forLabel}` : ""}`}</Text>
+        <View style={s.shortRule} />
+
+        <View style={s.parties}>
+          <View style={s.partyTo}>
+            <Text style={s.k}>RECEIVED FROM</Text>
+            <Text style={s.name}>{doc.clientName}</Text>
+            {doc.clientCompany?.trim() && doc.clientCompany.trim() !== doc.clientName ? <Text style={s.line}>{doc.clientCompany.trim()}</Text> : null}
+            {doc.clientEmail ? <Text style={s.line}>{doc.clientEmail}</Text> : null}
+            {doc.clientAddress ? <Text style={s.line}>{doc.clientAddress}</Text> : null}
+          </View>
+          <View style={s.partyFrom}>
+            <Text style={s.k}>PAYMENT</Text>
+            <Text style={s.name}>{doc.paymentMethod ? PAYMENT_METHOD_LABELS[doc.paymentMethod] : "Payment"}</Text>
+            {doc.paymentReference ? <Text style={s.line}>{`Ref: ${doc.paymentReference}`}</Text> : null}
+            {forLabel ? <Text style={s.line}>{`For ${forLabel}`}</Text> : null}
+          </View>
+          <View style={s.partyDates}>
+            <Text style={s.k}>DATE PAID</Text>
+            <Text style={s.date}>{doc.paidOn ? fmtDate(doc.paidOn) : fmtDate(doc.createdAt)}</Text>
+            <Text style={s.k}>ISSUED</Text>
+            <Text style={s.date}>{fmtDate(doc.createdAt)}</Text>
+          </View>
+        </View>
+
+        <View style={s.table}>
+          <View style={s.thead}>
+            <Text style={[s.th, s.cDesc]}>DESCRIPTION</Text>
+            <Text style={[s.th, s.cQty]}>QTY</Text>
+            <Text style={[s.th, s.cUnit]}>UNIT PRICE</Text>
+            <Text style={[s.th, s.cAmt]}>AMOUNT</Text>
+          </View>
+          {doc.lineItems.map((item, i) => (
+            <View key={i} style={s.row} wrap={false}>
+              <View style={s.cDesc}>
+                <Text style={s.desc}>{item.description}</Text>
+              </View>
+              <Text style={[s.num, s.cQty]}>{String(item.quantity)}</Text>
+              <Text style={[s.num, s.cUnit]}>{naira(item.unitPriceNaira)}</Text>
+              <Text style={[s.numBold, s.cAmt]}>{naira(lineItemTotal(item))}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={s.sums} wrap={false}>
+          {vat > 0 ? (
+            <View style={s.sumRow}>
+              <Text style={s.sumK}>Subtotal</Text>
+              <Text style={s.sumV}>{naira(subtotal)}</Text>
+            </View>
+          ) : null}
+          {vat > 0 ? (
+            <View style={s.sumRow}>
+              <Text style={s.sumK}>{`VAT (${doc.vatRate}%)`}</Text>
+              <Text style={s.sumV}>{naira(vat)}</Text>
+            </View>
+          ) : null}
+          <View style={s.sumRow}>
+            <Text style={s.sumK}>{forLabel ? `${forLabel} total` : "Total"}</Text>
+            <Text style={s.sumV}>{naira(total)}</Text>
+          </View>
+        </View>
+        <View style={r.payCard} wrap={false}>
+          <Text style={r.payK}>AMOUNT PAID</Text>
+          <Text style={r.payV}>{naira(paid)}</Text>
+        </View>
+        {balance > 0 ? (
+          <View style={r.balRow}>
+            <Text style={r.balK}>Balance still due</Text>
+            <Text style={r.balV}>{naira(balance)}</Text>
+          </View>
+        ) : (
+          <View style={r.fullTag}>
+            <Text style={r.fullText}>PAID IN FULL</Text>
+          </View>
+        )}
+
+        <View style={s.notes} wrap={false}>
+          <Text style={s.notesK}>THANK YOU</Text>
+          <Text style={s.notesText}>{"This receipt confirms eventbuddy has received the payment above. Keep it for your records."}</Text>
+        </View>
+
+        <View style={s.footer} fixed>
+          <Text>{"eventbuddy · eventbuddy.africa · info@eventbuddy.africa"}</Text>
+          <Text>{`RECEIPT ${doc.docNumber}`}</Text>
         </View>
       </Page>
     </Document>

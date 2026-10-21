@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import { Download, FileSignature, FileText, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Download, FileSignature, FileText, Pencil, Plus, Receipt, Trash2, X } from "lucide-react";
+import { PlatformReceiptDialog } from "./platform-receipt-dialog";
 import { PlatformDocument, PlatformDocumentLineItem, PlatformDocumentStatus, PlatformDocumentType } from "@/lib/types";
 import {
   createPlatformDocument,
   deletePlatformDocument,
   documentTotal,
+  amountReceived,
   listPlatformDocuments,
   updatePlatformDocument,
   updatePlatformDocumentStatus,
@@ -29,6 +31,7 @@ const STATUS_STYLES: Record<PlatformDocumentStatus, string> = {
   accepted: "bg-emerald-500/10 text-emerald-300",
   declined: "bg-rose-500/10 text-rose-300",
   paid: "bg-brand-600/10 text-brand-500",
+  part_paid: "bg-amber-500/10 text-amber-300",
 };
 
 const EMPTY_LINE_ITEM: PlatformDocumentLineItem = { description: "", quantity: 1, unitPriceNaira: 0 };
@@ -55,6 +58,8 @@ export function PlatformDocumentsTab() {
   const [documents, setDocuments] = useState<PlatformDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  /** the document a receipt is being issued for */
+  const [receiptFor, setReceiptFor] = useState<PlatformDocument | null>(null);
   /** the quote/invoice being edited in the form; null = creating a new one */
   const [editing, setEditing] = useState<PlatformDocument | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -221,13 +226,32 @@ export function PlatformDocumentsTab() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-mono font-medium text-fg">
-                  {doc.docNumber} <span className="font-sans font-normal text-subtle">· {doc.docType === "quote" ? "Quote" : doc.docType === "proposal" ? "Proposal" : "Invoice"}</span>
+                  {doc.docNumber}{" "}
+                  <span className="font-sans font-normal text-subtle">
+                    ·{" "}
+                    {doc.docType === "quote"
+                      ? "Quote"
+                      : doc.docType === "proposal"
+                        ? "Proposal"
+                        : doc.docType === "receipt"
+                          ? `Receipt${(() => {
+                              const src = documents.find((d) => d.id === doc.sourceDocumentId);
+                              return src ? ` for ${src.docNumber}` : "";
+                            })()}`
+                          : "Invoice"}
+                  </span>
                 </p>
                 <p className="text-sm text-muted truncate">
                   {doc.docType === "proposal" && doc.clientCompany ? doc.clientCompany : doc.clientName}
-                  {doc.docType === "proposal" ? doc.clientCompany && ` · ${doc.clientName}` : doc.clientCompany && ` · ${doc.clientCompany}`} · {formatNaira(documentTotal(doc))}
+                  {doc.docType === "proposal" ? doc.clientCompany && ` · ${doc.clientName}` : doc.clientCompany && ` · ${doc.clientCompany}`} ·{" "}
+                  {doc.docType === "receipt"
+                    ? `${formatNaira(doc.paidAmountNaira ?? 0)} received${doc.balanceDueNaira ? ` · ${formatNaira(doc.balanceDueNaira)} still due` : ""}`
+                    : formatNaira(documentTotal(doc))}
                 </p>
               </div>
+              {doc.docType === "receipt" ? (
+                <span className="shrink-0 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-300">Paid</span>
+              ) : (
               <select
                 value={doc.status}
                 onChange={(e) => handleStatusChange(doc, e.target.value as PlatformDocumentStatus)}
@@ -237,22 +261,36 @@ export function PlatformDocumentsTab() {
                 <option value="sent">Sent</option>
                 <option value="accepted">Accepted</option>
                 <option value="declined">Declined</option>
-                {doc.docType !== "proposal" && <option value="paid">Paid</option>}
+                <option value="part_paid">Part paid</option>
+                <option value="paid">Paid</option>
               </select>
+              )}
               <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => (doc.docType === "proposal" ? setProposal(doc) : openEdit(doc))}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-fg-3 hover:bg-fill"
-                >
-                  <Pencil size={14} /> Edit
-                </button>
+                {doc.docType !== "receipt" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setReceiptFor(doc)}
+                      title="Record a payment and issue a receipt"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-fg-3 hover:bg-fill"
+                    >
+                      <Receipt size={14} /> Receipt
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => (doc.docType === "proposal" ? setProposal(doc) : openEdit(doc))}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-fg-3 hover:bg-fill"
+                    >
+                      <Pencil size={14} /> Edit
+                    </button>
+                  </>
+                )}
                 <PDFDownloadLink
                   document={
                     doc.docType === "proposal" ? (
                       <PlatformProposalPdf doc={doc} feeLabel={formatTicketFee(fee)} logoUrl="/logo-full.png" />
                     ) : (
-                      <PlatformDocumentPdf doc={doc} logoUrl="/logo-full.png" />
+                      <PlatformDocumentPdf doc={doc} logoUrl="/logo-full.png" source={documents.find((d) => d.id === doc.sourceDocumentId) ?? null} />
                     )
                   }
                   fileName={`${doc.docNumber}-${doc.clientName.replace(/\s+/g, "-")}.pdf`}
@@ -275,6 +313,18 @@ export function PlatformDocumentsTab() {
             </div>
           ))}
         </div>
+      )}
+
+      {receiptFor && (
+        <PlatformReceiptDialog
+          source={receiptFor}
+          received={amountReceived(receiptFor.id, documents)}
+          onClose={() => setReceiptFor(null)}
+          onIssued={(receipt, sourceStatus) => {
+            setDocuments((docs) => [receipt, ...docs.map((d) => (d.id === receiptFor.id ? { ...d, status: sourceStatus } : d))]);
+            setReceiptFor(null);
+          }}
+        />
       )}
 
       {showForm && (

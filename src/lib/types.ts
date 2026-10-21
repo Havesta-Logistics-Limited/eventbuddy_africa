@@ -319,8 +319,9 @@ export interface DiscountRedemption {
   purchasedAt: string;
 }
 
-export type PlatformDocumentType = "quote" | "invoice" | "proposal";
-export type PlatformDocumentStatus = "draft" | "sent" | "accepted" | "declined" | "paid";
+export type PlatformDocumentType = "quote" | "invoice" | "proposal" | "receipt";
+export type PlatformDocumentStatus = "draft" | "sent" | "accepted" | "declined" | "paid" | "part_paid";
+export type PaymentMethod = "bank_transfer" | "cash" | "pos" | "paystack" | "other";
 
 export interface PlatformDocumentLineItem {
   description: string;
@@ -345,6 +346,14 @@ export interface PlatformDocument {
   validUntil?: string | null;
   /** VAT percentage on the subtotal (migration 0131), e.g. 7.5; null = no VAT */
   vatRate?: number | null;
+  /** receipts (migration 0134): the document paid against, and the payment */
+  sourceDocumentId?: string | null;
+  paidAmountNaira?: number | null;
+  paymentMethod?: PaymentMethod | null;
+  paymentReference?: string | null;
+  paidOn?: string | null;
+  /** what was still owed on the source document once this receipt was issued */
+  balanceDueNaira?: number | null;
   /** a proposal's sections (migration 0125); null for quotes and invoices */
   content?: import("./proposal").ProposalContent | null;
   createdAt: string;
