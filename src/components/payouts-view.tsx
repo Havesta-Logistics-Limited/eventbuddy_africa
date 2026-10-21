@@ -58,6 +58,7 @@ const KIND_LABEL: Record<LedgerKind, string> = {
   commission_refund: "Promoter commission returned",
   commission_earned: "Commission earned",
   commission_reversal: "Commission reversed (refund)",
+  card_fee: "International card fee",
 };
 
 const STATUS_LABEL: Record<PayoutStatus, string> = {

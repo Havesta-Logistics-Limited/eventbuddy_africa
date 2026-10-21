@@ -669,7 +669,8 @@ export type LedgerKind =
   | "commission"
   | "commission_refund"
   | "commission_earned"
-  | "commission_reversal";
+  | "commission_reversal"
+  | "card_fee";
 
 export interface LedgerEntry {
   id: string;

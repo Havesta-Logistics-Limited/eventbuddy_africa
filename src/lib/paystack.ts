@@ -587,7 +587,10 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
     return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId: null, hubUrl, alreadyProcessed: true };
   }
 
-  if (isHeld) await postHeldSale(supabase, txn, platformFeeNaira);
+  if (isHeld) {
+    await postHeldSale(supabase, txn, platformFeeNaira);
+    await postCardFeeShortfall(supabase, txn, verified, netAmountNaira);
+  }
   if (Number(txn.amount_naira) > 0) await recordSaleRisk(supabase, txn.organization_id, txn.event_id);
 
   const { referenceId, hubUrl } = await createTicketPurchaseRegistration(supabase, txn);
@@ -635,6 +638,7 @@ async function finalizeStandBooking(
   if (!updated) return { ok: true, purpose: "stand_booking", eventId: txn.event_id, alreadyProcessed: true };
 
   await postHeldSale(supabase, txn, feeNaira, "Exhibitor stand");
+  await postCardFeeShortfall(supabase, txn, verified, Math.round((Number(txn.amount_naira) - feeNaira) * 100) / 100);
   if (txn.exhibitor_id) {
     const { data: x } = await supabase
       .from("exhibitors")
@@ -694,6 +698,47 @@ async function postHeldSale(
   const { error } = await supabase.from("ledger_entries").upsert(rows, { onConflict: "transaction_id,kind", ignoreDuplicates: true });
   if (error) console.error(`[ledger] couldn't credit held sale ${txn.id} for org ${txn.organization_id} — needs manual posting:`, error.message);
   if (txn.referral_id) await postPromoterCommission(supabase, txn, feeNaira, clearsAt ?? new Date().toISOString());
+}
+
+/**
+ * The buyer pays the card processing on top of the ticket (migration 0130),
+ * sized for a local card, because the card isn't known until after payment.
+ * When Paystack charged more (an international card, at its higher rate), the
+ * gap comes off the organizer's share of this sale as an "International card
+ * fee" (ledger kind card_fee, migration 0135), so eventbuddy's fee stays whole. Paystack's verified `fees` is the
+ * exact charge. Only when the buyer was charged a processing fee: with the
+ * fee switched off, eventbuddy absorbs Paystack's charge as before.
+ * Idempotent on (transaction, kind); a failure is logged, never thrown.
+ */
+async function postCardFeeShortfall(
+  supabase: SupabaseClient,
+  txn: { id: string; organization_id: string; event_id: string; processing_fee_naira?: number | string | null },
+  verified: PaystackVerification,
+  netAmountNaira: number
+) {
+  const collected = Number(txn.processing_fee_naira ?? 0);
+  if (!(collected > 0)) return;
+  const v = verified as PaystackVerification & { fees?: number; authorization?: { country_code?: string; card_type?: string } };
+  const paystackFee = Number(v.fees ?? 0) / 100;
+  const shortfall = Math.round((paystackFee - collected) * 100) / 100;
+  if (shortfall < 1) return; // a local card: the processing fee covered it
+  const country = v.authorization?.country_code && v.authorization.country_code !== "NG" ? ` (${v.authorization.country_code} card)` : "";
+  const { error } = await supabase.from("ledger_entries").upsert(
+    {
+      organization_id: txn.organization_id,
+      event_id: txn.event_id,
+      transaction_id: txn.id,
+      kind: "card_fee",
+      amount_naira: -shortfall,
+      note: `International card fee${country}: Paystack charged ₦${paystackFee.toLocaleString("en-NG")}, buyer paid ₦${collected.toLocaleString("en-NG")} processing`,
+    },
+    { onConflict: "transaction_id,kind", ignoreDuplicates: true }
+  );
+  if (error) {
+    console.error(`[ledger] couldn't post the international card fee on ${txn.id} — needs manual posting:`, error.message);
+    return;
+  }
+  await supabase.from("paystack_transactions").update({ net_amount_naira: Math.round((netAmountNaira - shortfall) * 100) / 100 }).eq("id", txn.id);
 }
 
 /** A held sale that came through a promoter's link (migration 0105): moves
