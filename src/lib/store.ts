@@ -1,5 +1,6 @@
 "use client";
 
+import { parseInviteDesign } from "./invite-design";
 import { useEffect, useSyncExternalStore } from "react";
 import {
   Destination,
@@ -172,6 +173,7 @@ function mapEventRow(e: {
   survey_enabled: boolean | null;
   survey_fields: FieldDef[] | null;
   archived_at?: string | null;
+  invite_design?: unknown;
   visibility?: string | null;
   private_code?: string | null;
   registration_open?: boolean | null;
@@ -199,6 +201,7 @@ function mapEventRow(e: {
     isInviteOnly: e.is_invite_only ?? false,
     published: e.published ?? true,
     archivedAt: e.archived_at ?? null,
+    inviteDesign: parseInviteDesign(e.invite_design),
     visibility: e.visibility === "private" ? "private" : "public",
     privateCode: e.private_code ?? null,
     registrationOpen: e.registration_open ?? true,
@@ -247,6 +250,7 @@ function eventToRow(input: Partial<Omit<EventRecord, "id" | "createdAt">>) {
   if (input.isInviteOnly !== undefined) row.is_invite_only = input.isInviteOnly;
   if (input.published !== undefined) row.published = input.published;
   if (input.archivedAt !== undefined) row.archived_at = input.archivedAt;
+  if (input.inviteDesign !== undefined) row.invite_design = input.inviteDesign;
   if (input.visibility !== undefined) row.visibility = input.visibility;
   if (input.privateCode !== undefined) row.private_code = input.privateCode;
   if (input.registrationOpen !== undefined) row.registration_open = input.registrationOpen;
@@ -614,6 +618,7 @@ function mapEventGuestRow(g: {
   plus_ones_confirmed: number | null;
   status: string;
   registration_id: string | null;
+  invite_token?: string | null;
   invited_at: string | null;
   responded_at: string | null;
   created_at: string;
@@ -628,6 +633,7 @@ function mapEventGuestRow(g: {
     plusOnesConfirmed: g.plus_ones_confirmed ?? undefined,
     status: g.status as EventGuest["status"],
     registrationId: g.registration_id ?? undefined,
+    inviteToken: g.invite_token ?? undefined,
     invitedAt: g.invited_at ?? undefined,
     respondedAt: g.responded_at ?? undefined,
     createdAt: g.created_at,
@@ -1749,6 +1755,16 @@ export async function bulkAddEventGuests(eventId: string, guests: { fullName: st
   eventGuestsCache = [...records, ...eventGuestsCache];
   emitChange();
   return records;
+}
+/** Re-reads one event's guests (e.g. after the server confirmed them), whatever
+ *  else is loading: a general refresh skips while another fetch is running. */
+export async function reloadEventGuests(eventId: string): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase.from("event_guests").select("*").eq("event_id", eventId);
+  if (error) throw new PersistError(error);
+  const fresh = (data ?? []).map(mapEventGuestRow);
+  eventGuestsCache = [...fresh, ...eventGuestsCache.filter((g) => g.eventId !== eventId)];
+  emitChange();
 }
 export async function deleteEventGuest(id: string): Promise<void> {
   const supabase = createSupabaseBrowserClient();

@@ -857,7 +857,7 @@ export default function EventDetailPage() {
 
         {activeTab === "guests" && (
           <div key="guests" className="animate-tab-fade">
-            <GuestListTab eventId={event.id} orgSlug={session.orgSlug!} guests={guests} />
+            <GuestListTab event={event} orgSlug={session.orgSlug!} guests={guests} />
           </div>
         )}
 

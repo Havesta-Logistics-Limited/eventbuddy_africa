@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { sendGuestInviteEmail } from "@/lib/guest-invite-email";
+import { sendGuestFlyerEmail, sendGuestInviteEmail } from "@/lib/guest-invite-email";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { inviteUrl, parseInviteDesign } from "@/lib/invite-design";
+import { renderInviteFlyer } from "@/lib/invite-flyer";
 import { guestRsvpUrl } from "@/lib/event-guest";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 import { resolveOrgAccess } from "@/lib/org-access";
@@ -41,17 +44,25 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, name, date, start_time, end_time, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location, is_invite_only")
+    .select("id, name, date, start_time, end_time, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location, is_invite_only, invite_design")
     .eq("id", eventId)
     .eq("organization_id", org.id)
     .maybeSingle();
   if (!event) return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });
   if (!event.is_invite_only) return NextResponse.json({ error: "This event isn't set to invite-only." }, { status: 400 });
 
-  const { data: guests } = await supabase.from("event_guests").select("id, full_name, email, invite_token").eq("event_id", eventId).in("id", parsed.data.guestIds);
+  const { data: guests } = await supabase.from("event_guests").select("id, full_name, email, invite_token, status, registration_id").eq("event_id", eventId).in("id", parsed.data.guestIds);
   if (!guests || guests.length === 0) return NextResponse.json({ error: "No matching guests found." }, { status: 404 });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
+  const design = parseInviteDesign(event.invite_design);
+  // confirmed guests' entry QR references, read once for the batch
+  const references = new Map<string, string>();
+  const regIds = guests.map((g) => g.registration_id).filter((v): v is string => Boolean(v));
+  if (design && regIds.length) {
+    const { data: regs } = await createAdminClient().from("registrations").select("id, reference_id, status").in("id", regIds);
+    for (const r of regs ?? []) if (r.status !== "cancelled" && r.status !== "declined") references.set(r.id, r.reference_id);
+  }
   const sentIds: string[] = [];
   let throttled = false;
   for (const guest of guests) {
@@ -62,8 +73,21 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       throttled = true;
       break;
     }
-    const rsvpUrl = guestRsvpUrl(siteUrl, org.slug, eventId, guest.invite_token);
-    const sent = await sendGuestInviteEmail(guest.email, guest.full_name, event, rsvpUrl);
+    // A confirmed guest on an event with an invitation flyer (migration 0136)
+    // gets their flyer with their own entry QR; everyone else, the RSVP invite.
+    let sent = false;
+    const reference = design && guest.status === "accepted" && guest.registration_id ? references.get(guest.registration_id) : undefined;
+    if (design && reference) {
+      try {
+        const png = Buffer.from(await (await renderInviteFlyer(design, guest.full_name, reference)).arrayBuffer());
+        sent = await sendGuestFlyerEmail(guest.email, guest.full_name, event, png, inviteUrl(siteUrl, guest.invite_token));
+      } catch (err) {
+        console.error(`[guest-invite] couldn't render the invitation flyer for guest ${guest.id}:`, err instanceof Error ? err.message : err);
+      }
+    } else {
+      const rsvpUrl = guestRsvpUrl(siteUrl, org.slug, eventId, guest.invite_token);
+      sent = await sendGuestInviteEmail(guest.email, guest.full_name, event, rsvpUrl);
+    }
     if (sent) sentIds.push(guest.id);
   }
 

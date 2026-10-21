@@ -96,6 +96,8 @@ export interface EventRecord {
   published?: boolean;
   /** when it was archived (migration 0127): hidden from the event list and unpublished */
   archivedAt?: string | null;
+  /** invite-only events: the organizer's flyer with each guest's QR placed on it (migration 0136) */
+  inviteDesign?: import("./invite-design").InviteDesign | null;
   /** 'private' (migration 0128): off Discover, profiles and search; opens only by its private link */
   visibility?: "public" | "private";
   /** the private link's code (eventbuddy.africa/p/{code}); made by the database when private */
@@ -599,6 +601,8 @@ export interface EventGuest {
   plusOnesConfirmed?: number;
   status: GuestStatus;
   registrationId?: string;
+  /** the guest's private token: their RSVP link and invitation page (/i/{token}) */
+  inviteToken?: string;
   invitedAt?: string;
   respondedAt?: string;
   createdAt: string;
