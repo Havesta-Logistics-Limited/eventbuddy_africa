@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Users, UserCheck, Download, Loader2, Send, Check, X, ArrowUpCircle, ClipboardCheck, ListOrdered } from "lucide-react";
+import { Users, UserCheck, Download, Loader2, Send, Check, X, ArrowUpCircle, ClipboardCheck, ListOrdered, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Destination, EventRecord, LeadRecord, RegistrationRecord, StaffRecord, TicketType, University } from "@/lib/types";
 import { downloadCsv, registrationsToCsv } from "@/lib/csv";
 import { updateRegistrationStatus, decideRegistration, updateEvent, PersistError } from "@/lib/store";
@@ -97,6 +97,40 @@ export const statusLabels: Record<RegistrationRecord["status"], string> = {
  *  attendance by hand from here, on top of the physical /checkin scan flow at the door.
  *  Clicking a row opens the full detail modal (QR code, form answers, any lead captured
  *  for them). */
+const PAGE_SIZE = 25;
+
+/** Digits of a phone number in +234 form, so 0803…, 803…, +234 803… all match. */
+function phoneDigits(v: string): string {
+  const d = v.replace(/\D/g, "");
+  if (d.startsWith("234")) return d;
+  if (d.startsWith("0")) return "234" + d.slice(1);
+  return d;
+}
+
+/** The table's search (name, email, phone, reference) and filters. */
+export function filterRegistrations(
+  rows: RegistrationRecord[],
+  query: string,
+  status: "all" | "checked_in" | "not_checked_in" | "pending" | "cancelled",
+  ticketTypeId: string
+): RegistrationRecord[] {
+  const q = query.trim().toLowerCase();
+  const qRef = q.replace(/[^a-z0-9]/g, "");
+  const qPhone = /\d{3,}/.test(q) ? phoneDigits(q) : "";
+  return rows.filter((r) => {
+    if (status === "checked_in" && r.status !== "checked_in") return false;
+    if (status === "not_checked_in" && r.status !== "registered") return false;
+    if (status === "pending" && r.status !== "pending" && r.status !== "waitlisted") return false;
+    if (status === "cancelled" && r.status !== "cancelled" && r.status !== "declined") return false;
+    if (ticketTypeId !== "all" && r.ticketTypeId !== ticketTypeId) return false;
+    if (!q) return true;
+    if (r.fullName.toLowerCase().includes(q) || r.email.toLowerCase().includes(q)) return true;
+    if (qRef.length >= 3 && r.referenceId.toLowerCase().replace(/[^a-z0-9]/g, "").includes(qRef)) return true;
+    if (qPhone && r.phone && phoneDigits(r.phone).includes(qPhone.replace(/^234/, ""))) return true;
+    return false;
+  });
+}
+
 export function ProspectsTab({
   event,
   orgSlug,
@@ -119,6 +153,11 @@ export function ProspectsTab({
   const [view, setView] = useState<"registrations" | "participants">("registrations");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // search, filters and paging for the table
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "checked_in" | "not_checked_in" | "pending" | "cancelled">("all");
+  const [ticketFilter, setTicketFilter] = useState("all");
+  const [page, setPage] = useState(0);
   const [resendingAll, setResendingAll] = useState(false);
   const customFields = event.customFields ?? [];
 
@@ -184,6 +223,11 @@ export function ProspectsTab({
   const participants = registrations.filter((r) => r.status === "checked_in");
   const conversion = registrations.length === 0 ? 0 : Math.round((participants.length / registrations.length) * 100);
   const shown = view === "registrations" ? registrations : participants;
+  const filtered = filterRegistrations(shown, query, statusFilter, ticketFilter);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageRows = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+  const isFiltering = query.trim() !== "" || statusFilter !== "all" || ticketFilter !== "all";
 
   const selected = selectedId ? (registrations.find((r) => r.id === selectedId) ?? null) : null;
   const selectedLead = selected ? leads.find((l) => l.registrationId === selected.id) : undefined;
@@ -232,7 +276,8 @@ export function ProspectsTab({
           <div>
             <h2 className="font-semibold text-fg">{view === "registrations" ? "Event registrations" : "Event participants"}</h2>
             <p className="text-xs text-muted">
-              {shown.length} {view === "registrations" ? "registrant" : "participant"}
+              {isFiltering ? `${filtered.length} of ${shown.length} ` : `${shown.length} `}
+              {view === "registrations" ? "registrant" : "participant"}
               {shown.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -248,14 +293,64 @@ export function ProspectsTab({
             </button>
             <button
               onClick={() => {
-                downloadCsv(`${event.name.replace(/[^a-z0-9]/gi, "_")}_${view}.csv`, registrationsToCsv(shown, event));
+                downloadCsv(`${event.name.replace(/[^a-z0-9]/gi, "_")}_${view}.csv`, registrationsToCsv(filtered, event));
               }}
+              title={isFiltering ? "Exports the rows matching your search and filters" : "Exports every row"}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-3 hover:bg-canvas"
             >
               <Download size={12} />
-              Export
+              {isFiltering ? `Export ${filtered.length}` : "Export"}
             </button>
           </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-6 py-3">
+          <div className="relative min-w-[220px] flex-1">
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-subtle" aria-hidden="true" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(0);
+              }}
+              placeholder="Search name, email, phone or reference"
+              aria-label="Search registrations"
+              className="eb-input pl-9!"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value as typeof statusFilter);
+              setPage(0);
+            }}
+            aria-label="Filter by status"
+            className="eb-input w-auto!"
+          >
+            <option value="all">All statuses</option>
+            <option value="checked_in">Checked in</option>
+            <option value="not_checked_in">Not checked in yet</option>
+            <option value="pending">Pending / waitlisted</option>
+            <option value="cancelled">Cancelled / declined</option>
+          </select>
+          {ticketTypes.length > 1 && (
+            <select
+              value={ticketFilter}
+              onChange={(e) => {
+                setTicketFilter(e.target.value);
+                setPage(0);
+              }}
+              aria-label="Filter by ticket"
+              className="eb-input w-auto!"
+            >
+              <option value="all">All tickets</option>
+              {ticketTypes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -279,7 +374,14 @@ export function ProspectsTab({
               </tr>
             </thead>
             <tbody className="divide-y divide-line-soft">
-              {shown.map((r) => (
+              {pageRows.length === 0 && (
+                <tr>
+                  <td colSpan={99} className="px-4 py-10 text-center text-sm text-muted">
+                    {isFiltering ? "No one matches your search or filters." : "No registrations yet."}
+                  </td>
+                </tr>
+              )}
+              {pageRows.map((r) => (
                 <tr key={r.id} onClick={() => setSelectedId(r.id)} className="hover:bg-canvas cursor-pointer">
                   <td className="px-4 py-3 font-mono text-xs text-fg-3 whitespace-nowrap">{r.referenceId}</td>
                   <td className="px-4 py-3 font-medium text-fg whitespace-nowrap">
@@ -322,7 +424,7 @@ export function ProspectsTab({
                     );
                   })}
                   <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusStyles[r.status]}`}>{statusLabels[r.status]}</span>
+                    <span className={`inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium ${statusStyles[r.status]}`}>{statusLabels[r.status]}</span>
                   </td>
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     {busyId === r.id ? (
@@ -367,6 +469,30 @@ export function ProspectsTab({
             </tbody>
           </table>
         </div>
+        {filtered.length > PAGE_SIZE && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-6 py-3 text-xs text-muted">
+            <span>{`Showing ${safePage * PAGE_SIZE + 1}–${Math.min(filtered.length, (safePage + 1) * PAGE_SIZE)} of ${filtered.length}`}</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPage(Math.max(0, safePage - 1))}
+                disabled={safePage === 0}
+                className="inline-flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 font-medium text-fg-3 hover:bg-canvas disabled:opacity-40"
+              >
+                <ChevronLeft size={13} aria-hidden="true" /> Previous
+              </button>
+              <span className="px-1.5 tabular-nums">{`Page ${safePage + 1} of ${pageCount}`}</span>
+              <button
+                type="button"
+                onClick={() => setPage(Math.min(pageCount - 1, safePage + 1))}
+                disabled={safePage >= pageCount - 1}
+                className="inline-flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 font-medium text-fg-3 hover:bg-canvas disabled:opacity-40"
+              >
+                Next <ChevronRight size={13} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {selected && (
