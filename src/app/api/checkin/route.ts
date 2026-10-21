@@ -100,14 +100,26 @@ export async function POST(request: Request) {
     }
   }
 
+  // Only checks in a ticket that isn't checked in yet: with several staff
+  // scanning at once, the same ticket (a shared screenshot at two gates) could
+  // otherwise be let in twice. Whoever loses the race is told it's already in.
   const { data: updated, error } = await supabase
     .from("registrations")
     .update({ status: "checked_in", checked_in_at: new Date().toISOString(), checked_in_by: staffRow.id })
     .eq("id", registration.id)
+    .neq("status", "checked_in")
     .select()
-    .single();
-  if (error || !updated) {
-    return NextResponse.json({ error: error?.message || "Couldn't check this attendee in." }, { status: 500 });
+    .maybeSingle();
+  if (error) {
+    return NextResponse.json({ error: error.message || "Couldn't check this attendee in." }, { status: 500 });
+  }
+  if (!updated) {
+    const { data: now } = await supabase.from("registrations").select("reference_id, full_name, checked_in_at").eq("id", registration.id).maybeSingle();
+    return NextResponse.json({
+      success: true,
+      alreadyCheckedIn: true,
+      registration: { referenceId: now?.reference_id ?? registration.reference_id, fullName: now?.full_name ?? registration.full_name, checkedInAt: now?.checked_in_at ?? null, ticketType },
+    });
   }
 
   return NextResponse.json({
