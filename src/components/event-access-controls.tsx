@@ -77,10 +77,10 @@ export function EventAccessControls({ event, orgSlug }: { event: EventRecord; or
       <div className="eac-row">
         <span className="eac-label">Who can see it</span>
         <div className="eb-seg" role="group" aria-label="Who can see it">
-          <button type="button" aria-pressed={!isPrivate} disabled={!!busy} onClick={() => setVisibility("public")}>
+          <button data-edit type="button" aria-pressed={!isPrivate} disabled={!!busy} onClick={() => setVisibility("public")}>
             <Globe size={13} aria-hidden="true" /> Public
           </button>
-          <button type="button" aria-pressed={isPrivate} disabled={!!busy} onClick={() => setVisibility("private")}>
+          <button data-edit type="button" aria-pressed={isPrivate} disabled={!!busy} onClick={() => setVisibility("private")}>
             <Lock size={13} aria-hidden="true" /> Private
           </button>
         </div>
@@ -101,7 +101,7 @@ export function EventAccessControls({ event, orgSlug }: { event: EventRecord; or
           >
             {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />} {copied ? "Copied" : "Copy"}
           </button>
-          <button type="button" disabled={!!busy} onClick={newLink} className="eac-btn" title="Make a new link; the current one stops working">
+          <button data-edit type="button" disabled={!!busy} onClick={newLink} className="eac-btn" title="Make a new link; the current one stops working">
             <RefreshCw size={13} aria-hidden="true" className={busy === "link" ? "animate-spin" : undefined} /> New link
           </button>
         </div>
@@ -111,14 +111,14 @@ export function EventAccessControls({ event, orgSlug }: { event: EventRecord; or
         {isOpen ? (
           <span className="flex flex-wrap items-center gap-2">
             <span className="eac-pill eac-pill--open">Open</span>
-            <button type="button" disabled={!!busy} onClick={() => setRegistration(false)} className="eac-btn">
+            <button data-edit type="button" disabled={!!busy} onClick={() => setRegistration(false)} className="eac-btn">
               Pause (show &ldquo;opens soon&rdquo;)
             </button>
           </span>
         ) : (
           <span className="flex flex-wrap items-center gap-2">
             <span className="eac-pill">Not open yet</span>
-            <button type="button" disabled={!!busy} onClick={() => setRegistration(true)} className="eac-btn eac-btn--go">
+            <button data-edit type="button" disabled={!!busy} onClick={() => setRegistration(true)} className="eac-btn eac-btn--go">
               {busy === "registration" ? "Opening…" : "Open registration"}
             </button>
           </span>

@@ -1,6 +1,5 @@
 "use client";
 
-import { canEdit } from "@/lib/team-permissions";
 import { useEffect, useState } from "react";
 import { copyText } from "@/lib/copy-text";
 import { EventAccessControls, privateEventLink } from "@/components/event-access-controls";
@@ -449,10 +448,10 @@ export default function EventDetailPage() {
               visibility/registration controls into a narrow column */}
           <div className="flex flex-col gap-4">
             {/* actions first, above the event name */}
-            {canEdit(session?.permissions, "events") && (
             <div className="flex flex-wrap items-center gap-2 justify-start w-full">
               {event.published === false && (
                 <button
+                  data-edit
                   onClick={handlePublish}
                   disabled={publishing}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow-sm transition-all hover:shadow-md active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
@@ -463,6 +462,7 @@ export default function EventDetailPage() {
               )}
               {event.published !== false && (
                 <button
+                  data-edit
                   onClick={handleUnpublish}
                   disabled={publishing}
                   title="Hides it from attendees and closes registration again — you can publish it again anytime."
@@ -475,6 +475,7 @@ export default function EventDetailPage() {
               <QrCodesMenu onRegistrationQr={() => setShowRegQr(true)} onHubQr={() => setShowHubQr(true)} onCheckinQr={() => setShowCheckinQr(true)} />
               <TourButton event={event} />
               <button
+                data-edit
                 onClick={handleDuplicate}
                 disabled={duplicating}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-surface/60 backdrop-blur-md text-sm font-medium text-fg-3 transition-all hover:bg-canvas hover:shadow-sm active:scale-[0.96] disabled:opacity-60 disabled:active:scale-100"
@@ -483,6 +484,7 @@ export default function EventDetailPage() {
                 {duplicating ? "Duplicating…" : "Duplicate"}
               </button>
               <button
+                data-edit
                 onClick={() => setIsEditing(true)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-surface/60 backdrop-blur-md text-sm font-medium text-fg-3 transition-all hover:bg-canvas hover:shadow-sm active:scale-[0.96]"
               >
@@ -491,6 +493,7 @@ export default function EventDetailPage() {
               </button>
               {!event.archivedAt && (
                 <button
+                  data-edit
                   onClick={() => handleArchive(true)}
                   disabled={archiving}
                   title="Takes it off your event list and the public site. Nothing is deleted; unarchive it anytime."
@@ -501,6 +504,7 @@ export default function EventDetailPage() {
                 </button>
               )}
               <button
+                data-edit
                 onClick={() => {
                   setDeleteError("");
                   setShowDeleteConfirm(true);
@@ -511,7 +515,6 @@ export default function EventDetailPage() {
                 Delete
               </button>
             </div>
-            )}
             <div className="flex-1 min-w-0">
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${
@@ -582,7 +585,7 @@ export default function EventDetailPage() {
                 <p className="flex flex-wrap items-center gap-1.5 text-xs text-fg-3 bg-fill rounded-lg px-3 py-2 mt-3 w-fit">
                   <Archive size={13} className="shrink-0" />
                   Archived {new Date(event.archivedAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}: hidden from your event list and the public site, and its link is free for another event. Everything is kept.
-                  <button type="button" onClick={() => handleArchive(false)} disabled={archiving} className="ml-1 font-semibold text-[#c4b5fd] underline-offset-2 hover:underline disabled:opacity-60">
+                  <button data-edit type="button" onClick={() => handleArchive(false)} disabled={archiving} className="ml-1 font-semibold text-[#c4b5fd] underline-offset-2 hover:underline disabled:opacity-60">
                     {archiving ? "Restoring…" : "Unarchive"}
                   </button>
                 </p>
@@ -592,7 +595,7 @@ export default function EventDetailPage() {
                   This event is saved as a draft — it isn&apos;t visible to attendees or open for registration until you publish it.
                 </p>
               ) : null}
-              {!event.archivedAt && session?.orgSlug && canEdit(session.permissions, "events") && <EventAccessControls event={event} orgSlug={session.orgSlug} />}
+              {!event.archivedAt && session?.orgSlug && <EventAccessControls event={event} orgSlug={session.orgSlug} />}
             </div>
             <div className="flex flex-col items-start gap-3 w-full">
               <div className="flex items-start gap-6">

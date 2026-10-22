@@ -73,7 +73,7 @@ function RequestRow({ orgSlug, eventId, request }: { orgSlug: string; eventId: s
           </div>
           {request.note && <p className="text-sm text-fg-3 mt-2 italic">&quot;{request.note}&quot;</p>}
         </div>
-        <select
+        <select data-edit
           value={request.status}
           onChange={(e) => handleStatusChange(e.target.value as EventOneOnOneRequest["status"])}
           className={`text-xs font-medium px-2.5 py-1 rounded-full border-0 shrink-0 ${STATUS_COLOR[request.status]}`}
@@ -86,7 +86,7 @@ function RequestRow({ orgSlug, eventId, request }: { orgSlug: string; eventId: s
         </select>
       </div>
       <div className="mt-3 pt-3 border-t border-line-soft flex items-center gap-2">
-        <input
+        <input data-edit
           value={assignment}
           onChange={(e) => setAssignment(e.target.value)}
           onBlur={saveAssignment}
@@ -100,7 +100,7 @@ function RequestRow({ orgSlug, eventId, request }: { orgSlug: string; eventId: s
             Notified
           </span>
         ) : (
-          <button
+          <button data-edit
             type="button"
             onClick={handleNotify}
             disabled={notifying || !request.assignment?.trim()}
@@ -179,7 +179,7 @@ export function OneOnOneTab({
               <p className="text-xs text-muted">Attendees can say they&apos;re interested in a 1-on-1 right after registering — you decide who they meet.</p>
             </div>
           </div>
-          <button
+          <button data-edit
             type="button"
             role="switch"
             aria-checked={oneOnOneEnabled}
@@ -194,7 +194,7 @@ export function OneOnOneTab({
           <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 mt-3 pt-3 border-t border-line">
             <label className="text-xs font-medium text-muted shrink-0">Limit (first come, first served)</label>
             <div className="flex items-center gap-2.5">
-              <input
+              <input data-edit
                 type="number"
                 min={1}
                 value={limitInput}

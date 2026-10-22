@@ -114,7 +114,7 @@ export function PromoterProgramPanel({ event }: { event: EventRecord }) {
             taken from your balance automatically.
           </p>
         </div>
-        <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-fg-2">
+        <label data-edit className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-fg-2">
           <input type="checkbox" checked={s.enabled} onChange={(e) => setS({ ...s, enabled: e.target.checked })} className="h-4 w-4" />
           Pay promoters on this event
         </label>
@@ -161,7 +161,7 @@ export function PromoterProgramPanel({ event }: { event: EventRecord }) {
         </p>
       )}
       {dirty && (
-        <div className="mt-4 flex justify-end">
+        <div data-edit className="mt-4 flex justify-end">
           <button type="button" onClick={save} disabled={busy === "save"} className="eb-btn eb-btn--primary">
             {busy === "save" ? "Saving…" : "Save promoter settings"}
           </button>
@@ -184,7 +184,7 @@ export function PromoterProgramPanel({ event }: { event: EventRecord }) {
               </Link>
             )}
           </div>
-          <form onSubmit={sendInvite} className="mb-3 flex flex-wrap gap-2">
+          <form data-edit onSubmit={sendInvite} className="mb-3 flex flex-wrap gap-2">
             <input value={invite} onChange={(e) => setInvite(e.target.value)} placeholder="@handle" aria-label="Promoter handle" className="eb-input min-w-0 flex-1" />
             <button type="submit" disabled={busy === "invite" || !invite.trim()} className="eb-btn eb-btn--ghost">
               <UserPlus size={14} aria-hidden="true" /> Add promoter
@@ -205,7 +205,7 @@ export function PromoterProgramPanel({ event }: { event: EventRecord }) {
                     </p>
                     <p className="text-xs text-subtle">{p.click_count} clicks · stats in the table below</p>
                   </div>
-                  <button type="button" disabled={busy === p.id} onClick={() => toggle(p)} className="eb-btn eb-btn--ghost">
+                  <button data-edit type="button" disabled={busy === p.id} onClick={() => toggle(p)} className="eb-btn eb-btn--ghost">
                     {p.is_active ? <PauseCircle size={14} aria-hidden="true" /> : <PlayCircle size={14} aria-hidden="true" />} {p.is_active ? "Pause" : "Resume"}
                   </button>
                 </li>

@@ -212,6 +212,7 @@ function BlastModal({ orgSlug, recipientCount, onClose }: { orgSlug: string; rec
             </p>
           )}
           <button
+            data-edit
             type="submit"
             disabled={sending}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60"
@@ -440,6 +441,7 @@ export default function AudiencePage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
+              data-edit
               onClick={() => setShowBlast(true)}
               disabled={members.length === 0}
               title={members.length === 0 ? "You don't have an audience yet" : undefined}

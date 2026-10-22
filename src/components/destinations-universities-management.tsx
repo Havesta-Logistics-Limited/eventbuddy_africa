@@ -147,6 +147,7 @@ export function DestinationsUniversitiesManagement({
             <p className="text-xs text-subtle mt-0.5">Specific to this event — other events have their own lists.</p>
           </div>
           <button
+            data-edit
             onClick={() => {
               setDestForm(emptyDest);
               setFormError("");
@@ -160,7 +161,7 @@ export function DestinationsUniversitiesManagement({
           </button>
         </div>
         {otherEvents.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-xl bg-canvas border border-line">
+          <div data-edit className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-xl bg-canvas border border-line">
             <Copy size={14} className="text-subtle shrink-0" />
             <span className="text-sm text-muted shrink-0">Copy destinations &amp; universities from</span>
             <select
@@ -203,7 +204,7 @@ export function DestinationsUniversitiesManagement({
                         {uniCount} universit{uniCount !== 1 ? "ies" : "y"}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
+                    <div data-edit className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                       <button
                         onClick={() => {
                           setDestForm({ id: d.id, name: d.name, flag: d.flag, eventId: d.eventId });
@@ -233,6 +234,7 @@ export function DestinationsUniversitiesManagement({
             <p className="text-xs text-subtle mt-0.5">Exhibiting universities, grouped by destination.</p>
           </div>
           <button
+            data-edit
             onClick={() => {
               setUniForm(EMPTY_UNI);
               setFormError("");
@@ -266,7 +268,7 @@ export function DestinationsUniversitiesManagement({
                           <p className="font-medium text-fg text-sm truncate">{u.name}</p>
                           <p className="text-xs text-subtle truncate">{u.shortName}</p>
                         </div>
-                        <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
+                        <div data-edit className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                           <button
                             onClick={() => {
                               setUniForm({ id: u.id, name: u.name, shortName: u.shortName, destinationId: u.destinationId });

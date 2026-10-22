@@ -8,6 +8,8 @@ import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/clie
 import { deleteEventMedia, uploadEventMedia } from "@/lib/supabase/storage";
 import { compressImageFile } from "@/lib/utils";
 import { FloorPlan } from "@/components/floor-plan";
+import { useSession } from "@/lib/store";
+import { canEdit } from "@/lib/team-permissions";
 import { formatNaira } from "@/lib/billing";
 import type { EventRecord } from "@/lib/types";
 import type { ExhibitorStatus } from "@/lib/exhibitors";
@@ -67,6 +69,8 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
   const [counts, setCounts] = useState<Record<string, { passes: number; leads: number }>>({});
   const [plan, setPlan] = useState<{ url: string | null; orgId: string }>({ url: null, orgId: "" });
   const [placing, setPlacing] = useState<string | null>(null);
+  const session = useSession();
+  const editable = canEdit(session?.permissions, "events");
   const [uploadingPlan, setUploadingPlan] = useState(false);
 
   const load = useCallback(async () => {
@@ -233,7 +237,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
             </p>
             <p className="mt-1 text-sm text-muted">Companies apply for a stand on your exhibit page. You approve, they pay.</p>
           </div>
-          <label className="flex items-center gap-2.5 text-sm font-medium text-fg">
+          <label data-edit className="flex items-center gap-2.5 text-sm font-medium text-fg">
             <input
               type="checkbox"
               className="h-4 w-4"
@@ -248,7 +252,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
             Taking applications
           </label>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_200px]">
+        <div data-edit className="mt-4 grid gap-3 sm:grid-cols-[1fr_200px]">
           <div>
             <label htmlFor="ex-intro" className="eb-label">Note for exhibitors</label>
             <textarea id="ex-intro" rows={2} className="eb-input" placeholder="Who you're looking for, what's included, setup times…" value={settings.intro} onChange={(e) => setSettings({ ...settings, intro: e.target.value })} onBlur={() => saveSettings()} />
@@ -281,12 +285,12 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
             <p className="mt-1 text-sm text-muted">Attendees see it in their Event Hub with every stand pinned, and tap a company to find it.</p>
           </div>
           <div className="flex gap-2">
-            <label className="eb-btn eb-btn--ghost cursor-pointer">
+            <label data-edit className="eb-btn eb-btn--ghost cursor-pointer">
               <ImagePlus size={14} aria-hidden="true" /> {uploadingPlan ? "Uploading…" : plan.url ? "Replace" : "Upload floor plan"}
               <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" disabled={uploadingPlan} onChange={(e) => e.target.files?.[0] && uploadPlan(e.target.files[0])} />
             </label>
             {plan.url && (
-              <button type="button" className="eb-btn eb-btn--ghost" onClick={removePlan}>
+              <button data-edit type="button" className="eb-btn eb-btn--ghost" onClick={removePlan}>
                 Remove
               </button>
             )}
@@ -298,10 +302,10 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
               src={plan.url}
               pins={paid.filter((r) => r.map_x != null && r.map_y != null).map((r) => ({ id: r.id, label: r.stand_label ?? "", x: Number(r.map_x), y: Number(r.map_y), title: r.company_name }))}
               activeId={placing}
-              onPick={placing ? placePin : undefined}
-              onPinClick={(id) => setPlacing(id)}
+              onPick={placing && editable ? placePin : undefined}
+              onPinClick={editable ? (id) => setPlacing(id) : undefined}
             />
-            <div>
+            <div data-edit>
               <p className="mb-2 text-xs text-muted">{placing ? `Tap the plan where ${rows.find((r) => r.id === placing)?.company_name}'s stand is.` : "Pick an exhibitor, then tap their spot on the plan."}</p>
               {paid.length === 0 ? (
                 <p className="text-sm text-subtle">Paid exhibitors appear here.</p>
@@ -325,7 +329,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
       <section className="eb-ov-card">
         <div className="mb-3 flex items-center justify-between gap-3">
           <p className="eb-ov-title">Stand types</p>
-          <button type="button" className="eb-btn eb-btn--ghost" onClick={() => setEditing({ name: "", price_naira: undefined, quantity: null, description: "", passes_included: 2 })}>
+          <button data-edit type="button" className="eb-btn eb-btn--ghost" onClick={() => setEditing({ name: "", price_naira: undefined, quantity: null, description: "", passes_included: 2 })}>
             <Plus size={14} /> Add stand type
           </button>
         </div>
@@ -345,10 +349,10 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
                   {taken(s.id)}
                   {s.quantity != null ? ` / ${s.quantity}` : ""} taken
                 </p>
-                <button type="button" className="rounded-lg p-1.5 text-subtle hover:text-fg" aria-label={`Edit ${s.name}`} onClick={() => setEditing(s)}>
+                <button data-edit type="button" className="rounded-lg p-1.5 text-subtle hover:text-fg" aria-label={`Edit ${s.name}`} onClick={() => setEditing(s)}>
                   <Pencil size={15} />
                 </button>
-                <button type="button" className="rounded-lg p-1.5 text-subtle hover:text-rose-300" aria-label={`Delete ${s.name}`} onClick={() => removeStand(s)}>
+                <button data-edit type="button" className="rounded-lg p-1.5 text-subtle hover:text-rose-300" aria-label={`Delete ${s.name}`} onClick={() => removeStand(s)}>
                   <Trash2 size={15} />
                 </button>
               </li>
@@ -448,7 +452,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
                         >
                           Copy portal link
                         </button>
-                        <button type="button" className="eb-link" disabled={busy === r.id} onClick={() => resendPortal(r.id)}>
+                        <button data-edit type="button" className="eb-link" disabled={busy === r.id} onClick={() => resendPortal(r.id)}>
                           Email portal link
                         </button>
                       </p>
@@ -457,6 +461,7 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
                   <div className="flex flex-wrap items-center gap-2">
                     {(r.status === "approved" || r.status === "paid") && (
                       <input
+                        data-edit
                         aria-label={`Stand number for ${r.company_name}`}
                         className="eb-input"
                         // .eb-input is full width outside Tailwind's layers, so size it inline
@@ -469,23 +474,23 @@ export function ExhibitorsTab({ event }: { event: EventRecord }) {
                     )}
                     {r.status === "applied" && (
                       <>
-                        <button type="button" disabled={busy === r.id} className="eb-btn eb-btn--primary" onClick={() => decide(r.id, "approve")}>
+                        <button data-edit type="button" disabled={busy === r.id} className="eb-btn eb-btn--primary" onClick={() => decide(r.id, "approve")}>
                           <Check size={14} /> Approve
                         </button>
-                        <button type="button" disabled={busy === r.id} className="eb-btn eb-btn--ghost" onClick={() => setDeclining({ id: r.id, reason: "" })}>
+                        <button data-edit type="button" disabled={busy === r.id} className="eb-btn eb-btn--ghost" onClick={() => setDeclining({ id: r.id, reason: "" })}>
                           <X size={14} /> Decline
                         </button>
                       </>
                     )}
                     {r.status === "approved" && (
-                      <button type="button" disabled={busy === r.id} className="eb-btn eb-btn--ghost" onClick={() => decide(r.id, "cancel")}>
+                      <button data-edit type="button" disabled={busy === r.id} className="eb-btn eb-btn--ghost" onClick={() => decide(r.id, "cancel")}>
                         Cancel approval
                       </button>
                     )}
                   </div>
                 </div>
                 {declining?.id === r.id && (
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div data-edit className="mt-3 flex flex-wrap gap-2">
                     <input
                       className="eb-input min-w-0 flex-1"
                       aria-label="Reason they'll see"

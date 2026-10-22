@@ -41,6 +41,7 @@ function RegistrationSettingsCard({ event }: { event: EventRecord }) {
           </div>
         </div>
         <button
+          data-edit
           type="button"
           role="switch"
           aria-checked={!!event.requiresApproval}
@@ -60,6 +61,7 @@ function RegistrationSettingsCard({ event }: { event: EventRecord }) {
           </div>
         </div>
         <button
+          data-edit
           type="button"
           role="switch"
           aria-checked={!!event.waitlistEnabled}
@@ -283,6 +285,7 @@ export function ProspectsTab({
           </div>
           <div className="flex items-center gap-2">
             <button
+              data-edit
               onClick={resendAll}
               disabled={resendingAll}
               title="Resend the confirmation email (with QR code) to every registrant — good for a reminder a few days before the event"
@@ -430,7 +433,7 @@ export function ProspectsTab({
                     {busyId === r.id ? (
                       <Loader2 size={16} className="animate-spin text-subtle" />
                     ) : r.status === "pending" ? (
-                      <div className="flex items-center gap-1.5">
+                      <div data-edit className="flex items-center gap-1.5">
                         <button type="button" onClick={() => decide(r, "approve")} title="Approve" className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15">
                           <Check size={13} />
                         </button>
@@ -439,7 +442,7 @@ export function ProspectsTab({
                         </button>
                       </div>
                     ) : r.status === "waitlisted" ? (
-                      <div className="flex items-center gap-1.5">
+                      <div data-edit className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => decide(r, "promote")}
@@ -454,6 +457,7 @@ export function ProspectsTab({
                       </div>
                     ) : (
                       <input
+                        data-edit
                         type="checkbox"
                         checked={r.status === "checked_in"}
                         disabled={r.status === "cancelled" || r.status === "declined"}

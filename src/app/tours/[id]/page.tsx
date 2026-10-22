@@ -161,10 +161,10 @@ export default function TourPage() {
             <a href={publicPath} target="_blank" rel="noreferrer" className="eb-btn eb-btn--ghost">
               <ExternalLink size={15} /> View tour page
             </a>
-            <button type="button" className="eb-btn eb-btn--ghost" onClick={() => setEditing(true)}>
+            <button data-edit type="button" className="eb-btn eb-btn--ghost" onClick={() => setEditing(true)}>
               Edit tour
             </button>
-            <button type="button" className="eb-btn eb-btn--primary" onClick={() => setShowAdd(true)}>
+            <button data-edit type="button" className="eb-btn eb-btn--primary" onClick={() => setShowAdd(true)}>
               <Plus size={15} /> Add a city
             </button>
           </div>
@@ -214,6 +214,7 @@ export default function TourPage() {
                       {status}
                     </span>
                     <button
+                      data-edit
                       type="button"
                       title="Take this city out of the tour (the event itself is kept)"
                       aria-label={`Take ${city.location || city.name} out of the tour`}
@@ -241,6 +242,7 @@ export default function TourPage() {
 
         <div className="mt-8 border-t border-line-soft pt-6">
           <button
+            data-edit
             type="button"
             className="inline-flex items-center gap-2 text-sm text-rose-300 hover:text-rose-200"
             onClick={async () => {
@@ -410,7 +412,7 @@ function SharedDetails({ tourId, cities }: { tourId: string; cities: EventRecord
   const [busy, setBusy] = useState(false);
   const src = cities.find((c) => c.id === source) ?? cities[0];
   return (
-    <div className="eb-ov-card mt-4">
+    <div data-edit className="eb-ov-card mt-4">
       <p className="eb-ov-title">Update every city at once</p>
       <p className="mt-1 text-sm text-muted">
         Copies the description, form questions and category (and the cover, if ticked) from one city to all the others. Dates, venues, tickets and stock aren&apos;t touched.

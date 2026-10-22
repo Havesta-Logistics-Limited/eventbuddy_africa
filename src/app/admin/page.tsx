@@ -574,7 +574,7 @@ function AdminPageContent() {
               {loadingProfile ? (
                 <div className="h-32 rounded-xl bg-fill animate-pulse" />
               ) : (
-                <form onSubmit={handleSaveName} className="bg-surface rounded-xl border border-line p-5 space-y-4">
+                <form data-edit onSubmit={handleSaveName} className="bg-surface rounded-xl border border-line p-5 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-fg-2 mb-1.5">Full name</label>
                     <input
@@ -619,7 +619,7 @@ function AdminPageContent() {
                   <p className="text-xs text-subtle mt-2">Awaiting approval from the eventbuddy team — for security, name changes aren&apos;t applied instantly.</p>
                 </div>
               ) : (
-                <form onSubmit={handleRequestOrgNameChange} className="bg-surface rounded-xl border border-line p-5 space-y-4">
+                <form data-edit onSubmit={handleRequestOrgNameChange} className="bg-surface rounded-xl border border-line p-5 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-fg-2 mb-1.5">Organization name</label>
                     <input
@@ -663,7 +663,7 @@ function AdminPageContent() {
                   <p className="text-xs text-subtle mt-2">Awaiting approval from the eventbuddy team — for security, email changes aren&apos;t applied instantly.</p>
                 </div>
               ) : (
-                <form onSubmit={handleRequestEmailChange} className="bg-surface rounded-xl border border-line p-5 space-y-4">
+                <form data-edit onSubmit={handleRequestEmailChange} className="bg-surface rounded-xl border border-line p-5 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-fg-2 mb-1.5">New login email</label>
                     <input
@@ -716,7 +716,7 @@ function AdminPageContent() {
                         </div>
                       )}
                       <div className="flex items-center gap-2.5">
-                        <label className="cursor-pointer px-3.5 py-2 border border-line rounded-lg text-sm font-medium text-fg-3 hover:bg-canvas transition-colors">
+                        <label data-edit className="cursor-pointer px-3.5 py-2 border border-line rounded-lg text-sm font-medium text-fg-3 hover:bg-canvas transition-colors">
                           {savingLogo ? (
                             <span className="inline-flex items-center gap-1.5">
                               <Loader2 size={14} className="animate-spin" />
@@ -748,6 +748,7 @@ function AdminPageContent() {
                         </label>
                         {orgLogoUrl && (
                           <button
+                            data-edit
                             type="button"
                             onClick={handleRemoveLogo}
                             disabled={savingLogo}
@@ -780,7 +781,7 @@ function AdminPageContent() {
                 />
               )}
               {loadingOrgName ? null : (
-                <form onSubmit={handleSaveBio} className="bg-surface rounded-xl border border-line p-5 space-y-4 mt-4">
+                <form data-edit onSubmit={handleSaveBio} className="bg-surface rounded-xl border border-line p-5 space-y-4 mt-4">
                   <div>
                     <label className="block text-sm font-medium text-fg-2 mb-1.5">Bio</label>
                     <textarea
@@ -882,6 +883,7 @@ function AdminPageContent() {
                     be undone.
                   </p>
                   <button
+                    data-edit
                     type="button"
                     onClick={() => setShowDeleteAccountModal(true)}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-rose-600 text-sm font-medium text-white hover:bg-rose-700 transition-transform active:scale-[0.97]"
@@ -964,6 +966,7 @@ function AdminPageContent() {
                 <p className="text-xs text-subtle mt-0.5">People you&apos;ve added yourself — not anyone who&apos;s just checked in to collect leads.</p>
               </div>
               <button
+                data-edit
                 onClick={() => {
                   setStaffForm(EMPTY_STAFF);
                   setShowStaffForm(true);
@@ -1133,7 +1136,7 @@ function AdminPageContent() {
                       <button type="button" onClick={() => setShowStaffForm(false)} className="flex-1 py-2.5 rounded-lg border border-line text-sm font-medium text-fg-3 hover:bg-canvas">
                         Cancel
                       </button>
-                      <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" data-cta>
+                      <button data-edit type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60 transition-transform active:scale-[0.97]" data-cta>
                         {saving ? "Saving…" : staffForm.id ? "Save Changes" : "Add Staff"}
                       </button>
                     </div>
@@ -1246,6 +1249,7 @@ function AdminPageContent() {
                       </span>
                     ) : (
                       <button
+                        data-edit
                         type="button"
                         onClick={handleRequestPayoutChange}
                         disabled={requestingChange}
@@ -1258,7 +1262,7 @@ function AdminPageContent() {
                 </div>
               </div>
             ) : (
-              <div className="bg-surface rounded-xl border border-line p-5 max-w-md space-y-4">
+              <div data-edit className="bg-surface rounded-xl border border-line p-5 max-w-md space-y-4">
                 {orgPayout?.payoutChangeStatus === "approved" && (
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-500/10 text-emerald-300 text-sm">
                     <ShieldCheck size={15} className="mt-0.5 shrink-0" />

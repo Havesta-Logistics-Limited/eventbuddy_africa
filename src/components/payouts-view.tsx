@@ -260,6 +260,7 @@ export function PayoutsView({ kind }: { kind: PayoutAccountKind }) {
             )}
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <button
+                data-edit
                 type="button"
                 className="eb-btn eb-btn--primary"
                 disabled={!canRequest}
@@ -384,6 +385,7 @@ export function PayoutsView({ kind }: { kind: PayoutAccountKind }) {
               </div>
               {open.status === "requested" && (
                 <button
+                  data-edit
                   type="button"
                   className="eb-btn eb-btn--ghost"
                   onClick={() => onCancel(open.id)}
@@ -630,6 +632,7 @@ function RequestPayoutModal({
             Cancel
           </button>
           <button
+            data-edit
             type="submit"
             disabled={saving}
             className="eb-btn eb-btn--primary flex-1"

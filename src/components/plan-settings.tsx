@@ -160,7 +160,7 @@ export function PlanSettings() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-auto pt-4">
+              <div data-edit className="mt-auto pt-4">
                 {isCurrent ? (
                   p.id !== "launch" && !mine.comped && mine.status !== "cancelling" ? (
                     <button type="button" onClick={cancel} disabled={busy === "cancel"} className="eb-btn eb-btn--ghost w-full">

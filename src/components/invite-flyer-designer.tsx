@@ -8,7 +8,8 @@ import { inviteLabel, type InviteDesign, type InviteLabelMode } from "@/lib/invi
 import { compressImageFile } from "@/lib/utils";
 import { uploadEventMedia } from "@/lib/supabase/storage";
 import { createClient } from "@/lib/supabase/client";
-import { PersistError, resolveMyOrgId, updateEvent } from "@/lib/store";
+import { PersistError, resolveMyOrgId, updateEvent, useSession } from "@/lib/store";
+import { canEdit } from "@/lib/team-permissions";
 
 const LABELS: { id: InviteLabelMode; label: string }[] = [
   { id: "first", label: "First name" },
@@ -35,6 +36,7 @@ export function InviteFlyerDesigner({ event, sampleName, previewToken }: { event
   const [draft, setDraft] = useState<InviteDesign | null>(event.inviteDesign ?? null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const editable = canEdit(useSession()?.permissions, "events");
   const stageRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
   const saved = JSON.stringify(event.inviteDesign ?? null) === JSON.stringify(draft);
@@ -65,7 +67,7 @@ export function InviteFlyerDesigner({ event, sampleName, previewToken }: { event
   }
 
   function onPointerDown(e: React.PointerEvent) {
-    if (!draft || !stageRef.current) return;
+    if (!editable || !draft || !stageRef.current) return;
     const rect = stageRef.current.getBoundingClientRect();
     dragRef.current = { dx: (e.clientX - rect.left) / rect.width - draft.qr.x, dy: (e.clientY - rect.top) / rect.height - draft.qr.y };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -106,7 +108,7 @@ export function InviteFlyerDesigner({ event, sampleName, previewToken }: { event
             WhatsApp or download.
           </p>
         </div>
-        <label className="eb-btn eb-btn--ghost cursor-pointer text-sm">
+        <label data-edit className="eb-btn eb-btn--ghost cursor-pointer text-sm">
           {uploading ? <Loader2 size={15} className="animate-spin" aria-hidden="true" /> : <ImagePlus size={15} aria-hidden="true" />}
           {draft ? "Replace flyer" : "Upload flyer"}
           <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => onFile(e.target.files?.[0])} disabled={uploading} />
@@ -132,7 +134,7 @@ export function InviteFlyerDesigner({ event, sampleName, previewToken }: { event
               onKeyDown={(e) => {
                 const step = e.shiftKey ? 0.05 : 0.01;
                 const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
-                if (!d) return;
+                if (!d || !editable) return;
                 e.preventDefault();
                 setDraft((cur) => (cur ? { ...cur, qr: { ...cur.qr, x: Math.min(1 - cur.qr.size, Math.max(0, cur.qr.x + d[0])), y: Math.min(0.95, Math.max(0, cur.qr.y + d[1])) } } : cur));
               }}
@@ -148,7 +150,7 @@ export function InviteFlyerDesigner({ event, sampleName, previewToken }: { event
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div data-edit className="space-y-4">
             <div>
               <label htmlFor="ifd-size" className="eb-label">QR size</label>
               <input

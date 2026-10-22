@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/logo";
 import { BadgeObject, OrbsObject, TicketObject, WristbandObject } from "@/components/landing/event-objects";
 
-import { canEdit, canView, SECTION_LABELS, type TeamSection } from "@/lib/team-permissions";
+import { canEdit, canView, SECTION_LABELS, TEAM_SECTIONS, type TeamSection } from "@/lib/team-permissions";
 const adminNav: { to: string; label: string; icon: typeof Calendar; section: TeamSection }[] = [
   { to: "/dashboard", label: "Events", icon: Calendar, section: "events" },
   { to: "/leads", label: "Leads", icon: Users, section: "leads" },
@@ -73,6 +73,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const viewOnlySection =
     (isAdmin || isEventSupport) && pageSection && session?.permissions && canView(session.permissions, pageSection) && !canEdit(session.permissions, pageSection) ? pageSection : null;
 
+  // view-only: locked controls (data-edit) can't be reached by keyboard either; re-applied as tabs render
+  useEffect(() => {
+    const main = document.querySelector("main[data-readonly]");
+    if (!main) return;
+    const lock = () => main.querySelectorAll("[data-edit]").forEach((el) => el.setAttribute("inert", ""));
+    lock();
+    const mo = new MutationObserver(lock);
+    mo.observe(main, { childList: true, subtree: true });
+    return () => {
+      mo.disconnect();
+      main.querySelectorAll("[data-edit][inert]").forEach((el) => el.removeAttribute("inert"));
+    };
+  }, [viewOnlySection, pathname]);
+
   // team members only see the pages they have access to (migration 0137)
   const myAdminNav = adminNav.filter((n) => canView(session?.permissions, n.section));
   const nav = isAdmin
@@ -120,7 +134,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <div className="eb-avatar">{session?.name.charAt(0)}</div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-fg truncate">{session?.name}</p>
-              <p className="text-xs text-subtle capitalize">{session?.role?.replace("_", " ")}</p>
+              <p className="text-xs text-subtle capitalize">
+                {(isAdmin || isEventSupport) && session?.permissions
+                  ? TEAM_SECTIONS.every((x) => session.permissions![x] !== "edit")
+                    ? "Team member · view only"
+                    : "Team member"
+                  : isAdmin && session?.isOwner !== false && !session?.permissions
+                    ? "Owner"
+                    : session?.role?.replace("_", " ")}
+              </p>
             </div>
           </div>
           <button onClick={handleLogout} className="eb-nav-item w-full">
@@ -172,7 +194,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {/* min-w-0 keeps this a shrinkable flex item — without it, wide content
           (e.g. the leads table's nowrap columns) forces the whole page past
           the viewport instead of scrolling inside its own overflow-x-auto. */}
-      <main className="flex-1 min-w-0 md:ml-64 min-h-screen pt-14 md:pt-0 bg-canvas">
+      {/* data-readonly hides every control marked data-edit (team permissions, migration 0137) */}
+      <main className="flex-1 min-w-0 md:ml-64 min-h-screen pt-14 md:pt-0 bg-canvas" data-readonly={viewOnlySection ? "true" : undefined}>
         {viewOnlySection && (
           <div className="eb-viewonly" role="status">
             <Eye size={15} aria-hidden="true" />

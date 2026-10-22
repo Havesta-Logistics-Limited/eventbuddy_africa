@@ -3636,3 +3636,6 @@ tbody tr.cursor-pointer:hover { background: rgba(237, 28, 220, 0.06); box-shadow
 @media (min-width: 768px) { .eb-viewonly { margin: 20px 32px 0; } }
 /* a compact segmented control, e.g. per-page team access */
 .eb-seg.eb-seg--sm button { padding: 5px 10px; font-size: 12px; }
+/* view-only teammates: controls marked data-edit stay visible but locked (shell.tsx also makes them inert) */
+[data-readonly="true"] [data-edit] { opacity: 0.45; filter: saturate(0.5); pointer-events: none; user-select: none; }
+[data-readonly="true"] [data-edit] [data-edit] { opacity: 1; filter: none; }

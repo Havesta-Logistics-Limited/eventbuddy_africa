@@ -184,7 +184,7 @@ export function ReferralsTab({
               Export
             </button>
           )}
-          <button
+          <button data-edit
             type="button"
             onClick={() => setAdding((a) => !a)}
             className="inline-flex items-center gap-2 rounded-lg bg-[#C21FAF] px-3 py-2 text-sm font-semibold text-white hover:bg-[#A8158F]"
@@ -196,7 +196,7 @@ export function ReferralsTab({
       </div>
 
       {adding && (
-        <form onSubmit={create} className="rounded-xl border border-line bg-canvas/60 p-4 grid gap-3 sm:grid-cols-2">
+        <form data-edit onSubmit={create} className="rounded-xl border border-line bg-canvas/60 p-4 grid gap-3 sm:grid-cols-2">
           <div>
             <label htmlFor="ref-name" className="block text-sm font-medium text-fg-2 mb-1.5">Partner name *</label>
             <input
@@ -328,13 +328,13 @@ export function ReferralsTab({
                       <td className="px-4 py-3 text-right tabular-nums font-semibold text-[#C21FAF]">{loadingTallies ? "—" : formatNaira(t.commissionNaira)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
-                          <button
+                          <button data-edit
                             type="button" onClick={() => toggleActive(r)}
                             className="px-2 py-1 text-xs font-medium text-fg-3 hover:text-fg"
                           >
                             {r.isActive ? "Deactivate" : "Activate"}
                           </button>
-                          <button
+                          <button data-edit
                             type="button" onClick={() => remove(r)} aria-label={`Delete ${r.partnerName}`}
                             className="p-1.5 text-subtle hover:text-rose-300"
                           >

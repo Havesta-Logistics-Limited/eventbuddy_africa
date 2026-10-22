@@ -106,7 +106,7 @@ export function QaTab({ eventId, sessions, speakers }: { eventId: string; sessio
                 <span className="text-[11px] text-subtle">{new Date(q.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
               </div>
               <p className="text-sm text-fg-2 mb-3">{q.questionText}</p>
-              <div className="flex items-center gap-2">
+              <div data-edit className="flex items-center gap-2">
                 {q.status !== "approved" && (
                   <button
                     onClick={() => handleModerate(q.id, "approved")}

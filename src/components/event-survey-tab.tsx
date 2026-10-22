@@ -75,7 +75,7 @@ export function SurveyTab({ event }: { event: EventRecord }) {
               <p className="text-xs text-muted">Shows a Survey tab on the Event Hub once this event has ended.</p>
             </div>
           </div>
-          <button
+          <button data-edit
             type="button"
             role="switch"
             aria-checked={enabled}
@@ -92,7 +92,7 @@ export function SurveyTab({ event }: { event: EventRecord }) {
         <h3 className="text-sm font-semibold text-fg mb-3">Questions</h3>
         <FieldBuilderStep fields={fields} onChange={setFields} />
         {fieldsDirty && (
-          <button
+          <button data-edit
             type="button"
             onClick={saveFields}
             disabled={savingFields}

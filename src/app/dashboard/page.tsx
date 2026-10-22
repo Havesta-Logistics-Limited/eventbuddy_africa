@@ -1,6 +1,5 @@
 "use client";
 
-import { canEdit } from "@/lib/team-permissions";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -307,15 +306,14 @@ export default function DashboardPage() {
             <h1 className="eb-app-title">Events</h1>
             <p className="eb-app-sub">Manage your event schedule</p>
           </div>
-          {canEdit(session?.permissions, "events") && (
-            <button
+          <button
+              data-edit
               onClick={() => setShowWizard(true)}
               className="eb-btn eb-btn--primary h-11 shrink-0 whitespace-nowrap px-5"
             >
               <Plus size={16} />
               New Event
             </button>
-          )}
         </div>
 
         {dataReady && events.length === 0 && <FreeStartBanner />}

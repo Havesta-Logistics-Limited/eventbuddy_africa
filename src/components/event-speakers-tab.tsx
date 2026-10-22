@@ -82,7 +82,7 @@ export function SpeakersTab({ eventId, speakers }: { eventId: string; speakers: 
     <div>
       <div className="flex items-center justify-between gap-3 mb-4">
         <p className="text-sm text-muted">{speakers.length} speaker{speakers.length !== 1 ? "s" : ""}</p>
-        <button
+        <button data-edit
           onClick={openCreate}
           className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700"
         >
@@ -122,10 +122,10 @@ export function SpeakersTab({ eventId, speakers }: { eventId: string; speakers: 
               </div>
               {s.bio && <p className="text-xs text-fg-3 mt-3 line-clamp-3">{s.bio}</p>}
               <div className="flex items-center gap-3 mt-3 pt-3 border-t border-line-soft">
-                <button onClick={() => openEdit(s)} className="text-xs font-medium text-brand-500 hover:underline">
+                <button data-edit onClick={() => openEdit(s)} className="text-xs font-medium text-brand-500 hover:underline">
                   Edit
                 </button>
-                <button onClick={() => handleDelete(s.id)} disabled={busyId === s.id} className="text-subtle hover:text-rose-300 disabled:opacity-50 ml-auto">
+                <button data-edit onClick={() => handleDelete(s.id)} disabled={busyId === s.id} className="text-subtle hover:text-rose-300 disabled:opacity-50 ml-auto">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -153,7 +153,7 @@ export function SpeakersTab({ eventId, speakers }: { eventId: string; speakers: 
                     form.name.charAt(0).toUpperCase() || "?"
                   )}
                 </div>
-                <label className="cursor-pointer text-xs font-medium text-brand-500 hover:underline">
+                <label data-edit className="cursor-pointer text-xs font-medium text-brand-500 hover:underline">
                   {imageUploading ? (
                     <span className="inline-flex items-center gap-1.5">
                       <Loader2 size={12} className="animate-spin" /> Uploading…

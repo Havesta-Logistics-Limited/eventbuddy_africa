@@ -133,6 +133,7 @@ export default function LeadsPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <button
+              data-edit
               onClick={openEmailModal}
               disabled={filtered.length === 0}
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-line text-fg-3 hover:bg-canvas disabled:opacity-50"

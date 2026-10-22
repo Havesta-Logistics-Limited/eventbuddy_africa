@@ -528,6 +528,7 @@ export function TicketsTab({
           Ticket types ({ticketTypes.length})
         </h2>
         <button
+          data-edit
           onClick={() => {
             setForm(EMPTY_FORM);
             setFormError("");
@@ -606,10 +607,10 @@ export function TicketsTab({
                   </div>
                 </div>
                 <div className="eb-tt-actions">
-                  <button type="button" onClick={edit} className="eb-tt-act" aria-label={`Edit ${t.name}`}>
+                  <button data-edit type="button" onClick={edit} className="eb-tt-act" aria-label={`Edit ${t.name}`}>
                     <Edit2 size={15} />
                   </button>
-                  <button type="button" onClick={() => handleDelete(t.id, t.name)} className="eb-tt-act eb-tt-act--danger" aria-label={`Delete ${t.name}`}>
+                  <button data-edit type="button" onClick={() => handleDelete(t.id, t.name)} className="eb-tt-act eb-tt-act--danger" aria-label={`Delete ${t.name}`}>
                     <Trash2 size={15} />
                   </button>
                 </div>
@@ -622,6 +623,7 @@ export function TicketsTab({
       <div className="flex flex-wrap items-center justify-between gap-3 mt-10 mb-4">
         <h2 className="font-semibold text-fg">Discount codes ({discountCodes.length})</h2>
         <button
+          data-edit
           onClick={() => {
             setCodeForm(EMPTY_CODE_FORM);
             setCodeFormError("");
@@ -714,6 +716,7 @@ export function TicketsTab({
                     <span>Usage</span>
                   </button>
                   <button
+                    data-edit
                     type="button"
                     onClick={() => {
                     setCodeForm({
@@ -738,7 +741,7 @@ export function TicketsTab({
                   >
                     <Edit2 size={15} />
                   </button>
-                  <button type="button" onClick={() => handleDeleteCode(d.id, d.code)} className="eb-tt-act eb-tt-act--danger" aria-label={`Delete ${d.code}`}>
+                  <button data-edit type="button" onClick={() => handleDeleteCode(d.id, d.code)} className="eb-tt-act eb-tt-act--danger" aria-label={`Delete ${d.code}`}>
                     <Trash2 size={15} />
                   </button>
                 </div>

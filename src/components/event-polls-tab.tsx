@@ -102,7 +102,7 @@ export function PollsTab({ eventId }: { eventId: string }) {
       <div className="flex items-center justify-between gap-3 mb-4">
         <p className="text-sm text-muted">{polls.length} poll{polls.length !== 1 ? "s" : ""}</p>
         {!showForm && (
-          <button
+          <button data-edit
             onClick={() => setShowForm(true)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700"
           >
@@ -113,7 +113,7 @@ export function PollsTab({ eventId }: { eventId: string }) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-surface rounded-xl border border-line p-4 mb-4 space-y-3">
+        <form data-edit onSubmit={handleSubmit} className="bg-surface rounded-xl border border-line p-4 mb-4 space-y-3">
           <input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
@@ -182,16 +182,16 @@ export function PollsTab({ eventId }: { eventId: string }) {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {p.status !== "open" && (
-                      <button onClick={() => handleSetStatus(p.id, "open")} disabled={busyId === p.id} className="flex items-center gap-1 text-xs font-medium text-emerald-300 hover:underline disabled:opacity-50">
+                      <button data-edit onClick={() => handleSetStatus(p.id, "open")} disabled={busyId === p.id} className="flex items-center gap-1 text-xs font-medium text-emerald-300 hover:underline disabled:opacity-50">
                         <Play size={11} /> Open
                       </button>
                     )}
                     {p.status === "open" && (
-                      <button onClick={() => handleSetStatus(p.id, "closed")} disabled={busyId === p.id} className="flex items-center gap-1 text-xs font-medium text-amber-300 hover:underline disabled:opacity-50">
+                      <button data-edit onClick={() => handleSetStatus(p.id, "closed")} disabled={busyId === p.id} className="flex items-center gap-1 text-xs font-medium text-amber-300 hover:underline disabled:opacity-50">
                         <Square size={11} /> Close
                       </button>
                     )}
-                    <button onClick={() => handleDelete(p.id)} disabled={busyId === p.id} className="text-subtle hover:text-rose-300 disabled:opacity-50">
+                    <button data-edit onClick={() => handleDelete(p.id)} disabled={busyId === p.id} className="text-subtle hover:text-rose-300 disabled:opacity-50">
                       <Trash2 size={14} />
                     </button>
                   </div>

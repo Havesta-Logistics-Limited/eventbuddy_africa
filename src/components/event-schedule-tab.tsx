@@ -151,7 +151,7 @@ export function ScheduleTab({ eventId, sessions, speakers }: { eventId: string; 
     <div>
       <div className="flex items-center justify-between gap-3 mb-4">
         <p className="text-sm text-muted">{sessions.length} session{sessions.length !== 1 ? "s" : ""}</p>
-        <button
+        <button data-edit
           onClick={openCreate}
           className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700"
         >
@@ -187,7 +187,7 @@ export function ScheduleTab({ eventId, sessions, speakers }: { eventId: string; 
                     {s.description && <p className="text-sm text-fg-3 mt-2">{s.description}</p>}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button
+                    <button data-edit
                       onClick={() => handleToggleQa(s)}
                       disabled={busyId === s.id}
                       className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
@@ -198,10 +198,10 @@ export function ScheduleTab({ eventId, sessions, speakers }: { eventId: string; 
                       <MessageSquareText size={13} />
                       {s.qaOpen ? "Q&A open" : "Q&A closed"}
                     </button>
-                    <button onClick={() => openEdit(s)} className="text-xs font-medium text-brand-500 hover:underline">
+                    <button data-edit onClick={() => openEdit(s)} className="text-xs font-medium text-brand-500 hover:underline">
                       Edit
                     </button>
-                    <button onClick={() => handleDelete(s.id)} disabled={busyId === s.id} className="text-subtle hover:text-rose-300 disabled:opacity-50">
+                    <button data-edit onClick={() => handleDelete(s.id)} disabled={busyId === s.id} className="text-subtle hover:text-rose-300 disabled:opacity-50">
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -212,13 +212,13 @@ export function ScheduleTab({ eventId, sessions, speakers }: { eventId: string; 
                     <span key={sp.assignmentId} className="flex items-center gap-1.5 text-xs bg-fill text-fg-2 pl-2.5 pr-1.5 py-1 rounded-full">
                       {sp.name}
                       <span className="text-subtle">· {SPEAKER_ROLES.find((r) => r.id === sp.role)?.label}</span>
-                      <button onClick={() => handleUnassign(sp.assignmentId, s.id)} className="text-subtle hover:text-rose-300">
+                      <button data-edit onClick={() => handleUnassign(sp.assignmentId, s.id)} className="text-subtle hover:text-rose-300">
                         <X size={11} />
                       </button>
                     </span>
                   ))}
                   {assigning === s.id ? (
-                    <div className="flex items-center gap-1.5">
+                    <div data-edit className="flex items-center gap-1.5">
                       <select
                         value={assignSpeakerId}
                         onChange={(e) => setAssignSpeakerId(e.target.value)}
@@ -251,7 +251,7 @@ export function ScheduleTab({ eventId, sessions, speakers }: { eventId: string; 
                     </div>
                   ) : (
                     availableSpeakers.length > 0 && (
-                      <button
+                      <button data-edit
                         onClick={() => {
                           setAssigning(s.id);
                           setAssignSpeakerId("");

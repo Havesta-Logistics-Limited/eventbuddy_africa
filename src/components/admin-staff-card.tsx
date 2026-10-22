@@ -47,7 +47,7 @@ export function StaffCard({
         {uni && <span className="px-2 py-0.5 rounded-full bg-fill text-fg-3 hidden sm:inline-block">{uni.shortName}</span>}
         {ev && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 max-w-[120px] sm:max-w-[160px] truncate">{ev.name.split("—")[0].trim()}</span>}
       </div>
-      <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
+      <div data-edit className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
         <button onClick={onEdit} className="p-1.5 text-subtle hover:text-[#C21FAF] rounded-md hover:bg-fill">
           <Edit2 size={16} />
         </button>

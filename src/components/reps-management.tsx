@@ -57,7 +57,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 className="font-semibold text-fg min-w-0">University Reps ({reps.length})</h2>
-        <button
+        <button data-edit
           onClick={() => {
             setRepForm(emptyRep);
             setShowRepForm(true);
@@ -100,7 +100,7 @@ export function RepsManagement({ eventId, staff, destinations, universities }: {
                     {dest && <span className="px-2 py-0.5 rounded-full bg-[#C21FAF]/10 text-[#C21FAF] hidden sm:inline-block">{dest.name}</span>}
                     {uni && <span className="px-2 py-0.5 rounded-full bg-fill text-fg-3 hidden sm:inline-block">{uni.name}</span>}
                   </div>
-                  <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
+                  <div data-edit className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
                     {s.isOnline && (
                       <button onClick={() => handleDelete(() => forceLogoutRep(s.id), `${s.name} signed out`)} title="Force Logout" className="p-1.5 text-subtle hover:text-amber-300 rounded-md hover:bg-amber-500/10">
                         <LogOut size={16} />

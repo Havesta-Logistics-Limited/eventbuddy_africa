@@ -91,7 +91,7 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
       <div className="flex items-center justify-between gap-3 mb-4">
         <p className="text-sm text-muted">{announcements.length} announcement{announcements.length !== 1 ? "s" : ""}</p>
         {!showForm && (
-          <button
+          <button data-edit
             onClick={() => setShowForm(true)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700"
           >
@@ -102,7 +102,7 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-surface rounded-xl border border-line p-4 mb-4">
+        <form data-edit onSubmit={handleSubmit} className="bg-surface rounded-xl border border-line p-4 mb-4">
           <RichTextEditor value={body} onChange={setBody} placeholder="Share an update with everyone registered for this event…" minHeightClass="min-h-[70px]" />
           <label className="flex items-center gap-2 mt-3 text-sm text-fg-3 cursor-pointer">
             <input type="checkbox" checked={alsoEmail} onChange={(e) => setAlsoEmail(e.target.checked)} className="w-4 h-4 rounded border-line-strong text-brand-500 focus:ring-brand-600" />
@@ -154,7 +154,7 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
               </div>
               <div className="flex items-center gap-3 mt-3 pt-3 border-t border-line-soft">
                 <span className="text-[11px] text-subtle">{new Date(a.createdAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
-                <button
+                <button data-edit
                   onClick={() => handleTogglePin(a)}
                   disabled={busyId === a.id}
                   className="flex items-center gap-1 text-xs font-medium text-muted hover:text-brand-500 disabled:opacity-50"
@@ -162,7 +162,7 @@ export function AnnouncementsTab({ eventId, orgSlug, announcements }: { eventId:
                   {a.pinned ? <PinOff size={12} /> : <Pin size={12} />}
                   {a.pinned ? "Unpin" : "Pin"}
                 </button>
-                <button onClick={() => handleDelete(a.id)} disabled={busyId === a.id} className="text-subtle hover:text-rose-300 disabled:opacity-50 ml-auto">
+                <button data-edit onClick={() => handleDelete(a.id)} disabled={busyId === a.id} className="text-subtle hover:text-rose-300 disabled:opacity-50 ml-auto">
                   <Trash2 size={13} />
                 </button>
               </div>

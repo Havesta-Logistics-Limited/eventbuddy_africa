@@ -314,7 +314,7 @@ export function GuestListTab({ event, orgSlug, guests }: { event: EventRecord; o
         </p>
         <div className="flex items-center gap-2">
           {selected.size > 0 && (
-            <button
+            <button data-edit
               onClick={() => sendInvites([...selected])}
               disabled={sendingInvites}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60"
@@ -324,7 +324,7 @@ export function GuestListTab({ event, orgSlug, guests }: { event: EventRecord; o
             </button>
           )}
           {selected.size > 0 && inPerson && guests.some((g) => selected.has(g.id) && g.status !== "accepted") && (
-            <button
+            <button data-edit
               onClick={() => confirmGuests(guests.filter((g) => selected.has(g.id) && g.status !== "accepted").map((g) => g.id))}
               disabled={confirming}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border border-line text-fg-2 hover:bg-canvas disabled:opacity-60"
@@ -334,7 +334,7 @@ export function GuestListTab({ event, orgSlug, guests }: { event: EventRecord; o
             </button>
           )}
           {selected.size === 0 && guests.some((g) => !g.invitedAt && g.email && (g.status === "pending" || g.status === "accepted")) && (
-            <button
+            <button data-edit
               onClick={() => sendInvites(guests.filter((g) => !g.invitedAt && g.email && (g.status === "pending" || g.status === "accepted")).map((g) => g.id))}
               disabled={sendingInvites}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border border-line text-fg-2 hover:bg-canvas disabled:opacity-60"
@@ -353,14 +353,14 @@ export function GuestListTab({ event, orgSlug, guests }: { event: EventRecord; o
               {zipping ? `Making ${zipping}…` : "Download all invitations"}
             </button>
           )}
-          <button
+          <button data-edit
             onClick={() => setShowImport(true)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border border-line text-fg-2 hover:bg-canvas"
           >
             <Upload size={14} />
             Bulk add
           </button>
-          <button
+          <button data-edit
             onClick={() => setShowForm(true)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700"
           >
@@ -413,6 +413,7 @@ export function GuestListTab({ event, orgSlug, guests }: { event: EventRecord; o
                         <>
                           {whatsappLink(g) && (
                             <a
+                              data-edit
                               href={whatsappLink(g)!}
                               target="_blank"
                               rel="noreferrer"
@@ -429,11 +430,11 @@ export function GuestListTab({ event, orgSlug, guests }: { event: EventRecord; o
                         </>
                       )}
                       {g.email && (
-                        <button onClick={() => sendInvites([g.id])} disabled={sendingInvites} className="text-xs font-medium text-brand-500 hover:underline disabled:opacity-50">
+                        <button data-edit onClick={() => sendInvites([g.id])} disabled={sendingInvites} className="text-xs font-medium text-brand-500 hover:underline disabled:opacity-50">
                           {g.invitedAt ? "Resend" : g.status === "accepted" && design ? "Email" : "Invite"}
                         </button>
                       )}
-                      <button onClick={() => handleDelete(g.id)} disabled={busyId === g.id} className="text-subtle hover:text-rose-300 disabled:opacity-50">
+                      <button data-edit onClick={() => handleDelete(g.id)} disabled={busyId === g.id} className="text-subtle hover:text-rose-300 disabled:opacity-50">
                         <Trash2 size={14} />
                       </button>
                     </div>

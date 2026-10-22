@@ -168,6 +168,7 @@ export function RegistrantDetailModal({
               </button>
               {(registration.status === "registered" || registration.status === "checked_in") && (
                 <button
+                  data-edit
                   type="button"
                   onClick={resendEmail}
                   disabled={resending}
@@ -178,6 +179,7 @@ export function RegistrantDetailModal({
               )}
               {(registration.status === "registered" || registration.status === "checked_in") && (
                 <button
+                  data-edit
                   type="button"
                   onClick={toggleCheckedIn}
                   disabled={busy}
@@ -191,7 +193,7 @@ export function RegistrantDetailModal({
                 </button>
               )}
               {registration.status === "pending" && (
-                <>
+                <span data-edit className="contents">
                   <button
                     type="button"
                     onClick={() => decide("approve")}
@@ -208,10 +210,10 @@ export function RegistrantDetailModal({
                   >
                     <X size={15} /> Decline
                   </button>
-                </>
+                </span>
               )}
               {registration.status === "waitlisted" && (
-                <>
+                <span data-edit className="contents">
                   <button
                     type="button"
                     onClick={() => decide("promote")}
@@ -228,10 +230,11 @@ export function RegistrantDetailModal({
                   >
                     <X size={15} /> Decline
                   </button>
-                </>
+                </span>
               )}
               {canRefund && (
                 <button
+                  data-edit
                   type="button"
                   onClick={() => setShowRefundConfirm(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-500/30 text-sm font-medium text-rose-300 hover:bg-rose-500/10"

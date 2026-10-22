@@ -74,7 +74,7 @@ export function EventSlugEditor({
 
   if (!editing) {
     return (
-      <button
+      <button data-edit
         type="button"
         onClick={() => {
           setInput(currentValue ?? "");
@@ -89,7 +89,7 @@ export function EventSlugEditor({
   }
 
   return (
-    <div>
+    <div data-edit>
       <div className="flex items-center gap-2">
         <span className="text-xs text-subtle shrink-0 hidden sm:inline">{prefix}</span>
         <input

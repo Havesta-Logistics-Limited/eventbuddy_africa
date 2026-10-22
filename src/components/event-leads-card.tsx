@@ -138,7 +138,7 @@ export function EventLeadsCard({ event, leads, universities, orgSlug }: { event:
                     {busyId === lead.id ? (
                       <Loader2 size={15} className="animate-spin text-subtle" />
                     ) : lead.status === "pending" ? (
-                      <div className="flex items-center gap-1.5">
+                      <div data-edit className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => decide(lead.id, "approve")}
@@ -152,7 +152,7 @@ export function EventLeadsCard({ event, leads, universities, orgSlug }: { event:
                         </button>
                       </div>
                     ) : lead.status === "waitlisted" ? (
-                      <div className="flex items-center gap-1.5">
+                      <div data-edit className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => decide(lead.id, "promote")}

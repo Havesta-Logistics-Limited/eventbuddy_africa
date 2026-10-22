@@ -44,7 +44,7 @@ export function TourButton({ event }: { event: EventRecord }) {
 
   return (
     <>
-      <button
+      <button data-edit
         type="button"
         onClick={() => {
           setName(event.name);
