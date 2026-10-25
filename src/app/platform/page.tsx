@@ -764,7 +764,10 @@ export default function PlatformDashboard() {
   }
 
   function csvEscape(value: unknown): string {
-    return `"${String(value ?? "").replace(/"/g, '""')}"`;
+    // a cell starting with = + - @ runs as a formula in Excel/Sheets
+    let text = String(value ?? "");
+    if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+    return `"${text.replace(/"/g, '""')}"`;
   }
   function csvFrom(headers: string[], rows: unknown[][]): string {
     return [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
