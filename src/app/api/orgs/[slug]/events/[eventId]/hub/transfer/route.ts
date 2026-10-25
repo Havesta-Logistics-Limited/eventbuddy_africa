@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { optionalPhone } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { verifyHubMember } from "@/lib/event-hub";
+import { verifyHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
+import { generateReferenceId, newId } from "@/lib/utils";
 import { getEventStatus } from "@/lib/capture-window";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail, sendTicketTransferredAwayEmail } from "@/lib/registration-email";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
@@ -10,14 +11,16 @@ type Body = { token?: string; fullName?: string; email?: string; phone?: string 
 
 /**
  * Attendee-initiated ticket transfer, from the Event Hub — reassigns the SAME
- * registration/lead row (same reference_id/QR for a physical event, same join
- * link for virtual) to a new name/email rather than creating a new one and
+ * registration/lead row to a new name/email rather than creating a new one and
  * cancelling the old, so anything already tied to it (check-in state, ticket
- * type, custom answers) carries over untouched. The event_hub_members row is
- * updated in place too, keeping the same hub_token — the trade-off is that the
- * outgoing attendee's own Hub link, if they still have it open, now reflects
- * the new attendee's identity rather than being revoked outright; there's no
- * per-token revocation in this schema to do better than that today.
+ * type, custom answers) carries over untouched.
+ *
+ * The ticket's credentials are replaced, not carried over: a new reference_id
+ * (QR) and a new hub_token. Keeping them let the seller screenshot the QR and
+ * still get in first, or keep the old Hub link and transfer the ticket again
+ * after selling it. The old QR and Hub link stop working the moment this runs.
+ * (A virtual event's join link is the event's own, shared by every attendee,
+ * so it can't be revoked per ticket.)
  */
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/events/[eventId]/hub/transfer">) {
   const { slug, eventId: eventParam } = await ctx.params;
@@ -47,7 +50,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const { data: event } = await admin
     .from("events")
-    .select("id, name, date, end_date, start_time, end_time, timezone, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location")
+    .select("id, slug, name, date, end_date, start_time, end_time, timezone, event_format, virtual_join_url, virtual_platform, virtual_access_notes, venue, location")
     .eq("id", eventId)
     .eq("organization_id", member.organizationId)
     .maybeSingle();
@@ -61,6 +64,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
 
   let emailSent: boolean;
+  let transferredReferenceId: string | null = null;
   if (event.event_format === "virtual") {
     const { data: lead } = await admin.from("leads").select("id, status").eq("event_id", eventId).eq("organization_id", member.organizationId).ilike("email", member.email).maybeSingle();
     if (!lead) return NextResponse.json({ error: "We couldn't find your registration for this event." }, { status: 404 });
@@ -72,9 +76,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       .update({ first_name: firstName || newFullName, last_name: rest.join(" "), email: newEmail, phone: phoneCheck.value || "" })
       .eq("id", lead.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-    await sendTicketTransferredAwayEmail(member.email, event, newFullName);
-    emailSent = await sendVirtualConfirmationEmail(newEmail, event);
   } else {
     const { data: registration } = await admin
       .from("registrations")
@@ -87,14 +88,33 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     if (registration.status === "checked_in") return NextResponse.json({ error: "This ticket has already been used to check in and can't be transferred." }, { status: 400 });
     if (registration.status !== "registered") return NextResponse.json({ error: "This ticket isn't in a transferable state." }, { status: 400 });
 
-    const { error } = await admin.from("registrations").update({ full_name: newFullName, email: newEmail, phone: phoneCheck.value }).eq("id", registration.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-    await sendTicketTransferredAwayEmail(member.email, event, newFullName);
-    emailSent = await sendRegistrationEmail(newEmail, registration.reference_id, event);
+    // a fresh ticket code; retried on the (unlikely) clash with another ticket's
+    let referenceId = "";
+    let updateError: { message: string; code?: string } | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      referenceId = generateReferenceId();
+      const { error } = await admin
+        .from("registrations")
+        .update({ full_name: newFullName, email: newEmail, phone: phoneCheck.value, reference_id: referenceId })
+        .eq("id", registration.id)
+        .eq("status", "registered");
+      updateError = error;
+      if (!error || error.code !== "23505") break;
+    }
+    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+    transferredReferenceId = referenceId;
   }
 
-  await admin.from("event_hub_members").update({ full_name: newFullName, email: newEmail }).eq("id", member.memberId);
+  const hubToken = newId("hub");
+  await admin.from("event_hub_members").update({ full_name: newFullName, email: newEmail, hub_token: hubToken }).eq("id", member.memberId);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
+  const newHubUrl = buildHubUrl(siteUrl, slug, { id: event.id, slug: event.slug }, hubToken);
+
+  await sendTicketTransferredAwayEmail(member.email, event, newFullName);
+  emailSent =
+    event.event_format === "virtual"
+      ? await sendVirtualConfirmationEmail(newEmail, event, newHubUrl)
+      : await sendRegistrationEmail(newEmail, transferredReferenceId!, event, newHubUrl);
 
   return NextResponse.json({ success: true, emailSent });
 }

@@ -680,13 +680,13 @@ export default function EventHubPage() {
                     <Check size={22} />
                   </div>
                   <p className="font-medium text-fg">Ticket transferred to {transferName}</p>
-                  <p className="text-sm text-muted mt-1">They&apos;ve been emailed their own confirmation.</p>
+                  <p className="text-sm text-muted mt-1">They&apos;ve been emailed a new ticket. Your old QR code no longer works.</p>
                 </div>
               ) : (
                 <form onSubmit={handleTransfer} className="space-y-3">
                   <p className="text-sm text-muted">
-                    Can&apos;t make it to <span className="font-medium text-fg-2">{event.name}</span>? Give your ticket to someone else — they&apos;ll get their own confirmation email,
-                    and you&apos;ll lose access to this one.
+                    Can&apos;t make it to <span className="font-medium text-fg-2">{event.name}</span>? Give your ticket to someone else — they&apos;ll get a new ticket by email.
+                    Your QR code and this page stop working as soon as you transfer.
                   </p>
                   <div>
                     <label className="block text-xs font-medium text-muted mb-1">New attendee&apos;s name</label>
