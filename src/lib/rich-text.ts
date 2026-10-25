@@ -46,42 +46,58 @@ function escapeAttr(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-/** Safe to pass straight to dangerouslySetInnerHTML. */
+/** Safe to pass straight to dangerouslySetInnerHTML. Text between tags gets
+ *  any stray `<`/`>` escaped: a single replace pass alone let a removed tag
+ *  splice the text around it into a new one ("<<img>img onerror=...>" became a
+ *  live <img onerror>), so no text outside a rebuilt tag can open or close one. */
 export function sanitizeRichTextHtml(html: string): string {
-  return html.replace(TAG_RE, (full, tagNameRaw: string, attrs: string) => {
-    const tagName = tagNameRaw.toLowerCase();
-    if (!ALLOWED_TAGS.has(tagName)) return "";
-    if (full.startsWith("</")) return `</${tagName}>`;
-    if (tagName === "br") return "<br>";
-    if (tagName === "a") {
-      const match = HREF_RE.exec(attrs);
-      const href = match ? match[1] ?? match[2] ?? "" : "";
-      if (/^https?:\/\//i.test(href)) {
-        return `<a href="${escapeAttr(href)}" target="_blank" rel="noreferrer noopener">`;
-      }
-      return "<a>";
+  let out = "";
+  let last = 0;
+  for (const m of html.matchAll(TAG_RE)) {
+    out += escapeText(html.slice(last, m.index));
+    out += rebuildTag(m[0], m[1], m[2]);
+    last = m.index + m[0].length;
+  }
+  return out + escapeText(html.slice(last));
+}
+
+function escapeText(value: string): string {
+  return value.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function rebuildTag(full: string, tagNameRaw: string, attrs: string): string {
+  const tagName = tagNameRaw.toLowerCase();
+  if (!ALLOWED_TAGS.has(tagName)) return "";
+  if (full.startsWith("</")) return `</${tagName}>`;
+  if (tagName === "br") return "<br>";
+  if (tagName === "a") {
+    const match = HREF_RE.exec(attrs);
+    const href = match ? match[1] ?? match[2] ?? "" : "";
+    if (/^https?:\/\//i.test(href)) {
+      return `<a href="${escapeAttr(href)}" target="_blank" rel="noreferrer noopener">`;
     }
-    if (tagName === "img") {
-      const srcMatch = SRC_RE.exec(attrs);
-      const src = srcMatch ? srcMatch[1] ?? srcMatch[2] ?? "" : "";
-      // Raster types only — data:image/svg+xml is deliberately excluded even
-      // though modern browsers don't execute <script>/on*-handlers inside an
-      // SVG loaded via <img src>: that's a browser sandbox this code doesn't
-      // control, and there's no legitimate reason a pasted/uploaded image
-      // needs SVG here in the first place.
-      if (!/^(https:\/\/|data:image\/(png|jpe?g|gif|webp)[;,])/i.test(src)) return "";
-      const altMatch = ALT_RE.exec(attrs);
-      const alt = escapeAttr(altMatch ? altMatch[1] ?? altMatch[2] ?? "" : "");
-      // Only a plain "NN%" width survives — never the raw style string — so a
-      // resized image keeps its size without opening up arbitrary CSS injection
-      // via the style attribute.
-      const widthMatch = IMG_WIDTH_RE.exec(attrs);
-      const widthPct = widthMatch ? widthMatch[1] ?? widthMatch[2] : null;
-      const width = widthPct ? `${Math.min(100, Math.max(5, Number(widthPct)))}%` : "55%";
-      return `<img src="${escapeAttr(src)}" alt="${alt}" style="width:${width};max-width:100%;height:auto;">`;
-    }
-    return `<${tagName}>`;
-  });
+    return "<a>";
+  }
+  if (tagName === "img") {
+    const srcMatch = SRC_RE.exec(attrs);
+    const src = srcMatch ? srcMatch[1] ?? srcMatch[2] ?? "" : "";
+    // Raster types only — data:image/svg+xml is deliberately excluded even
+    // though modern browsers don't execute <script>/on*-handlers inside an
+    // SVG loaded via <img src>: that's a browser sandbox this code doesn't
+    // control, and there's no legitimate reason a pasted/uploaded image
+    // needs SVG here in the first place.
+    if (!/^(https:\/\/|data:image\/(png|jpe?g|gif|webp)[;,])/i.test(src)) return "";
+    const altMatch = ALT_RE.exec(attrs);
+    const alt = escapeAttr(altMatch ? altMatch[1] ?? altMatch[2] ?? "" : "");
+    // Only a plain "NN%" width survives — never the raw style string — so a
+    // resized image keeps its size without opening up arbitrary CSS injection
+    // via the style attribute.
+    const widthMatch = IMG_WIDTH_RE.exec(attrs);
+    const widthPct = widthMatch ? widthMatch[1] ?? widthMatch[2] : null;
+    const width = widthPct ? `${Math.min(100, Math.max(5, Number(widthPct)))}%` : "55%";
+    return `<img src="${escapeAttr(src)}" alt="${alt}" style="width:${width};max-width:100%;height:auto;">`;
+  }
+  return `<${tagName}>`;
 }
 
 /** Every description/announcement field predates RichTextEditor and holds plain
