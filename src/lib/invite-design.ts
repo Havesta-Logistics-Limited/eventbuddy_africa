@@ -1,3 +1,4 @@
+import { isServerFetchableImage } from "@/lib/safe-image-url";
 /**
  * Invitation flyers (migration 0136): the organizer's own flyer with a QR box
  * placed on it. Positions are fractions of the flyer, so they hold at any
@@ -21,7 +22,8 @@ export function parseInviteDesign(raw: unknown): InviteDesign | null {
   const qr = r.qr as Record<string, unknown> | undefined;
   const label = r.label as Record<string, unknown> | undefined;
   const n = (v: unknown, lo: number, hi: number, d: number) => (typeof v === "number" && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
-  if (typeof r.url !== "string" || !r.url) return null;
+  // the flyer is rendered (and so fetched) by our server: own storage only
+  if (typeof r.url !== "string" || !isServerFetchableImage(r.url)) return null;
   const width = n(r.width, 1, 10000, 0);
   const height = n(r.height, 1, 10000, 0);
   if (!width || !height) return null;

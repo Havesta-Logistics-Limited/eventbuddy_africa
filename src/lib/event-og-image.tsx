@@ -5,6 +5,7 @@ import { createAnonClient } from "@/lib/supabase/anon";
 import { stripHtml } from "@/lib/rich-text";
 import { formatDate, formatTime } from "@/lib/utils";
 import { ticketCtaLabel } from "@/lib/ticket-cta";
+import { isServerFetchableImage } from "@/lib/safe-image-url";
 
 export const eventOgImageSize = { width: 1200, height: 630 };
 
@@ -190,7 +191,7 @@ export function buildEventOgImage(event: OgEvent, ctaLabel = "Register") {
           </div>
         </div>
         <div style={{ flex: 1, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
-          {event.coverImage ? (
+          {isServerFetchableImage(event.coverImage) ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={event.coverImage} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 24 }} alt="" />
           ) : (
