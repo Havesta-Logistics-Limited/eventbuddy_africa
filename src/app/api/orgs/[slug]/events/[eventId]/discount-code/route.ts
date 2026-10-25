@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAnonClient } from "@/lib/supabase/anon";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 type ValidateBody = { code: string; ticketTypeId: string; email?: string };
@@ -33,7 +33,9 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     return rateLimitedResponse();
   }
 
-  const supabase = createAnonClient();
+  // service role: the function isn't callable by anon (0138), so this
+  // rate-limited route is the only way to test a code
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .rpc("public_validate_discount_code", { p_event_id: eventId, p_code: code, p_ticket_type_id: ticketTypeId, p_email: body.email?.trim() || null })
     .maybeSingle<DiscountCodeValidation>();

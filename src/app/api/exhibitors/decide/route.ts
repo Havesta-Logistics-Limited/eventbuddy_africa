@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveRouteUser } from "@/lib/supabase/route-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { canAccessEvent } from "@/lib/org-access";
 import { emailApproved, emailConfirmedFree, emailDeclined, exhibitPayUrl, exhibitorPortalUrl } from "@/lib/exhibitors";
 
 const Schema = z.object({
@@ -19,11 +20,14 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   const { exhibitorId, action, reason } = parsed.data;
 
-  // ownership: RLS only lets the organizer read their own exhibitors
-  const { data: mine } = await supabase.from("exhibitors").select("id").eq("id", exhibitorId).maybeSingle();
-  if (!mine) return NextResponse.json({ error: "Application not found." }, { status: 404 });
-
+  // the organizer, or a teammate who may edit Events (a view-only one can see
+  // the application but not decide it)
   const admin = createAdminClient();
+  const { data: mine } = await admin.from("exhibitors").select("event_id").eq("id", exhibitorId).maybeSingle();
+  if (!mine || !(await canAccessEvent(supabase, admin, user.id, mine.event_id, "events", true))) {
+    return NextResponse.json({ error: "Application not found." }, { status: 404 });
+  }
+
   const { data: x } = await admin
     .from("exhibitors")
     .select("id, status, email, company_name, contact_name, pay_token, portal_token, stand_type_id, event_id, events(name), stand_types(name, price_naira, quantity)")

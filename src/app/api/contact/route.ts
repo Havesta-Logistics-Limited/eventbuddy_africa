@@ -54,17 +54,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Couldn't send your message. Please try again." }, { status: 424 });
   }
 
+  // The confirmation goes to whatever address was typed, so it carries none
+  // of the sender's words: quoting them let anyone send their own text (and
+  // links) to any inbox from eventbuddy's domain.
   const confirmHtml = `
     <h1 style="font-size:19px; margin:0 0 12px;">We got your message</h1>
-    <p style="margin:0 0 16px; color:#666;">Thanks for reaching out, ${escapeHtml(name)} — we usually reply within a few hours. Here's a copy of what you sent:</p>
-    <p style="margin:0 0 4px; color:#999; font-size:12px; text-transform:uppercase; letter-spacing:0.06em;">${escapeHtml(subject)}</p>
-    <p style="margin:0; padding:14px 16px; background:#f8fafc; border-radius:10px; color:#1e1b2e; white-space:pre-wrap;">${escapeHtml(message)}</p>
+    <p style="margin:0; color:#666;">Thanks for reaching out — we usually reply within a few hours.</p>
   `;
   await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
     to: email,
     subject: "We got your message — eventbuddy",
-    text: `Thanks for reaching out — we usually reply within a few hours.\n\nYour message:\n${message}`,
+    text: "Thanks for reaching out — we usually reply within a few hours.",
     html: renderEmailShell({ color: "#6D28D9", label: "Message received", emoji: "👋" }, confirmHtml),
   });
 

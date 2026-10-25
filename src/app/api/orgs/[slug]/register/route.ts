@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cleanAttribution } from "@/lib/marketing-attribution";
-import { optionalPhone } from "@/lib/validation";
+import { optionalPhone, isValidEmail } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
 import { generateReferenceId } from "@/lib/utils";
@@ -59,6 +59,15 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   if (!eventId || !firstName?.trim() || !lastName?.trim() || !email?.trim()) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+  if (firstName.trim().length > 80 || lastName.trim().length > 80) {
+    return NextResponse.json({ error: "Please shorten your name." }, { status: 400 });
+  }
+  if (email.trim().length > 254 || !isValidEmail(email.trim())) {
+    return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+  }
+  if (customAnswers !== undefined && (typeof customAnswers !== "object" || JSON.stringify(customAnswers).length > 20000)) {
+    return NextResponse.json({ error: "Your answers are too long." }, { status: 400 });
   }
   const phoneCheck = optionalPhone(phone);
   if (!phoneCheck.ok) return NextResponse.json({ error: phoneCheck.error }, { status: 400 });

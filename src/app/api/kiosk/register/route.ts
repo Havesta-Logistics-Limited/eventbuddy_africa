@@ -5,6 +5,7 @@ import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail } from "@/lib/registration-email";
 import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
 import { incrementTicketQuantitySold, decrementTicketQuantitySold } from "@/lib/ticket-capacity";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 type Body = {
   staffId: string;
@@ -38,9 +39,15 @@ export async function POST(request: Request) {
   const phoneCheck = optionalPhone(phone);
   if (!phoneCheck.ok) return NextResponse.json({ error: phoneCheck.error }, { status: 400 });
 
+  // A busy door does a few walk-ups a minute; a script looking up emails or
+  // filling a free event's capacity does far more.
+  if (!(await checkRateLimit(`kiosk-register:staff:${staffId}`, 120, 10 * 60))) return rateLimitedResponse();
+  if (!(await checkRateLimit(`kiosk-register:ip:${clientIp(request)}`, 300, 10 * 60))) return rateLimitedResponse();
+
   const supabase = createAdminClient();
-  const { data: staffRow } = await supabase.from("staff").select("id, event_id, organization_id").eq("id", staffId).maybeSingle();
-  if (!staffRow?.event_id) return NextResponse.json({ error: "Your session has expired — please sign in again." }, { status: 401 });
+  const { data: staffRow } = await supabase.from("staff").select("id, event_id, organization_id, role").eq("id", staffId).maybeSingle();
+  // door staff only, not sales reps (same rule as the kiosk's paid checkout)
+  if (!staffRow?.event_id || staffRow.role !== "staff") return NextResponse.json({ error: "Your session has expired — please sign in again." }, { status: 401 });
 
   const { data: event } = await supabase
     .from("events")
@@ -70,6 +77,8 @@ export async function POST(request: Request) {
   const fullName = `${firstName.trim()} ${lastName.trim()}`;
 
   // Already registered (e.g. signed up online and lost the QR): just let them in.
+  // Their reference ID is never sent back: it's their ticket, and an email
+  // typed at the kiosk proves nothing about who is asking.
   const { data: existing } = await supabase
     .from("registrations")
     .select("id, reference_id, full_name, status, checked_in_at")
@@ -81,15 +90,15 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (existing) {
     if (existing.status === "checked_in") {
-      return NextResponse.json({ success: true, outcome: "already", registration: { referenceId: existing.reference_id, fullName: existing.full_name, checkedInAt: existing.checked_in_at } });
+      return NextResponse.json({ success: true, outcome: "already", registration: { fullName: existing.full_name, checkedInAt: existing.checked_in_at } });
     }
     const { data: upd } = await supabase
       .from("registrations")
       .update({ status: "checked_in", checked_in_at: new Date().toISOString(), checked_in_by: staffRow.id })
       .eq("id", existing.id)
-      .select("reference_id, full_name, checked_in_at")
+      .select("full_name, checked_in_at")
       .single();
-    return NextResponse.json({ success: true, outcome: "existing", registration: { referenceId: upd?.reference_id, fullName: upd?.full_name, checkedInAt: upd?.checked_in_at } });
+    return NextResponse.json({ success: true, outcome: "existing", registration: { fullName: upd?.full_name, checkedInAt: upd?.checked_in_at } });
   }
 
   let seatReserved = false;

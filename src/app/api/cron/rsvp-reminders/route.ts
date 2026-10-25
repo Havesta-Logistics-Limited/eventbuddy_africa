@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendGuestReminderEmail } from "@/lib/guest-invite-email";
 import { guestRsvpUrl } from "@/lib/event-guest";
 import { withCronLog } from "@/lib/cron-log";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 const REMINDER_WINDOW_DAYS = 3;
 
@@ -15,9 +16,7 @@ const REMINDER_WINDOW_DAYS = 3;
  * CRON_SECRET so it can't be triggered by anyone who finds the URL.
  */
 async function run(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  const authHeader = request.headers.get("authorization");
-  if (!secret || authHeader !== `Bearer ${secret}`) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -26,9 +26,10 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "Check the form and try again." }, { status: 400 });
   const d = parsed.data;
 
-  // the organization this user owns (RLS-scoped helper)
-  const { data: owned } = await supabase.rpc("owned_organization_ids");
-  const orgId = (owned as string[] | null)?.[0];
+  // the organization this user owns: identity documents come from the owner,
+  // not a teammate (owned_organization_ids includes editors since 0137)
+  const { data: ownedOrg } = await supabase.from("organizations").select("id").eq("owner_user_id", user.id).limit(1).maybeSingle();
+  const orgId = ownedOrg?.id;
   if (!orgId) return NextResponse.json({ error: "Only an organizer can ask to be verified." }, { status: 403 });
 
   const admin = createAdminClient();

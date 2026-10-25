@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { renderBriefing, sendBriefing, type BriefingData } from "@/lib/morning-briefing";
 import { withCronLog } from "@/lib/cron-log";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 /**
  * netlify/functions/morning-briefing-cron.mts hits this at 7am Lagos time
@@ -15,8 +16,7 @@ import { withCronLog } from "@/lib/cron-log";
  * reports that day; ?test=1 includes test-mode payments.
  */
 async function run(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const url = new URL(request.url);

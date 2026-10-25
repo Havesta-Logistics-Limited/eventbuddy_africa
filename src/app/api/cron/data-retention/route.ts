@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailLeadsExpiring, exhibitorPortalUrl } from "@/lib/exhibitors";
 import { withCronLog } from "@/lib/cron-log";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 /**
  * netlify/functions/data-retention-cron.mts hits this nightly (migration
@@ -12,8 +13,7 @@ import { withCronLog } from "@/lib/cron-log";
  * refunds and the ledger are never touched. Guarded by CRON_SECRET.
  */
 async function run(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const admin = createAdminClient();

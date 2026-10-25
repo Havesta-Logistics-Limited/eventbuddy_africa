@@ -44,9 +44,20 @@ export async function GET(request: Request) {
   if (!result.ok) {
     return NextResponse.json({ success: false, error: ERROR_MESSAGES[result.reason] || "Couldn't verify payment." });
   }
+  // The join link and access notes aren't in the public event data (0138), so a paid buyer's
+  // confirmation screen gets it here, once the payment is verified.
+  let virtualJoinUrl: string | undefined;
+  let virtualAccessNotes: string | undefined;
+  if (result.purpose === "ticket_purchase" && result.eventId) {
+    const { data: event } = await admin.from("events").select("virtual_join_url, virtual_access_notes").eq("id", result.eventId).maybeSingle();
+    virtualJoinUrl = event?.virtual_join_url ?? undefined;
+    virtualAccessNotes = event?.virtual_access_notes ?? undefined;
+  }
   return NextResponse.json({
     success: true,
     referenceId: result.purpose === "ticket_purchase" ? result.referenceId : null,
     hubUrl: result.purpose === "ticket_purchase" ? result.hubUrl : undefined,
+    virtualJoinUrl,
+    virtualAccessNotes,
   });
 }

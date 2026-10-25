@@ -45,3 +45,23 @@ export async function resolveOrgAccess(supabase: SupabaseClient, userId: string,
   const role = membership.role as "admin" | "event_support";
   return { id: org.id, slug: org.slug, role, eventId: membership.event_id ?? undefined, isOwner: false, permissions: parsePermissions(membership.permissions, role) };
 }
+
+/** May this user change (edit = true) or read this event's data under `section`?
+ *  For routes that are handed an event-scoped row id rather than an org slug:
+ *  RLS reads pass at view level since 0137, so a SELECT through the user's
+ *  client proves too little before a service-role write. */
+export async function canAccessEvent(
+  supabase: SupabaseClient,
+  admin: SupabaseClient,
+  userId: string,
+  eventId: string,
+  section: TeamSection,
+  edit: boolean
+): Promise<boolean> {
+  const { data: event } = await admin.from("events").select("id, organizations(slug)").eq("id", eventId).maybeSingle();
+  const slug = (event?.organizations as unknown as { slug: string } | null)?.slug;
+  if (!slug) return false;
+  const access = await resolveOrgAccess(supabase, userId, slug);
+  if (!access || !orgCan(access, section, edit)) return false;
+  return access.role !== "event_support" || access.eventId === eventId;
+}

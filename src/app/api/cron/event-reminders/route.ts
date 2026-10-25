@@ -4,6 +4,7 @@ import { zonedTimeToUtc } from "@/lib/capture-window";
 import { sendEventReminderEmail, type ReminderKind } from "@/lib/registration-email";
 import { hubUrl as buildHubUrl } from "@/lib/event-hub";
 import { withCronLog } from "@/lib/cron-log";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 // Half the hourly cron cadence plus a buffer — wide enough that a single tick
 // always lands inside the window for whichever stage is due, without ever
@@ -35,9 +36,7 @@ type Attendee = {
  * for the least useful of the three.
  */
 async function run(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  const authHeader = request.headers.get("authorization");
-  if (!secret || authHeader !== `Bearer ${secret}`) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

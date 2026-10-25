@@ -8,7 +8,7 @@ import { useRequireRole, useRequireSection } from "@/lib/auth";
 import { resolveMyOrgId, useEvents, useLeads, useRegistrations } from "@/lib/store";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Role } from "@/lib/types";
-import { downloadCsv } from "@/lib/csv";
+import { csvEscape, downloadCsv } from "@/lib/csv";
 import { AuthLoading } from "@/components/auth-loading";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { RichTextDisplay } from "@/components/rich-text-display";
@@ -427,7 +427,7 @@ export default function AudiencePage() {
   function exportAudience() {
     const headers = ["Name", "Email", "Source", "Joined"];
     const rows = filtered.map((m) => [m.fullName, m.email, m.source === "follower" ? "Follower" : "Attendee", new Date(m.joinedAt).toLocaleDateString("en-GB")]);
-    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
     downloadCsv("audience.csv", csv);
   }
 

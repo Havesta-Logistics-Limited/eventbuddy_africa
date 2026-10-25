@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { formatDate } from "@/lib/utils";
 import { withCronLog } from "@/lib/cron-log";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 /** One reminder per still-unpublished event, sent to its org's admin — deliberately
  *  unconditional (no "already reminded this cycle" tracking) since the cron itself
@@ -44,9 +45,7 @@ async function sendDraftReminderEmail(to: string, firstName: string, eventName: 
  * CRON_SECRET so it can't be triggered by anyone who finds the URL.
  */
 async function run(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  const authHeader = request.headers.get("authorization");
-  if (!secret || authHeader !== `Bearer ${secret}`) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

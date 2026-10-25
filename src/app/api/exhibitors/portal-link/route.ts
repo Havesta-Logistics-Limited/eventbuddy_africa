@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveRouteUser } from "@/lib/supabase/route-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { canAccessEvent } from "@/lib/org-access";
 import { emailPortalLink, exhibitorPortalUrl } from "@/lib/exhibitors";
 
 const Schema = z.object({ exhibitorId: z.string().uuid() });
@@ -12,9 +13,12 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   const parsed = Schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  const { data: mine } = await supabase.from("exhibitors").select("id").eq("id", parsed.data.exhibitorId).maybeSingle();
-  if (!mine) return NextResponse.json({ error: "Exhibitor not found." }, { status: 404 });
-  const { data: x } = await createAdminClient()
+  const admin = createAdminClient();
+  const { data: mine } = await admin.from("exhibitors").select("event_id").eq("id", parsed.data.exhibitorId).maybeSingle();
+  if (!mine || !(await canAccessEvent(supabase, admin, user.id, mine.event_id, "events", true))) {
+    return NextResponse.json({ error: "Exhibitor not found." }, { status: 404 });
+  }
+  const { data: x } = await admin
     .from("exhibitors")
     .select("status, email, company_name, contact_name, portal_token, events(name), stand_types(name)")
     .eq("id", parsed.data.exhibitorId)

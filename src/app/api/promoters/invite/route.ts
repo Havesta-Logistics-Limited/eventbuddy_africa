@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveRouteUser } from "@/lib/supabase/route-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { canAccessEvent } from "@/lib/org-access";
 import { addPromoterToEvent } from "@/lib/promoter-referral";
 import { normalizeHandle } from "@/lib/promoters";
 
@@ -18,11 +19,12 @@ export async function POST(request: Request) {
 
   const { data: event } = await supabase.from("events").select("id, organization_id, promoter_program_enabled, promoter_commission_pct").eq("id", parsed.data.eventId).maybeSingle();
   if (!event) return NextResponse.json({ error: "Event not found." }, { status: 404 });
-  const { data: owns } = await supabase.rpc("owned_organization_ids");
-  if (!(owns as string[] | null)?.includes(event.organization_id)) return NextResponse.json({ error: "Only the event's organizer can invite promoters." }, { status: 403 });
   if (!event.promoter_program_enabled) return NextResponse.json({ error: "Turn on promoter payouts for this event first." }, { status: 400 });
 
   const admin = createAdminClient();
+  if (!(await canAccessEvent(supabase, admin, user.id, event.id, "events", true))) {
+    return NextResponse.json({ error: "Only the event's organizer can invite promoters." }, { status: 403 });
+  }
   const handle = normalizeHandle(parsed.data.handle);
   const { data: promoter } = await admin.from("promoters").select("id, handle, full_name, email, phone, is_suspended").ilike("handle", handle).maybeSingle();
   if (!promoter || promoter.is_suspended) return NextResponse.json({ error: `No promoter found with the handle @${handle}.` }, { status: 404 });
