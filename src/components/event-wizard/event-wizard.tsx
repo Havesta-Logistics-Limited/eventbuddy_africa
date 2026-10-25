@@ -11,6 +11,7 @@ import { BasicsStep } from "./steps/basics-step";
 import { FieldBuilderStep } from "./steps/field-builder-step";
 import { AccessStep } from "./steps/access-step";
 import { ReviewStep } from "./steps/review-step";
+import { generateAccessCode } from "@/lib/utils";
 
 const EMPTY_DATA: EventWizardData = {
   name: "",
@@ -23,8 +24,8 @@ const EMPTY_DATA: EventWizardData = {
   description: "",
   destinationIds: [],
   coverImage: undefined,
-  staffAccessCode: "",
-  repAccessCode: "",
+  staffAccessCode: generateAccessCode(),
+  repAccessCode: generateAccessCode(),
   templateId: "custom",
   customFields: [],
   allowRepAccess: true,
@@ -48,8 +49,9 @@ function toWizardData(event: EventRecord): EventWizardData {
     description: event.description,
     destinationIds: event.destinationIds,
     coverImage: event.coverImage,
-    staffAccessCode: event.staffAccessCode || "",
-    repAccessCode: event.repAccessCode || "",
+    // an event saved without codes (before 0139) gets one the next time it is edited
+    staffAccessCode: event.staffAccessCode || generateAccessCode(),
+    repAccessCode: event.repAccessCode || generateAccessCode(),
     templateId: event.templateId || "custom",
     customFields: event.customFields || [],
     allowRepAccess: event.allowRepAccess ?? true,
@@ -136,8 +138,9 @@ export function EventWizard(props: {
         // make clearing a code in the wizard silently no-op on save.
         {
           ...data,
-          staffAccessCode: data.staffAccessCode?.trim() ?? "",
-          repAccessCode: data.repAccessCode?.trim() ?? "",
+          // every event has codes: a cleared field gets a new one
+          staffAccessCode: data.staffAccessCode?.trim() || generateAccessCode(),
+          repAccessCode: data.repAccessCode?.trim() || generateAccessCode(),
         },
         intent,
         mode === "create" && repeats ? recurrence : undefined

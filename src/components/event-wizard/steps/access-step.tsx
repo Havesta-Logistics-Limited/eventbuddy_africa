@@ -18,12 +18,12 @@ export function AccessStep({
     <div>
       <label className="flex items-center gap-1.5 text-sm font-medium text-fg-2 mb-2">
         <KeyRound size={13} className="text-subtle" />
-        Access codes <span className="font-normal text-subtle">(optional)</span>
+        Access codes
       </label>
       <p className="text-xs text-muted mb-3">
         {showRepCode
-          ? "Staff and reps must enter the matching code before they can check in for this event."
-          : "Staff must enter the matching code before they can check in for this event."}
+          ? "Staff and reps enter the matching code to open check-in for this event. Share it only with your team. We made one for you; change it if you like."
+          : "Staff enter this code to open check-in for this event. Share it only with your team. We made one for you; change it if you like."}
       </p>
       <div className={`grid ${showRepCode ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
         <div>

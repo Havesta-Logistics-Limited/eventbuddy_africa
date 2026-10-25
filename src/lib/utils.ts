@@ -93,6 +93,16 @@ export function generateReferenceId(): string {
   return `${code.slice(0, 4)}-${code.slice(4)}`;
 }
 
+/** A staff or rep check-in code (e.g. "K7QX4R"). Every event has one (0139):
+ *  without it anyone could open the event's check-in page. */
+export function generateAccessCode(): string {
+  const bytes = new Uint8Array(6);
+  globalThis.crypto.getRandomValues(bytes);
+  let code = "";
+  for (let i = 0; i < 6; i++) code += REFERENCE_ID_ALPHABET[bytes[i] % REFERENCE_ID_ALPHABET.length];
+  return code;
+}
+
 export function formatTime(time?: string) {
   if (!time) return "";
   const [h, m] = time.split(":");

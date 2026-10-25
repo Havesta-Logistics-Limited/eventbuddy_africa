@@ -88,8 +88,8 @@ export function ReviewStep({
                 : "None — just name, email, phone"
           }
         />
-        <Row label="Staff code" value={data.staffAccessCode || "None — open check-in"} />
-        {template.usesDestinations && data.allowRepAccess !== false && <Row label="Rep code" value={data.repAccessCode || "None — open check-in"} />}
+        <Row label="Staff code" value={data.staffAccessCode || "Made for you when you save"} />
+        {template.usesDestinations && data.allowRepAccess !== false && <Row label="Rep code" value={data.repAccessCode || "Made for you when you save"} />}
       </div>
       {template.usesDestinations && (
         <p className="text-xs text-subtle">Add this fair&apos;s destinations, universities, and reps from its own page once it&apos;s created.</p>

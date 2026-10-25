@@ -13,6 +13,7 @@ import { useSession } from "@/lib/store";
 import { claimGuestDraft } from "@/lib/guest-draft-claim";
 import { GUEST_CLAIM_KEY, OPEN_EVENT_KEY, clearStoredDraft, readStoredDraft, storeDraft, type GuestDraft } from "@/lib/guest-draft";
 import { isValidEmail, isValidPhoneStrict, sanitizePhoneInput } from "@/lib/validation";
+import { generateAccessCode } from "@/lib/utils";
 
 type Stage = "loading" | "resume" | "build" | "account" | "done";
 
@@ -53,8 +54,8 @@ function fromDraft(d: GuestDraft): { event: EventWizardData; plan: TicketPlan } 
       customFields: d.event.customFields as unknown as EventWizardData["customFields"],
       destinationIds: [],
       templateId: "custom",
-      staffAccessCode: "",
-      repAccessCode: "",
+      staffAccessCode: generateAccessCode(),
+      repAccessCode: generateAccessCode(),
       allowRepAccess: true,
     },
     plan: { paid: d.tickets.length > 0, tickets: d.tickets },
