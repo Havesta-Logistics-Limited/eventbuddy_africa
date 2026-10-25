@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Mail, MapPin, AlertCircle } from "lucide-react";
 import { LandingNav } from "@/components/landing/landing-hero";
 import { LandingFooter } from "@/components/landing/landing-close";
 import { isValidEmail } from "@/lib/validation";
+import { TurnstileWidget, turnstileConfigured, type TurnstileHandle } from "@/components/turnstile-widget";
 
 const DIRECT_LINES = [
   {
@@ -45,11 +46,17 @@ export default function ContactContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstile = useRef<TurnstileHandle>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isValidEmail(email)) {
       setError("Enter a valid email address.");
+      return;
+    }
+    if (turnstileConfigured() && !turnstileToken) {
+      setError("Please tick the \"I'm human\" check first.");
       return;
     }
     setError("");
@@ -58,10 +65,11 @@ export default function ContactContent() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), subject: subject.trim(), message: message.trim() }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), subject: subject.trim(), message: message.trim(), turnstileToken }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
+        turnstile.current?.reset();
         setError(json.error || "Something went wrong. Please try again.");
         return;
       }
@@ -160,6 +168,8 @@ export default function ContactContent() {
                     className="w-full px-4 py-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent bg-surface resize-none"
                   />
                 </div>
+
+                <TurnstileWidget ref={turnstile} onToken={setTurnstileToken} theme="dark" />
 
                 {error && (
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 text-rose-300 text-sm">

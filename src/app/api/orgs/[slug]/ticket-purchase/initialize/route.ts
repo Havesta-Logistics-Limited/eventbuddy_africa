@@ -11,6 +11,7 @@ import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit"
 import { resolveReferralId } from "@/lib/referrals";
 import { checkSalesCap } from "@/lib/sales-guard";
 import { validateGroupGuests } from "@/lib/group-tickets";
+import { turnstileEnabled, verifyTurnstile, TURNSTILE_FAILED_MESSAGE } from "@/lib/turnstile";
 
 type InitializeBody = {
   eventId: string;
@@ -36,6 +37,8 @@ type InitializeBody = {
    *  checked in the moment it's paid. Same trust model as /api/checkin: the
    *  staff id is the door's session, checked against this event below. */
   kioskStaffId?: string;
+  /** Cloudflare Turnstile token from the web checkout form */
+  turnstileToken?: string;
   /** Group (bundle) tickets only: the other people this purchase admits, named
    *  by the buyer. Each becomes their own registration with its own QR. */
   guests?: unknown;
@@ -151,6 +154,16 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       return NextResponse.json({ error: "Your door session has expired — please sign in again." }, { status: 401 });
     }
     kioskStaffId = staffRow.id;
+  }
+  // door staff are the check at the kiosk
+  // the human check (web); the app can't show it yet, so its requests get a
+  // tighter flood ceiling instead
+  if (!kioskStaffId && turnstileEnabled()) {
+    if (resolvedSource === "mobile") {
+      if (!(await checkRateLimit(`ticket-purchase:mobile-ip:${clientIp(request)}`, 60, 10 * 60))) return rateLimitedResponse();
+    } else if (!(await verifyTurnstile(body.turnstileToken, clientIp(request)))) {
+      return NextResponse.json({ error: TURNSTILE_FAILED_MESSAGE, turnstile: true }, { status: 403 });
+    }
   }
 
   // door staff can sell before online registration opens, or on a door-only event

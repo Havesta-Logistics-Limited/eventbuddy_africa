@@ -44,6 +44,7 @@ import { getEventStatus, zonedTimeToUtc } from "@/lib/capture-window";
 import { captureRef, storedRef } from "@/lib/referral-capture";
 import { LandingNav } from "@/components/landing/landing-hero";
 import { LandingFooter } from "@/components/landing/landing-close";
+import { TurnstileWidget, turnstileConfigured, type TurnstileHandle } from "@/components/turnstile-widget";
 
 /** Same sticky public header as /discover — a shared visual identity across every
  *  public-facing page, and a visitor's only way back to the rest of the site from a
@@ -355,6 +356,8 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const [guestError, setGuestError] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstile = useRef<TurnstileHandle>(null);
   const [submitError, setSubmitError] = useState("");
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState("");
@@ -602,6 +605,10 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
       phone: values.phone.trim() || undefined,
       guestCount: guestCheck.guests.length,
     };
+    if (turnstileConfigured() && !turnstileToken) {
+      setSubmitError("Please tick the \"I'm human\" check first.");
+      return;
+    }
     setSubmitError("");
     setSubmitting(true);
     try {
@@ -609,10 +616,11 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/ticket-purchase/initialize`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket.id, discountCode: appliedDiscount?.code, ref: storedRef(event.id), attribution: storedAttribution(event.id), ...values, guests: guestCheck.guests }),
+          body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket.id, discountCode: appliedDiscount?.code, ref: storedRef(event.id), attribution: storedAttribution(event.id), ...values, guests: guestCheck.guests, turnstileToken }),
         });
         const json = await res.json();
         if (!res.ok || !json.authorizationUrl) {
+          turnstile.current?.reset();
           setSubmitError(json.error || "Couldn't start payment. Please try again.");
           return;
         }
@@ -624,16 +632,18 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
       const res = await fetch(`/api/orgs/${encodeURIComponent(orgSlug)}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket?.id, ref: storedRef(event.id), attribution: storedAttribution(event.id), ...values }),
+        body: JSON.stringify({ eventId: event.id, ticketTypeId: selectedTicket?.id, ref: storedRef(event.id), attribution: storedAttribution(event.id), ...values, turnstileToken }),
       });
       const json = await res.json();
       if (!res.ok) {
+        turnstile.current?.reset();
         setSubmitError(json.error || "Couldn't complete your registration. Please try again.");
         return;
       }
       setAttendeeIdentity(identity);
       setConfirmation({ referenceId: json.referenceId, emailSent: !!json.emailSent, status: json.status ?? "registered", hubUrl: json.hubUrl ?? undefined, event: json.event });
     } catch {
+      turnstile.current?.reset();
       setSubmitError("Couldn't complete your registration. Please try again.");
     } finally {
       setSubmitting(false);
@@ -1275,9 +1285,12 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                         }
                         submittingLabel={selectedTicket && selectedTicket.priceNaira > 0 ? "Opening payment…" : undefined}
                         beforeSubmit={
-                          selectedTicket && selectedTicket.groupSize > 1 ? (
-                            <GroupGuestFields groupSize={selectedTicket.groupSize} guests={guests} onChange={setGuests} error={guestError} />
-                          ) : undefined
+                          <>
+                            {selectedTicket && selectedTicket.groupSize > 1 && (
+                              <GroupGuestFields groupSize={selectedTicket.groupSize} guests={guests} onChange={setGuests} error={guestError} />
+                            )}
+                            <TurnstileWidget ref={turnstile} onToken={setTurnstileToken} theme="dark" />
+                          </>
                         }
                       />
                     )}

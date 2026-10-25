@@ -10,6 +10,7 @@ import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit"
 import { resolveReferralId } from "@/lib/referrals";
 import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
 import { incrementTicketQuantitySold, decrementTicketQuantitySold } from "@/lib/ticket-capacity";
+import { turnstileEnabled, verifyTurnstile, TURNSTILE_FAILED_MESSAGE } from "@/lib/turnstile";
 
 type RegisterBody = {
   eventId: string;
@@ -38,6 +39,8 @@ type RegisterBody = {
   ref?: string;
   /** the link and source that brought them (marketing report, migration 0132) */
   attribution?: unknown;
+  /** Cloudflare Turnstile token from the web form */
+  turnstileToken?: string;
 };
 
 /**
@@ -85,6 +88,16 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
   if (!(await checkRateLimit(`register:ip:${clientIp(request)}`, 400, 10 * 60))) {
     return rateLimitedResponse();
+  }
+
+  // the human check (web); the app can't show it yet, so its requests get a
+  // tighter flood ceiling instead
+  if (turnstileEnabled()) {
+    if (resolvedSource === "mobile") {
+      if (!(await checkRateLimit(`register:mobile-ip:${clientIp(request)}`, 60, 10 * 60))) return rateLimitedResponse();
+    } else if (!(await verifyTurnstile(body.turnstileToken, clientIp(request)))) {
+      return NextResponse.json({ error: TURNSTILE_FAILED_MESSAGE, turnstile: true }, { status: 403 });
+    }
   }
 
   const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

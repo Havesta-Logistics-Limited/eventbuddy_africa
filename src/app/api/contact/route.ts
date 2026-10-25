@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { z } from "zod";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
+import { turnstileEnabled, verifyTurnstile, TURNSTILE_FAILED_MESSAGE } from "@/lib/turnstile";
 
 const ContactSchema = z.object({
   name: z.string().trim().min(1, "Enter your name.").max(120),
@@ -27,6 +28,9 @@ export async function POST(request: Request) {
 
   if (!(await checkRateLimit(`contact:ip:${clientIp(request)}`, 5, 10 * 60))) {
     return rateLimitedResponse();
+  }
+  if (turnstileEnabled() && !(await verifyTurnstile((body as { turnstileToken?: unknown } | null)?.turnstileToken, clientIp(request)))) {
+    return NextResponse.json({ error: TURNSTILE_FAILED_MESSAGE, turnstile: true }, { status: 403 });
   }
 
   const apiKey = process.env.RESEND_API_KEY;
