@@ -141,6 +141,11 @@ export default function EventHubPage() {
         body: JSON.stringify({ email: lookupEmail.trim() || undefined, referenceId: lookupRefId.trim() || undefined }),
       });
       const json = await res.json();
+      if (res.ok && json.emailSent) {
+        setLookupError("");
+        toast.success(json.message || "Check your inbox for your Event Hub link.");
+        return;
+      }
       if (!res.ok || !json.token) {
         setLookupError(json.error || "Couldn't find your registration.");
         return;

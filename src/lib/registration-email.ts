@@ -351,3 +351,32 @@ export async function sendEventReminderEmail(to: string, event: RegisteredEvent,
     return false;
   }
 }
+
+/** Someone asked for their Event Hub link by email (hub/lookup): it goes to the
+ *  inbox, never back to whoever typed the address. */
+export async function sendHubLinkEmail(to: string, eventName: string, hubUrl: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey === "paste_your_resend_api_key_here") return false;
+  try {
+    const safeName = escapeHtml(eventName);
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
+      to,
+      subject: `Your Event Hub link for ${eventName}`,
+      text: `Here's your Event Hub for ${eventName}: ${hubUrl}\n\nIf you didn't ask for this, you can ignore this email.`,
+      html: `
+        <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 420px; margin: 0 auto; color: #1e1b2e;">
+          <p style="text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:#C21FAF; font-weight:600; margin:0 0 8px;">Event Hub</p>
+          <h1 style="font-size:20px; margin:0 0 12px;">${safeName}</h1>
+          <p style="margin:0 0 20px; color:#666;">Here's your link to the schedule, speakers, Q&amp;A and announcements.</p>
+          ${emailButton(hubUrl, "Open your Event Hub", "#C21FAF")}
+          <p style="margin:20px 0 0; color:#999; font-size:12px;">If you didn't ask for this, you can ignore this email.</p>
+        </div>
+      `,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
