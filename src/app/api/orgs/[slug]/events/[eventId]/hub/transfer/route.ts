@@ -63,7 +63,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
     return NextResponse.json({ error: "That's already your own email." }, { status: 400 });
   }
 
-  let emailSent: boolean;
   let transferredReferenceId: string | null = null;
   if (event.event_format === "virtual") {
     const { data: lead } = await admin.from("leads").select("id, status").eq("event_id", eventId).eq("organization_id", member.organizationId).ilike("email", member.email).maybeSingle();
@@ -111,7 +110,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   const newHubUrl = buildHubUrl(siteUrl, slug, { id: event.id, slug: event.slug }, hubToken);
 
   await sendTicketTransferredAwayEmail(member.email, event, newFullName);
-  emailSent =
+  const emailSent =
     event.event_format === "virtual"
       ? await sendVirtualConfirmationEmail(newEmail, event, newHubUrl)
       : await sendRegistrationEmail(newEmail, transferredReferenceId!, event, newHubUrl);
