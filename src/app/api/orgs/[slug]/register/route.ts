@@ -129,6 +129,16 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       return NextResponse.json({ error: "This is a group ticket — please complete checkout to name your guests." }, { status: 400 });
     }
     ticketTypeIdForRegistration = ticket.id;
+  } else {
+    // No ticket chosen: only allowed when the event has a free ticket to fall
+    // back on (or no tickets at all). Without this, leaving ticketTypeId out
+    // registered anyone on a paid event without paying.
+    const { data: tickets } = await supabase.from("ticket_types").select("id, price_naira, group_size").eq("event_id", event.id);
+    if ((tickets ?? []).length > 0) {
+      const free = (tickets ?? []).find((t) => Number(t.price_naira) <= 0 && Number(t.group_size ?? 1) <= 1);
+      if (!free) return NextResponse.json({ error: "This event requires a ticket purchase — please choose a ticket." }, { status: 400 });
+      ticketTypeIdForRegistration = free.id;
+    }
   }
 
   // Reserve the seat (if this ticket type is capacity-limited) before creating any
