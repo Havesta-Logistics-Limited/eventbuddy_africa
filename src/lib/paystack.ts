@@ -651,6 +651,29 @@ async function finalizeStandBooking(
     .maybeSingle();
   if (!updated) return { ok: true, purpose: "stand_booking", eventId: txn.event_id, alreadyProcessed: true };
 
+  // Each POST to the pay link opens its own checkout, so one stand can be paid
+  // twice. A second payment is never credited to the organizer: it's flagged
+  // for a refund from the platform portal.
+  if (txn.exhibitor_id) {
+    const { data: earlier } = await supabase
+      .from("paystack_transactions")
+      .select("id")
+      .eq("exhibitor_id", txn.exhibitor_id)
+      .eq("purpose", "stand_booking")
+      .eq("status", "success")
+      .neq("id", txn.id)
+      .limit(1)
+      .maybeSingle();
+    if (earlier) {
+      console.error(`[stands] payment ${txn.reference} is a second payment for exhibitor ${txn.exhibitor_id}: refund it from the platform portal`);
+      await supabase.from("risk_alerts").upsert(
+        { organization_id: txn.organization_id, event_id: txn.event_id, kind: "sales_spike", tickets: 0, dedupe_key: `stand_paid_twice:${txn.id}` },
+        { onConflict: "dedupe_key", ignoreDuplicates: true }
+      );
+      return { ok: true, purpose: "stand_booking", eventId: txn.event_id, alreadyProcessed: true };
+    }
+  }
+
   await postHeldSale(supabase, txn, feeNaira, "Exhibitor stand");
   await postCardFeeShortfall(supabase, txn, verified, Math.round((Number(txn.amount_naira) - feeNaira) * 100) / 100);
   if (txn.exhibitor_id) {
@@ -1125,7 +1148,17 @@ export async function handleRefundOrDispute(supabase: SupabaseClient, reference:
   // and the money comes off the organizer's held balance below
   if (txn.purpose === "ticket_purchase" || txn.purpose === "stand_booking") {
     if (txn.exhibitor_id) {
-      await supabase.from("exhibitors").update({ status: "cancelled" }).eq("id", txn.exhibitor_id);
+      // refunding a duplicate stand payment leaves the booking the other one paid for
+      const { data: otherPaid } = await supabase
+        .from("paystack_transactions")
+        .select("id")
+        .eq("exhibitor_id", txn.exhibitor_id)
+        .eq("purpose", "stand_booking")
+        .eq("status", "success")
+        .neq("id", txn.id)
+        .limit(1)
+        .maybeSingle();
+      if (!otherPaid) await supabase.from("exhibitors").update({ status: "cancelled" }).eq("id", txn.exhibitor_id);
     }
     if (txn.registration_id) {
       await supabase.from("registrations").update({ status: "cancelled" }).eq("id", txn.registration_id);
@@ -1142,7 +1175,10 @@ export async function handleRefundOrDispute(supabase: SupabaseClient, reference:
     // what the organizer is owed. eventbuddy's fee is not returned (Paystack
     // keeps its own charge on a refunded payment too). If they've already been
     // paid out, the balance goes negative and the next sale covers it first.
-    if (txn.settlement === "held") {
+    // only a sale that was credited is debited (a duplicate stand payment never was)
+    const { data: credited } =
+      txn.settlement === "held" ? await supabase.from("ledger_entries").select("id").eq("transaction_id", txn.id).eq("kind", "sale").maybeSingle() : { data: null };
+    if (txn.settlement === "held" && credited) {
       const { error } = await supabase.from("ledger_entries").upsert(
         {
           organization_id: txn.organization_id,

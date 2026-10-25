@@ -70,6 +70,10 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
         filters.push([col, val]);
         return builder;
       },
+      neq(col: string, val: unknown) {
+        inFilters.push([col, db[table].map((r) => r[col]).filter((v) => v !== val)]);
+        return builder;
+      },
       in(col: string, vals: unknown[]) {
         inFilters.push([col, vals]);
         return builder;
