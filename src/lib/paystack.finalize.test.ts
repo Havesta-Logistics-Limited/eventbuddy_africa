@@ -42,8 +42,20 @@ describe("finalizePaystackTransaction", () => {
     expect(result).toEqual({ ok: false, reason: "unknown_reference" });
   });
 
-  it("marks the transaction failed and returns payment_failed when Paystack reports the charge didn't succeed", async () => {
+  it("keeps an unfinished (abandoned) checkout pending so a later real payment still completes it", async () => {
     mockPaystackVerify({ status: "abandoned", amount: CHARGE_AMOUNT_MINOR, currency: "NGN" });
+    const supabase = createFakeSupabase({
+      paystack_transactions: [
+        { id: "t1", reference: "ref-1", status: "pending", purpose: "ticket_purchase", event_id: "e1", organization_id: "o1", charge_currency: "NGN", charge_amount_minor: CHARGE_AMOUNT_MINOR },
+      ],
+    });
+    const result = await finalizePaystackTransaction(supabase, "ref-1");
+    expect(result).toEqual({ ok: false, reason: "payment_failed" });
+    expect(supabase.db.paystack_transactions[0].status).toBe("pending");
+  });
+
+  it("marks the transaction failed and returns payment_failed when Paystack reports the charge failed", async () => {
+    mockPaystackVerify({ status: "failed", amount: CHARGE_AMOUNT_MINOR, currency: "NGN" });
     const supabase = createFakeSupabase({
       paystack_transactions: [
         { id: "t1", reference: "ref-1", status: "pending", purpose: "ticket_purchase", event_id: "e1", organization_id: "o1", charge_currency: "NGN", charge_amount_minor: CHARGE_AMOUNT_MINOR },

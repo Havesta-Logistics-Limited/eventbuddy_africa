@@ -23,12 +23,13 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
   function from(table: string) {
     db[table] = db[table] || [];
     const filters: [string, unknown][] = [];
+    const inFilters: [string, unknown[]][] = [];
     let pendingInsert: Row[] | null = null;
     let pendingUpdate: Row | null = null;
     let pendingUpsert: { rows: Row[]; conflict: string[]; ignore: boolean } | null = null;
 
     function matches(row: Row) {
-      return filters.every(([col, val]) => row[col] === val);
+      return filters.every(([col, val]) => row[col] === val) && inFilters.every(([col, vals]) => vals.includes(row[col]));
     }
 
     function applyAndGetRows(): Row[] {
@@ -67,6 +68,10 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
       },
       eq(col: string, val: unknown) {
         filters.push([col, val]);
+        return builder;
+      },
+      in(col: string, vals: unknown[]) {
+        inFilters.push([col, vals]);
         return builder;
       },
       insert(row: Row | Row[]) {

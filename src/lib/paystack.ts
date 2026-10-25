@@ -272,6 +272,14 @@ function oneMonthFrom(from: Date): string {
 
 /** First payment of a paid plan: verifies it like a ticket payment, then moves
  *  the organization onto the plan. Idempotent on the transaction status. */
+/** Paystack statuses that can never turn into a successful charge. Anything
+ *  else (abandoned, ongoing, pending, processing, queued) can still be paid,
+ *  so the checkout stays pending: marking it failed made a later real
+ *  charge.success webhook match no row, taking the money with no ticket. */
+function isTerminalFailure(status: string | undefined): boolean {
+  return status === "failed" || status === "reversed";
+}
+
 async function finalizeSubscriptionPayment(
   supabase: SupabaseClient,
   txn: { id: string; reference: string; organization_id: string; status: string; plan_id: string | null; charge_amount_minor: number | string; charge_currency: string }
@@ -285,14 +293,16 @@ async function finalizeSubscriptionPayment(
     return { ok: false, reason: "verify_error" };
   }
   if (verified.status !== "success" || verified.currency !== txn.charge_currency || verified.amount < Number(txn.charge_amount_minor)) {
-    await supabase.from("paystack_transactions").update({ status: "failed", paystack_event: verified }).eq("id", txn.id).eq("status", "pending");
+    if (verified.status === "success" || isTerminalFailure(verified.status)) {
+      await supabase.from("paystack_transactions").update({ status: "failed", paystack_event: verified }).eq("id", txn.id).eq("status", "pending");
+    }
     return { ok: false, reason: verified.status !== "success" ? "payment_failed" : "amount_mismatch" };
   }
   const { data: updated } = await supabase
     .from("paystack_transactions")
     .update({ status: "success", verified_at: new Date().toISOString(), paystack_event: verified, platform_fee_naira: Number(txn.charge_amount_minor) / 100, net_amount_naira: 0 })
     .eq("id", txn.id)
-    .eq("status", "pending")
+    .in("status", ["pending", "failed"])
     .select("id")
     .maybeSingle();
   if (!updated) return { ok: true, purpose: "subscription", planId, alreadyProcessed: true };
@@ -539,7 +549,9 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
   }
 
   if (verified.status !== "success") {
-    await supabase.from("paystack_transactions").update({ status: "failed", paystack_event: verified }).eq("reference", reference).eq("status", "pending");
+    if (isTerminalFailure(verified.status)) {
+      await supabase.from("paystack_transactions").update({ status: "failed", paystack_event: verified }).eq("reference", reference).eq("status", "pending");
+    }
     return { ok: false, reason: "payment_failed" };
   }
 
@@ -565,7 +577,7 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
   const netAmountNaira = Math.round((Number(txn.amount_naira) - platformFeeNaira) * 100) / 100;
 
   // The idempotency boundary: this UPDATE only ever matches a row while it's still
-  // 'pending'. If two callers race (webhook + callback page both verifying at once),
+  // 'pending' (or 'failed', when an earlier check saw an unfinished payment). If two callers race (webhook + callback page both verifying at once),
   // exactly one of these succeeds and returns the updated row; the other matches zero
   // rows and falls through to alreadyProcessed below.
   const { data: updated } = await supabase
@@ -578,7 +590,7 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
       net_amount_naira: netAmountNaira,
     })
     .eq("reference", reference)
-    .eq("status", "pending")
+    .in("status", ["pending", "failed"])
     .select()
     .maybeSingle();
 
@@ -620,7 +632,9 @@ async function finalizeStandBooking(
     return { ok: false, reason: "verify_error" };
   }
   if (verified.status !== "success") {
-    await supabase.from("paystack_transactions").update({ status: "failed", paystack_event: verified }).eq("reference", txn.reference).eq("status", "pending");
+    if (isTerminalFailure(verified.status)) {
+      await supabase.from("paystack_transactions").update({ status: "failed", paystack_event: verified }).eq("reference", txn.reference).eq("status", "pending");
+    }
     return { ok: false, reason: "payment_failed" };
   }
   if (verified.currency !== txn.charge_currency || verified.amount < Number(txn.charge_amount_minor)) {
@@ -632,7 +646,7 @@ async function finalizeStandBooking(
     .from("paystack_transactions")
     .update({ status: "success", verified_at: new Date().toISOString(), paystack_event: verified })
     .eq("reference", txn.reference)
-    .eq("status", "pending")
+    .in("status", ["pending", "failed"])
     .select("id")
     .maybeSingle();
   if (!updated) return { ok: true, purpose: "stand_booking", eventId: txn.event_id, alreadyProcessed: true };
@@ -1104,6 +1118,8 @@ export async function handleRefundOrDispute(supabase: SupabaseClient, reference:
   // a dispute later refunded (or the reverse) was already reversed once:
   // record the new status but don't debit, cancel or decrement again
   if (priorStatus === "refunded" || priorStatus === "disputed") return { handled: true };
+  // never fulfilled (pending/failed): no ticket, seat or ledger credit to undo
+  if (priorStatus !== "success") return { handled: true };
 
   // a stand payment (0112) is refunded the same way: the booking is cancelled
   // and the money comes off the organizer's held balance below
