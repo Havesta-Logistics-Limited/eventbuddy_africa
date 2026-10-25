@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { buildCsp, newNonce } from "@/lib/csp";
 
 /**
  * Only gates routes that require a real Supabase Auth session (the org owner / admin,
@@ -53,7 +54,21 @@ async function isMaintenanceModeOn(supabaseUrl: string, supabaseAnonKey: string)
 }
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  // A fresh nonce per request (src/lib/csp.ts). It goes on the request too:
+  // that's where Next.js reads it to stamp its own scripts while rendering.
+  const nonce = newNonce();
+  const csp = buildCsp(nonce);
+  const forwardHeaders = () => {
+    const h = new Headers(request.headers);
+    h.set("x-nonce", nonce);
+    h.set("Content-Security-Policy", csp);
+    return h;
+  };
+  const withCsp = <T extends NextResponse>(res: T): T => {
+    res.headers.set("Content-Security-Policy", csp);
+    return res;
+  };
+  let response = withCsp(NextResponse.next({ request: { headers: forwardHeaders() } }));
   const { pathname } = request.nextUrl;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -63,7 +78,7 @@ export async function proxy(request: NextRequest) {
   if (supabaseConfigured && !isExemptFromMaintenance(pathname)) {
     const maintenanceOn = await isMaintenanceModeOn(supabaseUrl, supabaseAnonKey);
     if (maintenanceOn) {
-      return NextResponse.rewrite(new URL(MAINTENANCE_PATH, request.url));
+      return withCsp(NextResponse.rewrite(new URL(MAINTENANCE_PATH, request.url), { request: { headers: forwardHeaders() } }));
     }
   }
 
@@ -89,7 +104,7 @@ export async function proxy(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = withCsp(NextResponse.next({ request: { headers: forwardHeaders() } }));
         cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },

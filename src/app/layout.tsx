@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { DM_Serif_Display, Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
 import { GoogleAnalytics } from "@/components/google-analytics";
@@ -91,17 +92,20 @@ export const viewport: Viewport = {
   themeColor: "#C21FAF",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // The proxy's per-request CSP nonce (src/lib/csp.ts). Reading it renders every
+  // page per request, which a nonce requires: a pre-built page has no nonce.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <html lang="en" className={`${dmSerif.variable} ${inter.variable} ${playfair.variable} antialiased`}>
       <body>
         {/* Static, hardcoded JSON — no user input ever flows into this, safe to inject as-is. */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-        <GoogleAnalytics />
+        <GoogleAnalytics nonce={nonce} />
         {children}
         <OfflineSupport />
         <Toaster theme="dark" richColors position="top-right" closeButton toastOptions={{ style: { background: "#1d1426", border: "1px solid #ffffff17", color: "#f6f0fa" } }} />
