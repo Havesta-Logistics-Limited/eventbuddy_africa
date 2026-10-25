@@ -39,6 +39,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   }
   // team permissions (migration 0137): changing an event needs Events edit access
   if (!orgCan(org, "events", true)) return NextResponse.json({ error: "You have view-only access to events." }, { status: 403 });
+  // a refund sends real money back: it also needs edit access to Payouts
+  if (!orgCan(org, "payouts", true)) return NextResponse.json({ error: "Refunds need edit access to Payouts. Ask the account owner." }, { status: 403 });
 
   const { data: event } = await supabase.from("events").select("id, name").eq("id", eventId).eq("organization_id", org.id).maybeSingle();
   if (!event) return NextResponse.json({ error: "This event couldn't be found." }, { status: 404 });
