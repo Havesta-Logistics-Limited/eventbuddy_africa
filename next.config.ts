@@ -11,6 +11,10 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" },
+  // The parts of a CSP that can't break hydration, the scanner or pasted cover
+  // images: no plugins, no <base> hijacking, no framing. A script-src policy
+  // still needs nonces wired through the proxy (see the note above).
+  { key: "Content-Security-Policy", value: "object-src 'none'; base-uri 'self'; frame-ancestors 'none'" },
 ];
 
 const nextConfig: NextConfig = {
