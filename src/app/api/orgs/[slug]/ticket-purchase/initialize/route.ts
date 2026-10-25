@@ -48,6 +48,31 @@ type InitializeBody = {
  * payment succeeds, via finalizePaystackTransaction's 'ticket_purchase' branch,
  * exactly like a physical event stays unpublished until its own payment clears.
  */
+/** How long an unpaid checkout keeps its seat and code use. Paystack's own
+ *  checkout page times out well within this. */
+const CHECKOUT_HOLD_MINUTES = 30;
+
+async function openCheckoutHolds(
+  admin: ReturnType<typeof createAdminClient>,
+  p: { ticketTypeId: string; discountCodeId: string | null; email: string }
+): Promise<{ seats: number; codeUses: number }> {
+  const since = new Date(Date.now() - CHECKOUT_HOLD_MINUTES * 60_000).toISOString();
+  // other buyers' checkouts only: someone retrying after closing Paystack's
+  // page mustn't be blocked by their own abandoned attempt
+  const open = () =>
+    admin
+      .from("paystack_transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .gte("created_at", since)
+      .not("registrant_data->>email", "ilike", p.email);
+  const [seats, codeUses] = await Promise.all([
+    open().eq("ticket_type_id", p.ticketTypeId),
+    p.discountCodeId ? open().eq("discount_code_id", p.discountCodeId) : Promise.resolve({ count: 0 }),
+  ]);
+  return { seats: seats.count ?? 0, codeUses: codeUses.count ?? 0 };
+}
+
 export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]/ticket-purchase/initialize">) {
   const { slug } = await ctx.params;
   const body = (await request.json()) as Partial<InitializeBody>;
@@ -215,6 +240,20 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       return NextResponse.json({ error: "This code fully covers the ticket price — contact the organizer to register." }, { status: 400 });
     }
     discountCodeId = validation.discount_code_id;
+  }
+
+  // Seats and code uses only count once a payment succeeds, so on their own
+  // the checks above let 30 people open checkouts for the last 5 seats, or a
+  // "first 20" code be paid for 50 times. Checkouts still open count too.
+  const holds = await openCheckoutHolds(admin, { ticketTypeId: ticket.id, discountCodeId, email: email.trim() });
+  if (ticket.quantity_available != null && ticket.quantity_sold + holds.seats >= ticket.quantity_available) {
+    return NextResponse.json({ error: "The last tickets are in other people's checkouts right now. Try again in a few minutes." }, { status: 409 });
+  }
+  if (discountCodeId) {
+    const { data: code } = await admin.from("discount_codes").select("max_uses, uses_count").eq("id", discountCodeId).maybeSingle();
+    if (code?.max_uses != null && code.uses_count + holds.codeUses >= code.max_uses) {
+      return NextResponse.json({ error: "This code's remaining uses are in other people's checkouts right now. Try again in a few minutes." }, { status: 409 });
+    }
   }
 
   const reference = newId("tixpay");
