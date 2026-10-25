@@ -88,8 +88,17 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   // Someone typing/picking their name again (e.g. on a different device, or after a
   // previous session ended) should reuse their existing row rather than fork into a
-  // duplicate — match by name within this org, case-insensitively.
-  const { data: existing } = await supabase.from("staff").select("*").eq("organization_id", org.id).eq("role", "staff").ilike("name", trimmedName).maybeSingle();
+  // duplicate — match by name within this event, case-insensitively. Not the
+  // whole org: the same name at another event would hand this person that
+  // staff member's session and the leads they collected there.
+  const { data: existing } = await supabase
+    .from("staff")
+    .select("*")
+    .eq("organization_id", org.id)
+    .eq("event_id", eventId)
+    .eq("role", "staff")
+    .ilike("name", trimmedName)
+    .maybeSingle();
 
   if (existing) {
     const { data, error } = await supabase.from("staff").update(checkinPatch).eq("id", existing.id).select().single();

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 const Schema = z.object({ password: z.string().min(1) });
 
@@ -22,6 +23,8 @@ export async function POST(request: Request) {
     data: { user: caller },
   } = await supabase.auth.getUser();
   if (!caller?.email) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  // the password check below would otherwise let a stolen session guess the password
+  if (!(await checkRateLimit(`request-deletion:user:${caller.id}`, 5, 15 * 60))) return rateLimitedResponse();
 
   // Stateless client (no cookie persistence) purely to verify the password —
   // doesn't touch the caller's actual session cookies.
