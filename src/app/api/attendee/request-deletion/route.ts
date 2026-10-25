@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { escapeHtml, renderEmailShell } from "@/lib/email-template";
@@ -54,6 +55,17 @@ export async function POST(request: Request) {
   if (!(await checkRateLimit(`request-deletion:ip:${clientIp(request)}`, 10, 60 * 60))) {
     return rateLimitedResponse();
   }
+
+  // The password, like the web's /api/account/request-deletion: a stolen or
+  // unlocked phone's session alone can't start deleting the account.
+  const body = (await request.json().catch(() => null)) as { password?: unknown } | null;
+  const password = typeof body?.password === "string" ? body.password : "";
+  if (!password) return NextResponse.json({ error: "Enter your password." }, { status: 400 });
+  const verifier = createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { error: authError } = await verifier.auth.signInWithPassword({ email: user.email, password });
+  if (authError) return NextResponse.json({ error: "Incorrect password." }, { status: 400 });
 
   const admin = createAdminClient();
   const fullName = (user.user_metadata?.full_name as string) || null;
