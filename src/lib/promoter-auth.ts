@@ -18,8 +18,11 @@ export type PromoterRow = {
 
 /** The signed-in promoter (migration 0105), or the response to return instead. */
 export async function requirePromoter(request: Request): Promise<{ user: User; promoter: PromoterRow } | { response: NextResponse }> {
-  const { user } = await resolveRouteUser(request);
+  const { user, supabase } = await resolveRouteUser(request);
   if (!user) return { response: NextResponse.json({ error: "Sign in as a promoter first." }, { status: 401 }) };
+  // service-role lookup below skips the database's two-factor rule
+  const { data: aalOk } = await supabase.rpc("has_required_aal");
+  if (aalOk !== true) return { response: NextResponse.json({ error: "Confirm your two-factor code to continue." }, { status: 403 }) };
   const { data } = await createAdminClient()
     .from("promoters")
     .select("id, user_id, handle, full_name, email, phone, is_suspended, payout_bank_code, payout_account_number, payout_change_status")

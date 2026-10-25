@@ -17,8 +17,12 @@ export type OwnedOrg = {
 /** The signed-in organization OWNER and their org: plans are billing, so
  *  invited admins can see the plan but only the owner can change it. */
 export async function requireOrgOwner(request: Request): Promise<{ user: User; org: OwnedOrg } | { response: NextResponse }> {
-  const { user } = await resolveRouteUser(request);
+  const { user, supabase } = await resolveRouteUser(request);
   if (!user) return { response: NextResponse.json({ error: "Not signed in." }, { status: 401 }) };
+  // the lookup below uses the service role, which skips the database's own
+  // two-factor rule, so it's checked here
+  const { data: aalOk } = await supabase.rpc("has_required_aal");
+  if (aalOk !== true) return { response: NextResponse.json({ error: "Confirm your two-factor code to continue." }, { status: 403 }) };
   const { data: org } = await createAdminClient()
     .from("organizations")
     .select("id, name, plan_id, plan_status, plan_comped, plan_period_end, paystack_subscription_code, paystack_subscription_token")
