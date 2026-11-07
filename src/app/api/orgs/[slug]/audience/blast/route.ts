@@ -11,7 +11,7 @@ import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 import { sanitizeRichTextHtml, stripHtml } from "@/lib/rich-text";
 import { getEventStatus } from "@/lib/capture-window";
 import { fetchAllRows } from "@/lib/fetch-all-rows";
-import { extractInlineImages } from "@/lib/email-images";
+import { hostInlineImages, trackingTagger } from "@/lib/email-images";
 
 const TargetSchema = z.object({
   eventId: z.string().uuid(),
@@ -104,8 +104,13 @@ function buildEmailPayload(
   messageHtml: string,
   ctaLabel: string | undefined,
   ctaUrl: string | undefined,
-  unsubUrl: string
+  unsubUrl: string,
+  tag: ReturnType<typeof trackingTagger>
 ) {
+  // pictures are already hosted (hostInlineImages); links to eventbuddy are
+  // tagged so sales from this newsletter show as Email in the Marketing report
+  if (ctaUrl) ctaUrl = tag.url(ctaUrl);
+  messageHtml = tag.html(messageHtml);
   const greeting = recipientName ? `Hi ${escapeHtml(firstName(recipientName))},` : "Hi there,";
   const logoHtml = orgLogoUrl
     ? `<img src="${orgLogoUrl}" alt="${escapeHtml(orgName)}" width="44" height="44" style="border-radius:10px; display:block; margin:0 0 16px; object-fit:cover;">`
@@ -121,15 +126,12 @@ function buildEmailPayload(
       <a href="${unsubUrl}" style="color:#aaa;">Unsubscribe</a>
     </p>
   `;
-  const { html: bodyHtml, attachments } = extractInlineImages(rawBodyHtml);
-
   return {
     from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
     to,
     subject,
     text: `${greeting}\n\n${stripHtml(messageHtml)}${ctaLabel && ctaUrl ? `\n\n${ctaLabel}: ${ctaUrl}` : ""}\n\nUnsubscribe: ${unsubUrl}`,
-    html: renderEmailShell({ color: "#C21FAF", label: orgName, emoji: "📣" }, bodyHtml),
-    attachments: attachments.length > 0 ? attachments : undefined,
+    html: renderEmailShell({ color: "#C21FAF", label: orgName, emoji: "📣" }, rawBodyHtml),
   };
 }
 
@@ -187,12 +189,16 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const orgId = org.id;
   const userId = user.id;
+  const blastId = crypto.randomUUID();
+  const hostedHtml = await hostInlineImages(admin, messageHtml, `${orgId}/blasts/${blastId}`);
+  const tag = trackingTagger({ source: "email", campaign: `blast-${blastId}` });
   async function logBlast(sentCount: number) {
     await admin.from("audience_blasts").insert({
+      id: blastId,
       organization_id: orgId,
       sent_by: userId,
       subject,
-      message_html: messageHtml,
+      message_html: hostedHtml,
       cta_label: ctaLabel ?? null,
       cta_url: ctaUrl ?? null,
       target_event_id: target?.eventId ?? null,
@@ -212,7 +218,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
   for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
     const chunk = recipients.slice(i, i + BATCH_SIZE);
     const payloads = chunk.map((r) =>
-      buildEmailPayload(r.email, r.fullName, org.name, org.logo_url ?? undefined, subject, messageHtml, ctaLabel, ctaUrl, unsubscribeUrl(siteUrl, org.id, r.email))
+      buildEmailPayload(r.email, r.fullName, org.name, org.logo_url ?? undefined, subject, hostedHtml, ctaLabel, ctaUrl, unsubscribeUrl(siteUrl, org.id, r.email), tag)
     );
     try {
       const { data, error } = await resend.batch.send(payloads);

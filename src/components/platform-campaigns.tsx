@@ -18,6 +18,22 @@ type EventOption = { id: string; name: string; date: string; eventFormat: string
 type Segment = "registered" | "checked_in" | "no_show" | "started_not_bought";
 type Audience = { kind: "list"; listId: string } | { kind: "event"; eventId: string; segment: Segment };
 type CampaignRow = { id: string; subject: string; audience_label: string; recipient_count: number; sent_count: number; status: string; created_at: string };
+/** platform_campaign_results (migration 0142) */
+type CampaignResults = {
+  campaign_id: string;
+  clicks: number;
+  visits: number;
+  orders: number;
+  tickets: number;
+  revenue: number;
+  registrations: number;
+  recipient_orders: number;
+  recipient_revenue: number;
+};
+
+function naira(n: number) {
+  return `₦${Math.round(Number(n) || 0).toLocaleString("en-NG")}`;
+}
 
 const SEGMENTS: { id: Segment; label: string; hint: string }[] = [
   { id: "registered", label: "Registered", hint: "Everyone with a ticket" },
@@ -58,6 +74,8 @@ export function PlatformCampaigns() {
   const [lists, setLists] = useState<ContactList[]>([]);
   const [events, setEvents] = useState<EventOption[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
+  const [results, setResults] = useState<Record<string, CampaignResults>>({});
+  const [resultsLoaded, setResultsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showImport, setShowImport] = useState(false);
 
@@ -82,8 +100,14 @@ export function PlatformCampaigns() {
         orgName: (e.organizations as unknown as { name?: string } | null)?.name ?? "",
       }))
     );
-    setCampaigns((campaignRes.data ?? []) as CampaignRow[]);
+    const rows = (campaignRes.data ?? []) as CampaignRow[];
+    setCampaigns(rows);
     setLoading(false);
+    if (rows.length) {
+      const { data: res } = await supabase.rpc("platform_campaign_results", { p_campaigns: rows.map((r) => r.id) });
+      setResults(Object.fromEntries(((res ?? []) as CampaignResults[]).map((r) => [r.campaign_id, r])));
+    }
+    setResultsLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -166,7 +190,12 @@ export function PlatformCampaigns() {
       </section>
 
       <section>
-        <h3 className="mb-2 text-sm font-semibold text-fg">Sent campaigns</h3>
+        <h3 className="text-sm font-semibold text-fg">Sent campaigns</h3>
+        <p className="mb-2 text-xs text-muted">
+          <strong className="text-fg-2">Clicks</strong> and <strong className="text-fg-2">tickets sold</strong> count people who came through the email&apos;s
+          links to eventbuddy. <strong className="text-fg-2">Recipients who bought</strong> counts anyone it was sent to who bought a ticket afterwards, however
+          they got to the page.
+        </p>
         <div className="overflow-x-auto rounded-xl border border-line">
           <table className="w-full text-sm">
             <thead className="bg-canvas text-muted">
@@ -174,13 +203,17 @@ export function PlatformCampaigns() {
                 <th className="px-4 py-2.5 text-left font-medium">Subject</th>
                 <th className="px-4 py-2.5 text-left font-medium">Sent to</th>
                 <th className="px-4 py-2.5 text-right font-medium">Delivered</th>
+                <th className="px-4 py-2.5 text-right font-medium">Clicks</th>
+                <th className="px-4 py-2.5 text-right font-medium">Tickets sold</th>
+                <th className="px-4 py-2.5 text-right font-medium">Revenue</th>
+                <th className="px-4 py-2.5 text-right font-medium">Recipients who bought</th>
                 <th className="px-4 py-2.5 text-right font-medium">Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-soft">
               {campaigns.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-muted">
+                  <td colSpan={8} className="px-4 py-6 text-center text-muted">
                     No campaigns sent yet.
                   </td>
                 </tr>
@@ -192,6 +225,24 @@ export function PlatformCampaigns() {
                     <td className="px-4 py-3 text-right tabular-nums text-fg-2">
                       {c.sent_count.toLocaleString()} of {c.recipient_count.toLocaleString()}
                       {c.status === "sending" ? <span className="block text-[11px] text-amber-300">stopped part-way</span> : null}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-fg-2">{results[c.id] ? results[c.id].clicks.toLocaleString() : resultsLoaded ? "–" : "…"}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-medium text-fg">
+                      {results[c.id] ? results[c.id].tickets.toLocaleString() : resultsLoaded ? "–" : "…"}
+                      {results[c.id]?.registrations ? <span className="block text-[11px] text-subtle">+{results[c.id].registrations.toLocaleString()} free sign-ups</span> : null}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-fg-2">{results[c.id] ? naira(results[c.id].revenue) : resultsLoaded ? "–" : "…"}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-fg-2">
+                      {results[c.id] ? (
+                        <>
+                          {results[c.id].recipient_orders.toLocaleString()}
+                          {results[c.id].recipient_orders ? <span className="block text-[11px] text-subtle">{naira(results[c.id].recipient_revenue)}</span> : null}
+                        </>
+                      ) : resultsLoaded ? (
+                        "–"
+                      ) : (
+                        "…"
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right text-fg-3">{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
                   </tr>
