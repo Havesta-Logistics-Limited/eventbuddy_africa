@@ -98,17 +98,21 @@ async function eventRecipients(
     return { recipients: (data ?? []).map((l) => ({ email: l.email.toLowerCase(), fullName: `${l.first_name} ${l.last_name}`.trim() })) };
   }
 
-  let query = admin.from("registrations").select("email, full_name").eq("event_id", eventId);
-  if (status === "checked_in") {
-    query = query.eq("status", "checked_in");
-  } else if (status === "no_show") {
+  if (status === "no_show") {
     const eventStatus = getEventStatus({ date: event.date, endDate: event.end_date ?? undefined, startTime: event.start_time ?? undefined, endTime: event.end_time ?? undefined, timezone: event.timezone ?? undefined });
     if (eventStatus !== "completed") return { error: "No-show can only be targeted once the event has ended." };
-    query = query.eq("status", "registered").is("checked_in_at", null);
-  } else {
-    query = query.in("status", ["registered", "checked_in"]);
   }
-  const { data } = await fetchAllRows((from, to) => query.order("id").range(from, to));
+  // A fresh query per page: fetchAllRows asks for several pages at once, and
+  // they used to share one builder, so every page ended up with the last
+  // page's .range() (rows 5000+) and an event's segment came back empty —
+  // the "sent 0 of 0" blasts.
+  const page = (from: number, to: number) => {
+    const q = admin.from("registrations").select("email, full_name").eq("event_id", eventId);
+    const filtered =
+      status === "checked_in" ? q.eq("status", "checked_in") : status === "no_show" ? q.eq("status", "registered").is("checked_in_at", null) : q.in("status", ["registered", "checked_in"]);
+    return filtered.order("id").range(from, to);
+  };
+  const { data } = await fetchAllRows(page);
   return { recipients: (data ?? []).map((r) => ({ email: r.email.toLowerCase(), fullName: r.full_name })) };
 }
 

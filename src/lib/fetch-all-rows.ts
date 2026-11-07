@@ -22,7 +22,12 @@ type PageResult<T> = PromiseLike<{ data: T[] | null; error: { message: string } 
  *  that point. The query must have a stable `.order(...)` (e.g. `id`) or rows can be
  *  skipped/duplicated between pages — offsets are independent requests, not a cursor.
  *  On any page error, returns that error and whatever was collected so far — callers
- *  should treat `error` as "incomplete", not "empty". */
+ *  should treat `error` as "incomplete", not "empty".
+ *
+ *  `fetchPage` must build a NEW query on every call (start from `x.from(...)`
+ *  inside it). Pages run concurrently, and a supabase-js builder is mutable:
+ *  calling .range() on one shared builder makes every page fetch the last
+ *  page's rows. That's how event-targeted blasts once found 0 recipients. */
 export async function fetchAllRows<T>(
   fetchPage: (from: number, to: number) => PageResult<T>
 ): Promise<{ data: T[]; error: { message: string } | null }> {
