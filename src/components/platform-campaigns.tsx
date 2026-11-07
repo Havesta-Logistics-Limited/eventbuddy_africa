@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, Copy, Eye, Loader2, Mail, Plus, Send, Trash2, Upload, X } from "lucide-react";
 import { RichTextDisplay } from "@/components/rich-text-display";
 import { toast } from "sonner";
@@ -27,15 +27,37 @@ type CampaignRow = {
   message_html: string;
   cta_label: string | null;
   cta_url: string | null;
-  audience: Audience;
-  audience_label: string;
+  audience: Audience | null;
+  audience_label: string | null;
   recipient_count: number;
   sent_count: number;
-  status: string;
+  next_offset: number;
+  pause_at: number | null;
+  status: "draft" | "sending" | "paused" | "sent";
   created_at: string;
+  updated_at: string;
 };
 /** A sent campaign loaded back into the composer to edit and send again. */
-type Draft = { key: number; subject: string; messageHtml: string; ctaLabel: string; ctaUrl: string; audience: Audience; greeting: Greeting | null };
+type Draft = { key: number; draftId?: string; subject: string; messageHtml: string; ctaLabel: string; ctaUrl: string; audience: Audience | null; greeting: Greeting | null };
+
+type SendProgress = { campaignId: string; done: boolean; paused: boolean; nextOffset: number; sentCount: number; total: number };
+
+/** Sends chunk after chunk until the campaign is done or reaches its batch
+ *  limit (paused), reporting progress as it goes. */
+async function runSend(first: Promise<SendProgress>, onProgress: (p: SendProgress) => void): Promise<SendProgress> {
+  let res = await first;
+  onProgress(res);
+  while (!res.done && !res.paused) {
+    res = await api<SendProgress>("/api/platform/campaigns/send", { method: "POST", body: JSON.stringify({ campaignId: res.campaignId, offset: res.nextOffset }) });
+    onProgress(res);
+  }
+  return res;
+}
+
+function sentMessage(res: SendProgress): string {
+  if (res.paused) return `Sent ${res.nextOffset.toLocaleString()} of ${res.total.toLocaleString()} so far. Paused: use Send next batch in Sent campaigns to continue.`;
+  return `Sent to ${res.sentCount.toLocaleString()} of ${res.total.toLocaleString()} people`;
+}
 /** platform_campaign_results (migration 0142) */
 type CampaignResults = {
   campaign_id: string;
@@ -88,10 +110,16 @@ function parseContacts(text: string): { email: string; name?: string }[] {
   return out;
 }
 
+function stripTags(html: string): string {
+  return html.replace(/<img\b[^>]*>/gi, "img").replace(/<[^>]+>/g, "").trim();
+}
+
 export function PlatformCampaigns() {
   const [lists, setLists] = useState<ContactList[]>([]);
   const [events, setEvents] = useState<EventOption[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
+  const [drafts, setDrafts] = useState<CampaignRow[]>([]);
+  const [resuming, setResuming] = useState<{ id: string; done: number; total: number } | null>(null);
   const [results, setResults] = useState<Record<string, CampaignResults>>({});
   const [resultsLoaded, setResultsLoaded] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -114,6 +142,56 @@ export function PlatformCampaigns() {
     }
   }
 
+  function continueDraft(c: CampaignRow) {
+    setDraft((d) => ({
+      key: (d?.key ?? 0) + 1,
+      draftId: c.id,
+      subject: c.subject,
+      messageHtml: c.message_html,
+      ctaLabel: c.cta_label ?? "",
+      ctaUrl: c.cta_url ?? "",
+      audience: c.audience,
+      greeting: c.greeting,
+    }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function deleteDraft(c: CampaignRow) {
+    if (!confirm(`Delete the draft "${c.subject || "Untitled"}"?`)) return;
+    try {
+      await api(`/api/platform/campaigns/${c.id}`, { method: "DELETE" });
+      if (draft?.draftId === c.id) setDraft(null);
+      toast.success("Draft deleted");
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't delete the draft.");
+    }
+  }
+
+  async function sendNextBatch(c: CampaignRow) {
+    const left = c.recipient_count - c.next_offset;
+    const answer = window.prompt(
+      `How many to send now? ${left.toLocaleString()} of the original list still to go (anyone added to the audience since is included too).\nLeave empty to send to everyone left.`,
+      String(Math.min(left, 100) || 100)
+    );
+    if (answer === null) return;
+    const limit = answer.trim() ? Math.floor(Number(answer.replace(/[^0-9]/g, ""))) : undefined;
+    if (answer.trim() && (!limit || limit < 1)) return toast.error("Enter a number, or leave it empty to send to everyone left.");
+    setResuming({ id: c.id, done: c.next_offset, total: c.recipient_count });
+    try {
+      const res = await runSend(
+        api<SendProgress>("/api/platform/campaigns/send", { method: "POST", body: JSON.stringify({ campaignId: c.id, resume: true, ...(limit ? { limit } : {}) }) }),
+        (p) => setResuming({ id: c.id, done: p.nextOffset, total: p.total })
+      );
+      toast.success(sentMessage(res));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "The batch stopped. Its row shows how far it got.");
+    } finally {
+      setResuming(null);
+      load();
+    }
+  }
+
   function reuse(c: CampaignRow) {
     // a new key each time remounts the composer with this campaign's content
     setDraft((d) => ({ key: (d?.key ?? 0) + 1, subject: c.subject, messageHtml: c.message_html, ctaLabel: c.cta_label ?? "", ctaUrl: c.cta_url ?? "", audience: c.audience, greeting: c.greeting }));
@@ -131,7 +209,7 @@ export function PlatformCampaigns() {
       supabase.from("events").select("id, name, date, event_format, organizations(name)").order("date", { ascending: false }).limit(500),
       supabase
         .from("platform_campaigns")
-        .select("id, subject, message_html, cta_label, cta_url, greeting, audience, audience_label, recipient_count, sent_count, status, created_at")
+        .select("id, subject, message_html, cta_label, cta_url, greeting, audience, audience_label, recipient_count, sent_count, next_offset, pause_at, status, created_at, updated_at")
         .order("created_at", { ascending: false })
         .limit(50),
     ]);
@@ -145,7 +223,9 @@ export function PlatformCampaigns() {
         orgName: (e.organizations as unknown as { name?: string } | null)?.name ?? "",
       }))
     );
-    const rows = (campaignRes.data ?? []) as CampaignRow[];
+    const all = (campaignRes.data ?? []) as CampaignRow[];
+    setDrafts(all.filter((r) => r.status === "draft").sort((a, b) => b.updated_at.localeCompare(a.updated_at)));
+    const rows = all.filter((r) => r.status !== "draft");
     setCampaigns(rows);
     setLoading(false);
     if (rows.length) {
@@ -188,7 +268,7 @@ export function PlatformCampaigns() {
         </p>
       </div>
 
-      <Composer key={draft?.key ?? 0} draft={draft} lists={lists} events={events} onSent={() => { setDraft(null); load(); }} />
+      <Composer key={draft?.key ?? 0} draft={draft} lists={lists} events={events} onSent={() => { setDraft(null); load(); }} onDraftSaved={load} />
 
       <section>
         <div className="flex items-center justify-between mb-2">
@@ -233,6 +313,34 @@ export function PlatformCampaigns() {
         </div>
       </section>
 
+      {drafts.length > 0 && (
+        <section>
+          <h3 className="mb-2 text-sm font-semibold text-fg">Drafts</h3>
+          <div className="overflow-x-auto rounded-xl border border-line">
+            <table className="w-full text-sm">
+              <tbody className="divide-y divide-line-soft">
+                {drafts.map((d) => (
+                  <tr key={d.id}>
+                    <td className="px-4 py-3 font-medium text-fg">{d.subject || <span className="text-muted">Untitled draft</span>}</td>
+                    <td className="px-4 py-3 text-right text-fg-3 whitespace-nowrap">
+                      Saved {new Date(d.updated_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <button type="button" onClick={() => continueDraft(d)} className="mr-1 text-sm font-medium text-brand-500 hover:underline">
+                        Continue
+                      </button>
+                      <button type="button" onClick={() => deleteDraft(d)} aria-label={`Delete draft ${d.subject || "Untitled"}`} title="Delete draft" className="p-1.5 text-subtle hover:text-rose-300">
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section>
         <h3 className="text-sm font-semibold text-fg">Sent campaigns</h3>
         <p className="mb-2 text-xs text-muted">
@@ -270,6 +378,20 @@ export function PlatformCampaigns() {
                     <td className="px-4 py-3 text-right tabular-nums text-fg-2">
                       {c.sent_count.toLocaleString()} of {c.recipient_count.toLocaleString()}
                       {c.status === "sending" ? <span className="block text-[11px] text-amber-300">stopped part-way</span> : null}
+                      {c.status === "paused" ? (
+                        resuming?.id === c.id ? (
+                          <span className="block text-[11px] text-muted">
+                            sending… {resuming.done.toLocaleString()} of {resuming.total.toLocaleString()}
+                          </span>
+                        ) : (
+                          <>
+                            <span className="block text-[11px] text-amber-300">paused</span>
+                            <button type="button" disabled={!!resuming} onClick={() => sendNextBatch(c)} className="mt-1 text-[11px] font-medium text-brand-500 hover:underline disabled:opacity-50">
+                              Send next batch
+                            </button>
+                          </>
+                        )
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-fg-2">{results[c.id] ? results[c.id].clicks.toLocaleString() : resultsLoaded ? "–" : "…"}</td>
                     <td className="px-4 py-3 text-right tabular-nums font-medium text-fg">
@@ -355,9 +477,24 @@ export function PlatformCampaigns() {
   );
 }
 
-function Composer({ draft, lists, events, onSent }: { draft: Draft | null; lists: ContactList[]; events: EventOption[]; onSent: () => void }) {
+function Composer({
+  draft,
+  lists,
+  events,
+  onSent,
+  onDraftSaved,
+}: {
+  draft: Draft | null;
+  lists: ContactList[];
+  events: EventOption[];
+  onSent: () => void;
+  onDraftSaved: () => void;
+}) {
   const a = draft?.audience;
   const [kind, setKind] = useState<"list" | "event">(a?.kind ?? "list");
+  const [draftId, setDraftId] = useState<string | undefined>(draft?.draftId);
+  const [saveState, setSaveState] = useState<{ status: "idle" | "saving" | "saved" | "error"; at?: string; error?: string }>({ status: draft?.draftId ? "saved" : "idle" });
+  const [limit, setLimit] = useState("");
   const [listId, setListId] = useState(a?.kind === "list" && lists.some((l) => l.id === a.listId) ? a.listId : "");
   const [eventId, setEventId] = useState(a?.kind === "event" ? a.eventId : "");
   const [segment, setSegment] = useState<Segment>(a?.kind === "event" ? a.segment : "registered");
@@ -401,15 +538,77 @@ function Composer({ draft, lists, events, onSent }: { draft: Draft | null; lists
     };
   }, [audience, countAttempt]);
 
+  // ---- drafts: autosaved a couple of seconds after you stop typing
+  const greetingValue: Greeting =
+    greetingMode === "none" ? { mode: "none" } : { mode: "name", prefix: greetingPrefix.trim() || "Hi", fallback: greetingFallback.trim() || "Hi there," };
+  const snapshot = JSON.stringify({
+    subject,
+    messageHtml,
+    ctaLabel: showCta ? ctaLabel : "",
+    ctaUrl: showCta ? ctaUrl : "",
+    audience,
+    greeting: greetingValue,
+  });
+  const lastSaved = useRef(draft?.draftId ? snapshot : "");
+  const saving = useRef(false);
+
+  const saveDraft = useCallback(async () => {
+    if (saving.current) return;
+    if (!subject.trim() && !stripTags(messageHtml)) return;
+    if (snapshot === lastSaved.current) return;
+    saving.current = true;
+    setSaveState({ status: "saving" });
+    try {
+      const res = await api<{ id: string; savedAt: string }>("/api/platform/campaigns/drafts", {
+        method: "POST",
+        body: JSON.stringify({
+          id: draftId,
+          subject,
+          messageHtml,
+          ctaLabel: showCta ? ctaLabel : undefined,
+          ctaUrl: showCta ? ctaUrl : undefined,
+          audience,
+          greeting: greetingValue,
+        }),
+      });
+      lastSaved.current = snapshot;
+      if (!draftId) onDraftSaved();
+      setDraftId(res.id);
+      setSaveState({ status: "saved", at: res.savedAt });
+    } catch (err) {
+      setSaveState({ status: "error", error: err instanceof Error ? err.message : "Couldn't save the draft." });
+    } finally {
+      saving.current = false;
+    }
+    // greetingValue is derived from the snapshot's own fields
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshot, draftId, onDraftSaved]);
+
+  useEffect(() => {
+    if (progress) return;
+    const t = setTimeout(saveDraft, 2000);
+    return () => clearTimeout(t);
+  }, [saveDraft, progress]);
+
   async function send(e: React.FormEvent) {
     e.preventDefault();
     if (!audience) return setError("Choose who to send to.");
     if (!subject.trim() || !messageHtml.trim()) return setError("Write a subject and a message.");
     if (!count) return setError("Nobody to send to in this audience.");
-    if (!confirm(`Send "${subject.trim()}" to ${count.toLocaleString()} people? This can't be undone.`)) return;
+    const batchLimit = limit.trim() ? Math.floor(Number(limit)) : undefined;
+    if (limit.trim() && (!batchLimit || batchLimit < 1)) return setError("Enter how many to send now, or leave it empty to send to everyone.");
+    const sendNow = batchLimit ? Math.min(batchLimit, count) : count;
+    if (
+      !confirm(
+        batchLimit && batchLimit < count
+          ? `Send "${subject.trim()}" to the first ${sendNow.toLocaleString()} of ${count.toLocaleString()} people now? The rest wait until you click Send next batch.`
+          : `Send "${subject.trim()}" to ${count.toLocaleString()} people? This can't be undone.`
+      )
+    )
+      return;
     setError("");
     try {
-      let res = await api<{ campaignId: string; done: boolean; nextOffset: number; sentCount: number; total: number }>("/api/platform/campaigns/send", {
+      const res = await runSend(api<SendProgress>("/api/platform/campaigns/send", {
         method: "POST",
         body: JSON.stringify({
           subject: subject.trim(),
@@ -417,19 +616,18 @@ function Composer({ draft, lists, events, onSent }: { draft: Draft | null; lists
           ctaLabel: showCta && ctaLabel.trim() ? ctaLabel.trim() : undefined,
           ctaUrl: showCta && ctaUrl.trim() ? ctaUrl.trim() : undefined,
           audience,
+          draftId,
+          ...(batchLimit ? { limit: batchLimit } : {}),
           greeting:
             greetingMode === "none"
               ? { mode: "none" }
               : { mode: "name", prefix: greetingPrefix.trim() || "Hi", fallback: greetingFallback.trim() || "Hi there," },
         }),
-      });
-      setProgress({ sent: res.sentCount, done: res.nextOffset, total: res.total });
-      // a chunk at a time, so a big list never times out
-      while (!res.done) {
-        res = await api("/api/platform/campaigns/send", { method: "POST", body: JSON.stringify({ campaignId: res.campaignId, offset: res.nextOffset }) });
-        setProgress({ sent: res.sentCount, done: res.nextOffset, total: res.total });
-      }
-      toast.success(`Sent to ${res.sentCount.toLocaleString()} of ${res.total.toLocaleString()} people`);
+      }), (p) => setProgress({ sent: p.sentCount, done: p.nextOffset, total: Math.min(p.total, batchLimit ?? p.total) }));
+      toast.success(sentMessage(res));
+      setDraftId(undefined);
+      setSaveState({ status: "idle" });
+      setLimit("");
       setSubject("");
       setMessageHtml("");
       setShowCta(false);
@@ -590,9 +788,46 @@ function Composer({ draft, lists, events, onSent }: { draft: Draft | null; lists
         </div>
       )}
 
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label className="flex items-center gap-2 text-xs text-fg-2">
+          Send at most
+          <input
+            value={limit}
+            onChange={(e) => setLimit(e.target.value.replace(/[^0-9]/g, ""))}
+            inputMode="numeric"
+            placeholder="all"
+            aria-label="Most emails to send now"
+            className="w-20 px-2.5 py-1.5 rounded-lg border border-line text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-brand-600"
+          />
+          now
+        </label>
+        <span className="text-[11px] text-subtle">e.g. 100 a day on Resend&apos;s free plan; the rest wait for Send next batch.</span>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className={`text-xs ${saveState.status === "error" ? "text-amber-300" : "text-subtle"}`} aria-live="polite">
+          {saveState.status === "saving"
+            ? "Saving draft…"
+            : saveState.status === "saved" && saveState.at
+              ? `Draft saved ${new Date(saveState.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
+              : saveState.status === "error"
+                ? saveState.error
+                : "Drafts save automatically as you write."}
+        </span>
+        <button type="button" onClick={() => { lastSaved.current = ""; saveDraft(); }} disabled={sending || (!subject.trim() && !stripTags(messageHtml))} className="text-xs font-medium text-brand-500 hover:underline disabled:opacity-50">
+          Save draft
+        </button>
+      </div>
+
       <button type="submit" disabled={sending || !audience || !count} className="eb-btn eb-btn--primary w-full justify-center disabled:opacity-60">
         {sending ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Send size={14} aria-hidden="true" />}
-        {sending ? "Sending…" : count ? `Send to ${count.toLocaleString()} ${count === 1 ? "person" : "people"}` : "Send campaign"}
+        {sending
+          ? "Sending…"
+          : count
+            ? limit && Number(limit) < count
+              ? `Send to ${Number(limit).toLocaleString()} of ${count.toLocaleString()} now`
+              : `Send to ${count.toLocaleString()} ${count === 1 ? "person" : "people"}`
+            : "Send campaign"}
       </button>
     </form>
   );
