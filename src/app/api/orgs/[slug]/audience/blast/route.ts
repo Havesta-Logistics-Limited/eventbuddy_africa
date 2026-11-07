@@ -8,7 +8,7 @@ import { orgCan, resolveOrgAccess } from "@/lib/org-access";
 import { renderEmailShell, emailButton, escapeHtml } from "@/lib/email-template";
 import { unsubscribeUrl } from "@/lib/unsubscribe";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
-import { sanitizeRichTextHtml, stripHtml } from "@/lib/rich-text";
+import { linkImages, sanitizeRichTextHtml, stripHtml } from "@/lib/rich-text";
 import { getEventStatus } from "@/lib/capture-window";
 import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { hostInlineImages, trackingTagger } from "@/lib/email-images";
@@ -110,7 +110,7 @@ function buildEmailPayload(
   // pictures are already hosted (hostInlineImages); links to eventbuddy are
   // tagged so sales from this newsletter show as Email in the Marketing report
   if (ctaUrl) ctaUrl = tag.url(ctaUrl);
-  messageHtml = tag.html(messageHtml);
+  messageHtml = tag.html(linkImages(messageHtml));
   const greeting = recipientName ? `Hi ${escapeHtml(firstName(recipientName))},` : "Hi there,";
   const logoHtml = orgLogoUrl
     ? `<img src="${orgLogoUrl}" alt="${escapeHtml(orgName)}" width="44" height="44" style="border-radius:10px; display:block; margin:0 0 16px; object-fit:cover;">`

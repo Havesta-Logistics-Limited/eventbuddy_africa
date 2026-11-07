@@ -24,6 +24,16 @@ describe("hostInlineImages", () => {
     expect(out).not.toContain("data:image");
   });
 
+  it("keeps the picture's alignment and link", async () => {
+    const { admin } = fakeAdmin();
+    const out = await hostInlineImages(
+      admin,
+      '<img src="data:image/png;base64,aGk=" alt="" data-align="center" data-href="https://eventbuddy.africa/e" style="width:55%;">',
+      "p"
+    );
+    expect(out).toBe('<img src="https://cdn.test/event-media/p/image-1.png" alt="" data-align="center" data-href="https://eventbuddy.africa/e" style="width:55%;">');
+  });
+
   it("leaves out a picture that can't be uploaded rather than sending it broken", async () => {
     const { admin, upload } = fakeAdmin();
     upload.mockResolvedValueOnce({ error: { message: "nope" } });

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { getEventStatus } from "@/lib/capture-window";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
-import { stripHtml } from "@/lib/rich-text";
+import { linkImages, stripHtml } from "@/lib/rich-text";
 import { isValidEmail } from "@/lib/validation";
 import { trackingTagger } from "@/lib/email-images";
 
@@ -173,7 +173,7 @@ export function buildCampaignEmail(
   const ctaHtml = c.ctaLabel && ctaUrl ? `<div style="margin-top:24px;">${emailButton(escapeHtml(ctaUrl), escapeHtml(c.ctaLabel), "#C21FAF")}</div>` : "";
   const html = `
     ${greetingHtml}
-    <div style="color:#333;">${tag.html(c.messageHtml)}</div>
+    <div style="color:#333;">${tag.html(linkImages(c.messageHtml))}</div>
     ${ctaHtml}
     <p style="margin:24px 0 0; padding-top:16px; border-top:1px solid #eee; font-size:11px; color:#aaa;">
       You're receiving this from eventbuddy. <a href="${unsubUrl}" style="color:#aaa;">Unsubscribe</a>

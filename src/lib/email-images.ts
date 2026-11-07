@@ -33,9 +33,9 @@ export async function hostInlineImages(admin: SupabaseClient, html: string, path
         return "";
       }
       const url = admin.storage.from("event-media").getPublicUrl(path).data.publicUrl;
-      const alt = /alt="([^"]*)"/.exec(full)?.[1] ?? "";
-      const style = /style="([^"]*)"/.exec(full)?.[1] ?? "max-width:100%;height:auto;";
-      return `<img src="${url}" alt="${alt}" style="${style}">`;
+      // only the address changes: size, alignment and the picture's link
+      // (data-href) stay exactly as the sanitizer left them
+      return full.replace(/src="data:image\/[^"]+"/, `src="${url}"`);
     })
   );
 

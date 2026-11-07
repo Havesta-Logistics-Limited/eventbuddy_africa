@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeRichTextHtml } from "./rich-text";
+import { linkImages, sanitizeRichTextHtml } from "./rich-text";
 
 describe("sanitizeRichTextHtml", () => {
   it("keeps the editor's own markup", () => {
@@ -28,5 +28,19 @@ describe("sanitizeRichTextHtml", () => {
   it("drops an alignment it doesn't know, and can't be used to inject anything", () => {
     const out = sanitizeRichTextHtml('<img src="https://a.com/x.png" data-align="center;position:fixed" onerror="x()">');
     expect(out).toBe('<img src="https://a.com/x.png" alt="" style="width:55%;max-width:100%;height:auto;">');
+  });
+
+  it("keeps a picture's http(s) link, and only that kind", () => {
+    expect(sanitizeRichTextHtml('<img src="https://a.com/x.png" data-href="https://eventbuddy.africa/e?a=1&b=2">')).toBe(
+      '<img src="https://a.com/x.png" alt="" data-href="https://eventbuddy.africa/e?a=1&amp;b=2" style="width:55%;max-width:100%;height:auto;">'
+    );
+    expect(sanitizeRichTextHtml('<img src="https://a.com/x.png" data-href="javascript:alert(1)">')).not.toContain("data-href");
+  });
+
+  it("linkImages makes a linked picture clickable, and re-filtering never nests links", () => {
+    const clean = sanitizeRichTextHtml('<img src="https://a.com/x.png" data-href="https://eventbuddy.africa/e">');
+    const linked = linkImages(clean);
+    expect(linked).toBe('<a href="https://eventbuddy.africa/e" target="_blank" rel="noreferrer noopener"><img src="https://a.com/x.png" alt="" data-href="https://eventbuddy.africa/e" style="width:55%;max-width:100%;height:auto;"></a>');
+    expect(sanitizeRichTextHtml(clean)).toBe(clean);
   });
 });

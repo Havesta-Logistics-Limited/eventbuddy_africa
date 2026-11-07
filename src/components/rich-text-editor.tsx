@@ -32,6 +32,13 @@ const ResizableImage = TiptapImage.extend({
         parseHTML: (element: HTMLElement) => element.style.width || element.getAttribute("width") || "55%",
         renderHTML: () => ({}),
       },
+      // a clickable picture: stored as data-href, made a real link when shown
+      // or emailed (linkImages in src/lib/rich-text.ts)
+      href: {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.getAttribute("data-href") || (element.parentElement?.tagName === "A" ? element.parentElement.getAttribute("href") : null),
+        renderHTML: () => ({}),
+      },
       align: {
         default: "left",
         parseHTML: (element: HTMLElement) => {
@@ -45,7 +52,8 @@ const ResizableImage = TiptapImage.extend({
   renderHTML({ HTMLAttributes, node }) {
     const width = (node.attrs.width as string) || "55%";
     const align = (node.attrs.align as ImageAlign) || "left";
-    return ["img", { ...HTMLAttributes, "data-align": align, style: `width:${width};max-width:100%;height:auto;${imageAlignStyle(align)}` }];
+    const href = node.attrs.href as string | null;
+    return ["img", { ...HTMLAttributes, "data-align": align, ...(href ? { "data-href": href } : {}), style: `width:${width};max-width:100%;height:auto;${imageAlignStyle(align)}` }];
   },
 });
 
@@ -159,6 +167,19 @@ export function RichTextEditor({
 
   if (!editor) return null;
 
+  // a link on the selected picture (the picture menu's link button)
+  const setImageLink = () => {
+    const previous = (editor.getAttributes("image").href as string | null) || "";
+    const url = window.prompt("Where should the picture link to? Leave empty to remove the link.", previous || "https://");
+    if (url === null) return;
+    const clean = url.trim();
+    if (clean && clean !== "https://" && !/^https?:\/\//i.test(clean)) {
+      window.alert("Links must start with https://");
+      return;
+    }
+    editor.chain().focus().updateAttributes("image", { href: clean && clean !== "https://" ? clean : null }).run();
+  };
+
   const setLink = () => {
     const previousUrl = editor.getAttributes("link").href as string | undefined;
     const url = window.prompt("Link URL", previousUrl || "https://");
@@ -240,6 +261,16 @@ export function RichTextEditor({
               </button>
             ))}
             <span className="mx-1 h-4 w-px bg-line" aria-hidden="true" />
+            <button
+              type="button"
+              title={editor.getAttributes("image").href ? `Links to ${editor.getAttributes("image").href}` : "Add a link to this picture"}
+              aria-label={editor.getAttributes("image").href ? "Change picture link" : "Add picture link"}
+              aria-pressed={!!editor.getAttributes("image").href}
+              onClick={setImageLink}
+              className={`p-1.5 rounded-md transition-colors ${editor.getAttributes("image").href ? "bg-brand-600/10 text-brand-500" : "text-muted hover:bg-fill"}`}
+            >
+              <Link2 size={14} />
+            </button>
             {IMAGE_ALIGNS.map(({ value, label, Icon }) => (
               <button
                 key={value}

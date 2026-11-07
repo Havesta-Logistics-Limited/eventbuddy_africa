@@ -34,6 +34,7 @@ const ALT_RE = /alt\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
 // \s* after the colon because the DOM's own style serialization (what the
 // editor's getHTML() actually produces) inserts a space — "width: 55%", not
 // "width:55%" — confirmed against the real Tiptap output, not assumed.
+const IMG_HREF_RE = /data-href\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
 const IMG_ALIGN_RE = /data-align\s*=\s*(?:"(left|center|right)"|'(left|center|right)')/i;
 
 export type ImageAlign = "left" | "center" | "right";
@@ -111,10 +112,25 @@ function rebuildTag(full: string, tagNameRaw: string, attrs: string): string {
     // alignment: only one of three fixed values, rebuilt from scratch like width
     const alignMatch = IMG_ALIGN_RE.exec(attrs);
     const align = ((alignMatch ? alignMatch[1] ?? alignMatch[2] : null)?.toLowerCase() ?? null) as ImageAlign | null;
-    if (!align) return `<img src="${escapeAttr(src)}" alt="${alt}" style="width:${width};max-width:100%;height:auto;">`;
-    return `<img src="${escapeAttr(src)}" alt="${alt}" data-align="${align}" style="width:${width};max-width:100%;height:auto;${imageAlignStyle(align)}">`;
+    // a clickable picture: an http(s) link only, like <a>; turned into a real
+    // link when shown or emailed (linkImages), never stored as one, so this
+    // filter can run again on its own output without nesting links
+    const hrefMatch = IMG_HREF_RE.exec(attrs);
+    const href = hrefMatch ? hrefMatch[1] ?? hrefMatch[2] ?? "" : "";
+    const hrefAttr = /^https?:\/\//i.test(href) ? ` data-href="${escapeAttr(href)}"` : "";
+    if (!align) return `<img src="${escapeAttr(src)}" alt="${alt}"${hrefAttr} style="width:${width};max-width:100%;height:auto;">`;
+    return `<img src="${escapeAttr(src)}" alt="${alt}" data-align="${align}"${hrefAttr} style="width:${width};max-width:100%;height:auto;${imageAlignStyle(align)}">`;
   }
   return `<${tagName}>`;
+}
+
+/** Makes pictures with a link (data-href, kept by sanitizeRichTextHtml)
+ *  clickable. Run on sanitized HTML when it's shown or emailed, not before
+ *  storing it. */
+export function linkImages(html: string): string {
+  return html.replace(/<img ([^>]*?)data-href="([^"]*)"([^>]*)>/g, (_m, before: string, href: string, after: string) => {
+    return `<a href="${href}" target="_blank" rel="noreferrer noopener"><img ${before}data-href="${href}"${after}></a>`;
+  });
 }
 
 /** Every description/announcement field predates RichTextEditor and holds plain
