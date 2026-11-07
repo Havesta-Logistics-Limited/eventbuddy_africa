@@ -27,6 +27,8 @@ export function buildCsp(nonce: string): string {
       "https://*.google-analytics.com",
       "https://*.analytics.google.com",
       "https://*.googletagmanager.com",
+      "https://*.facebook.com",
+      "https://connect.facebook.net",
       "https://challenges.cloudflare.com",
       "https://*.paystack.co",
       "https://*.paystack.com",
