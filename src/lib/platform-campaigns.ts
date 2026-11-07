@@ -168,7 +168,8 @@ export function buildCampaignEmail(
     to: to.email,
     subject: c.subject,
     text: `${greetingText}\n\n${stripHtml(c.messageHtml)}${c.ctaLabel && ctaUrl ? `\n\n${c.ctaLabel}: ${ctaUrl}` : ""}\n\nUnsubscribe: ${unsubUrl}`,
-    html: renderEmailShell({ color: "#C21FAF", label: "eventbuddy", emoji: "📣" }, html),
+    // just the logo: a label here only repeated "eventbuddy" under it
+    html: renderEmailShell({ color: "#C21FAF", label: "", emoji: "" }, html),
     headers: { "List-Unsubscribe": `<${unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
   };
 }

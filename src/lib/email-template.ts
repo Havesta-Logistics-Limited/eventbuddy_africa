@@ -10,7 +10,9 @@
 export type EmailBanner = {
   /** Solid background color for the banner band. */
   color: string;
-  /** Short uppercase label under the centered logo, e.g. "WELCOME", "PASSWORD RESET". */
+  /** Short uppercase label under the centered logo, e.g. "WELCOME", "PASSWORD RESET".
+   *  Empty for none: just the logo (eventbuddy's own campaigns, where a label
+   *  would only repeat the logo). */
   label: string;
   /** One small emoji shown inline next to the label — a quiet per-template accent,
    *  not a dominant graphic (the centered logo carries the banner visually). */
@@ -35,9 +37,13 @@ export function renderEmailShell(banner: EmailBanner, bodyHtml: string): string 
       <tr>
         <td style="padding:28px 32px; text-align:center;">
           <img src="${LOGO_URL}" alt="eventbuddy" width="150" height="24" style="display:inline-block; width:150px; height:24px; border:0;" />
-          <p style="color:#ffffff; font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; opacity:0.75; margin:12px 0 0;">
+          ${
+            banner.label
+              ? `<p style="color:#ffffff; font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; opacity:0.75; margin:12px 0 0;">
             ${banner.emoji} ${banner.label}
-          </p>
+          </p>`
+              : ""
+          }
         </td>
       </tr>
     </table>
