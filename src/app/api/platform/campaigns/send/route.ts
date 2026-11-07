@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 import { sanitizeRichTextHtml, stripHtml } from "@/lib/rich-text";
 import { unsubscribeUrl } from "@/lib/unsubscribe";
+import { hostInlineImages } from "@/lib/email-images";
 import { AudienceSchema, buildCampaignEmail, PLATFORM_UNSUBSCRIBE_SCOPE, resolveAudience, type Recipient } from "@/lib/platform-campaigns";
 
 /**
@@ -64,12 +65,16 @@ export async function POST(request: Request) {
     const result = await resolveAudience(admin, audience);
     if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
     if (result.recipients.length === 0) return NextResponse.json({ error: "Nobody to send to: this audience is empty (or everyone in it has unsubscribed)." }, { status: 400 });
+    // the id first: pictures are stored under it, and it's the tracking tag
+    const id = crypto.randomUUID();
+    const hostedHtml = await hostInlineImages(admin, messageHtml, `platform/campaigns/${id}`);
     const { data, error } = await admin
       .from("platform_campaigns")
       .insert({
+        id,
         sent_by: auth.userId,
         subject,
-        message_html: messageHtml,
+        message_html: hostedHtml,
         cta_label: ctaLabel ?? null,
         cta_url: ctaUrl ?? null,
         audience,
@@ -107,7 +112,7 @@ export async function POST(request: Request) {
     const payloads = chunk
       .slice(i, i + BATCH)
       .map((r) =>
-        buildCampaignEmail(r, { subject: campaign.subject, messageHtml: campaign.message_html, ctaLabel: campaign.cta_label, ctaUrl: campaign.cta_url }, unsubscribeUrl(siteUrl, PLATFORM_UNSUBSCRIBE_SCOPE, r.email))
+        buildCampaignEmail(r, { id: campaign.id, subject: campaign.subject, messageHtml: campaign.message_html, ctaLabel: campaign.cta_label, ctaUrl: campaign.cta_url }, unsubscribeUrl(siteUrl, PLATFORM_UNSUBSCRIBE_SCOPE, r.email))
       );
     try {
       const { data, error } = await resend.batch.send(payloads);

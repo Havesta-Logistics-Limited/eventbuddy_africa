@@ -5,7 +5,7 @@ import { getEventStatus } from "@/lib/capture-window";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { stripHtml } from "@/lib/rich-text";
 import { isValidEmail } from "@/lib/validation";
-import { extractInlineImages } from "@/lib/email-images";
+import { trackingTagger } from "@/lib/email-images";
 
 /**
  * eventbuddy's own email campaigns (platform admins only, migration 0141):
@@ -134,33 +134,41 @@ export async function resolveAudience(
   return { recipients, label };
 }
 
+/** The utm_campaign value for a campaign: event_visits.campaign and the
+ *  attribution on registrations/payments carry it, which is how a campaign's
+ *  clicks and ticket sales are counted (platform_campaign_results). */
+export function campaignTrackingTag(campaignId: string): string {
+  return `eb-${campaignId}`;
+}
+
 /** An eventbuddy campaign email: greeting, the admin's message, an optional
- *  button, and an unsubscribe line. */
+ *  button, and an unsubscribe line. Pictures must already be hosted
+ *  (hostInlineImages); links to eventbuddy are tagged with the campaign. */
 export function buildCampaignEmail(
   to: Recipient,
-  c: { subject: string; messageHtml: string; ctaLabel?: string | null; ctaUrl?: string | null },
+  c: { id: string; subject: string; messageHtml: string; ctaLabel?: string | null; ctaUrl?: string | null },
   unsubUrl: string
 ) {
+  const tag = trackingTagger({ source: "email", campaign: campaignTrackingTag(c.id) });
   const firstName = to.fullName.split(/\s+/)[0] || "";
   const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,";
   const greetingText = firstName ? `Hi ${firstName},` : "Hi there,";
-  const ctaHtml = c.ctaLabel && c.ctaUrl ? `<div style="margin-top:24px;">${emailButton(escapeHtml(c.ctaUrl), escapeHtml(c.ctaLabel), "#C21FAF")}</div>` : "";
-  const raw = `
+  const ctaUrl = c.ctaUrl ? tag.url(c.ctaUrl) : null;
+  const ctaHtml = c.ctaLabel && ctaUrl ? `<div style="margin-top:24px;">${emailButton(escapeHtml(ctaUrl), escapeHtml(c.ctaLabel), "#C21FAF")}</div>` : "";
+  const html = `
     <p style="margin:0 0 4px; font-weight:600; color:#1e1b2e;">${greeting}</p>
-    <div style="color:#333;">${c.messageHtml}</div>
+    <div style="color:#333;">${tag.html(c.messageHtml)}</div>
     ${ctaHtml}
     <p style="margin:24px 0 0; padding-top:16px; border-top:1px solid #eee; font-size:11px; color:#aaa;">
       You're receiving this from eventbuddy. <a href="${unsubUrl}" style="color:#aaa;">Unsubscribe</a>
     </p>
   `;
-  const { html, attachments } = extractInlineImages(raw);
   return {
     from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
     to: to.email,
     subject: c.subject,
-    text: `${greetingText}\n\n${stripHtml(c.messageHtml)}${c.ctaLabel && c.ctaUrl ? `\n\n${c.ctaLabel}: ${c.ctaUrl}` : ""}\n\nUnsubscribe: ${unsubUrl}`,
+    text: `${greetingText}\n\n${stripHtml(c.messageHtml)}${c.ctaLabel && ctaUrl ? `\n\n${c.ctaLabel}: ${ctaUrl}` : ""}\n\nUnsubscribe: ${unsubUrl}`,
     html: renderEmailShell({ color: "#C21FAF", label: "eventbuddy", emoji: "📣" }, html),
     headers: { "List-Unsubscribe": `<${unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
-    attachments: attachments.length > 0 ? attachments : undefined,
   };
 }
