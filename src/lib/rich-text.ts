@@ -34,6 +34,19 @@ const ALT_RE = /alt\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
 // \s* after the colon because the DOM's own style serialization (what the
 // editor's getHTML() actually produces) inserts a space — "width: 55%", not
 // "width:55%" — confirmed against the real Tiptap output, not assumed.
+const IMG_ALIGN_RE = /data-align\s*=\s*(?:"(left|center|right)"|'(left|center|right)')/i;
+
+export type ImageAlign = "left" | "center" | "right";
+
+/** Where a picture sits, as margins on a block image: what email clients
+ *  (Gmail, Apple Mail) and the site both honour. The editor and the sanitizer
+ *  share this, so the two always agree. */
+export function imageAlignStyle(align: ImageAlign): string {
+  if (align === "center") return "display:block;margin-left:auto;margin-right:auto;";
+  if (align === "right") return "display:block;margin-left:auto;margin-right:0;";
+  return "display:block;margin-left:0;margin-right:auto;";
+}
+
 const IMG_WIDTH_RE = /style\s*=\s*(?:"width:\s*(\d{1,3})%|'width:\s*(\d{1,3})%)/i;
 
 // HREF_RE/SRC_RE/ALT_RE's single-quote branch permits an embedded `"` in the
@@ -95,7 +108,11 @@ function rebuildTag(full: string, tagNameRaw: string, attrs: string): string {
     const widthMatch = IMG_WIDTH_RE.exec(attrs);
     const widthPct = widthMatch ? widthMatch[1] ?? widthMatch[2] : null;
     const width = widthPct ? `${Math.min(100, Math.max(5, Number(widthPct)))}%` : "55%";
-    return `<img src="${escapeAttr(src)}" alt="${alt}" style="width:${width};max-width:100%;height:auto;">`;
+    // alignment: only one of three fixed values, rebuilt from scratch like width
+    const alignMatch = IMG_ALIGN_RE.exec(attrs);
+    const align = ((alignMatch ? alignMatch[1] ?? alignMatch[2] : null)?.toLowerCase() ?? null) as ImageAlign | null;
+    if (!align) return `<img src="${escapeAttr(src)}" alt="${alt}" style="width:${width};max-width:100%;height:auto;">`;
+    return `<img src="${escapeAttr(src)}" alt="${alt}" data-align="${align}" style="width:${width};max-width:100%;height:auto;${imageAlignStyle(align)}">`;
   }
   return `<${tagName}>`;
 }

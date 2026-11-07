@@ -6,7 +6,8 @@ import { BubbleMenu } from "@tiptap/react/menus";
 import { StarterKit } from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { Image as TiptapImage } from "@tiptap/extension-image";
-import { Bold, Italic, Image as ImageIcon, Link2, List, ListOrdered, Loader2 } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Image as ImageIcon, Link2, List, ListOrdered, Loader2 } from "lucide-react";
+import { imageAlignStyle, type ImageAlign } from "@/lib/rich-text";
 import { cn, compressImageFile } from "@/lib/utils";
 
 const IMAGE_WIDTHS = [
@@ -16,10 +17,12 @@ const IMAGE_WIDTHS = [
   { label: "Full", value: "100%" },
 ];
 
-/** Adds a `width` attribute (rendered as an inline style, percentage of the
- *  content column) on top of the base Image extension, so an inserted image
- *  isn't stuck at whatever size it was uploaded at — see the ResizeBubbleMenu
- *  below, which is how the width actually gets changed. */
+/** Adds `width` (a percentage of the content column) and `align` (left,
+ *  centre or right) on top of the base Image extension — see the bubble menu
+ *  below, which is how they're changed. Both render as one inline style,
+ *  width first (the sanitizer reads it from the start of the style), then the
+ *  margins that place the picture; that works in email clients as well as on
+ *  the site. */
 const ResizableImage = TiptapImage.extend({
   addAttributes() {
     return {
@@ -27,11 +30,30 @@ const ResizableImage = TiptapImage.extend({
       width: {
         default: "55%",
         parseHTML: (element: HTMLElement) => element.style.width || element.getAttribute("width") || "55%",
-        renderHTML: (attributes: { width?: string }) => ({ style: `width:${attributes.width || "55%"};max-width:100%;height:auto;` }),
+        renderHTML: () => ({}),
+      },
+      align: {
+        default: "left",
+        parseHTML: (element: HTMLElement) => {
+          const a = element.getAttribute("data-align");
+          return a === "center" || a === "right" ? a : "left";
+        },
+        renderHTML: () => ({}),
       },
     };
   },
+  renderHTML({ HTMLAttributes, node }) {
+    const width = (node.attrs.width as string) || "55%";
+    const align = (node.attrs.align as ImageAlign) || "left";
+    return ["img", { ...HTMLAttributes, "data-align": align, style: `width:${width};max-width:100%;height:auto;${imageAlignStyle(align)}` }];
+  },
 });
+
+const IMAGE_ALIGNS: { value: ImageAlign; label: string; Icon: typeof AlignLeft }[] = [
+  { value: "left", label: "Align left", Icon: AlignLeft },
+  { value: "center", label: "Align centre", Icon: AlignCenter },
+  { value: "right", label: "Align right", Icon: AlignRight },
+];
 
 function ToolbarButton({
   onClick,
@@ -215,6 +237,22 @@ export function RichTextEditor({
                 }`}
               >
                 {w.label}
+              </button>
+            ))}
+            <span className="mx-1 h-4 w-px bg-line" aria-hidden="true" />
+            {IMAGE_ALIGNS.map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                type="button"
+                title={label}
+                aria-label={label}
+                aria-pressed={(editor.getAttributes("image").align || "left") === value}
+                onClick={() => editor.chain().focus().updateAttributes("image", { align: value }).run()}
+                className={`p-1.5 rounded-md transition-colors ${
+                  (editor.getAttributes("image").align || "left") === value ? "bg-brand-600/10 text-brand-500" : "text-muted hover:bg-fill"
+                }`}
+              >
+                <Icon size={14} />
               </button>
             ))}
           </div>
