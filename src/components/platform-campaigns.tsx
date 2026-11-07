@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Loader2, Mail, Plus, Send, Trash2, Upload, X } from "lucide-react";
+import { AlertCircle, Copy, Eye, Loader2, Mail, Plus, Send, Trash2, Upload, X } from "lucide-react";
+import { RichTextDisplay } from "@/components/rich-text-display";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { RichTextEditor } from "@/components/rich-text-editor";
@@ -17,7 +18,21 @@ type ContactList = { id: string; name: string; count: number; createdAt: string 
 type EventOption = { id: string; name: string; date: string; eventFormat: string | null; orgName: string };
 type Segment = "registered" | "checked_in" | "no_show" | "started_not_bought";
 type Audience = { kind: "list"; listId: string } | { kind: "event"; eventId: string; segment: Segment };
-type CampaignRow = { id: string; subject: string; audience_label: string; recipient_count: number; sent_count: number; status: string; created_at: string };
+type CampaignRow = {
+  id: string;
+  subject: string;
+  message_html: string;
+  cta_label: string | null;
+  cta_url: string | null;
+  audience: Audience;
+  audience_label: string;
+  recipient_count: number;
+  sent_count: number;
+  status: string;
+  created_at: string;
+};
+/** A sent campaign loaded back into the composer to edit and send again. */
+type Draft = { key: number; subject: string; messageHtml: string; ctaLabel: string; ctaUrl: string; audience: Audience };
 /** platform_campaign_results (migration 0142) */
 type CampaignResults = {
   campaign_id: string;
@@ -76,6 +91,16 @@ export function PlatformCampaigns() {
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
   const [results, setResults] = useState<Record<string, CampaignResults>>({});
   const [resultsLoaded, setResultsLoaded] = useState(false);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [viewing, setViewing] = useState<CampaignRow | null>(null);
+
+  function reuse(c: CampaignRow) {
+    // a new key each time remounts the composer with this campaign's content
+    setDraft((d) => ({ key: (d?.key ?? 0) + 1, subject: c.subject, messageHtml: c.message_html, ctaLabel: c.cta_label ?? "", ctaUrl: c.cta_url ?? "", audience: c.audience }));
+    setViewing(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.success("Loaded into New campaign. Edit it, choose who to send to, then send.");
+  }
   const [loading, setLoading] = useState(true);
   const [showImport, setShowImport] = useState(false);
 
@@ -86,7 +111,7 @@ export function PlatformCampaigns() {
       supabase.from("events").select("id, name, date, event_format, organizations(name)").order("date", { ascending: false }).limit(500),
       supabase
         .from("platform_campaigns")
-        .select("id, subject, audience_label, recipient_count, sent_count, status, created_at")
+        .select("id, subject, message_html, cta_label, cta_url, audience, audience_label, recipient_count, sent_count, status, created_at")
         .order("created_at", { ascending: false })
         .limit(50),
     ]);
@@ -144,7 +169,7 @@ export function PlatformCampaigns() {
         </p>
       </div>
 
-      <Composer lists={lists} events={events} onSent={load} />
+      <Composer key={draft?.key ?? 0} draft={draft} lists={lists} events={events} onSent={() => { setDraft(null); load(); }} />
 
       <section>
         <div className="flex items-center justify-between mb-2">
@@ -208,12 +233,13 @@ export function PlatformCampaigns() {
                 <th className="px-4 py-2.5 text-right font-medium">Revenue</th>
                 <th className="px-4 py-2.5 text-right font-medium">Recipients who bought</th>
                 <th className="px-4 py-2.5 text-right font-medium">Date</th>
+                <th className="px-4 py-2.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-line-soft">
               {campaigns.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-muted">
+                  <td colSpan={9} className="px-4 py-6 text-center text-muted">
                     No campaigns sent yet.
                   </td>
                 </tr>
@@ -245,6 +271,14 @@ export function PlatformCampaigns() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-fg-3">{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <button type="button" onClick={() => setViewing(c)} aria-label={`View ${c.subject}`} title="View" className="p-1.5 text-subtle hover:text-fg-2">
+                        <Eye size={15} />
+                      </button>
+                      <button type="button" onClick={() => reuse(c)} aria-label={`Reuse ${c.subject}`} title="Reuse: edit and send again" className="p-1.5 text-subtle hover:text-fg-2">
+                        <Copy size={15} />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -252,6 +286,38 @@ export function PlatformCampaigns() {
           </table>
         </div>
       </section>
+
+      {viewing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="view-title">
+          <div className="bg-surface rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-start justify-between gap-3 p-5 border-b border-line-soft shrink-0">
+              <div>
+                <h3 id="view-title" className="font-semibold text-fg">{viewing.subject}</h3>
+                <p className="text-xs text-muted mt-1">
+                  Sent to {viewing.audience_label} · {viewing.sent_count.toLocaleString()} of {viewing.recipient_count.toLocaleString()} delivered ·{" "}
+                  {new Date(viewing.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </p>
+              </div>
+              <button type="button" onClick={() => setViewing(null)} aria-label="Close" className="text-subtle hover:text-fg-3">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto">
+              <RichTextDisplay html={viewing.message_html} />
+              {viewing.cta_label && viewing.cta_url ? (
+                <p className="mt-4 text-sm text-fg-2">
+                  Button: <span className="font-medium text-fg">{viewing.cta_label}</span> → <span className="break-all text-[#c4b5fd]">{viewing.cta_url}</span>
+                </p>
+              ) : null}
+            </div>
+            <div className="p-5 border-t border-line-soft shrink-0">
+              <button type="button" onClick={() => reuse(viewing)} className="eb-btn eb-btn--primary w-full justify-center">
+                <Copy size={14} aria-hidden="true" /> Reuse this campaign
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showImport && (
         <ImportModal
@@ -267,18 +333,19 @@ export function PlatformCampaigns() {
   );
 }
 
-function Composer({ lists, events, onSent }: { lists: ContactList[]; events: EventOption[]; onSent: () => void }) {
-  const [kind, setKind] = useState<"list" | "event">("list");
-  const [listId, setListId] = useState("");
-  const [eventId, setEventId] = useState("");
-  const [segment, setSegment] = useState<Segment>("registered");
+function Composer({ draft, lists, events, onSent }: { draft: Draft | null; lists: ContactList[]; events: EventOption[]; onSent: () => void }) {
+  const a = draft?.audience;
+  const [kind, setKind] = useState<"list" | "event">(a?.kind ?? "list");
+  const [listId, setListId] = useState(a?.kind === "list" && lists.some((l) => l.id === a.listId) ? a.listId : "");
+  const [eventId, setEventId] = useState(a?.kind === "event" ? a.eventId : "");
+  const [segment, setSegment] = useState<Segment>(a?.kind === "event" ? a.segment : "registered");
   const [count, setCount] = useState<number | null>(null);
   const [countError, setCountError] = useState("");
-  const [subject, setSubject] = useState("");
-  const [messageHtml, setMessageHtml] = useState("");
-  const [showCta, setShowCta] = useState(false);
-  const [ctaLabel, setCtaLabel] = useState("");
-  const [ctaUrl, setCtaUrl] = useState("");
+  const [subject, setSubject] = useState(draft?.subject ?? "");
+  const [messageHtml, setMessageHtml] = useState(draft?.messageHtml ?? "");
+  const [showCta, setShowCta] = useState(!!draft?.ctaLabel);
+  const [ctaLabel, setCtaLabel] = useState(draft?.ctaLabel ?? "");
+  const [ctaUrl, setCtaUrl] = useState(draft?.ctaUrl ?? "");
   const [error, setError] = useState("");
   const [progress, setProgress] = useState<{ sent: number; done: number; total: number } | null>(null);
 
@@ -353,6 +420,11 @@ function Composer({ lists, events, onSent }: { lists: ContactList[]; events: Eve
       <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
         <Mail size={15} className="text-[#a78bfa]" aria-hidden="true" /> New campaign
       </h3>
+      {draft ? (
+        <p className="text-xs text-[#c4b5fd] -mt-2">
+          Reusing a sent campaign. It goes out as a new campaign with its own results; check who it&apos;s going to before you send.
+        </p>
+      ) : null}
 
       <div>
         <label className="block text-xs font-medium text-fg-2 mb-1.5">Send to</label>
