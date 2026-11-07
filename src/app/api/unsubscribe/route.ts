@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyUnsubscribeToken } from "@/lib/unsubscribe";
+import { PLATFORM_UNSUBSCRIBE_SCOPE } from "@/lib/platform-campaigns";
 
 function htmlPage(title: string, body: string) {
   return `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${title}</title></head>
@@ -29,7 +30,12 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { error } = await admin.from("organization_email_suppressions").upsert({ organization_id: org, email: email.toLowerCase() }, { onConflict: "organization_id,email" });
+  // eventbuddy's own campaigns (0141) sign with a fixed scope instead of an
+  // organization id, and unsubscribe from all of them
+  const isPlatform = org === PLATFORM_UNSUBSCRIBE_SCOPE;
+  const { error } = isPlatform
+    ? await admin.from("platform_email_suppressions").upsert({ email: email.toLowerCase() }, { onConflict: "email" })
+    : await admin.from("organization_email_suppressions").upsert({ organization_id: org, email: email.toLowerCase() }, { onConflict: "organization_id,email" });
   if (error) {
     return new NextResponse(htmlPage("Something went wrong", "Couldn't process that request. Please try again."), {
       status: 500,
@@ -37,7 +43,13 @@ export async function GET(request: Request) {
     });
   }
 
-  return new NextResponse(htmlPage("You're unsubscribed", "You won't receive any more emails like this one from this organizer."), {
+  return new NextResponse(htmlPage("You're unsubscribed", isPlatform ? "You won't receive any more emails like this one from eventbuddy." : "You won't receive any more emails like this one from this organizer."), {
     headers: { "content-type": "text/html" },
   });
+}
+
+/** One-click unsubscribe (RFC 8058): Gmail and others POST to the
+ *  List-Unsubscribe link. Same signed parameters, same result. */
+export async function POST(request: Request) {
+  return GET(request);
 }

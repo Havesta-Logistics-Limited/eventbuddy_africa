@@ -62,6 +62,7 @@ import { PlatformOrgProfile } from "@/components/platform-org-profile";
 import { PlatformRefundDialog } from "@/components/platform-refund-dialog";
 import { PlatformUnlinkBank, type UnlinkTarget } from "@/components/platform-unlink-bank";
 import { PlatformMarketing } from "@/components/platform-marketing";
+import { PlatformCampaigns } from "@/components/platform-campaigns";
 import { ExhibitorsTab, JobsTab, PromotersTab, RiskTab, ToursTab, useJobHealth } from "@/components/platform-partners";
 
 const PLATFORM_ACCENT = "#a78bfa";
@@ -77,6 +78,7 @@ const NAV = [
   { id: "events", label: "Events", icon: Calendar, group: "Customers" },
   { id: "promoters", label: "Promoters", icon: Megaphone, group: "Customers" },
   { id: "marketing", label: "Marketing", icon: BarChart3, group: "Customers" },
+  { id: "campaigns", label: "Email campaigns", icon: Mail, group: "Customers" },
   { id: "exhibitors", label: "Exhibitors", icon: Store, group: "Customers" },
   { id: "tours", label: "Tours", icon: MapIcon, group: "Customers" },
   { id: "managed-requests", label: "Managed Events", icon: ClipboardList, group: "Operations" },
@@ -1270,6 +1272,7 @@ export default function PlatformDashboard() {
           {view === "overview" && <PlatformOverview overview={overview} jobProblems={jobHealth.problems} onNavigate={openFromOverview} onOpenOrg={setProfileOrgId} />}
           {view === "promoters" && <PromotersTab includeTest={overview.includeTest} />}
           {view === "marketing" && <PlatformMarketing includeTest={overview.includeTest} onOpenOrg={setProfileOrgId} />}
+          {view === "campaigns" && <PlatformCampaigns />}
           {view === "exhibitors" && <ExhibitorsTab onOpenOrg={setProfileOrgId} />}
           {view === "tours" && <ToursTab includeTest={overview.includeTest} onOpenOrg={setProfileOrgId} />}
           {view === "risk" && <RiskTab onOpenOrg={setProfileOrgId} onChanged={overview.reload} />}
