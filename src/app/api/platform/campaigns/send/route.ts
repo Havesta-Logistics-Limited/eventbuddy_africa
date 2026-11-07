@@ -7,7 +7,7 @@ import { checkRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 import { sanitizeRichTextHtml, stripHtml } from "@/lib/rich-text";
 import { unsubscribeUrl } from "@/lib/unsubscribe";
 import { hostInlineImages } from "@/lib/email-images";
-import { AudienceSchema, buildCampaignEmail, PLATFORM_UNSUBSCRIBE_SCOPE, resolveAudience, type Recipient } from "@/lib/platform-campaigns";
+import { AudienceSchema, buildCampaignEmail, GreetingSchema, PLATFORM_UNSUBSCRIBE_SCOPE, resolveAudience, type Greeting, type Recipient } from "@/lib/platform-campaigns";
 
 /**
  * Sends an eventbuddy campaign (platform admins only), in chunks so a large
@@ -24,6 +24,7 @@ const Start = z.object({
   ctaLabel: z.string().trim().max(60).optional(),
   ctaUrl: z.string().trim().url().optional(),
   audience: AudienceSchema,
+  greeting: GreetingSchema.optional(),
 });
 const Continue = z.object({ campaignId: z.string().uuid(), offset: z.number().int().min(0) });
 
@@ -35,13 +36,13 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const admin = createAdminClient();
 
-  let campaign: { id: string; subject: string; message_html: string; cta_label: string | null; cta_url: string | null; recipients: Recipient[]; sent_count: number; next_offset: number };
+  let campaign: { id: string; subject: string; message_html: string; cta_label: string | null; cta_url: string | null; greeting: Greeting | null; recipients: Recipient[]; sent_count: number; next_offset: number };
   let offset = 0;
   const cont = Continue.safeParse(body);
   if (cont.success) {
     const { data } = await admin
       .from("platform_campaigns")
-      .select("id, subject, message_html, cta_label, cta_url, recipients, sent_count, next_offset, status")
+      .select("id, subject, message_html, cta_label, cta_url, greeting, recipients, sent_count, next_offset, status")
       .eq("id", cont.data.campaignId)
       .maybeSingle();
     if (!data) return NextResponse.json({ error: "That campaign couldn't be found." }, { status: 404 });
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   } else {
     const parsed = Start.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "Check the campaign and try again." }, { status: 400 });
-    const { subject, ctaLabel, ctaUrl, audience } = parsed.data;
+    const { subject, ctaLabel, ctaUrl, audience, greeting } = parsed.data;
     const messageHtml = sanitizeRichTextHtml(parsed.data.messageHtml);
     if (!stripHtml(messageHtml).trim()) return NextResponse.json({ error: "Write something to send." }, { status: 400 });
     if ((ctaLabel && !ctaUrl) || (!ctaLabel && ctaUrl)) return NextResponse.json({ error: "A button needs both its text and a link." }, { status: 400 });
@@ -77,12 +78,13 @@ export async function POST(request: Request) {
         message_html: hostedHtml,
         cta_label: ctaLabel ?? null,
         cta_url: ctaUrl ?? null,
+        greeting: greeting ?? null,
         audience,
         audience_label: result.label,
         recipients: result.recipients,
         recipient_count: result.recipients.length,
       })
-      .select("id, subject, message_html, cta_label, cta_url, recipients, sent_count, next_offset")
+      .select("id, subject, message_html, cta_label, cta_url, greeting, recipients, sent_count, next_offset")
       .single();
     if (error || !data) return NextResponse.json({ error: error?.message || "Couldn't start the campaign." }, { status: 500 });
     campaign = data as typeof campaign;
@@ -112,7 +114,7 @@ export async function POST(request: Request) {
     const payloads = chunk
       .slice(i, i + BATCH)
       .map((r) =>
-        buildCampaignEmail(r, { id: campaign.id, subject: campaign.subject, messageHtml: campaign.message_html, ctaLabel: campaign.cta_label, ctaUrl: campaign.cta_url }, unsubscribeUrl(siteUrl, PLATFORM_UNSUBSCRIBE_SCOPE, r.email))
+        buildCampaignEmail(r, { id: campaign.id, subject: campaign.subject, messageHtml: campaign.message_html, ctaLabel: campaign.cta_label, ctaUrl: campaign.cta_url, greeting: campaign.greeting }, unsubscribeUrl(siteUrl, PLATFORM_UNSUBSCRIBE_SCOPE, r.email))
       );
     try {
       const { data, error } = await resend.batch.send(payloads);
