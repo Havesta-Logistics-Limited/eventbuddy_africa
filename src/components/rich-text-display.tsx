@@ -1,4 +1,4 @@
-import { looksLikeHtml, sanitizeRichTextHtml } from "@/lib/rich-text";
+import { linkImages, looksLikeHtml, sanitizeRichTextHtml } from "@/lib/rich-text";
 
 /** Renders a description/announcement field written either by RichTextEditor
  *  (HTML) or, for anything saved before it existed, as plain text — see
@@ -9,5 +9,5 @@ export function RichTextDisplay({ html, className }: { html: string; className?:
   if (!looksLikeHtml(html)) {
     return <p className={`whitespace-pre-line ${className || ""}`}>{html}</p>;
   }
-  return <div className={`rich-text-content ${className || ""}`} dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(html) }} />;
+  return <div className={`rich-text-content ${className || ""}`} dangerouslySetInnerHTML={{ __html: linkImages(sanitizeRichTextHtml(html)) }} />;
 }

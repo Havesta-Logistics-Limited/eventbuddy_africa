@@ -344,6 +344,7 @@ function Composer({ draft, lists, events, onSent }: { draft: Draft | null; lists
   const [segment, setSegment] = useState<Segment>(a?.kind === "event" ? a.segment : "registered");
   const [count, setCount] = useState<number | null>(null);
   const [countError, setCountError] = useState("");
+  const [countAttempt, setCountAttempt] = useState(0);
   const [subject, setSubject] = useState(draft?.subject ?? "");
   const [messageHtml, setMessageHtml] = useState(draft?.messageHtml ?? "");
   const [showCta, setShowCta] = useState(!!draft?.ctaLabel);
@@ -379,7 +380,7 @@ function Composer({ draft, lists, events, onSent }: { draft: Draft | null; lists
     return () => {
       cancelled = true;
     };
-  }, [audience]);
+  }, [audience, countAttempt]);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -478,6 +479,11 @@ function Composer({ draft, lists, events, onSent }: { draft: Draft | null; lists
         {audience && (
           <p className={`text-xs mt-1.5 ${countError ? "text-amber-300" : "text-muted"}`}>
             {countError || (count === null ? "Counting…" : `${count.toLocaleString()} ${count === 1 ? "person" : "people"} (unsubscribed people left out)`)}
+            {countError ? (
+              <button type="button" onClick={() => setCountAttempt((n) => n + 1)} className="ml-2 font-medium text-brand-500 hover:underline">
+                Retry
+              </button>
+            ) : null}
           </p>
         )}
       </div>
