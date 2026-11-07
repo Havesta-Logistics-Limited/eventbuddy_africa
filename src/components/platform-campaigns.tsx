@@ -97,6 +97,23 @@ export function PlatformCampaigns() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [viewing, setViewing] = useState<CampaignRow | null>(null);
 
+  async function deleteCampaign(c: CampaignRow) {
+    if (
+      !confirm(
+        `Delete "${c.subject}" from Sent campaigns?\n\nIts results go with it. Emails already delivered stay in people's inboxes; this can't recall them.`
+      )
+    )
+      return;
+    try {
+      await api(`/api/platform/campaigns/${c.id}`, { method: "DELETE" });
+      if (viewing?.id === c.id) setViewing(null);
+      toast.success("Campaign deleted");
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't delete the campaign.");
+    }
+  }
+
   function reuse(c: CampaignRow) {
     // a new key each time remounts the composer with this campaign's content
     setDraft((d) => ({ key: (d?.key ?? 0) + 1, subject: c.subject, messageHtml: c.message_html, ctaLabel: c.cta_label ?? "", ctaUrl: c.cta_url ?? "", audience: c.audience, greeting: c.greeting }));
@@ -139,7 +156,6 @@ export function PlatformCampaigns() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
@@ -280,6 +296,9 @@ export function PlatformCampaigns() {
                       </button>
                       <button type="button" onClick={() => reuse(c)} aria-label={`Reuse ${c.subject}`} title="Reuse: edit and send again" className="p-1.5 text-subtle hover:text-fg-2">
                         <Copy size={15} />
+                      </button>
+                      <button type="button" onClick={() => deleteCampaign(c)} aria-label={`Delete ${c.subject}`} title="Delete" className="p-1.5 text-subtle hover:text-rose-300">
+                        <Trash2 size={15} />
                       </button>
                     </td>
                   </tr>
