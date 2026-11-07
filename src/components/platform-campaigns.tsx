@@ -344,23 +344,27 @@ export function PlatformCampaigns() {
       <section>
         <h3 className="text-sm font-semibold text-fg">Sent campaigns</h3>
         <p className="mb-2 text-xs text-muted">
-          <strong className="text-fg-2">Clicks</strong> and <strong className="text-fg-2">tickets sold</strong> count people who came through the email&apos;s
-          links to eventbuddy. <strong className="text-fg-2">Recipients who bought</strong> counts anyone it was sent to who bought a ticket afterwards, however
-          they got to the page.
+          <strong className="text-fg-2">Clicks</strong>, <strong className="text-fg-2">Tickets</strong> and <strong className="text-fg-2">Revenue</strong> count people who came
+          through the email&apos;s links to eventbuddy. <strong className="text-fg-2">Bought after</strong> counts anyone it was sent to who bought a ticket
+          afterwards, however they got to the page.
         </p>
         <div className="overflow-x-auto rounded-xl border border-line">
           <table className="w-full text-sm">
             <thead className="bg-canvas text-muted">
-              <tr>
+              <tr className="whitespace-nowrap">
                 <th className="px-4 py-2.5 text-left font-medium">Subject</th>
                 <th className="px-4 py-2.5 text-left font-medium">Sent to</th>
                 <th className="px-4 py-2.5 text-right font-medium">Delivered</th>
                 <th className="px-4 py-2.5 text-right font-medium">Clicks</th>
-                <th className="px-4 py-2.5 text-right font-medium">Tickets sold</th>
+                <th className="px-4 py-2.5 text-right font-medium">Tickets</th>
                 <th className="px-4 py-2.5 text-right font-medium">Revenue</th>
-                <th className="px-4 py-2.5 text-right font-medium">Recipients who bought</th>
+                <th className="px-4 py-2.5 text-right font-medium" title="Anyone it was sent to who bought a ticket afterwards, however they got to the page">
+                  Bought after
+                </th>
                 <th className="px-4 py-2.5 text-right font-medium">Date</th>
-                <th className="px-4 py-2.5" />
+                <th className="px-4 py-2.5">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-soft">
@@ -372,10 +376,18 @@ export function PlatformCampaigns() {
                 </tr>
               ) : (
                 campaigns.map((c) => (
-                  <tr key={c.id}>
-                    <td className="px-4 py-3 font-medium text-fg">{c.subject}</td>
-                    <td className="px-4 py-3 text-fg-2">{c.audience_label}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-fg-2">
+                  <tr key={c.id} className="align-middle">
+                    <td className="px-4 py-3 font-medium text-fg min-w-[14rem] max-w-[22rem]">
+                      <span className="line-clamp-2" title={c.subject}>
+                        {c.subject}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-fg-2 min-w-[9rem] max-w-[14rem]">
+                      <span className="line-clamp-2" title={c.audience_label ?? ""}>
+                        {c.audience_label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-fg-2 whitespace-nowrap">
                       {c.sent_count.toLocaleString()} of {c.recipient_count.toLocaleString()}
                       {c.status === "sending" ? <span className="block text-[11px] text-amber-300">stopped part-way</span> : null}
                       {c.status === "paused" ? (
@@ -393,13 +405,13 @@ export function PlatformCampaigns() {
                         )
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-fg-2">{results[c.id] ? results[c.id].clicks.toLocaleString() : resultsLoaded ? "–" : "…"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums font-medium text-fg">
+                    <td className="px-4 py-3 text-right tabular-nums text-fg-2 whitespace-nowrap">{results[c.id] ? results[c.id].clicks.toLocaleString() : resultsLoaded ? "–" : "…"}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-medium text-fg whitespace-nowrap">
                       {results[c.id] ? results[c.id].tickets.toLocaleString() : resultsLoaded ? "–" : "…"}
                       {results[c.id]?.registrations ? <span className="block text-[11px] text-subtle">+{results[c.id].registrations.toLocaleString()} free sign-ups</span> : null}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-fg-2">{results[c.id] ? naira(results[c.id].revenue) : resultsLoaded ? "–" : "…"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-fg-2">
+                    <td className="px-4 py-3 text-right tabular-nums text-fg-2 whitespace-nowrap">{results[c.id] ? naira(results[c.id].revenue) : resultsLoaded ? "–" : "…"}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-fg-2 whitespace-nowrap">
                       {results[c.id] ? (
                         <>
                           {results[c.id].recipient_orders.toLocaleString()}
@@ -411,7 +423,7 @@ export function PlatformCampaigns() {
                         "…"
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right text-fg-3">{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
+                    <td className="px-4 py-3 text-right text-fg-3 whitespace-nowrap">{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <button type="button" onClick={() => setViewing(c)} aria-label={`View ${c.subject}`} title="View" className="p-1.5 text-subtle hover:text-fg-2">
                         <Eye size={15} />
