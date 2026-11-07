@@ -45,6 +45,7 @@ import { captureRef, storedRef } from "@/lib/referral-capture";
 import { LandingNav } from "@/components/landing/landing-hero";
 import { LandingFooter } from "@/components/landing/landing-close";
 import { TurnstileWidget, turnstileConfigured, type TurnstileHandle } from "@/components/turnstile-widget";
+import { metaTrack, metaTrackPurchaseOnce } from "@/lib/meta-pixel";
 
 /** Same sticky public header as /discover — a shared visual identity across every
  *  public-facing page, and a visitor's only way back to the rest of the site from a
@@ -341,6 +342,17 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [event, setEvent] = useState<PublicEvent | null>(null);
+  // Meta Pixel: the "came to the event page" count for ads. Decided once, from
+  // the address the page was opened with: coming back from Paystack is the
+  // same visit, not a new one (the page tidies that address afterwards, so
+  // the current search params can't be trusted for this).
+  const viewedRef = useRef<string | null>(null);
+  const returnedFromPaymentRef = useRef(typeof window !== "undefined" && new URLSearchParams(window.location.search).get("payment") === "callback");
+  useEffect(() => {
+    if (!event || viewedRef.current === event.id || returnedFromPaymentRef.current) return;
+    viewedRef.current = event.id;
+    metaTrack("ViewContent", { content_ids: [event.id], content_name: event.name, content_type: "product", currency: "NGN" });
+  }, [event]);
   // True only when this event was reached via the fallback single-event lookup
   // (see the fetch effect below) — the normal /events list only ever returns
   // published events, so landing there at all means it's still a draft. Puts
@@ -488,6 +500,16 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
       .then((json) => {
         if (cancelled) return;
         if (json.success) {
+          if (json.purchase?.reference) {
+            metaTrackPurchaseOnce(json.purchase.reference, {
+              value: json.purchase.value,
+              currency: json.purchase.currency,
+              num_items: json.purchase.numItems,
+              content_ids: [event.id],
+              content_name: event.name,
+              content_type: "product",
+            });
+          }
           const storedIdentity = sessionStorage.getItem(PENDING_IDENTITY_KEY);
           let guestCount = 0;
           if (storedIdentity) {
@@ -625,6 +647,14 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
           return;
         }
         sessionStorage.setItem(PENDING_IDENTITY_KEY, JSON.stringify(identity));
+        metaTrack("InitiateCheckout", {
+          value: payNaira + processingNaira,
+          currency: "NGN",
+          num_items: groupSize,
+          content_ids: [event.id],
+          content_name: event.name,
+          content_type: "product",
+        });
         window.location.assign(json.authorizationUrl);
         return;
       }
@@ -641,6 +671,9 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
         return;
       }
       setAttendeeIdentity(identity);
+      if ((json.status ?? "registered") === "registered") {
+        metaTrack("CompleteRegistration", { content_ids: [event.id], content_name: event.name, value: 0, currency: "NGN" }, json.referenceId ?? undefined);
+      }
       setConfirmation({ referenceId: json.referenceId, emailSent: !!json.emailSent, status: json.status ?? "registered", hubUrl: json.hubUrl ?? undefined, event: json.event });
     } catch {
       turnstile.current?.reset();

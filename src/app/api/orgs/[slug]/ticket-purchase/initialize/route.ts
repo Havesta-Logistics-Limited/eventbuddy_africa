@@ -12,6 +12,7 @@ import { resolveReferralId } from "@/lib/referrals";
 import { checkSalesCap } from "@/lib/sales-guard";
 import { validateGroupGuests } from "@/lib/group-tickets";
 import { turnstileEnabled, verifyTurnstile, TURNSTILE_FAILED_MESSAGE } from "@/lib/turnstile";
+import { metaTrackingFromRequest } from "@/lib/meta-capi";
 
 type InitializeBody = {
   eventId: string;
@@ -310,6 +311,9 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
       ...(kioskStaffId ? { kioskStaffId } : {}),
       hideFromGuestList: Boolean(hideFromGuestList),
       guests: guestCheck.guests,
+      // the buyer's Meta cookies and page, so the sale can be reported to
+      // Meta from the server once it's paid (src/lib/meta-capi.ts)
+      ...(kioskStaffId ? {} : { tracking: metaTrackingFromRequest(request, request.headers.get("referer") ?? undefined) }),
     },
   });
   if (insertError) {

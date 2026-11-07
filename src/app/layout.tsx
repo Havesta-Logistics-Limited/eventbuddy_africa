@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { DM_Serif_Display, Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
 import { GoogleAnalytics } from "@/components/google-analytics";
+import { MetaPixel } from "@/components/meta-pixel";
 import { OfflineSupport } from "@/components/offline-support";
 import "./globals.css";
 
@@ -106,6 +107,7 @@ export default async function RootLayout({
         {/* Static, hardcoded JSON — no user input ever flows into this, safe to inject as-is. */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
         <GoogleAnalytics nonce={nonce} />
+        <MetaPixel nonce={nonce} />
         {children}
         <OfflineSupport />
         <Toaster theme="dark" richColors position="top-right" closeButton toastOptions={{ style: { background: "#1d1426", border: "1px solid #ffffff17", color: "#f6f0fa" } }} />
