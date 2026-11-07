@@ -17,6 +17,23 @@ export type EventSegment = "registered" | "checked_in" | "no_show" | "started_no
 export type CampaignAudience = { kind: "list"; listId: string } | { kind: "event"; eventId: string; segment: EventSegment };
 export type Recipient = { email: string; fullName: string };
 
+/** How the email opens: "Hi Ada," (prefix + first name, or the fallback line
+ *  for someone the list has no name for), or no greeting at all. */
+export const GreetingSchema = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("name"), prefix: z.string().trim().min(1).max(30), fallback: z.string().trim().min(1).max(80) }),
+  z.object({ mode: z.literal("none") }),
+]);
+export type Greeting = z.infer<typeof GreetingSchema>;
+export const DEFAULT_GREETING: Greeting = { mode: "name", prefix: "Hi", fallback: "Hi there," };
+
+/** The greeting line for one person, as plain text ("" for none). */
+export function greetingLine(g: Greeting | null | undefined, fullName: string): string {
+  const greeting = g ?? DEFAULT_GREETING;
+  if (greeting.mode === "none") return "";
+  const firstName = fullName.trim().split(/\s+/)[0] || "";
+  return firstName ? `${greeting.prefix} ${firstName},` : greeting.fallback;
+}
+
 export const AudienceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("list"), listId: z.string().uuid() }),
   z.object({ kind: z.literal("event"), eventId: z.string().uuid(), segment: z.enum(["registered", "checked_in", "no_show", "started_not_bought"]) }),
@@ -146,17 +163,16 @@ export function campaignTrackingTag(campaignId: string): string {
  *  (hostInlineImages); links to eventbuddy are tagged with the campaign. */
 export function buildCampaignEmail(
   to: Recipient,
-  c: { id: string; subject: string; messageHtml: string; ctaLabel?: string | null; ctaUrl?: string | null },
+  c: { id: string; subject: string; messageHtml: string; ctaLabel?: string | null; ctaUrl?: string | null; greeting?: Greeting | null },
   unsubUrl: string
 ) {
   const tag = trackingTagger({ source: "email", campaign: campaignTrackingTag(c.id) });
-  const firstName = to.fullName.split(/\s+/)[0] || "";
-  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,";
-  const greetingText = firstName ? `Hi ${firstName},` : "Hi there,";
+  const greetingText = greetingLine(c.greeting, to.fullName);
+  const greetingHtml = greetingText ? `<p style="margin:0 0 4px; font-weight:600; color:#1e1b2e;">${escapeHtml(greetingText)}</p>` : "";
   const ctaUrl = c.ctaUrl ? tag.url(c.ctaUrl) : null;
   const ctaHtml = c.ctaLabel && ctaUrl ? `<div style="margin-top:24px;">${emailButton(escapeHtml(ctaUrl), escapeHtml(c.ctaLabel), "#C21FAF")}</div>` : "";
   const html = `
-    <p style="margin:0 0 4px; font-weight:600; color:#1e1b2e;">${greeting}</p>
+    ${greetingHtml}
     <div style="color:#333;">${tag.html(c.messageHtml)}</div>
     ${ctaHtml}
     <p style="margin:24px 0 0; padding-top:16px; border-top:1px solid #eee; font-size:11px; color:#aaa;">
@@ -167,7 +183,7 @@ export function buildCampaignEmail(
     from: process.env.RESEND_FROM_EMAIL || "eventbuddy <onboarding@resend.dev>",
     to: to.email,
     subject: c.subject,
-    text: `${greetingText}\n\n${stripHtml(c.messageHtml)}${c.ctaLabel && ctaUrl ? `\n\n${c.ctaLabel}: ${ctaUrl}` : ""}\n\nUnsubscribe: ${unsubUrl}`,
+    text: `${greetingText ? `${greetingText}\n\n` : ""}${stripHtml(c.messageHtml)}${c.ctaLabel && ctaUrl ? `\n\n${c.ctaLabel}: ${ctaUrl}` : ""}\n\nUnsubscribe: ${unsubUrl}`,
     // just the logo: a label here only repeated "eventbuddy" under it
     html: renderEmailShell({ color: "#C21FAF", label: "", emoji: "" }, html),
     headers: { "List-Unsubscribe": `<${unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },

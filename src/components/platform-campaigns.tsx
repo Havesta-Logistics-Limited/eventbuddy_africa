@@ -18,8 +18,11 @@ type ContactList = { id: string; name: string; count: number; createdAt: string 
 type EventOption = { id: string; name: string; date: string; eventFormat: string | null; orgName: string };
 type Segment = "registered" | "checked_in" | "no_show" | "started_not_bought";
 type Audience = { kind: "list"; listId: string } | { kind: "event"; eventId: string; segment: Segment };
+type Greeting = { mode: "name"; prefix: string; fallback: string } | { mode: "none" };
+
 type CampaignRow = {
   id: string;
+  greeting: Greeting | null;
   subject: string;
   message_html: string;
   cta_label: string | null;
@@ -32,7 +35,7 @@ type CampaignRow = {
   created_at: string;
 };
 /** A sent campaign loaded back into the composer to edit and send again. */
-type Draft = { key: number; subject: string; messageHtml: string; ctaLabel: string; ctaUrl: string; audience: Audience };
+type Draft = { key: number; subject: string; messageHtml: string; ctaLabel: string; ctaUrl: string; audience: Audience; greeting: Greeting | null };
 /** platform_campaign_results (migration 0142) */
 type CampaignResults = {
   campaign_id: string;
@@ -96,7 +99,7 @@ export function PlatformCampaigns() {
 
   function reuse(c: CampaignRow) {
     // a new key each time remounts the composer with this campaign's content
-    setDraft((d) => ({ key: (d?.key ?? 0) + 1, subject: c.subject, messageHtml: c.message_html, ctaLabel: c.cta_label ?? "", ctaUrl: c.cta_url ?? "", audience: c.audience }));
+    setDraft((d) => ({ key: (d?.key ?? 0) + 1, subject: c.subject, messageHtml: c.message_html, ctaLabel: c.cta_label ?? "", ctaUrl: c.cta_url ?? "", audience: c.audience, greeting: c.greeting }));
     setViewing(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
     toast.success("Loaded into New campaign. Edit it, choose who to send to, then send.");
@@ -111,7 +114,7 @@ export function PlatformCampaigns() {
       supabase.from("events").select("id, name, date, event_format, organizations(name)").order("date", { ascending: false }).limit(500),
       supabase
         .from("platform_campaigns")
-        .select("id, subject, message_html, cta_label, cta_url, audience, audience_label, recipient_count, sent_count, status, created_at")
+        .select("id, subject, message_html, cta_label, cta_url, greeting, audience, audience_label, recipient_count, sent_count, status, created_at")
         .order("created_at", { ascending: false })
         .limit(50),
     ]);
@@ -346,6 +349,10 @@ function Composer({ draft, lists, events, onSent }: { draft: Draft | null; lists
   const [showCta, setShowCta] = useState(!!draft?.ctaLabel);
   const [ctaLabel, setCtaLabel] = useState(draft?.ctaLabel ?? "");
   const [ctaUrl, setCtaUrl] = useState(draft?.ctaUrl ?? "");
+  const g = draft?.greeting;
+  const [greetingMode, setGreetingMode] = useState<"name" | "none">(g?.mode ?? "name");
+  const [greetingPrefix, setGreetingPrefix] = useState(g?.mode === "name" ? g.prefix : "Hi");
+  const [greetingFallback, setGreetingFallback] = useState(g?.mode === "name" ? g.fallback : "Hi there,");
   const [error, setError] = useState("");
   const [progress, setProgress] = useState<{ sent: number; done: number; total: number } | null>(null);
 
@@ -390,6 +397,10 @@ function Composer({ draft, lists, events, onSent }: { draft: Draft | null; lists
           ctaLabel: showCta && ctaLabel.trim() ? ctaLabel.trim() : undefined,
           ctaUrl: showCta && ctaUrl.trim() ? ctaUrl.trim() : undefined,
           audience,
+          greeting:
+            greetingMode === "none"
+              ? { mode: "none" }
+              : { mode: "name", prefix: greetingPrefix.trim() || "Hi", fallback: greetingFallback.trim() || "Hi there," },
         }),
       });
       setProgress({ sent: res.sentCount, done: res.nextOffset, total: res.total });
@@ -477,6 +488,42 @@ function Composer({ draft, lists, events, onSent }: { draft: Draft | null; lists
         </label>
         <input id="campaign-subject" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={200} placeholder="e.g. Tickets for Lagos Tech Week are live" className={fieldClass} />
       </div>
+      <div>
+        <label className="block text-xs font-medium text-fg-2 mb-1.5">Greeting</label>
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={greetingMode} onChange={(e) => setGreetingMode(e.target.value as "name" | "none")} aria-label="Greeting" className={`${fieldClass} sm:w-auto`}>
+            <option value="name">Greet by first name</option>
+            <option value="none">No greeting</option>
+          </select>
+          {greetingMode === "name" ? (
+            <>
+              <input
+                value={greetingPrefix}
+                onChange={(e) => setGreetingPrefix(e.target.value)}
+                maxLength={30}
+                aria-label="Word before the name"
+                placeholder="Hi"
+                className={`${fieldClass} sm:w-28`}
+              />
+              <span className="text-sm text-muted">+ first name</span>
+            </>
+          ) : null}
+        </div>
+        {greetingMode === "name" ? (
+          <div className="mt-2">
+            <label htmlFor="greeting-fallback" className="block text-[11px] text-subtle mb-1">
+              For people with no name on the list
+            </label>
+            <input id="greeting-fallback" value={greetingFallback} onChange={(e) => setGreetingFallback(e.target.value)} maxLength={80} placeholder="Hi there," className={fieldClass} />
+            <p className="text-[11px] text-subtle mt-1">
+              e.g. &ldquo;{(greetingPrefix.trim() || "Hi")} Ada,&rdquo; · or &ldquo;{greetingFallback.trim() || "Hi there,"}&rdquo; when there&apos;s no name
+            </p>
+          </div>
+        ) : (
+          <p className="text-[11px] text-subtle mt-1">The email starts straight with your message, so write your own opening line.</p>
+        )}
+      </div>
+
       <div>
         <label className="block text-xs font-medium text-fg-2 mb-1.5">Message</label>
         <RichTextEditor value={messageHtml} onChange={setMessageHtml} placeholder="Write your message…" minHeightClass="min-h-[220px]" allowImages />
