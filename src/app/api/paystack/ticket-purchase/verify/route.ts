@@ -35,7 +35,7 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { data: txn } = await admin.from("paystack_transactions").select("id, purpose").eq("reference", reference).maybeSingle();
+  const { data: txn } = await admin.from("paystack_transactions").select("id, purpose, charge_amount_minor, charge_currency, registrant_data").eq("reference", reference).maybeSingle();
   if (!txn || txn.purpose !== "ticket_purchase") {
     return NextResponse.json({ error: "Transaction not found." }, { status: 404 });
   }
@@ -59,5 +59,13 @@ export async function GET(request: Request) {
     hubUrl: result.purpose === "ticket_purchase" ? result.hubUrl : undefined,
     virtualJoinUrl,
     virtualAccessNotes,
+    // for the browser's Meta Pixel Purchase event; the reference is its
+    // event_id, the same one the server reports, so Meta counts it once
+    purchase: {
+      reference,
+      value: Number(txn.charge_amount_minor) / 100,
+      currency: txn.charge_currency || "NGN",
+      numItems: 1 + (Array.isArray((txn.registrant_data as { guests?: unknown[] } | null)?.guests) ? (txn.registrant_data as { guests: unknown[] }).guests.length : 0),
+    },
   });
 }

@@ -9,6 +9,7 @@ import { ensureHubMember, hubUrl as buildHubUrl } from "@/lib/event-hub";
 import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template";
 import { formatNaira } from "@/lib/billing";
 import { promoterCommission } from "@/lib/promoters";
+import { sendMetaServerEvent, type MetaTracking } from "@/lib/meta-capi";
 
 /**
  * Server-only — imports nothing that can't run in a Route Handler. Never import this
@@ -606,7 +607,32 @@ export async function finalizePaystackTransaction(supabase: SupabaseClient, refe
   if (Number(txn.amount_naira) > 0) await recordSaleRisk(supabase, txn.organization_id, txn.event_id);
 
   const { referenceId, hubUrl } = await createTicketPurchaseRegistration(supabase, txn);
+  await reportPurchaseToMeta(supabase, txn);
   return { ok: true, purpose: "ticket_purchase", eventId: txn.event_id, referenceId, hubUrl, alreadyProcessed: false };
+}
+
+/** A web sale, reported once (on the pending -> success transition) to
+ *  eventbuddy's Meta Pixel from the server. Door (kiosk) sales aren't ad
+ *  traffic and are left out. The payment reference is the event_id, the same
+ *  one the browser sends, so Meta counts the sale once. */
+async function reportPurchaseToMeta(supabase: SupabaseClient, txn: Record<string, unknown>) {
+  const info = (txn.registrant_data ?? {}) as { email?: string; phone?: string | null; firstName?: string; lastName?: string; source?: string; guests?: unknown[]; tracking?: MetaTracking };
+  if (info.source === "kiosk" || !process.env.META_CAPI_ACCESS_TOKEN) return;
+  const { data: event } = await supabase.from("events").select("name").eq("id", txn.event_id as string).maybeSingle();
+  await sendMetaServerEvent({
+    eventName: "Purchase",
+    eventId: txn.reference as string,
+    value: Number(txn.charge_amount_minor) / 100,
+    currency: (txn.charge_currency as string) || "NGN",
+    contentIds: [txn.event_id as string],
+    contentName: event?.name,
+    numItems: 1 + (Array.isArray(info.guests) ? info.guests.length : 0),
+    email: info.email,
+    phone: info.phone,
+    firstName: info.firstName,
+    lastName: info.lastName,
+    tracking: info.tracking,
+  });
 }
 
 /** An exhibitor's stand payment (migration 0112): verified like a ticket,
