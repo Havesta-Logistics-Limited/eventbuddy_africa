@@ -55,7 +55,11 @@ export function PublicHeader() {
 }
 
 type PublicEvent = EventRecord & { hasStaffCode: boolean; hasRepCode: boolean };
-type PublicTicketType = Pick<TicketType, "id" | "name" | "description" | "priceNaira" | "quantityAvailable" | "quantitySold" | "salesStart" | "salesEnd" | "groupSize">;
+type PublicTicketType = Pick<TicketType, "id" | "name" | "description" | "priceNaira" | "quantityAvailable" | "quantitySold" | "salesStart" | "salesEnd" | "groupSize"> & {
+  /** a usable discount code exists for this ticket (the tickets route); the
+   *  code box only shows then, so buyers don't hunt for codes that don't exist */
+  hasDiscountCode?: boolean;
+};
 
 type Confirmation = {
   /** Group tickets: how many guests were also sent their own ticket. */
@@ -1228,7 +1232,7 @@ export function RegisterPageContent({ orgSlug, eventIdOrSlug }: { orgSlug: strin
                       </div>
                     )}
 
-                    {selectedTicket && selectedTicket.priceNaira > 0 && (
+                    {selectedTicket && selectedTicket.priceNaira > 0 && (selectedTicket.hasDiscountCode || appliedDiscount) && (
                       <div className="mb-5">
                         {appliedDiscount ? (
                           <div className="p-3 rounded-lg bg-emerald-400/10 text-emerald-200 text-sm">
