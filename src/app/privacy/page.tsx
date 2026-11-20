@@ -46,6 +46,7 @@ const SECTIONS = [
       "We share data with service providers who help us run the platform — for example, our database and email-delivery providers — solely to provide the service, under obligations to protect it.",
       "Exhibitors who scan your ticket receive your name, email and phone. This happens only when you show your ticket to an exhibitor at an event to be scanned; exhibitors never see the rest of the attendee list.",
       "We use Google Analytics to understand how visitors use our marketing site (pages visited, general location, device type) — it doesn't collect the event, lead, or registration data described above.",
+      "We use the Meta Pixel and Meta's Conversions API to measure how well our Facebook and Instagram ads work. They tell Meta which of our pages you visit and when you buy a ticket, including the amount. For ticket purchases we also send Meta your email address, phone number and name, but only in hashed (scrambled) form, along with your IP address, browser type and Meta's own browser cookies, so Meta can match the purchase to an ad you saw. Meta can't read the hashed details, and we never send it your event answers or other registration data. You can control ad tracking in your Facebook or Instagram ad settings, or block it with your browser's privacy settings or an ad blocker.",
       "We may disclose information if required by law, or to protect the rights, safety, or property of eventbuddy, our users, or the public.",
     ],
   },
@@ -101,7 +102,7 @@ export default function PrivacyPolicyPage() {
       <section className="eb-page-hero max-w-3xl mx-auto px-6 pt-12 pb-4">
         <p className="font-mono text-xs font-semibold uppercase tracking-widest text-brand-500 mb-3">Legal</p>
         <h1 className="font-display text-4xl text-fg mb-2">Privacy Policy</h1>
-        <p className="text-sm text-subtle">Last updated October 7, 2026</p>
+        <p className="text-sm text-subtle">Last updated November 20, 2026</p>
       </section>
 
       <section className="max-w-3xl mx-auto px-6 pb-20">
