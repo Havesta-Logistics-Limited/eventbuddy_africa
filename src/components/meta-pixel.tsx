@@ -15,7 +15,11 @@ export function MetaPixel({ nonce }: { nonce?: string }) {
 
   useEffect(() => {
     if (!pixelId) return;
-    // the first PageView is sent by the loader below
+    // the first PageView is sent by the loader below; Meta's own PageView on
+    // address changes is switched off there (disablePushState), so a page that
+    // only tidies its query string isn't counted twice. allowDuplicatePageViews:
+    // without it Meta drops every PageView after the first in a tab, so in-app
+    // page changes were never counted
     if (first.current) {
       first.current = false;
       return;
@@ -26,7 +30,7 @@ export function MetaPixel({ nonce }: { nonce?: string }) {
   if (!pixelId || !/^\d{5,20}$/.test(pixelId)) return null;
   return (
     <Script id="meta-pixel" strategy="afterInteractive" nonce={nonce}>
-      {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${pixelId}');fbq('track','PageView');`}
+      {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq.disablePushState=true;fbq.allowDuplicatePageViews=true;fbq('init','${pixelId}');fbq('track','PageView');`}
     </Script>
   );
 }
