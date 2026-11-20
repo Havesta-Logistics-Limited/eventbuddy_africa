@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Copy, Eye, Loader2, Mail, Plus, Send, Trash2, Upload, X } from "lucide-react";
+import { AlertCircle, Copy, Eye, Loader2, Mail, Plus, RotateCw, Send, Trash2, Upload, X } from "lucide-react";
 import { RichTextDisplay } from "@/components/rich-text-display";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -120,6 +120,7 @@ export function PlatformCampaigns() {
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
   const [drafts, setDrafts] = useState<CampaignRow[]>([]);
   const [resuming, setResuming] = useState<{ id: string; done: number; total: number } | null>(null);
+  const [rerunning, setRerunning] = useState<{ id: string; done: number; total: number } | null>(null);
   const [results, setResults] = useState<Record<string, CampaignResults>>({});
   const [resultsLoaded, setResultsLoaded] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -188,6 +189,50 @@ export function PlatformCampaigns() {
       toast.error(err instanceof Error ? err.message : "The batch stopped. Its row shows how far it got.");
     } finally {
       setResuming(null);
+      load();
+    }
+  }
+
+  /** Sends a past campaign again, unchanged, to the same audience as it is
+   *  today. It goes out as a new campaign, so its results are counted apart. */
+  async function rerun(c: CampaignRow) {
+    if (!c.audience) return toast.error("This campaign's audience wasn't saved. Use Reuse to choose who to send to.");
+    let count: number;
+    try {
+      ({ count } = await api<{ count: number }>("/api/platform/campaigns/audience", { method: "POST", body: JSON.stringify({ audience: c.audience }) }));
+    } catch (err) {
+      return toast.error(err instanceof Error ? err.message : "Couldn't count this audience.");
+    }
+    if (!count) return toast.error(`Nobody to send to in ${c.audience_label ?? "this audience"} any more.`);
+    const answer = window.prompt(
+      `Send "${c.subject}" again to ${c.audience_label ?? "the same audience"}: ${count.toLocaleString()} people now, including anyone who already got it.\n\nHow many to send now? Leave empty to send to all ${count.toLocaleString()}; the rest wait for Send next batch.`,
+      ""
+    );
+    if (answer === null) return;
+    const limit = answer.trim() ? Math.floor(Number(answer.replace(/[^0-9]/g, ""))) : undefined;
+    if (answer.trim() && (!limit || limit < 1)) return toast.error("Enter a number, or leave it empty to send to everyone.");
+    setRerunning({ id: c.id, done: 0, total: Math.min(count, limit ?? count) });
+    try {
+      const res = await runSend(
+        api<SendProgress>("/api/platform/campaigns/send", {
+          method: "POST",
+          body: JSON.stringify({
+            subject: c.subject,
+            messageHtml: c.message_html,
+            ctaLabel: c.cta_label && c.cta_url ? c.cta_label : undefined,
+            ctaUrl: c.cta_label && c.cta_url ? c.cta_url : undefined,
+            audience: c.audience,
+            ...(c.greeting ? { greeting: c.greeting } : {}),
+            ...(limit ? { limit } : {}),
+          }),
+        }),
+        (p) => setRerunning({ id: c.id, done: p.nextOffset, total: Math.min(p.total, limit ?? p.total) })
+      );
+      toast.success(sentMessage(res));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "The re-run stopped. Its new row in Sent campaigns shows how far it got.");
+    } finally {
+      setRerunning(null);
       load();
     }
   }
@@ -425,6 +470,23 @@ export function PlatformCampaigns() {
                     </td>
                     <td className="px-4 py-3 text-right text-fg-3 whitespace-nowrap">{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
+                      {rerunning?.id === c.id ? (
+                        <span className="mr-1 inline-flex items-center gap-1.5 align-middle text-[11px] text-muted tabular-nums">
+                          <Loader2 size={13} className="animate-spin" aria-hidden="true" />
+                          {rerunning.done.toLocaleString()} of {rerunning.total.toLocaleString()}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => rerun(c)}
+                          disabled={!!rerunning || !!resuming || !c.audience}
+                          aria-label={`Re-run ${c.subject}`}
+                          title={c.audience ? "Re-run: send it again, unchanged, to the same audience" : "Re-run isn't available: this campaign's audience wasn't saved"}
+                          className="p-1.5 text-subtle hover:text-fg-2 disabled:opacity-40 disabled:hover:text-subtle"
+                        >
+                          <RotateCw size={15} />
+                        </button>
+                      )}
                       <button type="button" onClick={() => setViewing(c)} aria-label={`View ${c.subject}`} title="View" className="p-1.5 text-subtle hover:text-fg-2">
                         <Eye size={15} />
                       </button>
@@ -466,9 +528,21 @@ export function PlatformCampaigns() {
                 </p>
               ) : null}
             </div>
-            <div className="p-5 border-t border-line-soft shrink-0">
-              <button type="button" onClick={() => reuse(viewing)} className="eb-btn eb-btn--primary w-full justify-center">
-                <Copy size={14} aria-hidden="true" /> Reuse this campaign
+            <div className="p-5 border-t border-line-soft shrink-0 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => {
+                  const c = viewing;
+                  setViewing(null);
+                  rerun(c);
+                }}
+                disabled={!!rerunning || !!resuming || !viewing.audience}
+                className="eb-btn eb-btn--primary flex-1 justify-center disabled:opacity-60"
+              >
+                <RotateCw size={14} aria-hidden="true" /> Re-run to the same audience
+              </button>
+              <button type="button" onClick={() => reuse(viewing)} className="eb-btn eb-btn--ghost flex-1 justify-center">
+                <Copy size={14} aria-hidden="true" /> Edit and send again
               </button>
             </div>
           </div>
