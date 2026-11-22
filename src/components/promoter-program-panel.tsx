@@ -13,7 +13,7 @@ type Settings = { enabled: boolean; pct: string; cap: string; access: "open" | "
 type PromoterRow = { id: string; code: string; is_active: boolean; click_count: number; partner_name: string };
 
 /** Event → Referrals: the organizer's promoter program (migration 0105). Turn
- *  it on, set the commission (% of net after eventbuddy's fee, 5% minimum),
+ *  it on, set the commission (% of net after eventbuddy's fee, 0% for free promotion),
  *  an optional cap per ticket, who may join, and a caption promoters can
  *  share. Promoters appear in the partner table below with their stats. */
 export function PromoterProgramPanel({ event }: { event: EventRecord }) {
@@ -64,7 +64,7 @@ export function PromoterProgramPanel({ event }: { event: EventRecord }) {
     if (!s) return;
     const pct = Number(s.pct);
     const cap = s.cap.trim() === "" ? null : Number(s.cap);
-    if (!(pct >= 5 && pct <= 100)) return setError("Commission must be between 5% and 100% of your net.");
+    if (!(s.pct.trim() !== "" && pct >= 0 && pct <= 100)) return setError("Commission must be between 0% and 100% of your net.");
     if (cap != null && !(cap > 0)) return setError("The cap per ticket must be more than ₦0, or leave it empty for no cap.");
     setError("");
     setBusy("save");
@@ -124,8 +124,12 @@ export function PromoterProgramPanel({ event }: { event: EventRecord }) {
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="pp-pct" className="eb-label">Commission (% of your net)</label>
-            <input id="pp-pct" type="number" min="5" max="100" step="0.5" value={s.pct} onChange={(e) => setS({ ...s, pct: e.target.value })} className="eb-input" />
-            <p className="eb-hint mt-1">Minimum 5%. Worked out after eventbuddy&apos;s fee.</p>
+            <input id="pp-pct" type="number" min="0" max="100" step="0.5" value={s.pct} onChange={(e) => setS({ ...s, pct: e.target.value })} className="eb-input" />
+            <p className="eb-hint mt-1">
+              {Number(s.pct) === 0 && s.pct.trim() !== ""
+                ? "0%: promoters share your event for free and earn nothing."
+                : "Worked out after eventbuddy's fee. Use 0% for people who promote for free."}
+            </p>
           </div>
           <div>
             <label htmlFor="pp-cap" className="eb-label">Cap per ticket (₦, optional)</label>
