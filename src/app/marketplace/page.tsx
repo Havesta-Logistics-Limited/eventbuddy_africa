@@ -131,8 +131,17 @@ function MarketplaceContent({ isPromoter }: { isPromoter: boolean }) {
                     )}
                   </div>
                   <span className="eb-market-rate">
-                    <span className="eb-market-rate-pct">Earn {e.commissionPct}%</span>
-                    <small>{e.commissionCapNaira != null ? `max ${formatNaira(e.commissionCapNaira)}/ticket` : "per ticket sold"}</small>
+                    {e.commissionPct > 0 ? (
+                      <>
+                        <span className="eb-market-rate-pct">Earn {e.commissionPct}%</span>
+                        <small>{e.commissionCapNaira != null ? `max ${formatNaira(e.commissionCapNaira)}/ticket` : "per ticket sold"}</small>
+                      </>
+                    ) : (
+                      <>
+                        <span className="eb-market-rate-pct">Free</span>
+                        <small>no commission</small>
+                      </>
+                    )}
                   </span>
                 </div>
                 <div className="flex flex-1 flex-col gap-1.5 p-4 pt-5">

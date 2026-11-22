@@ -211,8 +211,8 @@ function PromotedEvent({
               </h2>
               <p className="text-xs text-muted">
                 {formatDate(row.eventDate)} · {row.orgName} ·{" "}
-                {row.commissionPct}% of net
-                {row.commissionCapNaira != null &&
+                {row.commissionPct > 0 ? `${row.commissionPct}% of net` : "No commission"}
+                {row.commissionPct > 0 && row.commissionCapNaira != null &&
                   ` (max ${formatNaira(row.commissionCapNaira)} per ticket)`}
               </p>
             </div>

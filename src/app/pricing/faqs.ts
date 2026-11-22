@@ -31,7 +31,7 @@ export function faqs(feeLabel: string) {
     },
     {
       q: "Can promoters help sell my tickets?",
-      a: "Yes. Turn on the promoter program for an event and it's listed on the eventbuddy promoter marketplace, where promoters share their own link. You set the commission (at least 5% of what you net); it's only paid when a promoter's link actually sells a ticket, and it comes off your balance automatically. Launch includes up to 5 promoters per event; Grow and Scale are unlimited.",
+      a: "Yes. Turn on the promoter program for an event and it's listed on the eventbuddy promoter marketplace, where promoters share their own link. You set the commission as a share of what you net, or 0% for people who promote for free; it's only paid when a promoter's link actually sells a ticket, and it comes off your balance automatically. Launch includes up to 5 promoters per event; Grow and Scale are unlimited.",
     },
     {
       q: "Do my staff and reps need their own accounts?",
