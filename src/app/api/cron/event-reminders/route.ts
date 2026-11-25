@@ -5,6 +5,7 @@ import { sendEventReminderEmail, type ReminderKind } from "@/lib/registration-em
 import { hubUrl as buildHubUrl } from "@/lib/event-hub";
 import { withCronLog } from "@/lib/cron-log";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { queueWhatsApp, reminderMessage, whatsappAllowedFor } from "@/lib/whatsapp";
 
 // Half the hourly cron cadence plus a buffer — wide enough that a single tick
 // always lands inside the window for whichever stage is due, without ever
@@ -59,9 +60,42 @@ async function run(request: Request) {
   const slugByOrgId = new Map((orgs ?? []).map((o) => [o.id, o.slug]));
 
   let reminded = 0;
+  let whatsappQueued = 0;
 
   for (const event of events) {
     const eventStart = zonedTimeToUtc(event.date, event.start_time || "09:00", event.timezone ?? undefined).getTime();
+
+    // Day-of WhatsApp reminder with their QR (migration 0146), from 6 hours
+    // before the start. Queued, not sent: the outbox sends a few a minute and
+    // drops anything still waiting once the event has started.
+    if (
+      event.event_format !== "virtual" &&
+      eventStart - now <= 6 * 3600000 &&
+      eventStart - now > 30 * 60000 &&
+      whatsappAllowedFor({ id: event.organization_id, slug: slugByOrgId.get(event.organization_id) })
+    ) {
+      const { data: withPhone } = await admin
+        .from("registrations")
+        .select("id, full_name, phone, reference_id")
+        .eq("event_id", event.id)
+        .in("status", ["registered", "checked_in"])
+        .not("phone", "is", null);
+      whatsappQueued += await queueWhatsApp(
+        admin,
+        (withPhone ?? []).map((r) => ({
+          kind: "reminder" as const,
+          dedupe_key: `reminder:${r.id}`,
+          to_phone: r.phone as string,
+          body: reminderMessage(r.full_name, event, r.reference_id),
+          image_kind: "ticket_qr" as const,
+          organization_id: event.organization_id,
+          event_id: event.id,
+          registration_id: r.id,
+          priority: 2,
+          expires_at: new Date(eventStart).toISOString(),
+        })),
+      );
+    }
 
     const due: { kind: ReminderKind; column: "reminder_24h_sent_at" | "reminder_1h_sent_at" }[] = [];
     if (inWindow(eventStart - 24 * 3600000, now)) due.push({ kind: "24h", column: "reminder_24h_sent_at" });
@@ -126,7 +160,7 @@ async function run(request: Request) {
     }
   }
 
-  return NextResponse.json({ success: true, reminded });
+  return NextResponse.json({ success: true, reminded, whatsappQueued });
 }
 
 // every run is recorded for the platform admin's Job health tab

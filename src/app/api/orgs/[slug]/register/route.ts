@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cleanAttribution } from "@/lib/marketing-attribution";
 import { optionalPhone, isValidEmail } from "@/lib/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { queueTicketWhatsApp } from "@/lib/whatsapp";
 import { getRegistrationGate, windowFromEvent } from "@/lib/capture-window";
 import { generateReferenceId } from "@/lib/utils";
 import { sendRegistrationEmail, sendVirtualConfirmationEmail, sendPendingApprovalEmail, sendWaitlistEmail } from "@/lib/registration-email";
@@ -314,6 +315,18 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[slug]
 
   const hub = await tryHubUrl(registration.email, registration.full_name);
   const emailSent = await sendRegistrationEmail(registration.email, registration.reference_id, event, hub);
+  // their QR on WhatsApp too, when they gave a phone (migration 0146)
+  await queueTicketWhatsApp(supabase, {
+    registrationId: registration.id,
+    organizationId: org.id,
+    orgSlug: slug,
+    eventId: event.id,
+    phone: registration.phone,
+    fullName: registration.full_name,
+    referenceId: registration.reference_id,
+    event,
+    hubUrl: hub,
+  });
   await sendPushToAttendee(supabase, registration.email, "You're registered! 🎉", `${event.name} — your ticket is ready.`, {
     eventId: event.id,
     referenceId: registration.reference_id,

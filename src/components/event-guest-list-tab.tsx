@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Download, Mail, MessageCircle, Plus, Send, Trash2, Upload, Users, X } from "lucide-react";
 import { EventGuest, EventRecord, GuestStatus } from "@/lib/types";
@@ -80,6 +80,59 @@ export function GuestListTab({ event, orgSlug, guests }: { event: EventRecord; o
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [sendingInvites, setSendingInvites] = useState(false);
+
+  // automatic WhatsApp from the eventbuddy number (migration 0146); only
+  // shown when it's switched on for this organizer
+  type WaStatus = { enabled: boolean; perMinute?: number; counts?: { queued: number; sent: number; failed: number; skipped: number }; byGuest?: Record<string, string> };
+  const [wa, setWa] = useState<WaStatus>({ enabled: false });
+  const [queueingWa, setQueueingWa] = useState(false);
+  const waUrl = `/api/orgs/${encodeURIComponent(orgSlug)}/events/${encodeURIComponent(eventId)}/guests/whatsapp`;
+  const loadWa = useCallback(async () => {
+    try {
+      const res = await fetch(waUrl, { cache: "no-store" });
+      if (res.ok) setWa(await res.json());
+    } catch {
+      /* the manual buttons still work */
+    }
+  }, [waUrl]);
+  useEffect(() => {
+    if (!inPerson) return;
+    let cancelled = false;
+    fetch(waUrl, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json: WaStatus | null) => {
+        if (json && !cancelled) setWa(json);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [inPerson, waUrl]);
+  // while invitations are going out, keep the numbers fresh
+  useEffect(() => {
+    if (!wa.counts?.queued) return;
+    const t = setInterval(loadWa, 30_000);
+    return () => clearInterval(t);
+  }, [wa.counts?.queued, loadWa]);
+
+  async function sendAllOnWhatsApp(ids?: string[]) {
+    setQueueingWa(true);
+    try {
+      const res = await fetch(waUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(ids ? { guestIds: ids } : {}) });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Couldn't queue the invitations.");
+      if (!json.queued) toast.message(json.message || "Everyone with a phone number is already queued or sent.");
+      else
+        toast.success(
+          `${json.queued} invitation${json.queued === 1 ? "" : "s"} queued. They go out a few a minute so the number stays safe${json.minutes > 2 ? `, about ${json.minutes} minutes in all` : ""}.`,
+        );
+      await loadWa();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't queue the invitations.");
+    } finally {
+      setQueueingWa(false);
+    }
+  }
 
   const counts = {
     total: guests.length,
@@ -343,6 +396,17 @@ export function GuestListTab({ event, orgSlug, guests }: { event: EventRecord; o
               {sendingInvites ? "Sending…" : "Email everyone not yet invited"}
             </button>
           )}
+          {wa.enabled && design && counts.accepted > 0 && (
+            <button data-edit
+              onClick={() => sendAllOnWhatsApp(selected.size > 0 ? [...selected] : undefined)}
+              disabled={queueingWa}
+              title="Sends each confirmed guest their flyer from the eventbuddy WhatsApp number, a few a minute"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-60"
+            >
+              <MessageCircle size={14} aria-hidden="true" />
+              {queueingWa ? "Queueing…" : selected.size > 0 ? `WhatsApp ${selected.size} selected` : "Send all on WhatsApp"}
+            </button>
+          )}
           {design && counts.accepted > 0 && (
             <button
               onClick={downloadAllFlyers}
@@ -369,6 +433,15 @@ export function GuestListTab({ event, orgSlug, guests }: { event: EventRecord; o
           </button>
         </div>
       </div>
+
+      {wa.enabled && wa.counts && wa.counts.queued + wa.counts.sent + wa.counts.failed > 0 && (
+        <p className="mb-3 flex items-center gap-1.5 text-xs text-muted" aria-live="polite">
+          <MessageCircle size={13} className="text-emerald-300" aria-hidden="true" />
+          WhatsApp invitations: {wa.counts.sent} sent
+          {wa.counts.queued > 0 && ` · ${wa.counts.queued} waiting (about ${wa.perMinute ?? 2} a minute)`}
+          {wa.counts.failed > 0 && ` · ${wa.counts.failed} couldn't be sent`}
+        </p>
+      )}
 
       {guests.length === 0 ? (
         <div className="text-center py-16 text-subtle bg-canvas rounded-xl border border-line">
@@ -411,6 +484,9 @@ export function GuestListTab({ event, orgSlug, guests }: { event: EventRecord; o
                     <div className="flex items-center justify-end gap-3">
                       {design && g.status === "accepted" && g.inviteToken && (
                         <>
+                          {wa.byGuest?.[g.id] === "sent" && <span className="text-xs text-emerald-300/80">Sent on WhatsApp</span>}
+                          {wa.byGuest?.[g.id] === "queued" && <span className="text-xs text-subtle">WhatsApp queued</span>}
+                          {wa.byGuest?.[g.id] === "failed" && <span className="text-xs text-rose-300">WhatsApp failed</span>}
                           {whatsappLink(g) && (
                             <a
                               data-edit

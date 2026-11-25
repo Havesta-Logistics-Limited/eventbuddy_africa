@@ -10,6 +10,7 @@ import { emailButton, escapeHtml, renderEmailShell } from "@/lib/email-template"
 import { formatNaira } from "@/lib/billing";
 import { promoterCommission } from "@/lib/promoters";
 import { sendMetaServerEvent, type MetaTracking } from "@/lib/meta-capi";
+import { queueTicketWhatsApp } from "@/lib/whatsapp";
 
 /**
  * Server-only — imports nothing that can't run in a Route Handler. Never import this
@@ -1019,6 +1020,17 @@ async function createTicketPurchaseRegistration(supabase: SupabaseClient, txn: P
 
   const physicalHub = await tryHubUrl(info.email, `${info.firstName} ${info.lastName}`);
   await sendRegistrationEmail(info.email, referenceId, event, physicalHub);
+  // the buyer's QR on WhatsApp too (migration 0146); group guests have no phone here
+  await queueTicketWhatsApp(supabase, {
+    registrationId: registrationId!,
+    organizationId: txn.organization_id,
+    eventId: txn.event_id,
+    phone: info.phone,
+    fullName: `${info.firstName} ${info.lastName}`,
+    referenceId,
+    event,
+    hubUrl: physicalHub,
+  });
   await sendPushToAttendee(supabase, info.email, "Payment confirmed! 🎉", `${event.name} — your ticket is ready.`, { eventId: txn.event_id, referenceId });
 
   // Group ticket: every guest the buyer named gets their own registration,
